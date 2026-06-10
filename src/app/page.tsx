@@ -1,65 +1,136 @@
-import Image from "next/image";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  CardValue,
+} from "@/components/ui/card";
+import { loadWorkbook } from "@/lib/excel";
+import { buildPortfolio } from "@/lib/portfolio";
+import { buildHistorySeries } from "@/lib/portfolio-history";
+import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
+import { PortfolioCurve } from "@/components/charts/portfolio-curve";
+import { AllocationDonut } from "@/components/charts/allocation-donut";
+import { AllocationVsTarget } from "@/components/charts/allocation-vs-target";
+import { SyncButton } from "@/components/sync-button";
+import { formatEuro, formatPercent, signClass } from "@/lib/utils";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const workbook = loadWorkbook();
+  const [priceMap, priceStore, manualStore] = await Promise.all([
+    readPriceMap(workbook.assets),
+    readPrices(),
+    readManualPrices(),
+  ]);
+  const portfolio = buildPortfolio(workbook, priceMap);
+  const history = buildHistorySeries(workbook, priceStore, manualStore);
+
+  const totalsByAsset = new Map(
+    portfolio.assets.map((p) => [p.assetId, p.marketValue]),
+  );
+
+  const donut = portfolio.assets
+    .filter((p) => p.marketValue > 0)
+    .map((p) => ({ name: p.asset?.label ?? p.assetId, value: p.marketValue }));
+
+  const totalValue = portfolio.totals.marketValue;
+  const allocationRows = workbook.allocation.map((target) => {
+    const current = target.actifs.reduce(
+      (s, id) => s + (totalsByAsset.get(id) ?? 0),
+      0,
+    );
+    const targetEur = totalValue * target.pourcentage;
+    return {
+      category: target.categorie,
+      current,
+      target: targetEur,
+      currentPct: totalValue > 0 ? current / totalValue : 0,
+      targetPct: target.pourcentage,
+      diffEur: current - targetEur,
+    };
+  });
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {workbook.transactions.length} transactions • {portfolio.assets.length}{" "}
+            actifs en portefeuille.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        <SyncButton />
+      </header>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Valeur totale</CardTitle>
+            <CardValue>{formatEuro(portfolio.totals.marketValue)}</CardValue>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Capital investi (net)</CardTitle>
+            <CardValue>{formatEuro(portfolio.totals.netInvested)}</CardValue>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>P&amp;L latente</CardTitle>
+            <CardValue className={signClass(portfolio.totals.unrealizedPnL)}>
+              {formatEuro(portfolio.totals.unrealizedPnL)}
+            </CardValue>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Performance globale</CardTitle>
+            <CardValue className={signClass(portfolio.totals.totalReturn)}>
+              {formatPercent(portfolio.totals.totalReturnPct)}
+            </CardValue>
+            <p className="text-xs text-zinc-500">
+              {formatEuro(portfolio.totals.totalReturn)} • frais{" "}
+              {formatEuro(portfolio.totals.fees)}
+            </p>
+          </CardHeader>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Évolution du patrimoine</CardTitle>
+          <p className="text-xs text-zinc-500">
+            Valeur (zone verte) vs capital investi cumulé (pointillé).
+          </p>
+        </CardHeader>
+        <CardBody>
+          <PortfolioCurve data={history} />
+        </CardBody>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Répartition actuelle</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <AllocationDonut data={donut} />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Allocation vs cible</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <AllocationVsTarget rows={allocationRows} />
+          </CardBody>
+        </Card>
+      </div>
     </div>
   );
 }

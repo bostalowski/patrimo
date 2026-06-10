@@ -1,0 +1,147 @@
+import Link from "next/link";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { loadWorkbook } from "@/lib/excel";
+import { buildPortfolio } from "@/lib/portfolio";
+import { readPriceMap } from "@/lib/store";
+import {
+  formatEuro,
+  formatPercent,
+  formatQuantity,
+  signClass,
+} from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
+
+export default async function ComptesPage() {
+  const workbook = loadWorkbook();
+  const priceMap = await readPriceMap(workbook.assets);
+  const portfolio = buildPortfolio(workbook, priceMap);
+
+  const accountMap = new Map(workbook.accounts.map((a) => [a.id, a]));
+  const byEnvelope = new Map<string, typeof portfolio.accounts>();
+  for (const account of portfolio.accounts) {
+    const env = account.envelope;
+    const list = byEnvelope.get(env) ?? [];
+    list.push(account);
+    byEnvelope.set(env, list);
+  }
+
+  const envelopes = Array.from(byEnvelope.entries()).sort(([, a], [, b]) => {
+    const va = a.reduce((s, c) => s + c.marketValue, 0);
+    const vb = b.reduce((s, c) => s + c.marketValue, 0);
+    return vb - va;
+  });
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Comptes</h1>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Positions par enveloppe fiscale et par compte.
+        </p>
+      </header>
+
+      {envelopes.map(([envelope, accounts]) => {
+        const envelopeValue = accounts.reduce((s, c) => s + c.marketValue, 0);
+        const envelopeBasis = accounts.reduce((s, c) => s + c.costBasis, 0);
+        const envelopePnL = accounts.reduce((s, c) => s + c.unrealizedPnL, 0);
+        return (
+          <Card key={envelope}>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
+              <div>
+                <CardTitle>{envelope}</CardTitle>
+                <p className="mt-1 text-lg font-semibold tracking-tight">
+                  {formatEuro(envelopeValue)}
+                  <span className={`ml-2 text-sm ${signClass(envelopePnL)}`}>
+                    {envelopePnL >= 0 ? "+" : ""}
+                    {formatEuro(envelopePnL)}
+                    {envelopeBasis > 0 && (
+                      <span className="ml-1 text-xs">
+                        ({formatPercent(envelopePnL / envelopeBasis)})
+                      </span>
+                    )}
+                  </span>
+                </p>
+              </div>
+            </CardHeader>
+            <CardBody className="space-y-4 px-0">
+              {accounts.map((account) => {
+                const meta = accountMap.get(account.accountId);
+                return (
+                  <div key={account.accountId}>
+                    <div className="flex items-baseline justify-between gap-4 px-6 pb-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-medium">
+                          {meta?.label ?? account.accountId}
+                        </h3>
+                        <Badge variant="default">{meta?.type ?? "—"}</Badge>
+                      </div>
+                      <div className="text-xs font-mono text-zinc-500">
+                        {formatEuro(account.marketValue)}
+                        {account.cashInterest > 0 && (
+                          <span className="ml-2 text-emerald-600">
+                            + {formatEuro(account.cashInterest)} intérêts
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <Table>
+                      <THead>
+                        <TR>
+                          <TH>Actif</TH>
+                          <TH className="text-right">Quantité</TH>
+                          <TH className="text-right">PRU</TH>
+                          <TH className="text-right">Valeur</TH>
+                          <TH className="text-right">P&amp;L</TH>
+                        </TR>
+                      </THead>
+                      <TBody>
+                        {account.positions.map((p) => (
+                          <TR key={p.assetId}>
+                            <TD>
+                              <Link
+                                href={`/actifs/${encodeURIComponent(p.assetId)}`}
+                                className="font-medium hover:underline"
+                              >
+                                {p.asset?.label ?? p.assetId}
+                              </Link>
+                            </TD>
+                            <TD className="text-right font-mono text-xs">
+                              {formatQuantity(p.quantity)}
+                            </TD>
+                            <TD className="text-right font-mono text-xs">
+                              {p.quantity > 0 ? formatEuro(p.pru, true) : "—"}
+                            </TD>
+                            <TD className="text-right font-mono text-xs">
+                              {p.currentPrice !== null
+                                ? formatEuro(p.marketValue)
+                                : "—"}
+                            </TD>
+                            <TD
+                              className={`text-right font-mono text-xs ${signClass(p.unrealizedPnL)}`}
+                            >
+                              {p.currentPrice !== null
+                                ? formatEuro(p.unrealizedPnL)
+                                : "—"}
+                            </TD>
+                          </TR>
+                        ))}
+                      </TBody>
+                    </Table>
+                  </div>
+                );
+              })}
+            </CardBody>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}

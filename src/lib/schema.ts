@@ -1,0 +1,77 @@
+import { z } from "zod";
+
+export const TransactionType = z.enum([
+  "ACHAT",
+  "VENTE",
+  "DIVIDENDE",
+  "INTERET",
+  "TRANSFERT",
+  "DEPOT",
+  "RETRAIT",
+]);
+export type TransactionType = z.infer<typeof TransactionType>;
+
+export const AssetType = z.enum(["CRYPTO", "ETF", "ACTION", "FCPE", "CASH"]);
+export type AssetType = z.infer<typeof AssetType>;
+
+export const PriceSource = z.enum(["coingecko", "yahoo", "investir", "manual"]);
+export type PriceSource = z.infer<typeof PriceSource>;
+
+export const AccountType = z.enum([
+  "BROKER",
+  "EXCHANGE_CRYPTO",
+  "WALLET_CRYPTO",
+  "EPARGNE_SALARIALE",
+]);
+
+export const Envelope = z.enum(["CTO", "PEA", "PEE", "AV"]);
+export type Envelope = z.infer<typeof Envelope>;
+
+export const Transaction = z.object({
+  date: z.coerce.date(),
+  type: TransactionType,
+  compte: z.string().min(1),
+  compteDestination: z.string().optional(),
+  actif: z.string().min(1),
+  quantite: z.number().nonnegative(),
+  prixUnitaire: z.number().nullable(),
+  devise: z.string().default("EUR"),
+  frais: z.number().nonnegative().default(0),
+  fraisDevise: z.string().default("EUR"),
+  notes: z.string().optional(),
+});
+export type Transaction = z.infer<typeof Transaction>;
+
+export const Asset = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  type: AssetType,
+  isin: z.string().optional(),
+  ticker: z.string().optional(),
+  source: PriceSource,
+  param: z.string().optional(),
+  currency: z.string().default("EUR"),
+});
+export type Asset = z.infer<typeof Asset>;
+
+export const Account = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  type: AccountType,
+  envelope: Envelope,
+});
+export type Account = z.infer<typeof Account>;
+
+export const AllocationTarget = z.object({
+  categorie: z.string().min(1),
+  pourcentage: z.number().nonnegative().max(1),
+  actifs: z.array(z.string()),
+});
+export type AllocationTarget = z.infer<typeof AllocationTarget>;
+
+export type Workbook = {
+  transactions: Transaction[];
+  assets: Asset[];
+  accounts: Account[];
+  allocation: AllocationTarget[];
+};
