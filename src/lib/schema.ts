@@ -69,6 +69,35 @@ export const AllocationTarget = z.object({
 });
 export type AllocationTarget = z.infer<typeof AllocationTarget>;
 
+const DcaLineLegacy = z.object({
+  assetId: z.string().min(1),
+  targetPct: z.number().min(0).max(1),
+});
+
+const DcaLineModern = z.object({
+  label: z.string().optional(),
+  assetIds: z.array(z.string().min(1)).min(1),
+  targetPct: z.number().min(0).max(1),
+});
+
+export const DcaLine = z
+  .union([DcaLineModern, DcaLineLegacy])
+  .transform((line) =>
+    "assetId" in line
+      ? { assetIds: [line.assetId], targetPct: line.targetPct, label: undefined }
+      : line,
+  );
+export type DcaLine = z.infer<typeof DcaLine>;
+
+export const DcaConfig = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  envelope: Envelope,
+  monthlyAmount: z.number().nonnegative(),
+  lines: z.array(DcaLine).min(1),
+});
+export type DcaConfig = z.infer<typeof DcaConfig>;
+
 export type Workbook = {
   transactions: Transaction[];
   assets: Asset[];
