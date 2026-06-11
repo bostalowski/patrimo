@@ -344,19 +344,7 @@ async function bootstrap() {
 app.whenReady().then(bootstrap);
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
-});
-
-app.on("activate", async () => {
-  if (mainWindow) return;
-  try {
-    const url = isDev ? DEV_URL : nextServerUrl || (await startNextServer());
-    await createMainWindow(url);
-  } catch (error) {
-    log(`Activate error: ${error instanceof Error ? error.stack : error}`);
-  }
+  app.quit();
 });
 
 app.on("before-quit", stopNextServer);
