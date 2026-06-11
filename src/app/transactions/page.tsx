@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import {
   TransactionsTable,
+  type AccountOption,
   type TransactionRow,
 } from "./transactions-table";
 
@@ -14,6 +15,16 @@ export default function TransactionsPage() {
   const { transactions, assets, accounts } = loadWorkbook();
   const assetLabels = new Map(assets.map((a) => [a.id, a.label]));
   const accountLabels = new Map(accounts.map((a) => [a.id, a.label]));
+
+  const usedAccountIds = new Set<string>();
+  for (const tx of transactions) {
+    usedAccountIds.add(tx.compte);
+    if (tx.compteDestination) usedAccountIds.add(tx.compteDestination);
+  }
+  const accountOptions: AccountOption[] = accounts
+    .filter((a) => usedAccountIds.has(a.id))
+    .map((a) => ({ id: a.id, label: a.label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   const rows: TransactionRow[] = transactions.map((tx, idx) => {
     const gross = tx.prixUnitaire !== null ? tx.quantite * tx.prixUnitaire : null;
@@ -60,7 +71,7 @@ export default function TransactionsPage() {
           <CardTitle>Historique complet</CardTitle>
         </CardHeader>
         <CardBody className="px-0">
-          <TransactionsTable rows={rows} />
+          <TransactionsTable rows={rows} accounts={accountOptions} />
         </CardBody>
       </Card>
     </div>
