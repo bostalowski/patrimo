@@ -11,7 +11,6 @@ import { buildHistorySeries } from "@/lib/portfolio-history";
 import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
 import { PortfolioCurveCard } from "@/components/charts/portfolio-curve-card";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
-import { AllocationVsTarget } from "@/components/charts/allocation-vs-target";
 import { SyncButton } from "@/components/sync-button";
 import { formatEuro, formatPercent, signClass } from "@/lib/utils";
 
@@ -27,30 +26,9 @@ export default async function DashboardPage() {
   const portfolio = buildPortfolio(workbook, priceMap);
   const history = buildHistorySeries(workbook, priceStore, manualStore);
 
-  const totalsByAsset = new Map(
-    portfolio.assets.map((p) => [p.assetId, p.marketValue]),
-  );
-
   const donut = portfolio.assets
     .filter((p) => p.marketValue > 0)
     .map((p) => ({ name: p.asset?.label ?? p.assetId, value: p.marketValue }));
-
-  const totalValue = portfolio.totals.marketValue;
-  const allocationRows = workbook.allocation.map((target) => {
-    const current = target.actifs.reduce(
-      (s, id) => s + (totalsByAsset.get(id) ?? 0),
-      0,
-    );
-    const targetEur = totalValue * target.pourcentage;
-    return {
-      category: target.categorie,
-      current,
-      target: targetEur,
-      currentPct: totalValue > 0 ? current / totalValue : 0,
-      targetPct: target.pourcentage,
-      diffEur: current - targetEur,
-    };
-  });
 
   return (
     <div className="space-y-8">
@@ -102,25 +80,14 @@ export default async function DashboardPage() {
 
       <PortfolioCurveCard history={history} />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Répartition actuelle</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <AllocationDonut data={donut} />
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Allocation vs cible</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <AllocationVsTarget rows={allocationRows} />
-          </CardBody>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Répartition actuelle</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <AllocationDonut data={donut} />
+        </CardBody>
+      </Card>
     </div>
   );
 }

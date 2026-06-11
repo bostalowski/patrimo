@@ -90,9 +90,6 @@ TRANSACTIONS_TO_APPEND: list[dict] = [
 ]
 
 
-PEE_ALLOCATION_CATEGORY = "PEE diversifié"
-
-
 def ensure_assets(ws) -> int:
     headers = {cell.value: cell.column for cell in ws[1]}
     existing_ids = {
@@ -167,36 +164,14 @@ def append_transactions(ws) -> int:
     return added
 
 
-def update_allocation(ws) -> bool:
-    headers = {cell.value: cell.column for cell in ws[1]}
-    cat_col = headers["Catégorie"]
-    actifs_col = headers["Actifs (séparés par virgule)"]
-    new_ids = {a["id"] for a in ASSETS_TO_ENSURE if a["type"] == "FCPE"}
-    if not new_ids:
-        return False
-    for row in ws.iter_rows(min_row=2):
-        if row[cat_col - 1].value != PEE_ALLOCATION_CATEGORY:
-            continue
-        cell = row[actifs_col - 1]
-        current = [s.strip() for s in str(cell.value or "").split(",") if s.strip()]
-        merged = current + [i for i in new_ids if i not in current]
-        if merged == current:
-            return False
-        cell.value = ",".join(merged)
-        return True
-    return False
-
-
 def main() -> None:
     wb = openpyxl.load_workbook(EXCEL)
     assets_added = ensure_assets(wb["Actifs"])
     txs_added = append_transactions(wb["Transactions"])
-    alloc_updated = update_allocation(wb["Allocation cible"])
     wb.save(EXCEL)
     print(
         f"Assets added: {assets_added}\n"
-        f"Transactions added: {txs_added}\n"
-        f"Allocation updated: {alloc_updated}"
+        f"Transactions added: {txs_added}"
     )
 
 

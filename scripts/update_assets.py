@@ -118,32 +118,14 @@ def update_actifs(ws) -> tuple[int, int]:
     return renamed, updated
 
 
-def update_allocation(ws) -> int:
-    count = 0
-    headers = {cell.value: cell.column for cell in ws[1]}
-    col = headers["Actifs (séparés par virgule)"]
-    for row in ws.iter_rows(min_row=2):
-        cell = row[col - 1]
-        if cell.value is None:
-            continue
-        ids = [s.strip() for s in str(cell.value).split(",")]
-        new_ids = [ID_RENAMES.get(i, i) for i in ids]
-        if new_ids != ids:
-            cell.value = ",".join(new_ids)
-            count += 1
-    return count
-
-
 def main() -> None:
     wb = openpyxl.load_workbook(EXCEL)
     tx_count = rename_transactions(wb["Transactions"])
     renamed, updated = update_actifs(wb["Actifs"])
-    alloc_count = update_allocation(wb["Allocation cible"])
     wb.save(EXCEL)
     print(
         f"Transactions renamed: {tx_count}\n"
-        f"Actifs renamed: {renamed}, updated: {updated}\n"
-        f"Allocation rows updated: {alloc_count}"
+        f"Actifs renamed: {renamed}, updated: {updated}"
     )
 
 

@@ -4,7 +4,6 @@ import { resolve } from "node:path";
 import * as XLSX from "xlsx";
 import {
   Account,
-  AllocationTarget,
   Asset,
   Transaction,
   type Workbook,
@@ -13,7 +12,6 @@ import {
 const SHEET_TRANSACTIONS = "Transactions";
 const SHEET_ACTIFS = "Actifs";
 const SHEET_COMPTES = "Comptes";
-const SHEET_ALLOCATION = "Allocation cible";
 
 function getExcelPath(): string {
   const raw = process.env.EXCEL_PATH;
@@ -98,26 +96,6 @@ function parseAccounts(rows: Record<string, unknown>[]): Account[] {
   });
 }
 
-function parseAllocation(rows: Record<string, unknown>[]): AllocationTarget[] {
-  return rows.map((row, i) => {
-    const actifsRaw = (row["Actifs (séparés par virgule)"] as string) ?? "";
-    const parsed = AllocationTarget.safeParse({
-      categorie: row["Catégorie"],
-      pourcentage: toNumber(row["Pourcentage cible"]) ?? 0,
-      actifs: actifsRaw
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-    });
-    if (!parsed.success) {
-      throw new Error(
-        `Invalid allocation target at row ${i + 2}: ${parsed.error.message}`,
-      );
-    }
-    return parsed.data;
-  });
-}
-
 function coerceDate(value: unknown): Date | string {
   if (value instanceof Date) return value;
   if (typeof value === "number") {
@@ -161,11 +139,10 @@ export function loadWorkbook(): Workbook {
   const transactions = parseTransactions(readSheet(sheet, SHEET_TRANSACTIONS));
   const assets = parseAssets(readSheet(sheet, SHEET_ACTIFS));
   const accounts = parseAccounts(readSheet(sheet, SHEET_COMPTES));
-  const allocation = parseAllocation(readSheet(sheet, SHEET_ALLOCATION));
 
   transactions.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  const workbook: Workbook = { transactions, assets, accounts, allocation };
+  const workbook: Workbook = { transactions, assets, accounts };
   cache = { mtime, workbook };
   return workbook;
 }

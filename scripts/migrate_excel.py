@@ -1,7 +1,7 @@
-"""Migrate the legacy single-sheet Investissement.xlsx into the new 4-sheet schema.
+"""Migrate the legacy single-sheet Investissement.xlsx into the new 3-sheet schema.
 
 Source : the original Google-Sheets-exported xlsx (single "Mouvements" tab).
-Target : a clean xlsx with Transactions / Actifs / Comptes / Allocation cible tabs.
+Target : a clean xlsx with Transactions / Actifs / Comptes tabs.
 
 Run :
     python3 scripts/migrate_excel.py \
@@ -224,7 +224,6 @@ def migrate(src: Path, dst: Path) -> None:
     write_transactions(out_wb, transactions)
     write_actifs(out_wb, seen_assets)
     write_comptes(out_wb, seen_accounts | {"Ledger"})
-    write_allocation(out_wb)
 
     dst.parent.mkdir(parents=True, exist_ok=True)
     out_wb.save(dst)
@@ -319,25 +318,6 @@ def write_comptes(wb, seen_directions: set[str]) -> None:
         if direction not in seen_directions:
             continue
         ws.append([c["id"], c["label"], c["type"], c["envelope"]])
-
-
-def write_allocation(wb) -> None:
-    ws = wb.create_sheet("Allocation cible")
-    headers = ["Catégorie", "Pourcentage cible", "Actifs (séparés par virgule)"]
-    ws.append(headers)
-    style_header(ws, len(headers))
-    autosize(ws, [22, 18, 60])
-    ws.freeze_panes = "A2"
-
-    rows = [
-        ("MSCI World", 0.70, "ISHARE-MSCI-WORLD,AMUNDI-MSCI-WORLD"),
-        ("Émergent", 0.10, "AMUNDI-EMERGING-ESG"),
-        ("Bitcoin", 0.05, "BTC"),
-        ("PEE diversifié", 0.15, "FCPE-AMUNDI-EQUILIBRE,FCPE-MIROVA-INTL,FCPE-WATER"),
-    ]
-    for category, pct, assets in rows:
-        ws.append([category, pct, assets])
-        ws.cell(row=ws.max_row, column=2).number_format = "0.00%"
 
 
 def main() -> None:
