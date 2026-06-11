@@ -7,6 +7,18 @@ export type DailyPoint = {
   invested: number;
 };
 
+export type AssetHistorySeries = {
+  assetId: string;
+  label: string;
+  values: number[];
+  invested: number[];
+};
+
+export type HistorySeries = {
+  dates: string[];
+  perAsset: AssetHistorySeries[];
+};
+
 const INCOME_ASSET = "INTERETS";
 
 function toIsoDate(date: Date): string {
@@ -77,50 +89,88 @@ function findPriceAtOrBefore(
   return best;
 }
 
+export function aggregateHistory(
+  history: HistorySeries,
+  selectedAssetIds?: ReadonlySet<string>,
+): DailyPoint[] {
+  const includes = (id: string) =>
+    selectedAssetIds === undefined || selectedAssetIds.has(id);
+  return history.dates.map((date, index) => {
+    let value = 0;
+    let invested = 0;
+    for (const series of history.perAsset) {
+      if (!includes(series.assetId)) continue;
+      value += series.values[index] ?? 0;
+      invested += series.invested[index] ?? 0;
+    }
+    return { date, value, invested };
+  });
+}
+
 export function buildHistorySeries(
   workbook: Workbook,
   prices: PriceStore,
   manual: PriceStore,
-): DailyPoint[] {
+): HistorySeries {
   const txs = [...workbook.transactions].sort(
     (a, b) => a.date.getTime() - b.date.getTime(),
   );
-  if (txs.length === 0) return [];
+  if (txs.length === 0) return { dates: [], perAsset: [] };
 
   const firstDate = toIsoDate(txs[0].date);
   const lastDate = toIsoDate(new Date());
 
-  const sourceByAsset = new Map(workbook.assets.map((a) => [a.id, a.source]));
-
+  const assetById = new Map(workbook.assets.map((a) => [a.id, a]));
   const qtyByAsset = new Map<string, number>();
   const investedByAsset = new Map<string, number>();
+  const series = new Map<string, AssetHistorySeries>();
+
+  const dates: string[] = [];
+
+  const ensureSeries = (assetId: string): AssetHistorySeries => {
+    const existing = series.get(assetId);
+    if (existing) return existing;
+    const created: AssetHistorySeries = {
+      assetId,
+      label: assetById.get(assetId)?.label ?? assetId,
+      values: new Array(dates.length).fill(0),
+      invested: new Array(dates.length).fill(0),
+    };
+    series.set(assetId, created);
+    return created;
+  };
 
   let txIndex = 0;
-  const points: DailyPoint[] = [];
 
   for (let cursor = firstDate; cursor <= lastDate; cursor = addDays(cursor, 1)) {
-    while (
-      txIndex < txs.length &&
-      toIsoDate(txs[txIndex].date) <= cursor
-    ) {
-      applyTxToQuantities(txs[txIndex], qtyByAsset, investedByAsset);
+    while (txIndex < txs.length && toIsoDate(txs[txIndex].date) <= cursor) {
+      const tx = txs[txIndex];
+      applyTxToQuantities(tx, qtyByAsset, investedByAsset);
+      if (tx.actif !== INCOME_ASSET) ensureSeries(tx.actif);
       txIndex += 1;
     }
 
-    let value = 0;
-    let invested = 0;
-    for (const [assetId, qty] of qtyByAsset.entries()) {
-      if (assetId === INCOME_ASSET) continue;
-      const source = sourceByAsset.get(assetId);
+    const dateIndex = dates.length;
+    dates.push(cursor);
+
+    for (const assetSeries of series.values()) {
+      const assetId = assetSeries.assetId;
+      const qty = qtyByAsset.get(assetId) ?? 0;
+      const source = assetById.get(assetId)?.source;
       const history = source === "manual" ? manual[assetId] : prices[assetId];
       const price = history ? findPriceAtOrBefore(history, cursor) : null;
-      if (price !== null && price !== undefined) {
-        value += qty * price;
-      }
-      invested += investedByAsset.get(assetId) ?? 0;
+      const value = price !== null && price !== undefined ? qty * price : 0;
+      assetSeries.values[dateIndex] = value;
+      assetSeries.invested[dateIndex] = investedByAsset.get(assetId) ?? 0;
     }
-    points.push({ date: cursor, value, invested });
   }
 
-  return points;
+  const perAsset = [...series.values()].sort((a, b) => {
+    const lastA = a.values[a.values.length - 1] ?? 0;
+    const lastB = b.values[b.values.length - 1] ?? 0;
+    if (lastA !== lastB) return lastB - lastA;
+    return a.label.localeCompare(b.label);
+  });
+
+  return { dates, perAsset };
 }
