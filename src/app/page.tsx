@@ -9,7 +9,7 @@ import { loadWorkbook } from "@/lib/excel";
 import { buildPortfolio } from "@/lib/portfolio";
 import { buildHistorySeries } from "@/lib/portfolio-history";
 import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
-import { PortfolioCurve } from "@/components/charts/portfolio-curve";
+import { PortfolioCurveCard } from "@/components/charts/portfolio-curve-card";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { AllocationVsTarget } from "@/components/charts/allocation-vs-target";
 import { SyncButton } from "@/components/sync-button";
@@ -100,17 +100,7 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Évolution du patrimoine</CardTitle>
-          <p className="text-xs text-zinc-500">
-            Valeur (zone verte) vs capital investi cumulé (pointillé).
-          </p>
-        </CardHeader>
-        <CardBody>
-          <PortfolioCurve data={history} />
-        </CardBody>
-      </Card>
+      <PortfolioCurveCard history={history} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
