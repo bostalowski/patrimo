@@ -1,7 +1,12 @@
 {
   "name": "financial-graphs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
+  "description": "Application locale de suivi de patrimoine : lit un Excel comme source de vérité, récupère les cours en ligne et calcule positions, PRU et P&L.",
+  "author": {
+    "name": "Bastien Ostalowski",
+    "email": "bastien.ostalowski@swile.co"
+  },
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "next dev",
