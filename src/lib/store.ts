@@ -9,6 +9,7 @@ const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
   : resolve(process.cwd(), "data");
 const PRICES_FILE = resolve(DATA_DIR, "prices.json");
 const MANUAL_PRICES_FILE = resolve(DATA_DIR, "manual-prices.json");
+const BENCHMARKS_FILE = resolve(DATA_DIR, "benchmarks.json");
 const DCA_CONFIGS_FILE = resolve(DATA_DIR, "dca-configs.json");
 
 export type AssetPriceHistory = Record<string, number>;
@@ -43,6 +44,14 @@ export async function readManualPrices(): Promise<PriceStore> {
 
 export async function writeManualPrices(store: PriceStore): Promise<void> {
   await writeJson(MANUAL_PRICES_FILE, store);
+}
+
+export async function readBenchmarks(): Promise<PriceStore> {
+  return readJson<PriceStore>(BENCHMARKS_FILE, {});
+}
+
+export async function writeBenchmarks(store: PriceStore): Promise<void> {
+  await writeJson(BENCHMARKS_FILE, store);
 }
 
 function latestPrice(history: AssetPriceHistory | undefined): number | null {
