@@ -39,7 +39,7 @@ async function fetchChart(
 
 export async function fetchYahooHistory(
   symbol: string,
-  range = "1y",
+  range = "5y",
 ): Promise<AssetPriceHistory> {
   const data = await fetchChart(symbol, range, "1d");
   const result = data.chart.result?.[0];
