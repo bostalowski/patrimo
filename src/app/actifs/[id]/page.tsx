@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ExternalLink } from "lucide-react";
 import {
   Card,
   CardBody,
@@ -13,6 +13,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { AssetPriceCurve } from "@/components/charts/asset-price-curve";
 import { loadWorkbook } from "@/lib/excel";
 import { buildPortfolio } from "@/lib/portfolio";
+import { getAssetSourceUrl, getSourceLabel } from "@/lib/prices/source-url";
 import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
 import {
   formatDate,
@@ -66,6 +67,8 @@ export default async function AssetDetailPage({
         .sort((a, b) => (a.date < b.date ? -1 : 1))
     : [];
 
+  const sourceUrl = getAssetSourceUrl(asset);
+
   return (
     <div className="space-y-6">
       <Link
@@ -77,10 +80,21 @@ export default async function AssetDetailPage({
       </Link>
 
       <header>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{asset.label}</h1>
           <Badge variant="default">{asset.type}</Badge>
           <Badge variant="info">{asset.source}</Badge>
+          {sourceUrl && (
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-sky-600 hover:underline dark:text-sky-400"
+            >
+              Voir sur {getSourceLabel(asset.source)}
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
         </div>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           ID <code>{asset.id}</code>
