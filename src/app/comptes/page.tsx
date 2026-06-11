@@ -71,22 +71,22 @@ export default async function ComptesPage() {
                 </p>
               </div>
             </CardHeader>
-            <CardBody className="space-y-4 px-0">
+            <CardBody className="divide-y divide-zinc-200 px-0 dark:divide-zinc-800">
               {accounts.map((account) => {
                 const meta = accountMap.get(account.accountId);
                 return (
-                  <div key={account.accountId}>
-                    <div className="flex items-baseline justify-between gap-4 px-6 pb-2">
+                  <div key={account.accountId} className="pt-4 first:pt-0">
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-zinc-50/70 px-6 py-3 dark:bg-zinc-900/40">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-medium">
+                        <h3 className="text-base font-semibold tracking-tight">
                           {meta?.label ?? account.accountId}
                         </h3>
                         <Badge variant="default">{meta?.type ?? "—"}</Badge>
                       </div>
-                      <div className="text-xs font-mono text-zinc-500">
+                      <div className="font-mono text-sm font-medium text-zinc-700 dark:text-zinc-300">
                         {formatEuro(account.marketValue)}
                         {account.cashInterest > 0 && (
-                          <span className="ml-2 text-emerald-600">
+                          <span className="ml-2 text-xs font-normal text-emerald-600">
                             + {formatEuro(account.cashInterest)} intérêts
                           </span>
                         )}
