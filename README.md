@@ -126,7 +126,7 @@ défaut de `EXCEL_PATH`. Le fichier est gitignored (`.gitignore`).
 
 ### Fichier Excel — `data/Investissement.xlsx`
 
-Quatre onglets :
+Trois onglets :
 
 - **Transactions** : `Date · Type · Compte · Compte destination · Actif ·
   Quantité · Prix unitaire · Devise · Frais · Frais devise · Notes`. Types
@@ -135,8 +135,9 @@ Quatre onglets :
 - **Actifs** : `ID · Libellé · Type · ISIN · Ticker · Source prix · Param
   source · Devise`. Sources : `coingecko`, `yahoo`, `manual`.
 - **Comptes** : `ID · Libellé · Type · Enveloppe` (CTO, PEA, PEE, AV).
-- **Allocation cible** : `Catégorie · Pourcentage cible · Actifs (séparés par
-  virgule)`.
+
+Les cibles d'allocation sont gérées dans le **DCA Planner** (config par
+enveloppe persistée dans `data/dca-configs.json`).
 
 Pour migrer un ancien fichier (schéma single-sheet « Mouvements »), utilise :
 

@@ -62,13 +62,6 @@ export const Account = z.object({
 });
 export type Account = z.infer<typeof Account>;
 
-export const AllocationTarget = z.object({
-  categorie: z.string().min(1),
-  pourcentage: z.number().nonnegative().max(1),
-  actifs: z.array(z.string()),
-});
-export type AllocationTarget = z.infer<typeof AllocationTarget>;
-
 const DcaLineLegacy = z.object({
   assetId: z.string().min(1),
   targetPct: z.number().min(0).max(1),
@@ -102,5 +95,4 @@ export type Workbook = {
   transactions: Transaction[];
   assets: Asset[];
   accounts: Account[];
-  allocation: AllocationTarget[];
 };
