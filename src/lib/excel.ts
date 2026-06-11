@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import * as XLSX from "xlsx";
@@ -176,4 +176,46 @@ export function getAssetMap(): Map<string, Asset> {
 
 export function getAccountMap(): Map<string, Account> {
   return new Map(loadWorkbook().accounts.map((a) => [a.id, a]));
+}
+
+export function appendTransaction(transaction: Transaction): void {
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  const sheet = workbook.Sheets[SHEET_TRANSACTIONS];
+  if (!sheet) {
+    throw new Error(`Missing sheet "${SHEET_TRANSACTIONS}" in workbook.`);
+  }
+
+  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
+  const headers = (aoa[0] ?? []) as string[];
+  if (headers.length === 0) {
+    throw new Error(`Sheet "${SHEET_TRANSACTIONS}" has no header row.`);
+  }
+
+  const valueByHeader: Record<string, unknown> = {
+    Date: transaction.date,
+    Type: transaction.type,
+    Compte: transaction.compte,
+    "Compte destination": transaction.compteDestination ?? null,
+    Actif: transaction.actif,
+    "Quantité": transaction.quantite,
+    "Prix unitaire": transaction.prixUnitaire,
+    Devise: transaction.devise,
+    Frais: transaction.frais,
+    "Frais devise": transaction.fraisDevise,
+    Notes: transaction.notes ?? null,
+  };
+
+  const row = headers.map((h) => valueByHeader[h] ?? null);
+  XLSX.utils.sheet_add_aoa(sheet, [row], { origin: -1, cellDates: true });
+
+  const out = XLSX.write(workbook, {
+    type: "buffer",
+    bookType: "xlsx",
+    cellDates: true,
+  }) as Buffer;
+  writeFileSync(path, out);
+
+  cache = null;
 }
