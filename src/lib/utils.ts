@@ -11,7 +11,7 @@ const eurFormatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 2,
 });
 
-const eurFormatterPrecise = new Intl.NumberFormat("fr-FR", {
+const eurFormatterPreciseSmall = new Intl.NumberFormat("fr-FR", {
   style: "currency",
   currency: "EUR",
   minimumFractionDigits: 2,
@@ -36,7 +36,8 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
 
 export function formatEuro(value: number, precise = false): string {
   if (!Number.isFinite(value)) return "—";
-  return (precise ? eurFormatterPrecise : eurFormatter).format(value);
+  if (precise && Math.abs(value) < 1) return eurFormatterPreciseSmall.format(value);
+  return eurFormatter.format(value);
 }
 
 export function formatPercent(value: number): string {
