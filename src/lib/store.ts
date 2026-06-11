@@ -1,12 +1,15 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { Asset } from "@/lib/schema";
+import type { Asset, DcaConfig } from "@/lib/schema";
+import { DcaConfig as DcaConfigSchema } from "@/lib/schema";
+import { z } from "zod";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
   ? resolve(process.env.FINGRAPHS_DATA_DIR)
   : resolve(process.cwd(), "data");
 const PRICES_FILE = resolve(DATA_DIR, "prices.json");
 const MANUAL_PRICES_FILE = resolve(DATA_DIR, "manual-prices.json");
+const DCA_CONFIGS_FILE = resolve(DATA_DIR, "dca-configs.json");
 
 export type AssetPriceHistory = Record<string, number>;
 export type PriceStore = Record<string, AssetPriceHistory>;
@@ -58,4 +61,19 @@ export async function readPriceMap(assets: Asset[]): Promise<Map<string, number>
     if (value !== null) map.set(asset.id, value);
   }
   return map;
+}
+
+const DcaStoreSchema = z.object({
+  configs: z.array(DcaConfigSchema),
+});
+
+export async function readDcaConfigs(): Promise<DcaConfig[]> {
+  const raw = await readJson<unknown>(DCA_CONFIGS_FILE, { configs: [] });
+  const parsed = DcaStoreSchema.safeParse(raw);
+  if (!parsed.success) return [];
+  return parsed.data.configs;
+}
+
+export async function writeDcaConfigs(configs: DcaConfig[]): Promise<void> {
+  await writeJson(DCA_CONFIGS_FILE, { configs });
 }

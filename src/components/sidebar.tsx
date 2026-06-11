@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Calculator,
   Coins,
   LayoutDashboard,
   ListOrdered,
@@ -17,6 +18,7 @@ const navItems = [
   { href: "/actifs", label: "Actifs", icon: Coins },
   { href: "/comptes", label: "Comptes", icon: Wallet },
   { href: "/transactions", label: "Transactions", icon: ListOrdered },
+  { href: "/dca", label: "DCA", icon: Calculator },
   { href: "/prix-manuels", label: "Prix manuels", icon: Pencil },
 ];
 
