@@ -8,7 +8,13 @@ import {
 import { loadWorkbook } from "@/lib/excel";
 import { buildPortfolio } from "@/lib/portfolio";
 import { buildHistorySeries } from "@/lib/portfolio-history";
-import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
+import {
+  readBenchmarks,
+  readManualPrices,
+  readPriceMap,
+  readPrices,
+} from "@/lib/store";
+import { BENCHMARKS } from "@/lib/benchmarks";
 import { PortfolioCurveCard } from "@/components/charts/portfolio-curve-card";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { SyncButton } from "@/components/sync-button";
@@ -18,13 +24,20 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const workbook = loadWorkbook();
-  const [priceMap, priceStore, manualStore] = await Promise.all([
+  const [priceMap, priceStore, manualStore, benchmarkStore] = await Promise.all([
     readPriceMap(workbook.assets),
     readPrices(),
     readManualPrices(),
+    readBenchmarks(),
   ]);
   const portfolio = buildPortfolio(workbook, priceMap);
   const history = buildHistorySeries(workbook, priceStore, manualStore);
+
+  const wpea = BENCHMARKS.find((b) => b.id === "WPEA");
+  const benchmark =
+    wpea && benchmarkStore[wpea.id]
+      ? { label: wpea.label, history: benchmarkStore[wpea.id] }
+      : undefined;
 
   const donut = portfolio.assets
     .filter((p) => p.marketValue > 0)
@@ -78,7 +91,7 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <PortfolioCurveCard history={history} />
+      <PortfolioCurveCard history={history} benchmark={benchmark} />
 
       <Card>
         <CardHeader>

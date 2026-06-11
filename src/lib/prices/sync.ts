@@ -1,8 +1,15 @@
 import type { Asset } from "@/lib/schema";
-import { readPrices, writePrices, type PriceStore } from "@/lib/store";
+import {
+  readBenchmarks,
+  readPrices,
+  writeBenchmarks,
+  writePrices,
+  type PriceStore,
+} from "@/lib/store";
 import { fetchCoingeckoHistory } from "@/lib/prices/coingecko";
 import { fetchYahooHistory } from "@/lib/prices/yahoo";
 import { fetchInvestirHistory } from "@/lib/prices/investir";
+import { BENCHMARKS } from "@/lib/benchmarks";
 
 export type SyncResult = {
   asset: string;
@@ -67,5 +74,36 @@ export async function syncPrices(assets: Asset[]): Promise<SyncResult[]> {
   }
 
   await writePrices(store);
+  return results;
+}
+
+export async function syncBenchmarks(): Promise<SyncResult[]> {
+  const store: PriceStore = await readBenchmarks();
+  const results: SyncResult[] = [];
+
+  for (const benchmark of BENCHMARKS) {
+    try {
+      const history = await fetchYahooHistory(benchmark.symbol);
+      const existing = store[benchmark.id] ?? {};
+      const merged = { ...existing, ...history };
+      store[benchmark.id] = merged;
+      const added = Object.keys(merged).length - Object.keys(existing).length;
+      results.push({
+        asset: benchmark.id,
+        source: "yahoo",
+        status: "ok",
+        pointsAdded: added,
+      });
+    } catch (err) {
+      results.push({
+        asset: benchmark.id,
+        source: "yahoo",
+        status: "error",
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  await writeBenchmarks(store);
   return results;
 }

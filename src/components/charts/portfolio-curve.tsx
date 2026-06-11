@@ -12,9 +12,20 @@ import {
 } from "recharts";
 import { formatEuro } from "@/lib/utils";
 
-type Point = { date: string; value: number; invested: number };
+type Point = {
+  date: string;
+  value: number;
+  invested: number;
+  benchmark?: number | null;
+};
 
-export function PortfolioCurve({ data }: { data: Point[] }) {
+export function PortfolioCurve({
+  data,
+  benchmarkLabel,
+}: {
+  data: Point[];
+  benchmarkLabel?: string;
+}) {
   if (data.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center text-sm text-zinc-500">
@@ -72,8 +83,9 @@ export function PortfolioCurve({ data }: { data: Point[] }) {
               })
             }
             formatter={(value, name) => {
+              if (value === null || value === undefined) return ["—", labelFor(name, benchmarkLabel)];
               const v = typeof value === "number" ? value : 0;
-              return [formatEuro(v), name === "value" ? "Valeur" : "Capital investi"];
+              return [formatEuro(v), labelFor(name, benchmarkLabel)];
             }}
           />
           <Area
@@ -93,8 +105,27 @@ export function PortfolioCurve({ data }: { data: Point[] }) {
             dot={false}
             isAnimationActive={false}
           />
+          {benchmarkLabel ? (
+            <Line
+              type="monotone"
+              dataKey="benchmark"
+              stroke="#6366f1"
+              strokeWidth={2}
+              strokeDasharray="2 4"
+              dot={false}
+              connectNulls
+              isAnimationActive={false}
+            />
+          ) : null}
         </AreaChart>
       </ResponsiveContainer>
     </div>
   );
+}
+
+function labelFor(name: unknown, benchmarkLabel?: string): string {
+  if (name === "value") return "Valeur";
+  if (name === "invested") return "Capital investi";
+  if (name === "benchmark") return benchmarkLabel ?? "Benchmark";
+  return String(name ?? "");
 }

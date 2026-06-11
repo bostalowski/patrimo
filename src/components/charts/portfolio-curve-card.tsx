@@ -11,11 +11,24 @@ import {
 import { PortfolioCurve } from "@/components/charts/portfolio-curve";
 import {
   aggregateHistory,
+  buildBenchmarkSeries,
   type HistorySeries,
 } from "@/lib/portfolio-history";
-import { cn } from "@/lib/utils";
+import type { AssetPriceHistory } from "@/lib/store";
+import { cn, formatEuro, formatPercent, signClass } from "@/lib/utils";
 
-export function PortfolioCurveCard({ history }: { history: HistorySeries }) {
+type BenchmarkProp = {
+  label: string;
+  history: AssetPriceHistory;
+};
+
+export function PortfolioCurveCard({
+  history,
+  benchmark,
+}: {
+  history: HistorySeries;
+  benchmark?: BenchmarkProp;
+}) {
   const allIds = useMemo(
     () => history.perAsset.map((series) => series.assetId),
     [history],
@@ -28,11 +41,44 @@ export function PortfolioCurveCard({ history }: { history: HistorySeries }) {
     setSelected(new Set(allIds));
   }
 
+  const hasBenchmark = !!benchmark && Object.keys(benchmark.history).length > 0;
+  const [benchmarkOn, setBenchmarkOn] = useState(false);
+
   const aggregateSet = selected.size === allIds.length ? undefined : selected;
   const points = useMemo(
     () => aggregateHistory(history, aggregateSet),
     [history, aggregateSet],
   );
+
+  const benchmarkSeries = useMemo(() => {
+    if (!benchmarkOn || !benchmark) return null;
+    return buildBenchmarkSeries(points, benchmark.history);
+  }, [benchmarkOn, benchmark, points]);
+
+  const chartData = useMemo(() => {
+    if (!benchmarkSeries) return points;
+    return points.map((point, i) => ({
+      ...point,
+      benchmark: benchmarkSeries[i] ?? null,
+    }));
+  }, [points, benchmarkSeries]);
+
+  const comparison = useMemo(() => {
+    if (!benchmarkSeries || points.length === 0) return null;
+    const lastValue = points[points.length - 1]?.value ?? 0;
+    let lastBench: number | null = null;
+    for (let i = benchmarkSeries.length - 1; i >= 0; i--) {
+      const v = benchmarkSeries[i];
+      if (typeof v === "number") {
+        lastBench = v;
+        break;
+      }
+    }
+    if (lastBench === null || lastBench === 0) return null;
+    const diff = lastValue - lastBench;
+    const diffPct = diff / lastBench;
+    return { lastValue, lastBench, diff, diffPct };
+  }, [benchmarkSeries, points]);
 
   const summaryLabel = (() => {
     if (selected.size === 0) return "Aucun actif";
@@ -51,26 +97,98 @@ export function PortfolioCurveCard({ history }: { history: HistorySeries }) {
           <div>
             <CardTitle>Évolution du patrimoine</CardTitle>
             <p className="text-xs text-zinc-500">
-              Valeur (zone verte) vs capital investi cumulé (pointillé).
+              Valeur (zone verte) vs capital investi cumulé (pointillé)
+              {benchmarkOn && benchmark
+                ? ` vs ${benchmark.label} simulé (indigo)`
+                : ""}
+              .
             </p>
           </div>
-          {history.perAsset.length > 0 && (
-            <AssetFilter
-              assets={history.perAsset.map((s) => ({
-                id: s.assetId,
-                label: s.label,
-              }))}
-              selected={selected}
-              onChange={setSelected}
-              summaryLabel={summaryLabel}
-            />
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {hasBenchmark && benchmark && (
+              <BenchmarkToggle
+                label={benchmark.label}
+                active={benchmarkOn}
+                onToggle={() => setBenchmarkOn((v) => !v)}
+              />
+            )}
+            {history.perAsset.length > 0 && (
+              <AssetFilter
+                assets={history.perAsset.map((s) => ({
+                  id: s.assetId,
+                  label: s.label,
+                }))}
+                selected={selected}
+                onChange={setSelected}
+                summaryLabel={summaryLabel}
+              />
+            )}
+          </div>
         </div>
+        {benchmarkOn && benchmark && comparison && (
+          <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400">
+              Portefeuille{" "}
+              <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                {formatEuro(comparison.lastValue)}
+              </span>
+            </span>
+            <span className="text-zinc-500 dark:text-zinc-400">
+              {benchmark.label} simulé{" "}
+              <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                {formatEuro(comparison.lastBench)}
+              </span>
+            </span>
+            <span className={cn("font-semibold", signClass(comparison.diff))}>
+              {comparison.diff >= 0 ? "+" : ""}
+              {formatEuro(comparison.diff)} ({comparison.diff >= 0 ? "+" : ""}
+              {formatPercent(comparison.diffPct)}) vs {benchmark.label}
+            </span>
+          </div>
+        )}
       </CardHeader>
       <CardBody>
-        <PortfolioCurve data={points} />
+        <PortfolioCurve
+          data={chartData}
+          benchmarkLabel={
+            benchmarkOn && benchmark ? `${benchmark.label} simulé` : undefined
+          }
+        />
       </CardBody>
     </Card>
+  );
+}
+
+function BenchmarkToggle({
+  label,
+  active,
+  onToggle,
+}: {
+  label: string;
+  active: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium shadow-sm transition",
+        active
+          ? "border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 dark:hover:bg-indigo-900"
+          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900",
+      )}
+    >
+      <span
+        className={cn(
+          "inline-block size-2 rounded-full",
+          active ? "bg-indigo-500" : "bg-zinc-300 dark:bg-zinc-700",
+        )}
+        aria-hidden="true"
+      />
+      <span>Comparer à {label}</span>
+    </button>
   );
 }
 
