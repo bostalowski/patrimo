@@ -1,5 +1,5 @@
 import type { Transaction, Workbook } from "@/lib/schema";
-import type { PriceStore } from "@/lib/store";
+import type { AssetPriceHistory, PriceStore } from "@/lib/store";
 
 export type DailyPoint = {
   date: string;
@@ -173,4 +173,53 @@ export function buildHistorySeries(
   });
 
   return { dates, perAsset };
+}
+
+export function buildBenchmarkSeries(
+  points: DailyPoint[],
+  history: AssetPriceHistory,
+): (number | null)[] {
+  const result: (number | null)[] = new Array(points.length).fill(null);
+  if (points.length === 0) return result;
+
+  const historyDates = Object.keys(history).sort();
+  let histIdx = 0;
+  let lastPrice: number | null = null;
+
+  let prevInvested = 0;
+  let shares = 0;
+  let pendingCash = 0;
+
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i];
+    const delta = point.invested - prevInvested;
+    prevInvested = point.invested;
+
+    while (
+      histIdx < historyDates.length &&
+      historyDates[histIdx] <= point.date
+    ) {
+      const priceAtDate = history[historyDates[histIdx]];
+      if (typeof priceAtDate === "number" && priceAtDate > 0) {
+        lastPrice = priceAtDate;
+      }
+      histIdx += 1;
+    }
+
+    if (lastPrice === null) {
+      pendingCash += delta;
+      continue;
+    }
+
+    if (pendingCash !== 0) {
+      shares += pendingCash / lastPrice;
+      pendingCash = 0;
+    }
+    if (delta !== 0) {
+      shares += delta / lastPrice;
+    }
+    result[i] = shares * lastPrice;
+  }
+
+  return result;
 }
