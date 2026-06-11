@@ -17,9 +17,6 @@
 /.next/
 /out/
 
-# production
-/build
-
 # misc
 .DS_Store
 *.pem
@@ -44,3 +41,11 @@ next-env.d.ts
 # local price cache, manual NAV inputs, personal portfolio data
 /data/prices.json
 /data/manual-prices.json
+
+# electron build artifacts
+/release
+
+# icon generation intermediates
+/build/icon-source.png
+/build/icon-1024.png
+/build/icon.iconset

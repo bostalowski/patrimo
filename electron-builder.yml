@@ -1,0 +1,58 @@
+appId: com.bastien.financial-graphs
+productName: Financial Graphs
+copyright: Bastien Ostalowski
+asar: true
+directories:
+  output: release
+  buildResources: build
+files:
+  - electron/**/*
+  - package.json
+  - "!**/.DS_Store"
+  - "!node_modules/**"
+extraResources:
+  - from: .next/standalone
+    to: standalone
+    filter:
+      - "**/*"
+      - "!**/.env*"
+      - "!**/data/**"
+      - "!**/src/**"
+      - "!**/scripts/**"
+      - "!**/*.md"
+      - "!**/eslint.config.*"
+      - "!**/postcss.config.*"
+      - "!**/tsconfig*.json"
+      - "!**/tsconfig.tsbuildinfo"
+      - "!**/electron-builder.*"
+      - "!**/electron/**"
+      - "!**/release/**"
+      - "!**/.next/cache/**"
+  - from: .next/static
+    to: standalone/.next/static
+    filter:
+      - "**/*"
+  - from: public
+    to: standalone/public
+    filter:
+      - "**/*"
+  - ".env.local.example"
+  - from: build/icon.png
+    to: icon.png
+mac:
+  category: public.app-category.finance
+  icon: build/icon.icns
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+    - target: zip
+      arch:
+        - arm64
+        - x64
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  identity: null
+dmg:
+  writeUpdateInfo: false

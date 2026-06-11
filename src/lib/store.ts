@@ -2,7 +2,9 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { Asset } from "@/lib/schema";
 
-const DATA_DIR = resolve(process.cwd(), "data");
+const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
+  ? resolve(process.env.FINGRAPHS_DATA_DIR)
+  : resolve(process.cwd(), "data");
 const PRICES_FILE = resolve(DATA_DIR, "prices.json");
 const MANUAL_PRICES_FILE = resolve(DATA_DIR, "manual-prices.json");
 

@@ -7,12 +7,73 @@ la main.
 
 ## Démarrage
 
+### Mode développement (navigateur)
+
 ```bash
 npm install
 npm run dev
 ```
 
 Ouvre [http://localhost:3000](http://localhost:3000).
+
+### Mode développement (fenêtre Electron)
+
+```bash
+npm run electron:dev
+```
+
+Lance `next dev` et une fenêtre Electron qui pointe sur `localhost:3000`.
+Pratique pour itérer sur l'UI dans une fenêtre dédiée avec hot reload.
+
+### Application Mac (`.app` / `.dmg`)
+
+```bash
+npm run electron:build
+```
+
+Produit dans `release/` :
+
+- `Financial Graphs-<version>-arm64.dmg` — Apple Silicon (M1+)
+- `Financial Graphs-<version>.dmg` — Intel x64
+- Les ZIP correspondants
+
+Pour juste un `.app` non packagé (plus rapide pour tester) :
+
+```bash
+npm run electron:pack
+# → release/mac-arm64/Financial Graphs.app
+```
+
+> Au premier lancement de l'app, macOS affichera un avertissement parce que
+> le binaire n'est pas signé. Fais clic droit → **Ouvrir** pour passer outre,
+> ou retire la quarantaine avec `xattr -dr com.apple.quarantine "/Applications/Financial Graphs.app"`.
+
+#### Configuration dans l'app packagée
+
+L'app utilise un `.env.local` stocké dans
+`~/Library/Application Support/financial-graphs/.env.local` (copié depuis
+`.env.local.example` au premier lancement). Le menu **Configuration → Ouvrir
+le fichier .env.local** ouvre directement ce fichier dans ton éditeur.
+
+Le cache des prix synchronisés est dans
+`~/Library/Application Support/financial-graphs/data/` (`prices.json` pour
+CoinGecko/Yahoo, `manual-prices.json` pour les FCPE). Le menu
+**Configuration → Ouvrir le dossier de données** y mène directement.
+
+Si tu utilisais déjà l'app en mode `npm run dev`, copie tes prix une fois
+pour que l'app packagée les retrouve :
+
+```bash
+mkdir -p "$HOME/Library/Application Support/financial-graphs/data"
+cp data/prices.json data/manual-prices.json \
+  "$HOME/Library/Application Support/financial-graphs/data/"
+```
+
+Sinon, clique simplement sur **Sync cours** dans le Dashboard pour
+repopuler `prices.json` depuis CoinGecko et Yahoo.
+
+Les logs sont dans `~/Library/Logs/financial-graphs/`
+(`main.log` pour le process Electron, `next-server.log` pour le serveur Next).
 
 ## Variables d'environnement (`.env.local`)
 
