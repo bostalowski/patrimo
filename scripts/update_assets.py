@@ -5,12 +5,18 @@ Idempotent : will only rename if the old IDs are still present, no-op otherwise.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import openpyxl
 
 
-EXCEL = Path("data/Investissement.xlsx")
+_RAW = os.environ.get("EXCEL_PATH")
+if not _RAW:
+    raise SystemExit(
+        "EXCEL_PATH is not set. Run with: EXCEL_PATH=... python3 scripts/update_assets.py",
+    )
+EXCEL = Path(_RAW).expanduser().resolve()
 
 ID_RENAMES: dict[str, str] = {
     "AMUNDI-MSCI-WORLD": "DCAM",

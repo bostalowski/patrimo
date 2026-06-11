@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { resolve } from "node:path";
 import * as XLSX from "xlsx";
 import {
@@ -19,7 +20,10 @@ function getExcelPath(): string {
   if (!raw) {
     throw new Error("EXCEL_PATH is not set in your environment (.env.local).");
   }
-  return resolve(process.cwd(), raw);
+  const expanded = raw.startsWith("~")
+    ? raw.replace(/^~(?=$|\/|\\)/, homedir())
+    : raw;
+  return resolve(process.cwd(), expanded);
 }
 
 function readSheet(
@@ -145,13 +149,13 @@ let cache: { mtime: number; workbook: Workbook } | null = null;
 
 export function loadWorkbook(): Workbook {
   const path = getExcelPath();
-  const fileBuffer = readFileSync(path);
+  const mtime = statSync(path).mtimeMs;
 
-  const mtime = fileBuffer.byteLength;
   if (cache && cache.mtime === mtime && process.env.NODE_ENV === "production") {
     return cache.workbook;
   }
 
+  const fileBuffer = readFileSync(path);
   const sheet = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
 
   const transactions = parseTransactions(readSheet(sheet, SHEET_TRANSACTIONS));

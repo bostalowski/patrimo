@@ -5,13 +5,19 @@ Idempotent: re-running won't duplicate assets or transactions.
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 
 import openpyxl
 
 
-EXCEL = Path("data/Investissement.xlsx")
+_RAW = os.environ.get("EXCEL_PATH")
+if not _RAW:
+    raise SystemExit(
+        "EXCEL_PATH is not set. Run with: EXCEL_PATH=... python3 scripts/add_pee_transactions.py",
+    )
+EXCEL = Path(_RAW).expanduser().resolve()
 
 
 ASSETS_TO_ENSURE: list[dict[str, str]] = [

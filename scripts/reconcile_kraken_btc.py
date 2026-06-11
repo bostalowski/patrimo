@@ -8,12 +8,18 @@ Operations:
 - Add 2 missing conversions on 03/01/2026 (reuse old precise qty)
 """
 
+import os
 from datetime import datetime
 from pathlib import Path
 
 import openpyxl
 
-EXCEL_PATH = Path("data/Investissement.xlsx")
+_RAW = os.environ.get("EXCEL_PATH")
+if not _RAW:
+    raise SystemExit(
+        "EXCEL_PATH is not set. Run with: EXCEL_PATH=... python3 scripts/reconcile_kraken_btc.py",
+    )
+EXCEL_PATH = Path(_RAW).expanduser().resolve()
 SHEET = "Transactions"
 
 

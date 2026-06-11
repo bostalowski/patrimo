@@ -1,9 +1,15 @@
 """Switch FCPE assets to the new 'investir' source (Investir.lesechos.fr scraper)."""
 
+import os
 from pathlib import Path
 import openpyxl
 
-EXCEL = Path("data/Investissement.xlsx")
+_RAW = os.environ.get("EXCEL_PATH")
+if not _RAW:
+    raise SystemExit(
+        "EXCEL_PATH is not set. Run with: EXCEL_PATH=... python3 scripts/set_fcpe_investir.py",
+    )
+EXCEL = Path(_RAW).expanduser().resolve()
 
 UPDATES: dict[str, dict[str, str]] = {
     "FCPE-MIROVA-INTL": {"source": "investir", "param": "QS0004036743"},

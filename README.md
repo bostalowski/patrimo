@@ -24,6 +24,43 @@ COINGECKO_API_KEY=
 `COINGECKO_API_KEY` est optionnel — l'API publique sans clef suffit largement
 pour un usage personnel (100 req/min).
 
+`EXCEL_PATH` supporte l'expansion du `~` (home dir) et les chemins absolus,
+voir la section suivante pour héberger le fichier sur Google Drive.
+
+## Où stocker le fichier Excel
+
+### Option recommandée — Google Drive Desktop (privé, synchronisé)
+
+Le fichier reste sur ton Google Drive et n'est jamais commité. Google Drive
+Desktop le monte localement, l'app le lit comme n'importe quel fichier.
+
+1. Installer [Google Drive Desktop](https://www.google.com/drive/download/) et
+   se connecter.
+2. Uploader `Investissement.xlsx` sur `drive.google.com` dans le dossier de ton
+   choix (ex. `Finances/`).
+3. Dans le Finder, naviguer dans
+   `~/Library/CloudStorage/GoogleDrive-<ton-email>/My Drive/Finances/`,
+   clic droit sur le fichier → **Available offline** (force la copie locale,
+   évite la latence et les erreurs de lecture).
+4. Récupérer le chemin exact : clic droit sur le fichier → maintenir ⌥ →
+   **Copy as Pathname**.
+5. Coller dans `.env.local` :
+
+   ```
+   EXCEL_PATH=~/Library/CloudStorage/GoogleDrive-<ton-email>/My Drive/Finances/Investissement.xlsx
+   ```
+
+6. Relancer `npm run dev`. C'est tout.
+
+Tu peux éditer le fichier depuis n'importe où (web, mobile, autre Mac) — au
+prochain reload, l'app voit la nouvelle version (le cache est invalidé via
+`mtimeMs`).
+
+### Option locale (fallback)
+
+Pose le fichier dans `./data/Investissement.xlsx` et laisse la valeur par
+défaut de `EXCEL_PATH`. Le fichier est gitignored (`.gitignore`).
+
 ## Structure des données
 
 ### Fichier Excel — `data/Investissement.xlsx`
@@ -89,10 +126,20 @@ Ces fichiers sont gitignorés.
 
 ## Scripts utilitaires
 
+Tous ces scripts lisent `EXCEL_PATH` depuis l'environnement (ils ne chargent
+pas `.env.local` automatiquement). Passe-le inline :
+
 ```bash
 # Vérifier les agrégats du portefeuille sans démarrer l'app
-EXCEL_PATH=./data/Investissement.xlsx npx tsx scripts/check_portfolio.mjs
+EXCEL_PATH="~/Library/CloudStorage/GoogleDrive-<email>/Mon Drive/Investissement.xlsx" \
+  npx tsx scripts/check_portfolio.mjs
 
-# Migrer un Excel ancien schéma
-python3 scripts/migrate_excel.py --src ... --dst data/Investissement.xlsx
+# Scripts de maintenance Python (idempotents pour la plupart)
+EXCEL_PATH="~/Library/CloudStorage/GoogleDrive-<email>/Mon Drive/Investissement.xlsx" \
+  python3 scripts/add_pee_transactions.py
+
+# Migrer un Excel ancien schéma vers le nouveau (4 onglets)
+python3 scripts/migrate_excel.py \
+  --src /chemin/vers/original.xlsx \
+  --dst "$HOME/Library/CloudStorage/GoogleDrive-<email>/Mon Drive/Investissement.xlsx"
 ```

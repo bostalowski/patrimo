@@ -6,7 +6,7 @@ Target : a clean xlsx with Transactions / Actifs / Comptes / Allocation cible ta
 Run :
     python3 scripts/migrate_excel.py \
         --src /Users/bastien.ostalowski/Downloads/Investissement.xlsx \
-        --dst data/Investissement.xlsx
+        --dst "$HOME/Library/CloudStorage/GoogleDrive-<email>/Mon Drive/Investissement.xlsx"
 """
 
 from __future__ import annotations
