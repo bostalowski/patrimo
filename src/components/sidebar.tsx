@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   ListOrdered,
   Pencil,
+  PiggyBank,
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/actifs", label: "Actifs", icon: Coins },
   { href: "/comptes", label: "Comptes", icon: Wallet },
   { href: "/transactions", label: "Transactions", icon: ListOrdered },
+  { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/dca", label: "DCA", icon: Calculator },
   { href: "/prix-manuels", label: "Prix manuels", icon: Pencil },
 ];
