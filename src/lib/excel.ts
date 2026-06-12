@@ -44,6 +44,8 @@ const ACTIFS_HEADERS = [
   "Source prix",
   "Param source",
   "Devise",
+  "Taux",
+  "Plafond",
 ];
 
 const COMPTES_HEADERS = ["ID", "Libellé", "Type", "Enveloppe", "Date d'ouverture"];
@@ -209,6 +211,8 @@ function parseAssets(rows: Record<string, unknown>[]): Asset[] {
       source: row["Source prix"],
       param: emptyToUndefined(row["Param source"]),
       currency: (row["Devise"] as string) ?? "EUR",
+      rate: toNumber(row["Taux"]) ?? undefined,
+      plafond: toNumber(row["Plafond"]) ?? undefined,
     });
     if (!parsed.success) {
       throw new Error(`Invalid asset at row ${i + 2}: ${parsed.error.message}`);
@@ -495,6 +499,8 @@ function assetEntry(asset: Asset): UpsertEntry {
       "Source prix": asset.source,
       "Param source": asset.param ?? null,
       Devise: asset.currency,
+      Taux: asset.rate ?? null,
+      Plafond: asset.plafond ?? null,
     },
   };
 }
