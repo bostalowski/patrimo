@@ -33,6 +33,7 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
   const [label, setLabel] = useState(account?.label ?? "");
   const [type, setType] = useState<AccountTypeValue>(account?.type ?? accountTypes[0]);
   const [envelope, setEnvelope] = useState<Envelope>(account?.envelope ?? envelopes[0]);
+  const [openDate, setOpenDate] = useState(toDateInput(account?.openDate));
 
   const isLoading = busy || pending;
 
@@ -41,6 +42,7 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
     setLabel(account?.label ?? "");
     setType(account?.type ?? accountTypes[0]);
     setEnvelope(account?.envelope ?? envelopes[0]);
+    setOpenDate(toDateInput(account?.openDate));
     setError(null);
   }
 
@@ -75,6 +77,7 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
           label: trimmedLabel,
           type,
           envelope,
+          openDate: openDate ? new Date(`${openDate}T00:00:00Z`).toISOString() : undefined,
         }),
       });
       if (!res.ok) {
@@ -186,6 +189,18 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
                 ))}
               </select>
             </Field>
+
+            <Field label="Date d'ouverture" className="sm:col-span-2 lg:col-span-4">
+              <input
+                type="date"
+                value={openDate}
+                onChange={(e) => setOpenDate(e.target.value)}
+                className={inputClasses}
+              />
+              <span className="text-xs font-normal normal-case tracking-normal text-zinc-400">
+                Optionnelle. Sert au calcul fiscal des PEA (5 ans) et AV (8 ans).
+              </span>
+            </Field>
           </div>
 
           {error && (
@@ -257,4 +272,14 @@ function Field({
       {children}
     </div>
   );
+}
+
+function toDateInput(value: Date | undefined): string {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getUTCFullYear().toString().padStart(4, "0");
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const day = date.getUTCDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
