@@ -103,6 +103,8 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
       }
     }
 
+    const effectiveSource = isLivret ? "manual" : source;
+
     setBusy(true);
     try {
       const res = await fetch("/api/assets", {
@@ -112,7 +114,7 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
           id: trimmedId,
           label: trimmedLabel,
           type,
-          source: isLivret ? "manual" : source,
+          source: effectiveSource,
           isin: isLivret ? undefined : isin.trim() || undefined,
           ticker: isLivret ? undefined : ticker.trim() || undefined,
           param: isLivret ? undefined : param.trim() || undefined,
@@ -127,6 +129,13 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
         } | null;
         throw new Error(body?.error ?? (isEdit ? "Échec de la mise à jour" : "Échec de la création"));
       }
+
+      if (effectiveSource !== "manual") {
+        await fetch(`/api/prices/sync?assetId=${encodeURIComponent(trimmedId)}`, {
+          method: "POST",
+        }).catch(() => null);
+      }
+
       close();
       startTransition(() => router.refresh());
     } catch (err) {
