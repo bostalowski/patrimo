@@ -3,26 +3,38 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  Card,
   CardBody,
   CardHeader,
   CardTitle,
-  Card,
 } from "@/components/ui/card";
 import { PortfolioCurve } from "@/components/charts/portfolio-curve";
+import {
+  DrawdownBadge,
+  ReturnsHeatmap,
+} from "@/components/charts/returns-heatmap";
+import { PerformanceSummary } from "@/components/performance-summary";
 import {
   aggregateHistory,
   buildBenchmarkSeries,
   type HistorySeries,
 } from "@/lib/portfolio-history";
+import {
+  annualReturns,
+  maxDrawdown,
+  monthlyReturns,
+  periodReturns,
+  xirr,
+} from "@/lib/performance";
 import type { AssetPriceHistory } from "@/lib/store";
-import { cn, formatEuro, formatPercent, signClass } from "@/lib/utils";
+import { cn, formatEuro, formatPercentCompact, signClass } from "@/lib/utils";
 
 type BenchmarkProp = {
   label: string;
   history: AssetPriceHistory;
 };
 
-export function PortfolioCurveCard({
+export function PerformanceSection({
   history,
   benchmark,
 }: {
@@ -49,6 +61,12 @@ export function PortfolioCurveCard({
     () => aggregateHistory(history, aggregateSet),
     [history, aggregateSet],
   );
+
+  const periods = useMemo(() => periodReturns(points), [points]);
+  const annualizedXirr = useMemo(() => xirr(points), [points]);
+  const monthly = useMemo(() => monthlyReturns(points), [points]);
+  const annual = useMemo(() => annualReturns(points), [points]);
+  const drawdown = useMemo(() => maxDrawdown(points), [points]);
 
   const benchmarkSeries = useMemo(() => {
     if (!benchmarkOn || !benchmark) return null;
@@ -91,20 +109,71 @@ export function PortfolioCurveCard({
   })();
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle>Évolution du patrimoine</CardTitle>
-            <p className="text-xs text-zinc-500">
-              Valeur (zone verte) vs capital investi cumulé (pointillé)
-              {benchmarkOn && benchmark
-                ? ` vs ${benchmark.label} simulé (indigo)`
-                : ""}
-              .
-            </p>
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Performance</h2>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Rendement pondéré dans le temps (TWR) sur {summaryLabel.toLowerCase()}.
+          </p>
+        </div>
+        {history.perAsset.length > 0 && (
+          <AssetFilter
+            assets={history.perAsset.map((s) => ({
+              id: s.assetId,
+              label: s.label,
+            }))}
+            selected={selected}
+            onChange={setSelected}
+            summaryLabel={summaryLabel}
+          />
+        )}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Performance par période</CardTitle>
+              <p className="text-xs text-zinc-500">
+                Neutralise l&apos;effet des apports successifs.
+              </p>
+            </div>
+            <span className="inline-flex items-baseline gap-1.5 rounded-md bg-zinc-100 px-3 py-1.5 dark:bg-zinc-900">
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                TRI annualisé (XIRR)
+              </span>
+              <span
+                className={cn(
+                  "text-sm font-semibold tabular-nums",
+                  annualizedXirr === null ? "" : signClass(annualizedXirr),
+                )}
+              >
+                {annualizedXirr === null
+                  ? "—"
+                  : formatPercentCompact(annualizedXirr)}
+              </span>
+            </span>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+        </CardHeader>
+        <CardBody>
+          <PerformanceSummary periods={periods} />
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Évolution du patrimoine</CardTitle>
+              <p className="text-xs text-zinc-500">
+                Valeur (zone verte) vs capital investi cumulé (pointillé)
+                {benchmarkOn && benchmark
+                  ? ` vs ${benchmark.label} simulé (indigo)`
+                  : ""}
+                .
+              </p>
+            </div>
             {hasBenchmark && benchmark && (
               <BenchmarkToggle
                 label={benchmark.label}
@@ -112,50 +181,56 @@ export function PortfolioCurveCard({
                 onToggle={() => setBenchmarkOn((v) => !v)}
               />
             )}
-            {history.perAsset.length > 0 && (
-              <AssetFilter
-                assets={history.perAsset.map((s) => ({
-                  id: s.assetId,
-                  label: s.label,
-                }))}
-                selected={selected}
-                onChange={setSelected}
-                summaryLabel={summaryLabel}
-              />
-            )}
           </div>
-        </div>
-        {benchmarkOn && benchmark && comparison && (
-          <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
-            <span className="text-zinc-500 dark:text-zinc-400">
-              Portefeuille{" "}
-              <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                {formatEuro(comparison.lastValue)}
+          {benchmarkOn && benchmark && comparison && (
+            <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
+              <span className="text-zinc-500 dark:text-zinc-400">
+                Portefeuille{" "}
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                  {formatEuro(comparison.lastValue)}
+                </span>
               </span>
-            </span>
-            <span className="text-zinc-500 dark:text-zinc-400">
-              {benchmark.label} simulé{" "}
-              <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                {formatEuro(comparison.lastBench)}
+              <span className="text-zinc-500 dark:text-zinc-400">
+                {benchmark.label} simulé{" "}
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                  {formatEuro(comparison.lastBench)}
+                </span>
               </span>
-            </span>
-            <span className={cn("font-semibold", signClass(comparison.diff))}>
-              {comparison.diff >= 0 ? "+" : ""}
-              {formatEuro(comparison.diff)} ({comparison.diff >= 0 ? "+" : ""}
-              {formatPercent(comparison.diffPct)}) vs {benchmark.label}
-            </span>
+              <span className={cn("font-semibold", signClass(comparison.diff))}>
+                {comparison.diff >= 0 ? "+" : ""}
+                {formatEuro(comparison.diff)} ({comparison.diff >= 0 ? "+" : ""}
+                {formatPercentCompact(comparison.diffPct)}) vs {benchmark.label}
+              </span>
+            </div>
+          )}
+        </CardHeader>
+        <CardBody>
+          <PortfolioCurve
+            data={chartData}
+            benchmarkLabel={
+              benchmarkOn && benchmark ? `${benchmark.label} simulé` : undefined
+            }
+          />
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Performance mensuelle & annuelle</CardTitle>
+              <p className="text-xs text-zinc-500">
+                Rendement TWR par mois et par année.
+              </p>
+            </div>
+            <DrawdownBadge value={drawdown.value} />
           </div>
-        )}
-      </CardHeader>
-      <CardBody>
-        <PortfolioCurve
-          data={chartData}
-          benchmarkLabel={
-            benchmarkOn && benchmark ? `${benchmark.label} simulé` : undefined
-          }
-        />
-      </CardBody>
-    </Card>
+        </CardHeader>
+        <CardBody>
+          <ReturnsHeatmap monthly={monthly} annual={annual} />
+        </CardBody>
+      </Card>
+    </section>
   );
 }
 
