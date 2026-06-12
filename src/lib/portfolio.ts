@@ -4,6 +4,11 @@ import type {
   TransactionType,
   Workbook,
 } from "@/lib/schema";
+import {
+  computeLivretState,
+  livretFlows,
+  type LivretState,
+} from "@/lib/livret";
 
 export type PriceMap = Map<string, number>;
 
@@ -239,6 +244,24 @@ function materializePosition(
   };
 }
 
+function livretAssetPosition(asset: Asset, state: LivretState): AssetPosition {
+  return {
+    assetId: asset.id,
+    asset,
+    quantity: state.balance,
+    costBasis: state.principalNet,
+    pru: 1,
+    realizedIncome: state.interest,
+    realizedPnL: 0,
+    fees: 0,
+    currentPrice: 1,
+    marketValue: state.balance,
+    unrealizedPnL: 0,
+    totalReturn: state.interest,
+    totalReturnPct: state.principalNet > 0 ? state.interest / state.principalNet : 0,
+  };
+}
+
 export function buildPortfolio(
   workbook: Workbook,
   prices: PriceMap,
@@ -252,8 +275,11 @@ export function buildPortfolio(
 
   const assetMap = new Map(workbook.assets.map((a) => [a.id, a]));
   const accountMap = new Map(workbook.accounts.map((a) => [a.id, a]));
+  const livretAssets = workbook.assets.filter((a) => a.type === "LIVRET");
+  const livretIds = new Set(livretAssets.map((a) => a.id));
 
   for (const tx of workbook.transactions) {
+    if (livretIds.has(tx.actif)) continue;
     applyTransaction(tx, perAccount, perAsset, perAccountCash);
   }
 
@@ -275,6 +301,31 @@ export function buildPortfolio(
     list.push({ ...position, accountId });
     accountPositions.set(accountId, list);
   }
+
+  const now = new Date();
+  for (const asset of livretAssets) {
+    const flows = livretFlows(asset.id, workbook.transactions);
+    if (flows.length === 0) continue;
+    assetPositions.push(
+      livretAssetPosition(asset, computeLivretState(asset, flows, now)),
+    );
+
+    const accountIds = new Set(
+      workbook.transactions
+        .filter((tx) => tx.actif === asset.id)
+        .map((tx) => tx.compte),
+    );
+    for (const accountId of accountIds) {
+      const accountFlows = livretFlows(asset.id, workbook.transactions, accountId);
+      if (accountFlows.length === 0) continue;
+      const state = computeLivretState(asset, accountFlows, now);
+      const position = livretAssetPosition(asset, state);
+      const list = accountPositions.get(accountId) ?? [];
+      list.push({ ...position, accountId });
+      accountPositions.set(accountId, list);
+    }
+  }
+  assetPositions.sort((a, b) => b.marketValue - a.marketValue);
 
   const accounts: AccountSummary[] = [];
   for (const [accountId, positions] of accountPositions.entries()) {

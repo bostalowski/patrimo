@@ -1,5 +1,6 @@
 import type { Transaction, Workbook } from "@/lib/schema";
 import type { AssetPriceHistory, PriceStore } from "@/lib/store";
+import { livretDailyValues, livretFlows } from "@/lib/livret";
 
 export type DailyPoint = {
   date: string;
@@ -169,6 +170,16 @@ export function buildHistorySeries(
       assetSeries.values[dateIndex] = value;
       assetSeries.invested[dateIndex] = invested;
     }
+  }
+
+  for (const asset of workbook.assets) {
+    if (asset.type !== "LIVRET") continue;
+    const livretSeries = series.get(asset.id);
+    if (!livretSeries) continue;
+    const flows = livretFlows(asset.id, workbook.transactions);
+    const { values, invested } = livretDailyValues(asset, flows, dates);
+    livretSeries.values = values;
+    livretSeries.invested = invested;
   }
 
   const perAsset = [...series.values()].sort((a, b) => {

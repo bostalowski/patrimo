@@ -11,7 +11,14 @@ export const TransactionType = z.enum([
 ]);
 export type TransactionType = z.infer<typeof TransactionType>;
 
-export const AssetType = z.enum(["CRYPTO", "ETF", "ACTION", "FCPE", "CASH"]);
+export const AssetType = z.enum([
+  "CRYPTO",
+  "ETF",
+  "ACTION",
+  "FCPE",
+  "CASH",
+  "LIVRET",
+]);
 export type AssetType = z.infer<typeof AssetType>;
 
 export const PriceSource = z.enum(["coingecko", "yahoo", "investir", "manual"]);
@@ -52,6 +59,8 @@ export const Asset = z.object({
   source: PriceSource,
   param: z.string().optional(),
   currency: z.string().default("EUR"),
+  rate: z.number().nonnegative().optional(),
+  plafond: z.number().positive().optional(),
 });
 export type Asset = z.infer<typeof Asset>;
 

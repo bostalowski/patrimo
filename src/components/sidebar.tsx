@@ -12,6 +12,7 @@ import {
   Pencil,
   PiggyBank,
   Settings,
+  TrendingUp,
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/transactions", label: "Transactions", icon: ListOrdered },
   { href: "/fiscalite", label: "Fiscalité", icon: Landmark },
   { href: "/budget", label: "Budget", icon: PiggyBank },
+  { href: "/projection", label: "Projection", icon: TrendingUp },
   { href: "/dca", label: "DCA", icon: Calculator },
   { href: "/prix-manuels", label: "Prix manuels", icon: Pencil },
   { href: "/reglages", label: "Réglages", icon: Settings },
