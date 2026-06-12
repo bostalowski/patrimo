@@ -6,11 +6,13 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Check,
   CheckCircle2,
   CircleAlert,
   FileText,
   Info,
   Loader2,
+  Pencil,
   Upload,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +24,7 @@ import type {
   AccountType,
   Envelope,
   PriceSource,
+  TransactionType,
 } from "@/lib/schema";
 import type {
   AccountSuggestion,
@@ -80,6 +83,7 @@ type AssetForm = {
   source: PriceSource;
   param: string;
   currency: string;
+  compte: string;
 };
 
 type AccountForm = {
@@ -90,6 +94,27 @@ type AccountForm = {
   type: AccountType;
   envelope: Envelope;
 };
+
+type RowEdit = {
+  date?: string;
+  type?: TransactionType;
+  actif?: string;
+  compte?: string;
+  quantite?: number;
+  prixUnitaire?: number | null;
+  frais?: number;
+  notes?: string;
+};
+
+const TRANSACTION_TYPES: TransactionType[] = [
+  "ACHAT",
+  "VENTE",
+  "DIVIDENDE",
+  "INTERET",
+  "TRANSFERT",
+  "DEPOT",
+  "RETRAIT",
+];
 
 const ASSET_TYPES: AssetType[] = ["ETF", "ACTION", "CRYPTO", "FCPE", "CASH"];
 const ACCOUNT_TYPES: AccountType[] = [
@@ -128,9 +153,7 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
   const [csvContent, setCsvContent] = useState<string | null>(null);
   const [detectedHeaders, setDetectedHeaders] = useState<string[]>([]);
 
-  const [defaultCompte, setDefaultCompte] = useState<string>(
-    existingAccounts[0]?.id ?? "",
-  );
+  const defaultCompte = existingAccounts[0]?.id ?? "";
 
   const [mapping, setMapping] = useState<ColumnMapping>({});
   const [mappingDefaults, setMappingDefaults] = useState({
@@ -145,6 +168,9 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     {},
   );
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
+  const [excludedRows, setExcludedRows] = useState<Set<number>>(new Set());
+  const [rowEdits, setRowEdits] = useState<Record<number, RowEdit>>({});
+  const [editingRow, setEditingRow] = useState<number | null>(null);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -167,6 +193,9 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     setAssetForms({});
     setAccountForms({});
     setIncludeDuplicates(false);
+    setExcludedRows(new Set());
+    setRowEdits({});
+    setEditingRow(null);
     setError(null);
     setResult(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -198,7 +227,7 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     let profile: Profile;
     if (source === "trade-republic") {
       if (!defaultCompte) {
-        setError("Choisis un compte pour rattacher ces transactions.");
+        setError("Crée d'abord un compte avant d'importer des transactions.");
         return;
       }
       profile = { source: "trade-republic", defaultCompte };
@@ -243,8 +272,11 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
       }
       const data = (await res.json()) as ImportPreview;
       setPreview(data);
-      setAssetForms(buildAssetForms(data.newAssets));
+      setAssetForms(buildAssetForms(data.newAssets, defaultCompte));
       setAccountForms(buildAccountForms(data.newAccounts));
+      setExcludedRows(new Set());
+      setRowEdits({});
+      setEditingRow(null);
       setStep("preview");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -258,6 +290,7 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     setError(null);
 
     const assetIdByIdentifier = new Map<string, string>();
+    const assetCompteByIdentifier = new Map<string, string>();
     const accountIdByIdentifier = new Map<string, string>();
     const newAssetsPayload: AssetForm[] = [];
     const newAccountsPayload: AccountForm[] = [];
@@ -272,6 +305,12 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
       }
       newAssetsPayload.push(form);
       assetIdByIdentifier.set(suggestion.identifier.toLowerCase(), form.id);
+      if (form.compte) {
+        assetCompteByIdentifier.set(
+          suggestion.identifier.toLowerCase(),
+          form.compte,
+        );
+      }
     }
 
     for (const suggestion of preview.newAccounts) {
@@ -287,9 +326,7 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     }
 
     const includedRows = preview.rows.filter(
-      (r) =>
-        r.status === "ok" ||
-        (r.status === "duplicate" && includeDuplicates),
+      (r) => isRowIncludable(r, includeDuplicates) && !excludedRows.has(r.rowIndex),
     );
 
     if (includedRows.length === 0) {
@@ -297,8 +334,33 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
       return;
     }
 
+    for (const r of includedRows) {
+      const edit = rowEdits[r.rowIndex];
+      if (!edit) continue;
+      if (edit.quantite !== undefined && (Number.isNaN(edit.quantite) || edit.quantite < 0)) {
+        setError(`Ligne ${r.rowIndex} : quantité invalide.`);
+        return;
+      }
+      if (edit.frais !== undefined && (Number.isNaN(edit.frais) || edit.frais < 0)) {
+        setError(`Ligne ${r.rowIndex} : frais invalides.`);
+        return;
+      }
+      if (edit.date !== undefined && Number.isNaN(new Date(edit.date).getTime())) {
+        setError(`Ligne ${r.rowIndex} : date invalide.`);
+        return;
+      }
+    }
+
     const transactions = includedRows.map((r) =>
-      remapTransaction(r, assetIdByIdentifier, accountIdByIdentifier),
+      applyRowEdit(
+        remapTransaction(
+          r,
+          assetIdByIdentifier,
+          accountIdByIdentifier,
+          assetCompteByIdentifier,
+        ),
+        rowEdits[r.rowIndex],
+      ),
     );
 
     setBusy(true);
@@ -338,10 +400,25 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     if (!preview) return 0;
     return preview.rows.filter(
       (r) =>
-        r.status === "ok" ||
-        (r.status === "duplicate" && includeDuplicates),
+        isRowIncludable(r, includeDuplicates) && !excludedRows.has(r.rowIndex),
     ).length;
-  }, [preview, includeDuplicates]);
+  }, [preview, includeDuplicates, excludedRows]);
+
+  function toggleExcludedRow(rowIndex: number) {
+    setExcludedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowIndex)) next.delete(rowIndex);
+      else next.add(rowIndex);
+      return next;
+    });
+  }
+
+  function updateRowEdit(rowIndex: number, patch: Partial<RowEdit>) {
+    setRowEdits((prev) => ({
+      ...prev,
+      [rowIndex]: { ...prev[rowIndex], ...patch },
+    }));
+  }
 
   if (step === "done" && result) {
     return (
@@ -395,8 +472,6 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
           headers={detectedHeaders}
           fileInputRef={fileInputRef}
           onFileSelected={onFileSelected}
-          defaultCompte={defaultCompte}
-          onDefaultCompteChange={setDefaultCompte}
           mapping={mapping}
           onMappingChange={setMapping}
           mappingDefaults={mappingDefaults}
@@ -429,6 +504,12 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
           includeDuplicates={includeDuplicates}
           onIncludeDuplicatesChange={setIncludeDuplicates}
           includedCount={previewIncludedCount}
+          excludedRows={excludedRows}
+          rowEdits={rowEdits}
+          editingRow={editingRow}
+          onToggleExcluded={toggleExcludedRow}
+          onEditRow={setEditingRow}
+          onRowEditChange={updateRowEdit}
           onBack={() => setStep("configure")}
           onCommit={runCommit}
           busy={busy}
@@ -536,8 +617,6 @@ type ConfigureStepProps = {
   headers: string[];
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFileSelected: (file: File) => Promise<void> | void;
-  defaultCompte: string;
-  onDefaultCompteChange: (value: string) => void;
   mapping: ColumnMapping;
   onMappingChange: (mapping: ColumnMapping) => void;
   mappingDefaults: { compte: string; devise: string; fraisDevise: string };
@@ -559,8 +638,6 @@ function ConfigureStep(props: ConfigureStepProps) {
     headers,
     fileInputRef,
     onFileSelected,
-    defaultCompte,
-    onDefaultCompteChange,
     mapping,
     onMappingChange,
     mappingDefaults,
@@ -591,21 +668,11 @@ function ConfigureStep(props: ConfigureStepProps) {
           <TradeRepublicDetection headers={headers} />
         )}
 
-        {source === "trade-republic" && (
-          <div className="space-y-2">
-            <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-              Compte rattaché (toutes les lignes seront créées sur ce compte)
-            </label>
-            <AccountSelect
-              value={defaultCompte}
-              accounts={existingAccounts}
-              onChange={onDefaultCompteChange}
-            />
-            <p className="text-xs text-zinc-500">
-              Trade Republic n&apos;a qu&apos;un seul compte courant : choisis
-              le compte de l&apos;app qui correspond.
-            </p>
-          </div>
+        {source === "trade-republic" && headers.length > 0 && (
+          <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40">
+            Tu choisiras le compte de chaque actif (et de chaque ligne si
+            besoin) à l&apos;étape d&apos;aperçu.
+          </p>
         )}
 
         {source === "generic" && headers.length > 0 && (
@@ -889,6 +956,12 @@ type PreviewStepProps = {
   includeDuplicates: boolean;
   onIncludeDuplicatesChange: (value: boolean) => void;
   includedCount: number;
+  excludedRows: Set<number>;
+  rowEdits: Record<number, RowEdit>;
+  editingRow: number | null;
+  onToggleExcluded: (rowIndex: number) => void;
+  onEditRow: (rowIndex: number | null) => void;
+  onRowEditChange: (rowIndex: number, patch: Partial<RowEdit>) => void;
   onBack: () => void;
   onCommit: () => void;
   busy: boolean;
@@ -905,10 +978,21 @@ function PreviewStep(props: PreviewStepProps) {
     includeDuplicates,
     onIncludeDuplicatesChange,
     includedCount,
+    excludedRows,
+    rowEdits,
+    editingRow,
+    onToggleExcluded,
+    onEditRow,
+    onRowEditChange,
     onBack,
     onCommit,
     busy,
   } = props;
+
+  const assetCompteByIdentifier = useMemo(
+    () => buildAssetCompteMap(preview.newAssets, assetForms),
+    [preview.newAssets, assetForms],
+  );
 
   return (
     <div className="space-y-6">
@@ -986,6 +1070,7 @@ function PreviewStep(props: PreviewStepProps) {
                   key={key}
                   suggestion={suggestion}
                   form={form}
+                  existingAccounts={existingAccounts}
                   onChange={(patch) => onAssetFormChange(key, patch)}
                 />
               );
@@ -1012,6 +1097,14 @@ function PreviewStep(props: PreviewStepProps) {
           <RowsTable
             rows={preview.rows}
             existingAccounts={existingAccounts}
+            includeDuplicates={includeDuplicates}
+            excludedRows={excludedRows}
+            rowEdits={rowEdits}
+            editingRow={editingRow}
+            assetCompteByIdentifier={assetCompteByIdentifier}
+            onToggleExcluded={onToggleExcluded}
+            onEditRow={onEditRow}
+            onRowEditChange={onRowEditChange}
           />
         </CardBody>
       </Card>
@@ -1069,10 +1162,12 @@ function Stat({
 function NewAssetFormRow({
   suggestion,
   form,
+  existingAccounts,
   onChange,
 }: {
   suggestion: AssetSuggestion;
   form: AssetForm;
+  existingAccounts: ExistingAccount[];
   onChange: (patch: Partial<AssetForm>) => void;
 }) {
   return (
@@ -1176,7 +1271,28 @@ function NewAssetFormRow({
             }
           />
         </FormField>
+        <FormField label="Compte associé">
+          <select
+            value={form.compte}
+            onChange={(e) => onChange({ compte: e.target.value })}
+            className={inputClasses}
+          >
+            {existingAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.label} ({a.envelope})
+              </option>
+            ))}
+            {form.compte &&
+              !existingAccounts.some((a) => a.id === form.compte) && (
+                <option value={form.compte}>{form.compte}</option>
+              )}
+          </select>
+        </FormField>
       </div>
+      <p className="text-xs text-zinc-500">
+        Toutes les lignes de cet actif seront affectées à ce compte (modifiable
+        ligne par ligne plus bas).
+      </p>
     </div>
   );
 }
@@ -1270,15 +1386,26 @@ function FormField({
 function RowsTable({
   rows,
   existingAccounts,
+  includeDuplicates,
+  excludedRows,
+  rowEdits,
+  editingRow,
+  assetCompteByIdentifier,
+  onToggleExcluded,
+  onEditRow,
+  onRowEditChange,
 }: {
   rows: RowPreview[];
   existingAccounts: ExistingAccount[];
+  includeDuplicates: boolean;
+  excludedRows: Set<number>;
+  rowEdits: Record<number, RowEdit>;
+  editingRow: number | null;
+  assetCompteByIdentifier: Map<string, string>;
+  onToggleExcluded: (rowIndex: number) => void;
+  onEditRow: (rowIndex: number | null) => void;
+  onRowEditChange: (rowIndex: number, patch: Partial<RowEdit>) => void;
 }) {
-  const accountLabels = useMemo(
-    () => new Map(existingAccounts.map((a) => [a.id, a.label])),
-    [existingAccounts],
-  );
-
   if (rows.length === 0) {
     return (
       <p className="px-6 py-6 text-sm text-zinc-500">
@@ -1291,6 +1418,7 @@ function RowsTable({
     <Table>
       <THead>
         <TR>
+          <TH className="w-10">Inclure</TH>
           <TH>Statut</TH>
           <TH>Ligne</TH>
           <TH>Date</TH>
@@ -1300,45 +1428,246 @@ function RowsTable({
           <TH className="text-right">Quantité</TH>
           <TH className="text-right">Prix</TH>
           <TH>Notes</TH>
+          <TH className="w-10 text-right">Actions</TH>
         </TR>
       </THead>
       <TBody>
-        {rows.map((r) => (
-          <TR key={r.rowIndex}>
-            <TD>
-              <RowStatusBadge row={r} />
-            </TD>
-            <TD className="font-mono text-xs text-zinc-500">
-              {r.rowIndex}
-            </TD>
-            <TD className="font-mono text-xs">
-              {r.tx ? new Date(r.tx.date).toISOString().slice(0, 10) : "—"}
-            </TD>
-            <TD>{r.tx?.type ?? "—"}</TD>
-            <TD className="font-mono text-xs">
-              {r.tx?.actif ?? r.actifIdentifier ?? "—"}
-            </TD>
-            <TD className="text-xs">
-              {r.tx
-                ? (accountLabels.get(r.tx.compte) ?? r.tx.compte)
-                : (r.compteIdentifier ?? "—")}
-            </TD>
-            <TD className="text-right font-mono text-xs">
-              {r.tx?.quantite ?? "—"}
-            </TD>
-            <TD className="text-right font-mono text-xs">
-              {r.tx?.prixUnitaire ?? "—"}
-            </TD>
-            <TD className="text-xs text-zinc-500">
-              {r.status === "error" || r.status === "skipped"
-                ? r.reason
-                : (r.tx?.notes ?? "")}
-            </TD>
-          </TR>
-        ))}
+        {rows.map((r) => {
+          const editable = r.tx != null;
+          const includable = isRowIncludable(r, includeDuplicates);
+          const excluded = excludedRows.has(r.rowIndex);
+          const included = includable && !excluded;
+          const editing = editingRow === r.rowIndex;
+          const edit = rowEdits[r.rowIndex];
+          const assetCompte = assetCompteByIdentifier.get(
+            rowActifKey(r),
+          );
+          const view = effectiveTxView(r, edit, assetCompte);
+
+          return (
+            <TR
+              key={r.rowIndex}
+              className={cn(includable && !included && "opacity-50")}
+            >
+              <TD>
+                {includable ? (
+                  <input
+                    type="checkbox"
+                    checked={included}
+                    onChange={() => onToggleExcluded(r.rowIndex)}
+                    aria-label={`Inclure la ligne ${r.rowIndex}`}
+                  />
+                ) : (
+                  <span className="text-zinc-300 dark:text-zinc-700">—</span>
+                )}
+              </TD>
+              <TD>
+                <RowStatusBadge row={r} />
+              </TD>
+              <TD className="font-mono text-xs text-zinc-500">{r.rowIndex}</TD>
+              <TD className="font-mono text-xs">
+                {editing ? (
+                  <input
+                    type="date"
+                    value={view.date}
+                    onChange={(e) =>
+                      onRowEditChange(r.rowIndex, { date: e.target.value })
+                    }
+                    className={editInputClasses}
+                  />
+                ) : (
+                  view.date || "—"
+                )}
+              </TD>
+              <TD>
+                {editing ? (
+                  <select
+                    value={view.type ?? ""}
+                    onChange={(e) =>
+                      onRowEditChange(r.rowIndex, {
+                        type: e.target.value as TransactionType,
+                      })
+                    }
+                    className={editInputClasses}
+                  >
+                    {TRANSACTION_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  (view.type ?? "—")
+                )}
+              </TD>
+              <TD className="font-mono text-xs">
+                {view.actif ?? r.actifIdentifier ?? "—"}
+              </TD>
+              <TD className="text-xs">
+                {r.tx ? (
+                  <select
+                    value={view.compte ?? ""}
+                    onChange={(e) =>
+                      onRowEditChange(r.rowIndex, { compte: e.target.value })
+                    }
+                    className={editInputClasses}
+                    aria-label={`Compte de la ligne ${r.rowIndex}`}
+                  >
+                    {existingAccounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.label} ({a.envelope})
+                      </option>
+                    ))}
+                    {view.compte &&
+                      !existingAccounts.some((a) => a.id === view.compte) && (
+                        <option value={view.compte}>{view.compte}</option>
+                      )}
+                  </select>
+                ) : (
+                  (r.compteIdentifier ?? "—")
+                )}
+              </TD>
+              <TD className="text-right font-mono text-xs">
+                {editing ? (
+                  <input
+                    type="number"
+                    step="any"
+                    value={view.quantite ?? ""}
+                    onChange={(e) =>
+                      onRowEditChange(r.rowIndex, {
+                        quantite:
+                          e.target.value === ""
+                            ? undefined
+                            : Number(e.target.value),
+                      })
+                    }
+                    className={cn(editInputClasses, "text-right")}
+                  />
+                ) : (
+                  (view.quantite ?? "—")
+                )}
+              </TD>
+              <TD className="text-right font-mono text-xs">
+                {editing ? (
+                  <input
+                    type="number"
+                    step="any"
+                    value={view.prixUnitaire ?? ""}
+                    onChange={(e) =>
+                      onRowEditChange(r.rowIndex, {
+                        prixUnitaire:
+                          e.target.value === ""
+                            ? null
+                            : Number(e.target.value),
+                      })
+                    }
+                    className={cn(editInputClasses, "text-right")}
+                  />
+                ) : (
+                  (view.prixUnitaire ?? "—")
+                )}
+              </TD>
+              <TD className="text-xs text-zinc-500">
+                {editing ? (
+                  <input
+                    type="text"
+                    value={view.notes ?? ""}
+                    onChange={(e) =>
+                      onRowEditChange(r.rowIndex, { notes: e.target.value })
+                    }
+                    className={editInputClasses}
+                  />
+                ) : r.status === "error" || r.status === "skipped" ? (
+                  r.reason
+                ) : (
+                  (view.notes ?? "")
+                )}
+              </TD>
+              <TD className="text-right">
+                {editable && (
+                  <button
+                    type="button"
+                    onClick={() => onEditRow(editing ? null : r.rowIndex)}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                    aria-label={editing ? "Terminer l'édition" : "Modifier la ligne"}
+                  >
+                    {editing ? (
+                      <Check className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Pencil className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
+              </TD>
+            </TR>
+          );
+        })}
       </TBody>
     </Table>
   );
+}
+
+const editInputClasses =
+  "w-full rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs dark:border-zinc-800 dark:bg-zinc-950";
+
+function isRowIncludable(row: RowPreview, includeDuplicates: boolean): boolean {
+  return (
+    row.status === "ok" ||
+    (row.status === "duplicate" && includeDuplicates)
+  );
+}
+
+function rowActifKey(row: RowPreview): string {
+  return (row.actifIdentifier ?? row.tx?.actif ?? "").trim().toLowerCase();
+}
+
+function buildAssetCompteMap(
+  suggestions: AssetSuggestion[],
+  assetForms: Record<string, AssetForm>,
+): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const s of suggestions) {
+    const key = s.identifier.toLowerCase();
+    const form = assetForms[key];
+    if (form?.compte) map.set(key, form.compte);
+  }
+  return map;
+}
+
+function effectiveTxView(
+  row: RowPreview,
+  edit: RowEdit | undefined,
+  assetCompte: string | undefined,
+) {
+  const tx = row.tx;
+  return {
+    date:
+      edit?.date ??
+      (tx ? new Date(tx.date).toISOString().slice(0, 10) : ""),
+    type: edit?.type ?? tx?.type,
+    actif: edit?.actif ?? tx?.actif,
+    compte: edit?.compte ?? assetCompte ?? tx?.compte,
+    quantite: edit && "quantite" in edit ? edit.quantite : tx?.quantite,
+    prixUnitaire:
+      edit && "prixUnitaire" in edit ? edit.prixUnitaire : tx?.prixUnitaire,
+    notes: edit && "notes" in edit ? edit.notes : tx?.notes,
+  };
+}
+
+function applyRowEdit<T extends Record<string, unknown>>(
+  tx: T,
+  edit: RowEdit | undefined,
+): T {
+  if (!edit) return tx;
+  const next: Record<string, unknown> = { ...tx };
+  if (edit.date !== undefined) next.date = edit.date;
+  if (edit.type !== undefined) next.type = edit.type;
+  if (edit.compte !== undefined) next.compte = edit.compte;
+  if (edit.quantite !== undefined) next.quantite = edit.quantite;
+  if (edit.prixUnitaire !== undefined) next.prixUnitaire = edit.prixUnitaire;
+  if (edit.frais !== undefined) next.frais = edit.frais;
+  if (edit.notes !== undefined) next.notes = edit.notes;
+  return next as T;
 }
 
 function RowStatusBadge({ row }: { row: RowPreview }) {
@@ -1382,6 +1711,7 @@ function autoGuessMapping(headers: string[]): ColumnMapping {
 
 function buildAssetForms(
   suggestions: AssetSuggestion[],
+  defaultCompte: string,
 ): Record<string, AssetForm> {
   const out: Record<string, AssetForm> = {};
   for (const s of suggestions) {
@@ -1401,6 +1731,7 @@ function buildAssetForms(
       source: "yahoo",
       param: "",
       currency: "EUR",
+      compte: defaultCompte,
     };
   }
   return out;
@@ -1463,6 +1794,7 @@ function remapTransaction(
   row: RowPreview,
   assetIdByIdentifier: Map<string, string>,
   accountIdByIdentifier: Map<string, string>,
+  assetCompteByIdentifier: Map<string, string>,
 ) {
   const tx = row.tx!;
   const actifKey = (row.actifIdentifier ?? tx.actif).trim().toLowerCase();
@@ -1474,7 +1806,10 @@ function remapTransaction(
   return {
     ...tx,
     actif: assetIdByIdentifier.get(actifKey) ?? tx.actif,
-    compte: accountIdByIdentifier.get(compteKey) ?? tx.compte,
+    compte:
+      assetCompteByIdentifier.get(actifKey) ??
+      accountIdByIdentifier.get(compteKey) ??
+      tx.compte,
     compteDestination: destKey
       ? (accountIdByIdentifier.get(destKey) ?? tx.compteDestination)
       : tx.compteDestination,
