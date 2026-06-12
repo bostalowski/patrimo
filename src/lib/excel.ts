@@ -196,3 +196,84 @@ export function appendTransaction(transaction: Transaction): void {
 
   cache = null;
 }
+
+function upsertRow(
+  sheetName: string,
+  idHeader: string,
+  id: string,
+  valueByHeader: Record<string, unknown>,
+): void {
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) {
+    throw new Error(`Missing sheet "${sheetName}" in workbook.`);
+  }
+
+  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    defval: null,
+  });
+  const headers = (aoa[0] ?? []) as string[];
+  if (headers.length === 0) {
+    throw new Error(`Sheet "${sheetName}" has no header row.`);
+  }
+  const idIndex = headers.indexOf(idHeader);
+  if (idIndex === -1) {
+    throw new Error(`Missing column "${idHeader}" in sheet "${sheetName}".`);
+  }
+
+  const row = headers.map((h) =>
+    h in valueByHeader ? (valueByHeader[h] ?? null) : null,
+  );
+
+  let existingRowIndex = -1;
+  for (let i = 1; i < aoa.length; i++) {
+    const cell = aoa[i]?.[idIndex];
+    if (cell !== null && cell !== undefined && String(cell) === id) {
+      existingRowIndex = i;
+      break;
+    }
+  }
+
+  if (existingRowIndex === -1) {
+    XLSX.utils.sheet_add_aoa(sheet, [row], { origin: -1, cellDates: true });
+  } else {
+    XLSX.utils.sheet_add_aoa(sheet, [row], {
+      origin: { r: existingRowIndex, c: 0 },
+      cellDates: true,
+    });
+  }
+
+  const out = XLSX.write(workbook, {
+    type: "buffer",
+    bookType: "xlsx",
+    cellDates: true,
+  }) as Buffer;
+  writeFileSync(path, out);
+
+  cache = null;
+}
+
+export function upsertAsset(asset: Asset): void {
+  upsertRow(SHEET_ACTIFS, "ID", asset.id, {
+    ID: asset.id,
+    "Libellé": asset.label,
+    Type: asset.type,
+    ISIN: asset.isin ?? null,
+    Ticker: asset.ticker ?? null,
+    "Source prix": asset.source,
+    "Param source": asset.param ?? null,
+    Devise: asset.currency,
+  });
+}
+
+export function upsertAccount(account: Account): void {
+  upsertRow(SHEET_COMPTES, "ID", account.id, {
+    ID: account.id,
+    "Libellé": account.label,
+    Type: account.type,
+    Enveloppe: account.envelope,
+  });
+}
