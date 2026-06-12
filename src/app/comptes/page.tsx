@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Lock, LockOpen } from "lucide-react";
 import {
   Card,
   CardBody,
@@ -10,11 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
+import { buildAccountUnlocks, type AccountUnlock } from "@/lib/deblocage";
 import { readPriceMap } from "@/lib/store";
 import {
+  formatDate,
   formatEuro,
   formatPercent,
   formatQuantity,
+  formatRelativeDuration,
   signClass,
 } from "@/lib/utils";
 import { AccountType, Envelope } from "@/lib/schema";
@@ -46,6 +50,13 @@ export default async function ComptesPage() {
   const workbook = loadWorkbook();
   const priceMap = await readPriceMap(workbook.assets);
   const portfolio = buildPortfolio(workbook, priceMap);
+
+  const unlockMap = new Map(
+    buildAccountUnlocks(workbook, portfolio, priceMap).map((u) => [
+      u.accountId,
+      u,
+    ]),
+  );
 
   const accountMap = new Map(workbook.accounts.map((a) => [a.id, a]));
   const portfolioIds = new Set(portfolio.accounts.map((a) => a.accountId));
@@ -121,6 +132,7 @@ export default async function ComptesPage() {
             <CardBody className="divide-y divide-zinc-200 px-0 dark:divide-zinc-800">
               {accounts.map((account) => {
                 const meta = accountMap.get(account.accountId);
+                const unlock = unlockMap.get(account.accountId);
                 return (
                   <div key={account.accountId} className="pt-4 first:pt-0">
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-zinc-50/70 px-6 py-3 dark:bg-zinc-900/40">
@@ -147,6 +159,7 @@ export default async function ComptesPage() {
                         )}
                       </div>
                     </div>
+                    {unlock && <DeblocageRow unlock={unlock} />}
                     {account.positions.length === 0 ? (
                       <p className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                         Aucune position pour ce compte.
@@ -203,6 +216,60 @@ export default async function ComptesPage() {
           </Card>
         );
       })}
+    </div>
+  );
+}
+
+function DeblocageRow({ unlock }: { unlock: AccountUnlock }) {
+  const horizonLabel = unlock.envelope === "AV" ? "8 ans" : "5 ans";
+
+  if (!unlock.openDateKnown) {
+    return (
+      <div className="flex items-center gap-2 px-6 py-2 text-xs text-amber-700 dark:text-amber-300">
+        <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span>
+          Déblocage ({horizonLabel}) non calculé : renseigne la date
+          d&apos;ouverture du compte via l&apos;icône d&apos;édition.
+        </span>
+      </div>
+    );
+  }
+
+  if (unlock.isFullyUnlocked) {
+    return (
+      <div className="flex items-center gap-2 px-6 py-2 text-xs text-emerald-700 dark:text-emerald-400">
+        <LockOpen className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span>
+          Intégralement débloqué — {formatEuro(unlock.unlockedAmount)}{" "}
+          disponible{unlock.envelope === "PEE" ? "" : " (avantage fiscal acquis)"}.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-6 py-2 text-xs text-zinc-600 dark:text-zinc-400">
+      <span className="inline-flex items-center gap-1.5">
+        <LockOpen className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
+        Débloquable :{" "}
+        <span className="font-medium text-emerald-700 dark:text-emerald-400">
+          {formatEuro(unlock.unlockedAmount)}
+        </span>
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <Lock className="h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden />
+        Bloqué :{" "}
+        <span className="font-medium text-zinc-700 dark:text-zinc-300">
+          {formatEuro(unlock.lockedAmount)}
+        </span>
+      </span>
+      {unlock.unlockDate && (
+        <span>
+          {unlock.envelope === "PEE" && unlock.nextUnlockAmount !== null
+            ? `Prochain déblocage ${formatRelativeDuration(unlock.unlockDate)} (${formatDate(unlock.unlockDate)}) : ${formatEuro(unlock.nextUnlockAmount)}`
+            : `Déblocage ${formatRelativeDuration(unlock.unlockDate)} (${formatDate(unlock.unlockDate)})`}
+        </span>
+      )}
     </div>
   );
 }
