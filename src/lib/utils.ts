@@ -56,6 +56,28 @@ export function formatDate(value: Date | string): string {
   return dateFormatter.format(date);
 }
 
+export function formatRelativeDuration(target: Date, from: Date = new Date()): string {
+  if (Number.isNaN(target.getTime())) return "—";
+  const diffMs = target.getTime() - from.getTime();
+  if (diffMs <= 0) return "débloqué";
+
+  const totalDays = Math.ceil(diffMs / (24 * 3600 * 1000));
+  if (totalDays < 31) {
+    return totalDays <= 1 ? "dans 1 jour" : `dans ${totalDays} jours`;
+  }
+
+  const totalMonths = Math.round(totalDays / 30.4375);
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+
+  const parts: string[] = [];
+  if (years > 0) parts.push(years === 1 ? "1 an" : `${years} ans`);
+  if (months > 0) parts.push(`${months} mois`);
+  if (parts.length === 0) parts.push("moins d'un mois");
+
+  return `dans ${parts.join(" ")}`;
+}
+
 export function signClass(value: number): string {
   if (value > 0) return "text-emerald-600 dark:text-emerald-400";
   if (value < 0) return "text-rose-600 dark:text-rose-400";
