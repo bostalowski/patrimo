@@ -129,4 +129,5 @@ export type Workbook = {
   transactions: Transaction[];
   assets: Asset[];
   accounts: Account[];
+  budget: BudgetLine[];
 };

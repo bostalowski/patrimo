@@ -126,7 +126,7 @@ défaut de `EXCEL_PATH`. Le fichier est gitignored (`.gitignore`).
 
 ### Fichier Excel — `data/Investissement.xlsx`
 
-Trois onglets :
+Quatre onglets :
 
 - **Transactions** : `Date · Type · Compte · Compte destination · Actif ·
   Quantité · Prix unitaire · Devise · Frais · Frais devise · Notes`. Types
@@ -135,6 +135,10 @@ Trois onglets :
 - **Actifs** : `ID · Libellé · Type · ISIN · Ticker · Source prix · Param
   source · Devise`. Sources : `coingecko`, `yahoo`, `manual`.
 - **Comptes** : `ID · Libellé · Type · Enveloppe` (CTO, PEA, PEE, AV).
+- **Budget** : `ID · Libellé · Type · Montant · Fréquence · Catégorie · Notes`.
+  `Type` vaut `REVENU` ou `DEPENSE`, `Fréquence` `MENSUEL`/`TRIMESTRIEL`/`ANNUEL`.
+  L'onglet est créé automatiquement à la première ligne ajoutée depuis la page
+  Budget, et reste éditable à la main (saisie en masse possible).
 
 Les cibles d'allocation sont gérées dans le **DCA Planner** (config par
 enveloppe persistée dans `data/dca-configs.json`).

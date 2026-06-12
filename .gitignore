@@ -43,7 +43,6 @@ next-env.d.ts
 /data/manual-prices.json
 /data/dca-configs.json
 /data/benchmarks.json
-/data/budget.json
 
 # electron build artifacts
 /release
