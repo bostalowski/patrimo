@@ -1,39 +1,17 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, X } from "lucide-react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { TransactionType } from "@/lib/schema";
-
-type Option = { id: string; label: string };
-
-const TYPES: TransactionType[] = [
-  "ACHAT",
-  "VENTE",
-  "DIVIDENDE",
-  "INTERET",
-  "TRANSFERT",
-  "DEPOT",
-  "RETRAIT",
-];
-
-const CURRENCIES = ["EUR", "USD", "GBP", "CHF"];
-
-const inputClasses =
-  "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function parseDecimal(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const n = Number(trimmed.replace(",", "."));
-  return Number.isFinite(n) ? n : null;
-}
+import {
+  emptyTxValue,
+  TransactionFields,
+  validateTxValue,
+  type Option,
+  type TxFormValue,
+} from "./transaction-form";
 
 export function NewTransactionForm({
   assets,
@@ -47,38 +25,18 @@ export function NewTransactionForm({
   const [busy, setBusy] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [value, setValue] = useState<TxFormValue>(() =>
+    emptyTxValue(accounts, assets),
+  );
 
-  const [date, setDate] = useState(todayIso);
-  const [type, setType] = useState<TransactionType>("ACHAT");
-  const [compte, setCompte] = useState(accounts[0]?.id ?? "");
-  const [compteDestination, setCompteDestination] = useState("");
-  const [actif, setActif] = useState(assets[0]?.id ?? "");
-  const [quantite, setQuantite] = useState("");
-  const [prixUnitaire, setPrixUnitaire] = useState("");
-  const [devise, setDevise] = useState("EUR");
-  const [frais, setFrais] = useState("");
-  const [fraisDevise, setFraisDevise] = useState("EUR");
-  const [notes, setNotes] = useState("");
-
-  const isTransfert = type === "TRANSFERT";
   const isLoading = busy || pending;
 
-  useEffect(() => {
-    if (!isTransfert) setCompteDestination("");
-  }, [isTransfert]);
+  function patch(next: Partial<TxFormValue>) {
+    setValue((prev) => ({ ...prev, ...next }));
+  }
 
   function reset() {
-    setDate(todayIso());
-    setType("ACHAT");
-    setCompte(accounts[0]?.id ?? "");
-    setCompteDestination("");
-    setActif(assets[0]?.id ?? "");
-    setQuantite("");
-    setPrixUnitaire("");
-    setDevise("EUR");
-    setFrais("");
-    setFraisDevise("EUR");
-    setNotes("");
+    setValue(emptyTxValue(accounts, assets));
     setError(null);
   }
 
@@ -86,27 +44,9 @@ export function NewTransactionForm({
     e.preventDefault();
     setError(null);
 
-    const quantiteNum = parseDecimal(quantite);
-    if (quantiteNum === null || quantiteNum < 0) {
-      setError("Quantité invalide.");
-      return;
-    }
-
-    const prixNum =
-      prixUnitaire.trim() === "" ? null : parseDecimal(prixUnitaire);
-    if (prixUnitaire.trim() !== "" && prixNum === null) {
-      setError("Prix unitaire invalide.");
-      return;
-    }
-
-    const fraisNum = frais.trim() === "" ? 0 : parseDecimal(frais);
-    if (fraisNum === null || fraisNum < 0) {
-      setError("Frais invalides.");
-      return;
-    }
-
-    if (isTransfert && !compteDestination) {
-      setError("Sélectionne un compte de destination.");
+    const result = validateTxValue(value);
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 
@@ -115,19 +55,7 @@ export function NewTransactionForm({
       const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          date,
-          type,
-          compte,
-          compteDestination: compteDestination || undefined,
-          actif,
-          quantite: quantiteNum,
-          prixUnitaire: prixNum,
-          devise,
-          frais: fraisNum,
-          fraisDevise,
-          notes: notes.trim() || undefined,
-        }),
+        body: JSON.stringify(result.payload),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as {
@@ -178,154 +106,12 @@ export function NewTransactionForm({
       </CardHeader>
       <CardBody>
         <form onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="Date">
-              <input
-                type="date"
-                value={date}
-                max={todayIso()}
-                onChange={(e) => setDate(e.target.value)}
-                className={inputClasses}
-                required
-              />
-            </Field>
-
-            <Field label="Type">
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value as TransactionType)}
-                className={inputClasses}
-              >
-                {TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Compte">
-              <select
-                value={compte}
-                onChange={(e) => setCompte(e.target.value)}
-                className={inputClasses}
-                required
-              >
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            {isTransfert && (
-              <Field label="Compte destination">
-                <select
-                  value={compteDestination}
-                  onChange={(e) => setCompteDestination(e.target.value)}
-                  className={inputClasses}
-                  required
-                >
-                  <option value="">— Choisir —</option>
-                  {accounts
-                    .filter((a) => a.id !== compte)
-                    .map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.label}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-            )}
-
-            <Field label="Actif">
-              <select
-                value={actif}
-                onChange={(e) => setActif(e.target.value)}
-                className={inputClasses}
-                required
-              >
-                {assets.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Quantité">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={quantite}
-                onChange={(e) => setQuantite(e.target.value)}
-                placeholder="0"
-                className={inputClasses}
-                required
-              />
-            </Field>
-
-            <Field label="Prix unitaire">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={prixUnitaire}
-                onChange={(e) => setPrixUnitaire(e.target.value)}
-                placeholder="—"
-                className={inputClasses}
-              />
-            </Field>
-
-            <Field label="Devise">
-              <select
-                value={devise}
-                onChange={(e) => setDevise(e.target.value)}
-                className={inputClasses}
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Frais">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={frais}
-                onChange={(e) => setFrais(e.target.value)}
-                placeholder="0"
-                className={inputClasses}
-              />
-            </Field>
-
-            <Field label="Frais devise">
-              <select
-                value={fraisDevise}
-                onChange={(e) => setFraisDevise(e.target.value)}
-                className={inputClasses}
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Notes" className="sm:col-span-2">
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Optionnel"
-                className={inputClasses}
-              />
-            </Field>
-          </div>
+          <TransactionFields
+            value={value}
+            onChange={patch}
+            accounts={accounts}
+            assets={assets}
+          />
 
           {error && (
             <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
@@ -363,24 +149,5 @@ export function NewTransactionForm({
         </form>
       </CardBody>
     </Card>
-  );
-}
-
-function Field({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex flex-col gap-1 text-xs", className)}>
-      <span className="font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </span>
-      {children}
-    </div>
   );
 }

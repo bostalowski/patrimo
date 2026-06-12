@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2, Pencil, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Table, TBody, TD, THead, TR } from "@/components/ui/table";
+import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { SortableTH } from "@/components/ui/sortable-th";
 import { useSortedRows, type SortDirection } from "@/lib/use-sorted";
 import {
@@ -15,6 +16,8 @@ import {
   signClass,
 } from "@/lib/utils";
 import type { TransactionType } from "@/lib/schema";
+import { EditTransactionDialog } from "./edit-transaction-dialog";
+import type { Option } from "./transaction-form";
 
 type BadgeVariant = "default" | "success" | "danger" | "warning" | "info";
 
@@ -52,18 +55,22 @@ const ALL_TYPES: TransactionType[] = [
 
 export type TransactionRow = {
   id: string;
+  row: number;
   date: Date;
   type: TransactionType;
   compte: string;
   compteLabel: string;
+  compteDestination: string | null;
   compteDestinationLabel: string | null;
   actif: string;
   actifLabel: string;
   quantite: number;
   prixUnitaire: number | null;
   montant: number | null;
+  devise: string;
   frais: number;
   fraisDevise: string;
+  notes: string | null;
 };
 
 export type AccountOption = {
@@ -101,10 +108,16 @@ const chipInactiveClasses =
 export function TransactionsTable({
   rows,
   accounts,
+  allAccounts,
+  allAssets,
 }: {
   rows: TransactionRow[];
   accounts: AccountOption[];
+  allAccounts: Option[];
+  allAssets: Option[];
 }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
   const [selectedTypes, setSelectedTypes] = useState<Set<TransactionType>>(
     new Set(),
   );
@@ -113,6 +126,39 @@ export function TransactionsTable({
   );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [editingRow, setEditingRow] = useState<TransactionRow | null>(null);
+  const [deletingRow, setDeletingRow] = useState<TransactionRow | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  function refresh() {
+    startTransition(() => router.refresh());
+  }
+
+  async function confirmDelete() {
+    if (!deletingRow) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch("/api/transactions", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ row: deletingRow.row }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(body?.error ?? "Échec de la suppression");
+      }
+      setDeletingRow(null);
+      refresh();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
 
   const toggleType = (type: TransactionType) => {
     setSelectedTypes((prev) => {
@@ -182,7 +228,7 @@ export function TransactionsTable({
     dateTo !== "";
 
   return (
-    <div>
+    <div className={cn(pending && "pointer-events-none opacity-60")}>
       <div className="space-y-4 border-b border-zinc-200 px-6 pb-4 dark:border-zinc-800">
         <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
           <span className="mt-0.5 shrink-0 text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -292,12 +338,13 @@ export function TransactionsTable({
             <SortableTH label="Prix unitaire" columnKey="prixUnitaire" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
             <SortableTH label="Montant" columnKey="montant" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
             <SortableTH label="Frais" columnKey="frais" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
+            <TH className="text-right">Actions</TH>
           </TR>
         </THead>
         <TBody>
           {sorted.length === 0 ? (
             <TR>
-              <TD className="px-6 py-8 text-center text-sm text-zinc-500" colSpan={8}>
+              <TD className="px-6 py-8 text-center text-sm text-zinc-500" colSpan={9}>
                 Aucune transaction ne correspond aux filtres.
               </TD>
             </TR>
@@ -332,11 +379,97 @@ export function TransactionsTable({
                 <TD className="text-right font-mono text-xs text-zinc-500">
                   {formatFee(tx.frais, tx.fraisDevise)}
                 </TD>
+                <TD className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setEditingRow(tx)}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                      aria-label="Modifier la transaction"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteError(null);
+                        setDeletingRow(tx);
+                      }}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                      aria-label="Supprimer la transaction"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </TD>
               </TR>
             ))
           )}
         </TBody>
       </Table>
+
+      {editingRow && (
+        <EditTransactionDialog
+          row={editingRow}
+          accounts={allAccounts}
+          assets={allAssets}
+          onClose={() => setEditingRow(null)}
+          onSaved={() => {
+            setEditingRow(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {deletingRow && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !deleteBusy) setDeletingRow(null);
+          }}
+        >
+          <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              Supprimer la transaction ?
+            </h3>
+            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+              {formatDate(deletingRow.date)} · {deletingRow.type} ·{" "}
+              {deletingRow.actifLabel} · {deletingRow.compteLabel}. Cette action
+              est irréversible et modifie l&apos;Excel source.
+            </p>
+
+            {deleteError && (
+              <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
+                {deleteError}
+              </p>
+            )}
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingRow(null)}
+                disabled={deleteBusy}
+                className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleteBusy}
+                className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-500 disabled:opacity-50"
+              >
+                {deleteBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

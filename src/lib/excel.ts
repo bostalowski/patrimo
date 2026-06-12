@@ -176,6 +176,39 @@ function readSheetOptional(
   });
 }
 
+export type LoadedTransaction = { transaction: Transaction; row: number };
+
+function aoaRowToObject(
+  headers: string[],
+  row: unknown[],
+): Record<string, unknown> {
+  const obj: Record<string, unknown> = {};
+  headers.forEach((header, i) => {
+    obj[header] = row[i] ?? null;
+  });
+  return obj;
+}
+
+function readTransactionRowsFromSheet(workbook: XLSX.WorkBook): {
+  headers: string[];
+  dataRows: unknown[][];
+} {
+  const sheet = workbook.Sheets[SHEET_TRANSACTIONS];
+  if (!sheet) {
+    throw new Error(`Missing sheet "${SHEET_TRANSACTIONS}" in workbook.`);
+  }
+  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    defval: null,
+    blankrows: false,
+  });
+  const headers = (aoa[0] ?? []) as string[];
+  if (headers.length === 0) {
+    throw new Error(`Sheet "${SHEET_TRANSACTIONS}" has no header row.`);
+  }
+  return { headers, dataRows: aoa.slice(1) as unknown[][] };
+}
+
 function parseTransactions(rows: Record<string, unknown>[]): Transaction[] {
   return rows.map((row, i) => {
     const parsed = Transaction.safeParse({
@@ -290,7 +323,11 @@ function emptyToUndefined(value: unknown): string | undefined {
   return str.length === 0 ? undefined : str;
 }
 
-let cache: { mtime: number; workbook: Workbook } | null = null;
+let cache: {
+  mtime: number;
+  workbook: Workbook;
+  transactionRows: LoadedTransaction[];
+} | null = null;
 
 export function loadWorkbook(): Workbook {
   const path = getExcelPath();
@@ -303,16 +340,30 @@ export function loadWorkbook(): Workbook {
   const fileBuffer = readFileSync(path);
   const sheet = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
 
-  const transactions = parseTransactions(readSheet(sheet, SHEET_TRANSACTIONS));
+  const { headers, dataRows } = readTransactionRowsFromSheet(sheet);
+  const parsedTransactions = parseTransactions(
+    dataRows.map((row) => aoaRowToObject(headers, row)),
+  );
+  const transactionRows: LoadedTransaction[] = parsedTransactions.map(
+    (transaction, row) => ({ transaction, row }),
+  );
+
   const assets = parseAssets(readSheet(sheet, SHEET_ACTIFS));
   const accounts = parseAccounts(readSheet(sheet, SHEET_COMPTES));
   const budget = parseBudget(readSheetOptional(sheet, SHEET_BUDGET));
 
-  transactions.sort((a, b) => a.date.getTime() - b.date.getTime());
+  const transactions = [...parsedTransactions].sort(
+    (a, b) => a.date.getTime() - b.date.getTime(),
+  );
 
   const workbook: Workbook = { transactions, assets, accounts, budget };
-  cache = { mtime, workbook };
+  cache = { mtime, workbook, transactionRows };
   return workbook;
+}
+
+export function loadTransactionRows(): LoadedTransaction[] {
+  loadWorkbook();
+  return cache?.transactionRows ?? [];
 }
 
 export function getBudget(): BudgetLine[] {
@@ -380,6 +431,45 @@ export function appendTransactions(transactions: Transaction[]): void {
   writeFileSync(path, out);
 
   cache = null;
+}
+
+export function updateTransactionAt(row: number, transaction: Transaction): void {
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  const { headers, dataRows } = readTransactionRowsFromSheet(workbook);
+
+  if (row < 0 || row >= dataRows.length) {
+    throw new Error(`Transaction introuvable (ligne ${row}).`);
+  }
+
+  const valueByHeader = transactionValueByHeader(transaction);
+  dataRows[row] = headers.map((h) => valueByHeader[h] ?? null);
+
+  const nextSheet = XLSX.utils.aoa_to_sheet([headers, ...dataRows], {
+    cellDates: true,
+  });
+  workbook.Sheets[SHEET_TRANSACTIONS] = nextSheet;
+  writeWorkbook(workbook, path);
+}
+
+export function deleteTransactionAt(row: number): void {
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  const { headers, dataRows } = readTransactionRowsFromSheet(workbook);
+
+  if (row < 0 || row >= dataRows.length) {
+    throw new Error(`Transaction introuvable (ligne ${row}).`);
+  }
+
+  dataRows.splice(row, 1);
+
+  const nextSheet = XLSX.utils.aoa_to_sheet([headers, ...dataRows], {
+    cellDates: true,
+  });
+  workbook.Sheets[SHEET_TRANSACTIONS] = nextSheet;
+  writeWorkbook(workbook, path);
 }
 
 type UpsertEntry = {
