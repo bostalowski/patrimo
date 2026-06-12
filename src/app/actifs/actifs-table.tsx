@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Table, TBody, TD, THead, TR } from "@/components/ui/table";
+import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { SortableTH } from "@/components/ui/sortable-th";
 import { useSortedRows, type SortDirection } from "@/lib/use-sorted";
 import {
@@ -12,6 +12,8 @@ import {
   formatQuantity,
   signClass,
 } from "@/lib/utils";
+import type { Asset, AssetType, PriceSource } from "@/lib/schema";
+import { AssetForm } from "./asset-form";
 
 export type ActifRow = {
   assetId: string;
@@ -23,6 +25,7 @@ export type ActifRow = {
   marketValue: number | null;
   unrealizedPnL: number | null;
   unrealizedPnLPct: number | null;
+  asset?: Asset;
 };
 
 type SortKey =
@@ -46,7 +49,15 @@ const defaultDirections: Record<SortKey, SortDirection> = {
   unrealizedPnLPct: "desc",
 };
 
-export function ActifsTable({ rows }: { rows: ActifRow[] }) {
+export function ActifsTable({
+  rows,
+  assetTypes,
+  priceSources,
+}: {
+  rows: ActifRow[];
+  assetTypes: readonly AssetType[];
+  priceSources: readonly PriceSource[];
+}) {
   const accessors = useMemo(
     () => ({
       label: (r: ActifRow) => r.label,
@@ -81,6 +92,7 @@ export function ActifsTable({ rows }: { rows: ActifRow[] }) {
           <SortableTH label="Valeur" columnKey="marketValue" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
           <SortableTH label="P&L latente" columnKey="unrealizedPnL" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
           <SortableTH label="%" columnKey="unrealizedPnLPct" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
+          <TH className="w-10" />
         </TR>
       </THead>
       <TBody>
@@ -115,6 +127,16 @@ export function ActifsTable({ rows }: { rows: ActifRow[] }) {
             </TD>
             <TD className={`text-right font-mono text-xs ${signClass(p.unrealizedPnL ?? 0)}`}>
               {p.unrealizedPnLPct !== null ? formatPercent(p.unrealizedPnLPct) : "—"}
+            </TD>
+            <TD className="text-right">
+              {p.asset && (
+                <AssetForm
+                  assetTypes={assetTypes}
+                  priceSources={priceSources}
+                  asset={p.asset}
+                  trigger="icon"
+                />
+              )}
             </TD>
           </TR>
         ))}

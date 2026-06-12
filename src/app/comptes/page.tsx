@@ -16,8 +16,29 @@ import {
   formatQuantity,
   signClass,
 } from "@/lib/utils";
+import { AccountType, Envelope } from "@/lib/schema";
+import { AccountForm } from "./account-form";
 
 export const dynamic = "force-dynamic";
+
+type Empty = {
+  accountId: string;
+  envelope: string;
+  marketValue: 0;
+  costBasis: 0;
+  unrealizedPnL: 0;
+  realizedPnL: 0;
+  realizedIncome: 0;
+  cashInterest: 0;
+  positions: [];
+  isEmpty: true;
+};
+
+type FullAccount = ReturnType<typeof buildPortfolio>["accounts"][number] & {
+  isEmpty?: false;
+};
+
+type AccountEntry = FullAccount | Empty;
 
 export default async function ComptesPage() {
   const workbook = loadWorkbook();
@@ -25,8 +46,27 @@ export default async function ComptesPage() {
   const portfolio = buildPortfolio(workbook, priceMap);
 
   const accountMap = new Map(workbook.accounts.map((a) => [a.id, a]));
-  const byEnvelope = new Map<string, typeof portfolio.accounts>();
-  for (const account of portfolio.accounts) {
+  const portfolioIds = new Set(portfolio.accounts.map((a) => a.accountId));
+
+  const allAccounts: AccountEntry[] = [...portfolio.accounts];
+  for (const account of workbook.accounts) {
+    if (portfolioIds.has(account.id)) continue;
+    allAccounts.push({
+      accountId: account.id,
+      envelope: account.envelope,
+      marketValue: 0,
+      costBasis: 0,
+      unrealizedPnL: 0,
+      realizedPnL: 0,
+      realizedIncome: 0,
+      cashInterest: 0,
+      positions: [],
+      isEmpty: true,
+    });
+  }
+
+  const byEnvelope = new Map<string, AccountEntry[]>();
+  for (const account of allAccounts) {
     const env = account.envelope;
     const list = byEnvelope.get(env) ?? [];
     list.push(account);
@@ -47,6 +87,11 @@ export default async function ComptesPage() {
           Positions par enveloppe fiscale et par compte.
         </p>
       </header>
+
+      <AccountForm
+        accountTypes={AccountType.options}
+        envelopes={Envelope.options}
+      />
 
       {envelopes.map(([envelope, accounts]) => {
         const envelopeValue = accounts.reduce((s, c) => s + c.marketValue, 0);
@@ -82,6 +127,14 @@ export default async function ComptesPage() {
                           {meta?.label ?? account.accountId}
                         </h3>
                         <Badge variant="default">{meta?.type ?? "—"}</Badge>
+                        {meta && (
+                          <AccountForm
+                            accountTypes={AccountType.options}
+                            envelopes={Envelope.options}
+                            account={meta}
+                            trigger="icon"
+                          />
+                        )}
                       </div>
                       <div className="font-mono text-sm font-medium text-zinc-700 dark:text-zinc-300">
                         {formatEuro(account.marketValue)}
@@ -92,49 +145,55 @@ export default async function ComptesPage() {
                         )}
                       </div>
                     </div>
-                    <Table>
-                      <THead>
-                        <TR>
-                          <TH>Actif</TH>
-                          <TH className="text-right">Quantité</TH>
-                          <TH className="text-right">PRU</TH>
-                          <TH className="text-right">Valeur</TH>
-                          <TH className="text-right">P&amp;L</TH>
-                        </TR>
-                      </THead>
-                      <TBody>
-                        {account.positions.map((p) => (
-                          <TR key={p.assetId}>
-                            <TD>
-                              <Link
-                                href={`/actifs/${encodeURIComponent(p.assetId)}`}
-                                className="font-medium hover:underline"
-                              >
-                                {p.asset?.label ?? p.assetId}
-                              </Link>
-                            </TD>
-                            <TD className="text-right font-mono text-xs">
-                              {formatQuantity(p.quantity)}
-                            </TD>
-                            <TD className="text-right font-mono text-xs">
-                              {p.quantity > 0 ? formatEuro(p.pru, true) : "—"}
-                            </TD>
-                            <TD className="text-right font-mono text-xs">
-                              {p.currentPrice !== null
-                                ? formatEuro(p.marketValue)
-                                : "—"}
-                            </TD>
-                            <TD
-                              className={`text-right font-mono text-xs ${signClass(p.unrealizedPnL)}`}
-                            >
-                              {p.currentPrice !== null
-                                ? formatEuro(p.unrealizedPnL)
-                                : "—"}
-                            </TD>
+                    {account.positions.length === 0 ? (
+                      <p className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
+                        Aucune position pour ce compte.
+                      </p>
+                    ) : (
+                      <Table>
+                        <THead>
+                          <TR>
+                            <TH>Actif</TH>
+                            <TH className="text-right">Quantité</TH>
+                            <TH className="text-right">PRU</TH>
+                            <TH className="text-right">Valeur</TH>
+                            <TH className="text-right">P&amp;L</TH>
                           </TR>
-                        ))}
-                      </TBody>
-                    </Table>
+                        </THead>
+                        <TBody>
+                          {account.positions.map((p) => (
+                            <TR key={p.assetId}>
+                              <TD>
+                                <Link
+                                  href={`/actifs/${encodeURIComponent(p.assetId)}`}
+                                  className="font-medium hover:underline"
+                                >
+                                  {p.asset?.label ?? p.assetId}
+                                </Link>
+                              </TD>
+                              <TD className="text-right font-mono text-xs">
+                                {formatQuantity(p.quantity)}
+                              </TD>
+                              <TD className="text-right font-mono text-xs">
+                                {p.quantity > 0 ? formatEuro(p.pru, true) : "—"}
+                              </TD>
+                              <TD className="text-right font-mono text-xs">
+                                {p.currentPrice !== null
+                                  ? formatEuro(p.marketValue)
+                                  : "—"}
+                              </TD>
+                              <TD
+                                className={`text-right font-mono text-xs ${signClass(p.unrealizedPnL)}`}
+                              >
+                                {p.currentPrice !== null
+                                  ? formatEuro(p.unrealizedPnL)
+                                  : "—"}
+                              </TD>
+                            </TR>
+                          ))}
+                        </TBody>
+                      </Table>
+                    )}
                   </div>
                 );
               })}
