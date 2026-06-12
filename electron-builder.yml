@@ -54,5 +54,19 @@ mac:
   hardenedRuntime: false
   gatekeeperAssess: false
   identity: null
+  extendInfo:
+    NSDocumentsFolderUsageDescription: >-
+      Financial Graphs a besoin de lire et écrire votre classeur Excel de
+      transactions dans le dossier Documents.
+    NSDownloadsFolderUsageDescription: >-
+      Financial Graphs a besoin de lire les exports CSV (Trade Republic et
+      autres) et d'enregistrer votre classeur Excel dans le dossier
+      Téléchargements.
+    NSDesktopFolderUsageDescription: >-
+      Financial Graphs a besoin d'accéder à votre Bureau pour y lire ou
+      enregistrer votre classeur Excel.
+    NSRemovableVolumesUsageDescription: >-
+      Financial Graphs a besoin d'accéder aux volumes amovibles pour y lire
+      ou enregistrer votre classeur Excel.
 dmg:
   writeUpdateInfo: false

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Upload } from "lucide-react";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import {
@@ -70,12 +72,22 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {transactions.length} mouvements chargés depuis l&apos;Excel. Tu peux
-          en ajouter directement ici, ils seront écrits dans le classeur source.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {transactions.length} mouvements chargés depuis l&apos;Excel. Tu
+            peux en ajouter directement ici, ils seront écrits dans le classeur
+            source.
+          </p>
+        </div>
+        <Link
+          href="/transactions/import"
+          className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+        >
+          <Upload className="h-4 w-4" />
+          Importer un CSV
+        </Link>
       </header>
 
       <NewTransactionForm assets={allAssets} accounts={allAccounts} />

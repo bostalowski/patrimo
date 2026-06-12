@@ -135,6 +135,15 @@ function getUserDataDir() {
   return dir;
 }
 
+function getDefaultExcelDir() {
+  if (isDev) {
+    const dir = path.join(__dirname, "..", "data");
+    fs.mkdirSync(dir, { recursive: true });
+    return dir;
+  }
+  return getUserDataDir();
+}
+
 async function startNextServer() {
   if (nextServerProcess && nextServerUrl) {
     return nextServerUrl;
@@ -306,6 +315,7 @@ function registerIpcHandlers() {
   ipcMain.handle("fingraphs:pick-excel-file", async () => {
     const result = await dialog.showOpenDialog(mainWindow ?? undefined, {
       title: "Choisir un classeur Excel",
+      defaultPath: getDefaultExcelDir(),
       properties: ["openFile"],
       filters: [{ name: "Classeur Excel", extensions: ["xlsx"] }],
     });
@@ -314,12 +324,13 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle("fingraphs:pick-new-excel-location", async (_event, defaultName) => {
+    const fileName =
+      typeof defaultName === "string" && defaultName.length > 0
+        ? defaultName
+        : "Investissement.xlsx";
     const result = await dialog.showSaveDialog(mainWindow ?? undefined, {
       title: "Créer un nouveau classeur Excel",
-      defaultPath:
-        typeof defaultName === "string" && defaultName.length > 0
-          ? defaultName
-          : "Investissement.xlsx",
+      defaultPath: path.join(getDefaultExcelDir(), fileName),
       filters: [{ name: "Classeur Excel", extensions: ["xlsx"] }],
     });
     if (result.canceled || !result.filePath) return null;
