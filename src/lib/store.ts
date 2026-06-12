@@ -1,7 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { Asset, DcaConfig } from "@/lib/schema";
-import { DcaConfig as DcaConfigSchema } from "@/lib/schema";
+import type { Asset, BudgetLine, DcaConfig } from "@/lib/schema";
+import {
+  BudgetLine as BudgetLineSchema,
+  DcaConfig as DcaConfigSchema,
+} from "@/lib/schema";
 import { z } from "zod";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
@@ -11,6 +14,7 @@ const PRICES_FILE = resolve(DATA_DIR, "prices.json");
 const MANUAL_PRICES_FILE = resolve(DATA_DIR, "manual-prices.json");
 const BENCHMARKS_FILE = resolve(DATA_DIR, "benchmarks.json");
 const DCA_CONFIGS_FILE = resolve(DATA_DIR, "dca-configs.json");
+const BUDGET_FILE = resolve(DATA_DIR, "budget.json");
 
 export type AssetPriceHistory = Record<string, number>;
 export type PriceStore = Record<string, AssetPriceHistory>;
@@ -85,4 +89,19 @@ export async function readDcaConfigs(): Promise<DcaConfig[]> {
 
 export async function writeDcaConfigs(configs: DcaConfig[]): Promise<void> {
   await writeJson(DCA_CONFIGS_FILE, { configs });
+}
+
+const BudgetStoreSchema = z.object({
+  lines: z.array(BudgetLineSchema),
+});
+
+export async function readBudget(): Promise<BudgetLine[]> {
+  const raw = await readJson<unknown>(BUDGET_FILE, { lines: [] });
+  const parsed = BudgetStoreSchema.safeParse(raw);
+  if (!parsed.success) return [];
+  return parsed.data.lines;
+}
+
+export async function writeBudget(lines: BudgetLine[]): Promise<void> {
+  await writeJson(BUDGET_FILE, { lines });
 }
