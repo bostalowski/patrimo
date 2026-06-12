@@ -16,10 +16,10 @@ import {
   readPrices,
 } from "@/lib/store";
 import { BENCHMARKS } from "@/lib/benchmarks";
-import { PortfolioCurveCard } from "@/components/charts/portfolio-curve-card";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
+import { PerformanceSection } from "@/components/performance-section";
 import { SyncButton } from "@/components/sync-button";
-import { formatEuro, formatPercent, signClass } from "@/lib/utils";
+import { formatEuro, signClass } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
         <SyncButton />
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Valeur totale</CardTitle>
@@ -79,21 +79,9 @@ export default async function DashboardPage() {
             </CardValue>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Performance globale</CardTitle>
-            <CardValue className={signClass(portfolio.totals.totalReturn)}>
-              {formatPercent(portfolio.totals.totalReturnPct)}
-            </CardValue>
-            <p className="text-xs text-zinc-500">
-              {formatEuro(portfolio.totals.totalReturn)} • frais{" "}
-              {formatEuro(portfolio.totals.fees)}
-            </p>
-          </CardHeader>
-        </Card>
       </div>
 
-      <PortfolioCurveCard history={history} benchmark={benchmark} />
+      <PerformanceSection history={history} benchmark={benchmark} />
 
       <Card>
         <CardHeader>

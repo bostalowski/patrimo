@@ -156,12 +156,18 @@ export function buildHistorySeries(
     for (const assetSeries of series.values()) {
       const assetId = assetSeries.assetId;
       const qty = qtyByAsset.get(assetId) ?? 0;
+      const invested = investedByAsset.get(assetId) ?? 0;
       const source = assetById.get(assetId)?.source;
       const history = source === "manual" ? manual[assetId] : prices[assetId];
       const price = history ? findPriceAtOrBefore(history, cursor) : null;
-      const value = price !== null && price !== undefined ? qty * price : 0;
+      const value =
+        price !== null && price !== undefined
+          ? qty * price
+          : qty > 0
+            ? invested
+            : 0;
       assetSeries.values[dateIndex] = value;
-      assetSeries.invested[dateIndex] = investedByAsset.get(assetId) ?? 0;
+      assetSeries.invested[dateIndex] = invested;
     }
   }
 

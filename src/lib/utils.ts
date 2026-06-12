@@ -45,6 +45,18 @@ export function formatPercent(value: number): string {
   return percentFormatter.format(value);
 }
 
+const compactPercentFormatter = new Intl.NumberFormat("fr-FR", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+export function formatPercentCompact(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  const formatted = compactPercentFormatter.format(value);
+  return value > 0 ? `+${formatted}` : formatted;
+}
+
 export function formatQuantity(value: number): string {
   if (!Number.isFinite(value)) return "—";
   return numberFormatter.format(value);
