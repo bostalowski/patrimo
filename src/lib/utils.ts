@@ -5,6 +5,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function slugify(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function uniqueId(source: string, taken: Iterable<string>): string {
+  const takenSet = taken instanceof Set ? taken : new Set(taken);
+  const base = slugify(source) || "item";
+  if (!takenSet.has(base)) return base;
+  let suffix = 2;
+  while (takenSet.has(`${base}-${suffix}`)) suffix += 1;
+  return `${base}-${suffix}`;
+}
+
 const eurFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
   currency: "EUR",

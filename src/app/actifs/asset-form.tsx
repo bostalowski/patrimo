@@ -12,8 +12,6 @@ const CURRENCIES = ["EUR", "USD", "GBP", "CHF"];
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
 
-const disabledClasses = "opacity-60 cursor-not-allowed";
-
 type Props = {
   assetTypes: readonly AssetType[];
   priceSources: readonly PriceSource[];
@@ -29,7 +27,6 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [id, setId] = useState(asset?.id ?? "");
   const [label, setLabel] = useState(asset?.label ?? "");
   const [type, setType] = useState<AssetType>(asset?.type ?? assetTypes[0]);
   const [source, setSource] = useState<PriceSource>(asset?.source ?? priceSources[0]);
@@ -48,7 +45,6 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
   const isLoading = busy || pending;
 
   function reset() {
-    setId(asset?.id ?? "");
     setLabel(asset?.label ?? "");
     setType(asset?.type ?? assetTypes[0]);
     setSource(asset?.source ?? priceSources[0]);
@@ -71,12 +67,7 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
     e.preventDefault();
     setError(null);
 
-    const trimmedId = id.trim();
     const trimmedLabel = label.trim();
-    if (!trimmedId) {
-      setError("L'identifiant est requis.");
-      return;
-    }
     if (!trimmedLabel) {
       setError("Le libellé est requis.");
       return;
@@ -111,7 +102,7 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
         method: isEdit ? "PUT" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          id: trimmedId,
+          ...(isEdit ? { id: asset!.id } : {}),
           label: trimmedLabel,
           type,
           source: effectiveSource,
@@ -123,15 +114,17 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
           plafond: plafondValue,
         }),
       });
+      const body = (await res.json().catch(() => null)) as {
+        error?: string;
+        id?: string;
+      } | null;
       if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
         throw new Error(body?.error ?? (isEdit ? "Échec de la mise à jour" : "Échec de la création"));
       }
 
-      if (effectiveSource !== "manual") {
-        await fetch(`/api/prices/sync?assetId=${encodeURIComponent(trimmedId)}`, {
+      const assetId = isEdit ? asset!.id : body?.id;
+      if (effectiveSource !== "manual" && assetId) {
+        await fetch(`/api/prices/sync?assetId=${encodeURIComponent(assetId)}`, {
           method: "POST",
         }).catch(() => null);
       }
@@ -189,18 +182,6 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
       <CardBody>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="ID">
-              <input
-                type="text"
-                value={id}
-                onChange={(e) => setId(e.target.value)}
-                placeholder="WPEA"
-                className={cn(inputClasses, isEdit && disabledClasses)}
-                disabled={isEdit}
-                required
-              />
-            </Field>
-
             <Field label="Libellé" className="sm:col-span-2">
               <input
                 type="text"

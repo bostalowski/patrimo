@@ -12,8 +12,6 @@ type AccountTypeValue = Account["type"];
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
 
-const disabledClasses = "opacity-60 cursor-not-allowed";
-
 type Props = {
   accountTypes: readonly AccountTypeValue[];
   envelopes: readonly Envelope[];
@@ -29,7 +27,6 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [id, setId] = useState(account?.id ?? "");
   const [label, setLabel] = useState(account?.label ?? "");
   const [type, setType] = useState<AccountTypeValue>(account?.type ?? accountTypes[0]);
   const [envelope, setEnvelope] = useState<Envelope>(account?.envelope ?? envelopes[0]);
@@ -38,7 +35,6 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
   const isLoading = busy || pending;
 
   function reset() {
-    setId(account?.id ?? "");
     setLabel(account?.label ?? "");
     setType(account?.type ?? accountTypes[0]);
     setEnvelope(account?.envelope ?? envelopes[0]);
@@ -56,12 +52,7 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
     e.preventDefault();
     setError(null);
 
-    const trimmedId = id.trim();
     const trimmedLabel = label.trim();
-    if (!trimmedId) {
-      setError("L'identifiant est requis.");
-      return;
-    }
     if (!trimmedLabel) {
       setError("Le libellé est requis.");
       return;
@@ -73,7 +64,7 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
         method: isEdit ? "PUT" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          id: trimmedId,
+          ...(isEdit ? { id: account!.id } : {}),
           label: trimmedLabel,
           type,
           envelope,
@@ -139,18 +130,6 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
       <CardBody>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="ID">
-              <input
-                type="text"
-                value={id}
-                onChange={(e) => setId(e.target.value)}
-                placeholder="Kraken"
-                className={cn(inputClasses, isEdit && disabledClasses)}
-                disabled={isEdit}
-                required
-              />
-            </Field>
-
             <Field label="Libellé" className="sm:col-span-2">
               <input
                 type="text"

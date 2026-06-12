@@ -1,22 +1,23 @@
 import { NextResponse } from "next/server";
 import { loadWorkbook, upsertAccount } from "@/lib/excel";
 import { Account } from "@/lib/schema";
+import { uniqueId } from "@/lib/utils";
+
+const AccountInput = Account.omit({ id: true });
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const parsed = Account.safeParse(body);
+  const parsed = AccountInput.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
-  const account = parsed.data;
 
   const { accounts } = loadWorkbook();
-  if (accounts.some((a) => a.id === account.id)) {
-    return NextResponse.json(
-      { error: `Un compte avec l'ID "${account.id}" existe déjà.` },
-      { status: 409 },
-    );
-  }
+  const id = uniqueId(
+    parsed.data.label,
+    accounts.map((a) => a.id),
+  );
+  const account = { ...parsed.data, id };
 
   try {
     upsertAccount(account);
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, id });
 }
 
 export async function PUT(request: Request) {
