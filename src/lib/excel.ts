@@ -46,7 +46,7 @@ const ACTIFS_HEADERS = [
   "Devise",
 ];
 
-const COMPTES_HEADERS = ["ID", "Libellé", "Type", "Enveloppe"];
+const COMPTES_HEADERS = ["ID", "Libellé", "Type", "Enveloppe", "Date d'ouverture"];
 
 const BUDGET_HEADERS = [
   "ID",
@@ -219,11 +219,16 @@ function parseAssets(rows: Record<string, unknown>[]): Asset[] {
 
 function parseAccounts(rows: Record<string, unknown>[]): Account[] {
   return rows.map((row, i) => {
+    const rawOpenDate = row["Date d'ouverture"];
     const parsed = Account.safeParse({
       id: row["ID"],
       label: row["Libellé"],
       type: row["Type"],
       envelope: row["Enveloppe"],
+      openDate:
+        rawOpenDate === null || rawOpenDate === undefined || rawOpenDate === ""
+          ? undefined
+          : coerceDate(rawOpenDate),
     });
     if (!parsed.success) {
       throw new Error(`Invalid account at row ${i + 2}: ${parsed.error.message}`);
@@ -409,6 +414,19 @@ function upsertRowsInWorkbook(
     throw new Error(`Missing column "${idHeader}" in sheet "${sheetName}".`);
   }
 
+  const missingHeaders: string[] = [];
+  for (const { valueByHeader } of entries) {
+    for (const key of Object.keys(valueByHeader)) {
+      if (!headers.includes(key) && !missingHeaders.includes(key)) {
+        missingHeaders.push(key);
+      }
+    }
+  }
+  if (missingHeaders.length > 0) {
+    headers.push(...missingHeaders);
+    XLSX.utils.sheet_add_aoa(sheet, [headers], { origin: "A1" });
+  }
+
   const existingByKey = new Map<string, number>();
   for (let i = 1; i < aoa.length; i++) {
     const cell = aoa[i]?.[idIndex];
@@ -489,6 +507,7 @@ function accountEntry(account: Account): UpsertEntry {
       "Libellé": account.label,
       Type: account.type,
       Enveloppe: account.envelope,
+      "Date d'ouverture": account.openDate ?? null,
     },
   };
 }

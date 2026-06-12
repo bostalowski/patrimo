@@ -60,6 +60,7 @@ export const Account = z.object({
   label: z.string().min(1),
   type: AccountType,
   envelope: Envelope,
+  openDate: z.coerce.date().optional(),
 });
 export type Account = z.infer<typeof Account>;
 
