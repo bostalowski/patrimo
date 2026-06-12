@@ -15,7 +15,9 @@ import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
 import { getAssetSourceUrl, getSourceLabel } from "@/lib/prices/source-url";
+import { AssetType, PriceSource } from "@/lib/schema";
 import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
+import { AssetForm } from "../asset-form";
 import {
   formatDate,
   formatEuro,
@@ -97,6 +99,12 @@ export default async function AssetDetailPage({
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           )}
+          <AssetForm
+            assetTypes={AssetType.options}
+            priceSources={PriceSource.options}
+            asset={asset}
+            trigger="icon"
+          />
         </div>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           ID <code>{asset.id}</code>
