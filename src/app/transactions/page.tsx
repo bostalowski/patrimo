@@ -10,6 +10,9 @@ import {
   type AccountOption,
   type TransactionRow,
 } from "./transactions-table";
+import { NewTransactionForm } from "./new-transaction-form";
+
+export const dynamic = "force-dynamic";
 
 export default function TransactionsPage() {
   const { transactions, assets, accounts } = loadWorkbook();
@@ -56,15 +59,24 @@ export default function TransactionsPage() {
     };
   });
 
+  const allAccounts = accounts
+    .map((a) => ({ id: a.id, label: a.label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+  const allAssets = assets
+    .map((a) => ({ id: a.id, label: a.label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {transactions.length} mouvements chargés depuis l&apos;Excel.
-          Édition manuelle dans le fichier source.
+          {transactions.length} mouvements chargés depuis l&apos;Excel. Tu peux
+          en ajouter directement ici, ils seront écrits dans le classeur source.
         </p>
       </header>
+
+      <NewTransactionForm assets={allAssets} accounts={allAccounts} />
 
       <Card>
         <CardHeader>
