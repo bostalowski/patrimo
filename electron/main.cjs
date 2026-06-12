@@ -1,4 +1,12 @@
-const { app, BrowserWindow, Menu, shell, dialog, utilityProcess } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  Menu,
+  shell,
+  dialog,
+  ipcMain,
+  utilityProcess,
+} = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const net = require("node:net");
@@ -278,6 +286,7 @@ async function createMainWindow(targetUrl) {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(__dirname, "preload.cjs"),
     },
   });
 
@@ -293,36 +302,37 @@ async function createMainWindow(targetUrl) {
   await mainWindow.loadURL(targetUrl);
 }
 
-function ensureExcelPathConfigured() {
-  if (process.env.EXCEL_PATH && process.env.EXCEL_PATH.trim().length > 0) {
-    return true;
-  }
-  const userEnvPath = getUserEnvPath();
-  const choice = dialog.showMessageBoxSync({
-    type: "warning",
-    title: "Configuration requise",
-    message: "EXCEL_PATH n'est pas configuré.",
-    detail: `Édite le fichier suivant pour pointer vers ton classeur Excel, puis relance l'app :\n\n${userEnvPath}`,
-    buttons: ["Ouvrir le fichier", "Quitter"],
-    defaultId: 0,
-    cancelId: 1,
+function registerIpcHandlers() {
+  ipcMain.handle("fingraphs:pick-excel-file", async () => {
+    const result = await dialog.showOpenDialog(mainWindow ?? undefined, {
+      title: "Choisir un classeur Excel",
+      properties: ["openFile"],
+      filters: [{ name: "Classeur Excel", extensions: ["xlsx"] }],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
   });
-  if (choice === 0) {
-    shell.openPath(userEnvPath);
-  }
-  return false;
+
+  ipcMain.handle("fingraphs:pick-new-excel-location", async (_event, defaultName) => {
+    const result = await dialog.showSaveDialog(mainWindow ?? undefined, {
+      title: "Créer un nouveau classeur Excel",
+      defaultPath:
+        typeof defaultName === "string" && defaultName.length > 0
+          ? defaultName
+          : "Investissement.xlsx",
+      filters: [{ name: "Classeur Excel", extensions: ["xlsx"] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+    return result.filePath;
+  });
 }
 
 async function bootstrap() {
   log(`Bootstrap (isDev=${isDev}, packaged=${app.isPackaged})`);
   loadEnvFile();
-  log(`EXCEL_PATH=${process.env.EXCEL_PATH || "(unset)"}`);
+  log(`EXCEL_PATH=${process.env.EXCEL_PATH || "(unset, onboarding in-app)"}`);
   buildMenu();
-
-  if (!isDev && !ensureExcelPathConfigured()) {
-    app.quit();
-    return;
-  }
+  registerIpcHandlers();
 
   try {
     const url = isDev ? DEV_URL : await startNextServer();

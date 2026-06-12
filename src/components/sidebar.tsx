@@ -10,6 +10,7 @@ import {
   ListOrdered,
   Pencil,
   PiggyBank,
+  Settings,
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/dca", label: "DCA", icon: Calculator },
   { href: "/prix-manuels", label: "Prix manuels", icon: Pencil },
+  { href: "/reglages", label: "Réglages", icon: Settings },
 ];
 
 export function Sidebar() {

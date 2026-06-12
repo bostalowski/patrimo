@@ -50,15 +50,26 @@ npm run electron:pack
 
 #### Configuration dans l'app packagée
 
-L'app utilise un `.env.local` stocké dans
-`~/Library/Application Support/financial-graphs/.env.local` (copié depuis
-`.env.local.example` au premier lancement). Le menu **Configuration → Ouvrir
-le fichier .env.local** ouvre directement ce fichier dans ton éditeur.
+Au premier lancement, l'app t'amène sur la page **Réglages** qui permet de :
+
+- **Choisir un fichier `.xlsx` existant** via le sélecteur de fichier natif macOS, ou
+- **Créer un nouveau classeur vierge** avec les 4 onglets requis (Transactions, Actifs, Comptes, Budget) à l'emplacement de ton choix.
+
+Le chemin retenu est persisté dans
+`~/Library/Application Support/financial-graphs/data/config.json` — pas besoin
+de toucher au `.env.local`. Tu peux changer de fichier source à n'importe quel
+moment depuis la même page.
 
 Le cache des prix synchronisés est dans
 `~/Library/Application Support/financial-graphs/data/` (`prices.json` pour
 CoinGecko/Yahoo, `manual-prices.json` pour les FCPE). Le menu
 **Configuration → Ouvrir le dossier de données** y mène directement.
+
+Pour les options avancées (`COINGECKO_API_KEY`, ou forcer un `EXCEL_PATH` via
+env), un `.env.local` reste disponible dans
+`~/Library/Application Support/financial-graphs/.env.local` (copié depuis
+`.env.local.example` au premier lancement). Le menu **Configuration → Ouvrir
+le fichier .env.local** ouvre directement ce fichier dans ton éditeur.
 
 Si tu utilisais déjà l'app en mode `npm run dev`, copie tes prix une fois
 pour que l'app packagée les retrouve :
@@ -77,18 +88,26 @@ Les logs sont dans `~/Library/Logs/financial-graphs/`
 
 ## Variables d'environnement (`.env.local`)
 
+Toutes optionnelles depuis l'introduction de la page Réglages.
+
 ```
-EXCEL_PATH=./data/Investissement.xlsx
+# EXCEL_PATH=./data/Investissement.xlsx
 COINGECKO_API_KEY=
 ```
 
 `COINGECKO_API_KEY` est optionnel — l'API publique sans clef suffit largement
 pour un usage personnel (100 req/min).
 
-`EXCEL_PATH` supporte l'expansion du `~` (home dir) et les chemins absolus,
-voir la section suivante pour héberger le fichier sur Google Drive.
+`EXCEL_PATH` est devenu un **fallback** : la valeur choisie dans **Réglages**
+(persistée dans `data/config.json`) prend la priorité. La variable supporte
+l'expansion du `~` (home dir) et les chemins absolus si tu préfères piloter
+le chemin via l'environnement (ex. scripts CLI).
 
 ## Où stocker le fichier Excel
+
+Tu peux choisir / créer le fichier directement depuis la page **Réglages** de
+l'app. Les options ci-dessous expliquent où le poser pour qu'il soit
+synchronisé entre plusieurs machines.
 
 ### Option recommandée — Google Drive Desktop (privé, synchronisé)
 
@@ -103,15 +122,9 @@ Desktop le monte localement, l'app le lit comme n'importe quel fichier.
    `~/Library/CloudStorage/GoogleDrive-<ton-email>/My Drive/Finances/`,
    clic droit sur le fichier → **Available offline** (force la copie locale,
    évite la latence et les erreurs de lecture).
-4. Récupérer le chemin exact : clic droit sur le fichier → maintenir ⌥ →
-   **Copy as Pathname**.
-5. Coller dans `.env.local` :
-
-   ```
-   EXCEL_PATH=~/Library/CloudStorage/GoogleDrive-<ton-email>/My Drive/Finances/Investissement.xlsx
-   ```
-
-6. Relancer `npm run dev`. C'est tout.
+4. Dans l'app : **Réglages → Choisir un fichier existant** et sélectionner le
+   fichier dans ce dossier. (Alternative : éditer `.env.local` et y mettre
+   `EXCEL_PATH=~/Library/CloudStorage/.../Investissement.xlsx`.)
 
 Tu peux éditer le fichier depuis n'importe où (web, mobile, autre Mac) — au
 prochain reload, l'app voit la nouvelle version (le cache est invalidé via
@@ -119,8 +132,9 @@ prochain reload, l'app voit la nouvelle version (le cache est invalidé via
 
 ### Option locale (fallback)
 
-Pose le fichier dans `./data/Investissement.xlsx` et laisse la valeur par
-défaut de `EXCEL_PATH`. Le fichier est gitignored (`.gitignore`).
+Crée le fichier directement depuis **Réglages → Créer un nouveau fichier**
+dans le dossier de ton choix (ex. `./data/Investissement.xlsx`). Le dossier
+`data/` est gitignored.
 
 ## Structure des données
 

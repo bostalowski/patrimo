@@ -1,4 +1,5 @@
 import { loadWorkbook } from "@/lib/excel";
+import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
 import { readPriceMap } from "@/lib/store";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
 const INCOME_ASSET = "INTERETS";
 
 export default async function ActifsPage() {
+  requireExcelConfigured();
   const workbook = loadWorkbook();
   const prices = await readPriceMap(workbook.assets);
   const portfolio = buildPortfolio(workbook, prices);

@@ -1,4 +1,5 @@
 import { loadWorkbook } from "@/lib/excel";
+import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
 import { readPriceMap, readDcaConfigs } from "@/lib/store";
 import type { DcaConfig } from "@/lib/schema";
@@ -34,6 +35,7 @@ function buildPortfolioByEnvelope(
 }
 
 export default async function DcaPage() {
+  requireExcelConfigured();
   const workbook = loadWorkbook();
   const [priceMap, configs] = await Promise.all([
     readPriceMap(workbook.assets),
