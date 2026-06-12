@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import {
   Account,
   Asset,
+  BudgetLine,
   Transaction,
   type Workbook,
 } from "@/lib/schema";
@@ -12,6 +13,17 @@ import {
 const SHEET_TRANSACTIONS = "Transactions";
 const SHEET_ACTIFS = "Actifs";
 const SHEET_COMPTES = "Comptes";
+const SHEET_BUDGET = "Budget";
+
+const BUDGET_HEADERS = [
+  "ID",
+  "Libellé",
+  "Type",
+  "Montant",
+  "Fréquence",
+  "Catégorie",
+  "Notes",
+];
 
 function getExcelPath(): string {
   const raw = process.env.EXCEL_PATH;
@@ -32,6 +44,18 @@ function readSheet(
   if (!sheet) {
     throw new Error(`Missing sheet "${sheetName}" in workbook.`);
   }
+  return XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+    raw: true,
+    defval: null,
+  });
+}
+
+function readSheetOptional(
+  workbook: XLSX.WorkBook,
+  sheetName: string,
+): Record<string, unknown>[] {
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) return [];
   return XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     raw: true,
     defval: null,
@@ -96,6 +120,28 @@ function parseAccounts(rows: Record<string, unknown>[]): Account[] {
   });
 }
 
+function parseBudget(rows: Record<string, unknown>[]): BudgetLine[] {
+  return rows
+    .filter((row) => emptyToUndefined(row["ID"]) !== undefined)
+    .map((row, i) => {
+      const parsed = BudgetLine.safeParse({
+        id: row["ID"],
+        label: row["Libellé"],
+        kind: row["Type"],
+        amount: toNumber(row["Montant"]) ?? 0,
+        frequency: row["Fréquence"],
+        category: row["Catégorie"],
+        notes: emptyToUndefined(row["Notes"]),
+      });
+      if (!parsed.success) {
+        throw new Error(
+          `Invalid budget line at row ${i + 2}: ${parsed.error.message}`,
+        );
+      }
+      return parsed.data;
+    });
+}
+
 function coerceDate(value: unknown): Date | string {
   if (value instanceof Date) return value;
   if (typeof value === "number") {
@@ -139,12 +185,17 @@ export function loadWorkbook(): Workbook {
   const transactions = parseTransactions(readSheet(sheet, SHEET_TRANSACTIONS));
   const assets = parseAssets(readSheet(sheet, SHEET_ACTIFS));
   const accounts = parseAccounts(readSheet(sheet, SHEET_COMPTES));
+  const budget = parseBudget(readSheetOptional(sheet, SHEET_BUDGET));
 
   transactions.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  const workbook: Workbook = { transactions, assets, accounts };
+  const workbook: Workbook = { transactions, assets, accounts, budget };
   cache = { mtime, workbook };
   return workbook;
+}
+
+export function getBudget(): BudgetLine[] {
+  return loadWorkbook().budget;
 }
 
 export function getAssetMap(): Map<string, Asset> {
@@ -202,13 +253,19 @@ function upsertRow(
   idHeader: string,
   id: string,
   valueByHeader: Record<string, unknown>,
+  defaultHeaders?: string[],
 ): void {
   const path = getExcelPath();
   const fileBuffer = readFileSync(path);
   const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
-  const sheet = workbook.Sheets[sheetName];
+  let sheet = workbook.Sheets[sheetName];
   if (!sheet) {
-    throw new Error(`Missing sheet "${sheetName}" in workbook.`);
+    if (!defaultHeaders) {
+      throw new Error(`Missing sheet "${sheetName}" in workbook.`);
+    }
+    sheet = XLSX.utils.aoa_to_sheet([defaultHeaders]);
+    workbook.Sheets[sheetName] = sheet;
+    workbook.SheetNames.push(sheetName);
   }
 
   const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
@@ -276,4 +333,59 @@ export function upsertAccount(account: Account): void {
     Type: account.type,
     Enveloppe: account.envelope,
   });
+}
+
+function deleteRow(sheetName: string, idHeader: string, id: string): void {
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) return;
+
+  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    defval: null,
+  });
+  const headers = (aoa[0] ?? []) as string[];
+  const idIndex = headers.indexOf(idHeader);
+  if (idIndex === -1) return;
+
+  const kept = aoa
+    .slice(1)
+    .filter((row) => String(row?.[idIndex] ?? "") !== id);
+  const nextSheet = XLSX.utils.aoa_to_sheet([headers, ...kept], {
+    cellDates: true,
+  });
+  workbook.Sheets[sheetName] = nextSheet;
+
+  const out = XLSX.write(workbook, {
+    type: "buffer",
+    bookType: "xlsx",
+    cellDates: true,
+  }) as Buffer;
+  writeFileSync(path, out);
+
+  cache = null;
+}
+
+export function upsertBudgetLine(line: BudgetLine): void {
+  upsertRow(
+    SHEET_BUDGET,
+    "ID",
+    line.id,
+    {
+      ID: line.id,
+      "Libellé": line.label,
+      Type: line.kind,
+      Montant: line.amount,
+      "Fréquence": line.frequency,
+      "Catégorie": line.category,
+      Notes: line.notes ?? null,
+    },
+    BUDGET_HEADERS,
+  );
+}
+
+export function deleteBudgetLine(id: string): void {
+  deleteRow(SHEET_BUDGET, "ID", id);
 }
