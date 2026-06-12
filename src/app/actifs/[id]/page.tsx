@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { AssetPriceCurve } from "@/components/charts/asset-price-curve";
 import { loadWorkbook } from "@/lib/excel";
+import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
 import { getAssetSourceUrl, getSourceLabel } from "@/lib/prices/source-url";
 import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
@@ -41,6 +42,7 @@ export default async function AssetDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  requireExcelConfigured();
   const { id } = await params;
   const decodedId = decodeURIComponent(id);
   const workbook = loadWorkbook();

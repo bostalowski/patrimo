@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { getBudget } from "@/lib/excel";
+import { requireExcelConfigured } from "@/lib/page-guards";
 import { formatEuro, formatPercent, signClass } from "@/lib/utils";
 import type { BudgetLine } from "@/lib/schema";
 import {
@@ -22,6 +23,7 @@ import { BudgetForm } from "./budget-form";
 export const dynamic = "force-dynamic";
 
 export default async function BudgetPage() {
+  requireExcelConfigured();
   const lines = getBudget();
   const summary = summarizeBudget(lines);
 

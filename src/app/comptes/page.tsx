@@ -8,6 +8,7 @@ import {
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { loadWorkbook } from "@/lib/excel";
+import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
 import { readPriceMap } from "@/lib/store";
 import {
@@ -41,6 +42,7 @@ type FullAccount = ReturnType<typeof buildPortfolio>["accounts"][number] & {
 type AccountEntry = FullAccount | Empty;
 
 export default async function ComptesPage() {
+  requireExcelConfigured();
   const workbook = loadWorkbook();
   const priceMap = await readPriceMap(workbook.assets);
   const portfolio = buildPortfolio(workbook, priceMap);

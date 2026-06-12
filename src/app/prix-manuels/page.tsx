@@ -6,12 +6,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { loadWorkbook } from "@/lib/excel";
+import { requireExcelConfigured } from "@/lib/page-guards";
 import { readManualPrices } from "@/lib/store";
 import { ManualPriceForm } from "./manual-price-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function ManualPricesPage() {
+  requireExcelConfigured();
   const { assets } = loadWorkbook();
   const manualAssets = assets.filter((a) => a.source === "manual");
   const store = await readManualPrices();

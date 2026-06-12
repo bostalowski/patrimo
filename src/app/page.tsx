@@ -6,6 +6,7 @@ import {
   CardValue,
 } from "@/components/ui/card";
 import { loadWorkbook } from "@/lib/excel";
+import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
 import { buildHistorySeries } from "@/lib/portfolio-history";
 import {
@@ -23,6 +24,7 @@ import { formatEuro, formatPercent, signClass } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  requireExcelConfigured();
   const workbook = loadWorkbook();
   const [priceMap, priceStore, manualStore, benchmarkStore] = await Promise.all([
     readPriceMap(workbook.assets),

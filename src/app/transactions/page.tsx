@@ -1,4 +1,5 @@
 import { loadWorkbook } from "@/lib/excel";
+import { requireExcelConfigured } from "@/lib/page-guards";
 import {
   Card,
   CardBody,
@@ -15,6 +16,7 @@ import { NewTransactionForm } from "./new-transaction-form";
 export const dynamic = "force-dynamic";
 
 export default function TransactionsPage() {
+  requireExcelConfigured();
   const { transactions, assets, accounts } = loadWorkbook();
   const assetLabels = new Map(assets.map((a) => [a.id, a.label]));
   const accountLabels = new Map(accounts.map((a) => [a.id, a.label]));

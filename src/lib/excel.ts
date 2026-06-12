@@ -1,6 +1,11 @@
-import { readFileSync, statSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { resolve } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname } from "node:path";
 import * as XLSX from "xlsx";
 import {
   Account,
@@ -9,11 +14,39 @@ import {
   Transaction,
   type Workbook,
 } from "@/lib/schema";
+import { getConfiguredExcelPath, resolveUserPath } from "@/lib/config";
 
 const SHEET_TRANSACTIONS = "Transactions";
 const SHEET_ACTIFS = "Actifs";
 const SHEET_COMPTES = "Comptes";
 const SHEET_BUDGET = "Budget";
+
+const TRANSACTIONS_HEADERS = [
+  "Date",
+  "Type",
+  "Compte",
+  "Compte destination",
+  "Actif",
+  "Quantité",
+  "Prix unitaire",
+  "Devise",
+  "Frais",
+  "Frais devise",
+  "Notes",
+];
+
+const ACTIFS_HEADERS = [
+  "ID",
+  "Libellé",
+  "Type",
+  "ISIN",
+  "Ticker",
+  "Source prix",
+  "Param source",
+  "Devise",
+];
+
+const COMPTES_HEADERS = ["ID", "Libellé", "Type", "Enveloppe"];
 
 const BUDGET_HEADERS = [
   "ID",
@@ -25,15 +58,89 @@ const BUDGET_HEADERS = [
   "Notes",
 ];
 
-function getExcelPath(): string {
-  const raw = process.env.EXCEL_PATH;
-  if (!raw) {
-    throw new Error("EXCEL_PATH is not set in your environment (.env.local).");
+const REQUIRED_SHEETS = [SHEET_TRANSACTIONS, SHEET_ACTIFS, SHEET_COMPTES];
+
+export class ExcelNotConfiguredError extends Error {
+  constructor() {
+    super(
+      "Aucun fichier Excel n'est configuré. Va dans Réglages pour en choisir un ou en créer un.",
+    );
+    this.name = "ExcelNotConfiguredError";
   }
-  const expanded = raw.startsWith("~")
-    ? raw.replace(/^~(?=$|\/|\\)/, homedir())
-    : raw;
-  return resolve(process.cwd(), expanded);
+}
+
+function getExcelPath(): string {
+  const configured = getConfiguredExcelPath();
+  if (!configured) throw new ExcelNotConfiguredError();
+  return configured;
+}
+
+export function isExcelConfigured(): boolean {
+  return getConfiguredExcelPath() !== null;
+}
+
+export type ExcelFileStatus =
+  | { valid: true }
+  | { valid: false; reason: "not_found" | "missing_sheets" | "read_error"; detail?: string };
+
+export function validateExcelFile(path: string): ExcelFileStatus {
+  if (!existsSync(path)) return { valid: false, reason: "not_found" };
+  try {
+    const fileBuffer = readFileSync(path);
+    const wb = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+    const missing = REQUIRED_SHEETS.filter((name) => !wb.Sheets[name]);
+    if (missing.length > 0) {
+      return {
+        valid: false,
+        reason: "missing_sheets",
+        detail: missing.join(", "),
+      };
+    }
+    return { valid: true };
+  } catch (err) {
+    return {
+      valid: false,
+      reason: "read_error",
+      detail: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+export function createEmptyWorkbook(rawPath: string): string {
+  const absolute = resolveUserPath(rawPath);
+  if (existsSync(absolute)) {
+    throw new Error(`Un fichier existe déjà à ${absolute}.`);
+  }
+  mkdirSync(dirname(absolute), { recursive: true });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([TRANSACTIONS_HEADERS]),
+    SHEET_TRANSACTIONS,
+  );
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([ACTIFS_HEADERS]),
+    SHEET_ACTIFS,
+  );
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([COMPTES_HEADERS]),
+    SHEET_COMPTES,
+  );
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([BUDGET_HEADERS]),
+    SHEET_BUDGET,
+  );
+
+  XLSX.writeFile(wb, absolute, { bookType: "xlsx", cellDates: true });
+  return absolute;
+}
+
+export function resetWorkbookCache(): void {
+  cache = null;
 }
 
 function readSheet(
