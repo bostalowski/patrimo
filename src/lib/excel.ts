@@ -135,7 +135,12 @@ export function createEmptyWorkbook(rawPath: string): string {
     SHEET_BUDGET,
   );
 
-  XLSX.writeFile(wb, absolute, { bookType: "xlsx", cellDates: true });
+  const out = XLSX.write(wb, {
+    type: "buffer",
+    bookType: "xlsx",
+    cellDates: true,
+  }) as Buffer;
+  writeFileSync(absolute, out);
   return absolute;
 }
 
@@ -313,7 +318,30 @@ export function getAccountMap(): Map<string, Account> {
   return new Map(loadWorkbook().accounts.map((a) => [a.id, a]));
 }
 
+function transactionValueByHeader(
+  transaction: Transaction,
+): Record<string, unknown> {
+  return {
+    Date: transaction.date,
+    Type: transaction.type,
+    Compte: transaction.compte,
+    "Compte destination": transaction.compteDestination ?? null,
+    Actif: transaction.actif,
+    "Quantité": transaction.quantite,
+    "Prix unitaire": transaction.prixUnitaire,
+    Devise: transaction.devise,
+    Frais: transaction.frais,
+    "Frais devise": transaction.fraisDevise,
+    Notes: transaction.notes ?? null,
+  };
+}
+
 export function appendTransaction(transaction: Transaction): void {
+  appendTransactions([transaction]);
+}
+
+export function appendTransactions(transactions: Transaction[]): void {
+  if (transactions.length === 0) return;
   const path = getExcelPath();
   const fileBuffer = readFileSync(path);
   const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
@@ -328,22 +356,12 @@ export function appendTransaction(transaction: Transaction): void {
     throw new Error(`Sheet "${SHEET_TRANSACTIONS}" has no header row.`);
   }
 
-  const valueByHeader: Record<string, unknown> = {
-    Date: transaction.date,
-    Type: transaction.type,
-    Compte: transaction.compte,
-    "Compte destination": transaction.compteDestination ?? null,
-    Actif: transaction.actif,
-    "Quantité": transaction.quantite,
-    "Prix unitaire": transaction.prixUnitaire,
-    Devise: transaction.devise,
-    Frais: transaction.frais,
-    "Frais devise": transaction.fraisDevise,
-    Notes: transaction.notes ?? null,
-  };
+  const rows = transactions.map((tx) => {
+    const valueByHeader = transactionValueByHeader(tx);
+    return headers.map((h) => valueByHeader[h] ?? null);
+  });
 
-  const row = headers.map((h) => valueByHeader[h] ?? null);
-  XLSX.utils.sheet_add_aoa(sheet, [row], { origin: -1, cellDates: true });
+  XLSX.utils.sheet_add_aoa(sheet, rows, { origin: -1, cellDates: true });
 
   const out = XLSX.write(workbook, {
     type: "buffer",
@@ -355,16 +373,19 @@ export function appendTransaction(transaction: Transaction): void {
   cache = null;
 }
 
-function upsertRow(
+type UpsertEntry = {
+  id: string;
+  valueByHeader: Record<string, unknown>;
+};
+
+function upsertRowsInWorkbook(
+  workbook: XLSX.WorkBook,
   sheetName: string,
   idHeader: string,
-  id: string,
-  valueByHeader: Record<string, unknown>,
+  entries: UpsertEntry[],
   defaultHeaders?: string[],
 ): void {
-  const path = getExcelPath();
-  const fileBuffer = readFileSync(path);
-  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  if (entries.length === 0) return;
   let sheet = workbook.Sheets[sheetName];
   if (!sheet) {
     if (!defaultHeaders) {
@@ -388,58 +409,164 @@ function upsertRow(
     throw new Error(`Missing column "${idHeader}" in sheet "${sheetName}".`);
   }
 
-  const row = headers.map((h) =>
-    h in valueByHeader ? (valueByHeader[h] ?? null) : null,
-  );
-
-  let existingRowIndex = -1;
+  const existingByKey = new Map<string, number>();
   for (let i = 1; i < aoa.length; i++) {
     const cell = aoa[i]?.[idIndex];
-    if (cell !== null && cell !== undefined && String(cell) === id) {
-      existingRowIndex = i;
-      break;
+    if (cell !== null && cell !== undefined) {
+      existingByKey.set(String(cell), i);
     }
   }
 
-  if (existingRowIndex === -1) {
-    XLSX.utils.sheet_add_aoa(sheet, [row], { origin: -1, cellDates: true });
-  } else {
-    XLSX.utils.sheet_add_aoa(sheet, [row], {
-      origin: { r: existingRowIndex, c: 0 },
-      cellDates: true,
-    });
+  for (const { id, valueByHeader } of entries) {
+    const row = headers.map((h) =>
+      h in valueByHeader ? (valueByHeader[h] ?? null) : null,
+    );
+    const existingRowIndex = existingByKey.get(id);
+    if (existingRowIndex === undefined) {
+      XLSX.utils.sheet_add_aoa(sheet, [row], { origin: -1, cellDates: true });
+      existingByKey.set(id, aoa.length);
+      aoa.push(row);
+    } else {
+      XLSX.utils.sheet_add_aoa(sheet, [row], {
+        origin: { r: existingRowIndex, c: 0 },
+        cellDates: true,
+      });
+    }
   }
+}
 
+function writeWorkbook(workbook: XLSX.WorkBook, path: string): void {
   const out = XLSX.write(workbook, {
     type: "buffer",
     bookType: "xlsx",
     cellDates: true,
   }) as Buffer;
   writeFileSync(path, out);
-
   cache = null;
 }
 
+function upsertRow(
+  sheetName: string,
+  idHeader: string,
+  id: string,
+  valueByHeader: Record<string, unknown>,
+  defaultHeaders?: string[],
+): void {
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  upsertRowsInWorkbook(
+    workbook,
+    sheetName,
+    idHeader,
+    [{ id, valueByHeader }],
+    defaultHeaders,
+  );
+  writeWorkbook(workbook, path);
+}
+
+function assetEntry(asset: Asset): UpsertEntry {
+  return {
+    id: asset.id,
+    valueByHeader: {
+      ID: asset.id,
+      "Libellé": asset.label,
+      Type: asset.type,
+      ISIN: asset.isin ?? null,
+      Ticker: asset.ticker ?? null,
+      "Source prix": asset.source,
+      "Param source": asset.param ?? null,
+      Devise: asset.currency,
+    },
+  };
+}
+
+function accountEntry(account: Account): UpsertEntry {
+  return {
+    id: account.id,
+    valueByHeader: {
+      ID: account.id,
+      "Libellé": account.label,
+      Type: account.type,
+      Enveloppe: account.envelope,
+    },
+  };
+}
+
 export function upsertAsset(asset: Asset): void {
-  upsertRow(SHEET_ACTIFS, "ID", asset.id, {
-    ID: asset.id,
-    "Libellé": asset.label,
-    Type: asset.type,
-    ISIN: asset.isin ?? null,
-    Ticker: asset.ticker ?? null,
-    "Source prix": asset.source,
-    "Param source": asset.param ?? null,
-    Devise: asset.currency,
-  });
+  upsertAssets([asset]);
+}
+
+export function upsertAssets(assets: Asset[]): void {
+  if (assets.length === 0) return;
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  upsertRowsInWorkbook(workbook, SHEET_ACTIFS, "ID", assets.map(assetEntry));
+  writeWorkbook(workbook, path);
 }
 
 export function upsertAccount(account: Account): void {
-  upsertRow(SHEET_COMPTES, "ID", account.id, {
-    ID: account.id,
-    "Libellé": account.label,
-    Type: account.type,
-    Enveloppe: account.envelope,
-  });
+  upsertAccounts([account]);
+}
+
+export function upsertAccounts(accounts: Account[]): void {
+  if (accounts.length === 0) return;
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  upsertRowsInWorkbook(
+    workbook,
+    SHEET_COMPTES,
+    "ID",
+    accounts.map(accountEntry),
+  );
+  writeWorkbook(workbook, path);
+}
+
+export function commitImport(payload: {
+  newAccounts: Account[];
+  newAssets: Asset[];
+  transactions: Transaction[];
+}): void {
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+
+  if (payload.newAccounts.length > 0) {
+    upsertRowsInWorkbook(
+      workbook,
+      SHEET_COMPTES,
+      "ID",
+      payload.newAccounts.map(accountEntry),
+    );
+  }
+  if (payload.newAssets.length > 0) {
+    upsertRowsInWorkbook(
+      workbook,
+      SHEET_ACTIFS,
+      "ID",
+      payload.newAssets.map(assetEntry),
+    );
+  }
+  if (payload.transactions.length > 0) {
+    const sheet = workbook.Sheets[SHEET_TRANSACTIONS];
+    if (!sheet) {
+      throw new Error(`Missing sheet "${SHEET_TRANSACTIONS}" in workbook.`);
+    }
+    const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
+    const headers = (aoa[0] ?? []) as string[];
+    if (headers.length === 0) {
+      throw new Error(`Sheet "${SHEET_TRANSACTIONS}" has no header row.`);
+    }
+    const rows = payload.transactions.map((tx) => {
+      const valueByHeader = transactionValueByHeader(tx);
+      return headers.map((h) => valueByHeader[h] ?? null);
+    });
+    XLSX.utils.sheet_add_aoa(sheet, rows, { origin: -1, cellDates: true });
+  }
+
+  writeWorkbook(workbook, path);
 }
 
 function deleteRow(sheetName: string, idHeader: string, id: string): void {

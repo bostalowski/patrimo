@@ -23,6 +23,7 @@ export const AccountType = z.enum([
   "WALLET_CRYPTO",
   "EPARGNE_SALARIALE",
 ]);
+export type AccountType = z.infer<typeof AccountType>;
 
 export const Envelope = z.enum(["CTO", "PEA", "PEE", "AV"]);
 export type Envelope = z.infer<typeof Envelope>;

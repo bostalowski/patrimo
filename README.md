@@ -165,6 +165,48 @@ python3 scripts/migrate_excel.py \
   --dst data/Investissement.xlsx
 ```
 
+## Importer des transactions depuis un broker
+
+La page **Transactions → Importer un CSV** (`/transactions/import`)
+permet d'ajouter en masse des transactions depuis un fichier exporté
+par un broker, sans toucher à l'Excel à la main.
+
+Deux profils sont disponibles :
+
+- **Trade Republic** : utilise l'export CSV officiel de l'app (Profil →
+  Relevés de compte → Export des transactions → Partager → Période →
+  Créer → Télécharger). Le wizard détecte automatiquement les colonnes
+  (`Datum`/`Date`, `Typ`/`Type`, `ISIN`, `Anzahl`/`Shares`,
+  `Kurs`/`Price`, etc.) et n'importe que les opérations exploitables
+  (achat / vente / dividende / intérêt). Les paiements carte,
+  remboursements, dépôts/retraits cash et autres événements purement
+  bancaires sont ignorés et listés dans l'aperçu.
+- **CSV générique** : si tu pars d'un autre broker, exporte un CSV
+  quelconque et mappe toi-même chaque colonne (`Date`, `Type`, `Actif`,
+  `Quantité`, etc.) vers les champs attendus. Les valeurs `Type` sont
+  reconnues si elles correspondent aux constantes du schéma (`ACHAT`,
+  `VENTE`, `DIVIDENDE`, `INTERET`, `TRANSFERT`, `DEPOT`, `RETRAIT`),
+  sinon tu peux forcer un type par défaut.
+
+L'aperçu :
+
+- regroupe les actifs et comptes inconnus pour que tu remplisses leur
+  métadonnée (type, source de prix, ISIN, enveloppe, …) **avant**
+  d'écrire dans le classeur ;
+- détecte les doublons (signature `date|type|compte|actif|quantité|prix`)
+  contre l'historique existant **et** au sein du fichier importé ;
+- liste les lignes en erreur (date invalide, type non reconnu, etc.) ou
+  ignorées (paiement carte, etc.) avec la raison.
+
+Le commit écrit les nouveaux comptes, actifs et transactions en une
+seule passe (un seul read/write sur l'Excel).
+
+> **Note sur Trade Republic** : il n'existe pas d'API officielle. La lib
+> communautaire `pytr` tape l'API privée et n'est pas supportée. Les
+> API d'agrégation bancaire (DSP2) demandent une licence AISP ou un
+> agrégateur payant (Powens, Bridge, Tink, GoCardless, Plaid). Le canal
+> fichier est donc la voie pérenne pour ce genre d'app perso.
+
 ### Cache local — `data/prices.json` et `data/manual-prices.json`
 
 Stockage léger des cours historiques (un fichier par source). Format :

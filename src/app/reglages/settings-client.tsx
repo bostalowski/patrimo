@@ -1,13 +1,16 @@
 "use client";
 
 import { useId, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowRight,
   CheckCircle2,
   FilePlus2,
   FolderOpen,
   Loader2,
   AlertTriangle,
+  Upload,
 } from "lucide-react";
 
 declare global {
@@ -142,6 +145,27 @@ export function SettingsClient({ initialStatus }: Props) {
   return (
     <div className="space-y-5">
       <StatusBanner status={status} />
+
+      {status.valid && (
+        <Link
+          href="/transactions/import"
+          className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-800 transition-colors hover:bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/50"
+        >
+          <span className="flex items-center gap-3">
+            <Upload className="h-4 w-4 shrink-0" />
+            <span>
+              <span className="block font-medium">
+                Importer tes transactions depuis un broker
+              </span>
+              <span className="block text-xs text-emerald-700/80 dark:text-emerald-300/80">
+                Trade Republic ou n&apos;importe quel CSV — actifs et comptes
+                créés automatiquement.
+              </span>
+            </span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0" />
+        </Link>
+      )}
 
       <div className="space-y-2">
         <p className="text-sm text-zinc-600 dark:text-zinc-300">
