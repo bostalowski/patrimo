@@ -55,8 +55,8 @@ export function ProjectionClient({ livrets }: { livrets: LivretOption[] }) {
   return (
     <div className="space-y-6">
       <Card>
-        <CardBody>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <CardBody className="pt-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Livret">
               <select
                 value={selected.id}
@@ -93,7 +93,7 @@ export function ProjectionClient({ livrets }: { livrets: LivretOption[] }) {
               />
             </Field>
           </div>
-          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-4 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
             Solde actuel {formatEuro(selected.balance)} • Taux{" "}
             {formatPercent(selected.rate)}
             {selected.plafond
@@ -142,7 +142,7 @@ export function ProjectionClient({ livrets }: { livrets: LivretOption[] }) {
       <Card>
         <CardHeader>
           <CardTitle>Croissance projetée</CardTitle>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs leading-relaxed text-zinc-500">
             Valeur (zone verte, intérêts composés capitalisés au 31/12) vs total
             versé (pointillé).
           </p>
@@ -168,7 +168,7 @@ function Field({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col gap-1 text-xs", className)}>
+    <div className={cn("flex flex-col gap-2 text-xs", className)}>
       <span className="font-medium uppercase tracking-wider text-zinc-500">
         {label}
       </span>

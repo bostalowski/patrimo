@@ -25,10 +25,10 @@ export default async function ProjectionPage() {
     });
 
   return (
-    <div className="space-y-6">
-      <header>
+    <div className="space-y-8">
+      <header className="space-y-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">Projection</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="max-w-2xl text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
           Simulez la croissance future de vos livrets à taux connu (intérêts
           composés, versements récurrents, plafond).
         </p>
