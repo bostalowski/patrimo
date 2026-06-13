@@ -152,15 +152,23 @@ export default async function ComptesPage() {
                       </div>
                       <div className="font-mono text-sm font-medium text-zinc-700 dark:text-zinc-300">
                         {formatEuro(account.marketValue)}
-                        {account.cashInterest > 0 && (
-                          <span className="ml-2 text-xs font-normal text-emerald-600">
-                            + {formatEuro(account.cashInterest)} intérêts
-                          </span>
-                        )}
+                        {account.cashInterest > 0 &&
+                          meta?.envelope !== "LIVRET" && (
+                            <span className="ml-2 text-xs font-normal text-emerald-600">
+                              + {formatEuro(account.cashInterest)} intérêts
+                            </span>
+                          )}
                       </div>
                     </div>
                     {unlock && <DeblocageRow unlock={unlock} />}
-                    {account.positions.length === 0 ? (
+                    {meta?.envelope === "LIVRET" ? (
+                      <LivretSummary
+                        principal={account.costBasis}
+                        interest={account.cashInterest}
+                        balance={account.marketValue}
+                        rate={meta?.rate ?? null}
+                      />
+                    ) : account.positions.length === 0 ? (
                       <p className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                         Aucune position pour ce compte.
                       </p>
@@ -223,6 +231,50 @@ export default async function ComptesPage() {
         );
       })}
     </div>
+  );
+}
+
+function LivretSummary({
+  principal,
+  interest,
+  balance,
+  rate,
+}: {
+  principal: number;
+  interest: number;
+  balance: number;
+  rate: number | null;
+}) {
+  if (balance === 0 && principal === 0) {
+    return (
+      <p className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
+        Aucun mouvement sur ce livret.
+      </p>
+    );
+  }
+
+  return (
+    <dl className="space-y-2 px-6 py-4 text-sm">
+      <div className="flex items-center justify-between">
+        <dt className="text-zinc-500 dark:text-zinc-400">Versements nets</dt>
+        <dd className="font-mono">{formatEuro(principal)}</dd>
+      </div>
+      <div className="flex items-center justify-between">
+        <dt className="text-zinc-500 dark:text-zinc-400">
+          Intérêts estimés
+          {rate !== null && (
+            <span className="ml-1 text-xs text-zinc-400">
+              (taux {formatPercent(rate)})
+            </span>
+          )}
+        </dt>
+        <dd className="font-mono text-emerald-600">+ {formatEuro(interest)}</dd>
+      </div>
+      <div className="flex items-center justify-between border-t border-zinc-200 pt-2 font-medium dark:border-zinc-800">
+        <dt>Solde estimé</dt>
+        <dd className="font-mono">{formatEuro(balance)}</dd>
+      </div>
+    </dl>
   );
 }
 

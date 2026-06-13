@@ -144,8 +144,9 @@ export function TransactionFields({
     const patch: Partial<TxFormValue> = {};
     if (value.actif !== "") patch.actif = "";
     if (value.type !== "DEPOT" && value.type !== "RETRAIT") patch.type = "DEPOT";
+    if (value.quantite !== "1") patch.quantite = "1";
     if (Object.keys(patch).length > 0) onChange(patch);
-  }, [isLivret, value.actif, value.type, onChange]);
+  }, [isLivret, value.actif, value.type, value.quantite, onChange]);
 
   const typeOptions = isLivret ? LIVRET_TX_TYPES : TX_TYPES;
 
@@ -234,8 +235,14 @@ export function TransactionFields({
         <input
           type="text"
           inputMode="decimal"
-          value={value.quantite}
-          onChange={(e) => onChange({ quantite: e.target.value })}
+          value={isLivret ? value.prixUnitaire : value.quantite}
+          onChange={(e) =>
+            onChange(
+              isLivret
+                ? { prixUnitaire: e.target.value }
+                : { quantite: e.target.value },
+            )
+          }
           placeholder="0"
           className={txInputClasses}
           required

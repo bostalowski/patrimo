@@ -1,4 +1,5 @@
 import { TransactionType, type Transaction } from "@/lib/schema";
+import { DEFAULT_AMOUNT_SIGN_TYPES } from "./types";
 import type { GenericProfile, RawRow } from "./types";
 
 export type MappedTransactionDraft = {
@@ -20,24 +21,45 @@ export function applyGenericProfile(
   profile: GenericProfile,
 ): MappedTransactionDraft {
   const { mapping, defaults, typeValueMap } = profile;
+  const amountSignTypes = profile.amountSignTypes ?? DEFAULT_AMOUNT_SIGN_TYPES;
 
   const date = mapping.date ? parseDate(row[mapping.date]) : null;
   const rawType = mapping.type ? toStr(row[mapping.type]) : null;
-  const type: Transaction["type"] | null =
+  const explicitType: Transaction["type"] | null =
     (rawType ? typeValueMap?.[rawType] : undefined) ??
     (rawType ? matchKnownType(rawType) : null) ??
-    defaults.type ??
     null;
+
+  const signedAmount = mapping.montant
+    ? parseNumber(row[mapping.montant])
+    : null;
+  const signType: Transaction["type"] | null =
+    signedAmount === null
+      ? null
+      : signedAmount >= 0
+        ? amountSignTypes.positive
+        : amountSignTypes.negative;
+
+  const type: Transaction["type"] | null =
+    explicitType ?? signType ?? defaults.type ?? null;
 
   const compte = mapping.compte ? toStr(row[mapping.compte]) : null;
   const compteDestination = mapping.compteDestination
     ? toStr(row[mapping.compteDestination])
     : null;
   const actif = mapping.actif ? toStr(row[mapping.actif]) : null;
-  const quantite = mapping.quantite ? parseNumber(row[mapping.quantite]) : null;
-  const prixUnitaire = mapping.prixUnitaire
-    ? parseNumber(row[mapping.prixUnitaire])
-    : null;
+  const quantite =
+    signedAmount !== null
+      ? 1
+      : mapping.quantite
+        ? parseNumber(row[mapping.quantite])
+        : null;
+  const prixUnitaire =
+    signedAmount !== null
+      ? Math.abs(signedAmount)
+      : mapping.prixUnitaire
+        ? parseNumber(row[mapping.prixUnitaire])
+        : null;
   const devise =
     (mapping.devise && toStr(row[mapping.devise])) ||
     defaults.devise ||
