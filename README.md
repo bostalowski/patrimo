@@ -1,4 +1,4 @@
-# Financial Graphs
+# Patrimo
 
 Application locale de suivi de patrimoine, type Finary, qui lit un fichier Excel
 comme source de vérité et récupère les cours en ligne (BTC via CoinGecko, ETF /
@@ -33,20 +33,20 @@ npm run electron:build
 
 Produit dans `release/` :
 
-- `Financial Graphs-<version>-arm64.dmg` — Apple Silicon (M1+)
-- `Financial Graphs-<version>.dmg` — Intel x64
+- `Patrimo-<version>-arm64.dmg` — Apple Silicon (M1+)
+- `Patrimo-<version>.dmg` — Intel x64
 - Les ZIP correspondants
 
 Pour juste un `.app` non packagé (plus rapide pour tester) :
 
 ```bash
 npm run electron:pack
-# → release/mac-arm64/Financial Graphs.app
+# → release/mac-arm64/Patrimo.app
 ```
 
 > Au premier lancement de l'app, macOS affichera un avertissement parce que
 > le binaire n'est pas signé. Fais clic droit → **Ouvrir** pour passer outre,
-> ou retire la quarantaine avec `xattr -dr com.apple.quarantine "/Applications/Financial Graphs.app"`.
+> ou retire la quarantaine avec `xattr -dr com.apple.quarantine "/Applications/Patrimo.app"`.
 
 #### Configuration dans l'app packagée
 
@@ -56,18 +56,18 @@ Au premier lancement, l'app t'amène sur la page **Réglages** qui permet de :
 - **Créer un nouveau classeur vierge** avec les 4 onglets requis (Transactions, Actifs, Comptes, Budget) à l'emplacement de ton choix.
 
 Le chemin retenu est persisté dans
-`~/Library/Application Support/financial-graphs/data/config.json` — pas besoin
+`~/Library/Application Support/patrimo/data/config.json` — pas besoin
 de toucher au `.env.local`. Tu peux changer de fichier source à n'importe quel
 moment depuis la même page.
 
 Le cache des prix synchronisés est dans
-`~/Library/Application Support/financial-graphs/data/` (`prices.json` pour
+`~/Library/Application Support/patrimo/data/` (`prices.json` pour
 CoinGecko/Yahoo, `manual-prices.json` pour les FCPE). Le menu
 **Configuration → Ouvrir le dossier de données** y mène directement.
 
 Pour les options avancées (`COINGECKO_API_KEY`, ou forcer un `EXCEL_PATH` via
 env), un `.env.local` reste disponible dans
-`~/Library/Application Support/financial-graphs/.env.local` (copié depuis
+`~/Library/Application Support/patrimo/.env.local` (copié depuis
 `.env.local.example` au premier lancement). Le menu **Configuration → Ouvrir
 le fichier .env.local** ouvre directement ce fichier dans ton éditeur.
 
@@ -75,15 +75,15 @@ Si tu utilisais déjà l'app en mode `npm run dev`, copie tes prix une fois
 pour que l'app packagée les retrouve :
 
 ```bash
-mkdir -p "$HOME/Library/Application Support/financial-graphs/data"
+mkdir -p "$HOME/Library/Application Support/patrimo/data"
 cp data/prices.json data/manual-prices.json \
-  "$HOME/Library/Application Support/financial-graphs/data/"
+  "$HOME/Library/Application Support/patrimo/data/"
 ```
 
 Sinon, clique simplement sur **Sync cours** dans le Dashboard pour
 repopuler `prices.json` depuis CoinGecko et Yahoo.
 
-Les logs sont dans `~/Library/Logs/financial-graphs/`
+Les logs sont dans `~/Library/Logs/patrimo/`
 (`main.log` pour le process Electron, `next-server.log` pour le serveur Next).
 
 ## Variables d'environnement (`.env.local`)
