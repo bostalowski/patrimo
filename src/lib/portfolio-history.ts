@@ -1,6 +1,10 @@
 import type { Transaction, Workbook } from "@/lib/schema";
 import type { AssetPriceHistory, PriceStore } from "@/lib/store";
-import { livretDailyValues, livretFlows } from "@/lib/livret";
+import {
+  livretDailyValues,
+  livretFlows,
+  livretInterestEvents,
+} from "@/lib/livret";
 
 export type DailyPoint = {
   date: string;
@@ -179,12 +183,12 @@ export function buildHistorySeries(
   for (const account of workbook.accounts) {
     if (account.envelope !== "LIVRET") continue;
     const flows = livretFlows(account.id, workbook.transactions);
-    if (flows.length === 0) continue;
-    const { values, invested } = livretDailyValues(
-      account.rate ?? 0,
-      flows,
-      dates,
+    const interestEvents = livretInterestEvents(
+      account.id,
+      workbook.transactions,
     );
+    if (flows.length === 0 && interestEvents.length === 0) continue;
+    const { values, invested } = livretDailyValues(flows, interestEvents, dates);
     series.set(`livret:${account.id}`, {
       assetId: `livret:${account.id}`,
       label: account.label,

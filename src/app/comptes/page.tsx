@@ -35,6 +35,8 @@ type Empty = {
   realizedPnL: 0;
   realizedIncome: 0;
   cashInterest: 0;
+  cashInterestRecorded: 0;
+  cashInterestEstimated: 0;
   positions: [];
   isEmpty: true;
 };
@@ -73,6 +75,8 @@ export default async function ComptesPage() {
       realizedPnL: 0,
       realizedIncome: 0,
       cashInterest: 0,
+      cashInterestRecorded: 0,
+      cashInterestEstimated: 0,
       positions: [],
       isEmpty: true,
     });
@@ -109,7 +113,11 @@ export default async function ComptesPage() {
       {envelopes.map(([envelope, accounts]) => {
         const envelopeValue = accounts.reduce((s, c) => s + c.marketValue, 0);
         const envelopeBasis = accounts.reduce((s, c) => s + c.costBasis, 0);
-        const envelopePnL = accounts.reduce((s, c) => s + c.unrealizedPnL, 0);
+        const isLivretEnvelope = envelope === "LIVRET";
+        const envelopePnL = isLivretEnvelope
+          ? accounts.reduce((s, c) => s + c.cashInterest, 0)
+          : accounts.reduce((s, c) => s + c.unrealizedPnL, 0);
+        const showPnLPct = !isLivretEnvelope && envelopeBasis > 0;
         return (
           <Card key={envelope}>
             <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -120,7 +128,7 @@ export default async function ComptesPage() {
                   <span className={`ml-2 text-sm ${signClass(envelopePnL)}`}>
                     {envelopePnL >= 0 ? "+" : ""}
                     {formatEuro(envelopePnL)}
-                    {envelopeBasis > 0 && (
+                    {showPnLPct && (
                       <span className="ml-1 text-xs">
                         ({formatPercent(envelopePnL / envelopeBasis)})
                       </span>
@@ -164,7 +172,8 @@ export default async function ComptesPage() {
                     {meta?.envelope === "LIVRET" ? (
                       <LivretSummary
                         principal={account.costBasis}
-                        interest={account.cashInterest}
+                        interestRecorded={account.cashInterestRecorded}
+                        interestEstimated={account.cashInterestEstimated}
                         balance={account.marketValue}
                         rate={meta?.rate ?? null}
                       />
@@ -236,12 +245,14 @@ export default async function ComptesPage() {
 
 function LivretSummary({
   principal,
-  interest,
+  interestRecorded,
+  interestEstimated,
   balance,
   rate,
 }: {
   principal: number;
-  interest: number;
+  interestRecorded: number;
+  interestEstimated: number;
   balance: number;
   rate: number | null;
 }) {
@@ -259,21 +270,28 @@ function LivretSummary({
         <dt className="text-zinc-500 dark:text-zinc-400">Versements nets</dt>
         <dd className="font-mono">{formatEuro(principal)}</dd>
       </div>
-      <div className="flex items-center justify-between">
-        <dt className="text-zinc-500 dark:text-zinc-400">
-          Intérêts estimés
-          {rate !== null && (
-            <span className="ml-1 text-xs text-zinc-400">
-              (taux {formatPercent(rate)})
-            </span>
-          )}
-        </dt>
-        <dd className="font-mono text-emerald-600">+ {formatEuro(interest)}</dd>
-      </div>
-      <div className="flex items-center justify-between border-t border-zinc-200 pt-2 font-medium dark:border-zinc-800">
-        <dt>Solde estimé</dt>
+      {interestRecorded > 0 && (
+        <div className="flex items-center justify-between">
+          <dt className="text-zinc-500 dark:text-zinc-400">Intérêts perçus</dt>
+          <dd className="font-mono text-emerald-600">
+            + {formatEuro(interestRecorded)}
+          </dd>
+        </div>
+      )}
+      <div className="flex items-center justify-between border-t border-zinc-200 pt-2 text-base font-semibold dark:border-zinc-800">
+        <dt>Solde disponible</dt>
         <dd className="font-mono">{formatEuro(balance)}</dd>
       </div>
+      {interestEstimated > 0 && (
+        <div className="flex items-center justify-between text-xs text-zinc-400 dark:text-zinc-500">
+          <dt>
+            Intérêts en cours (estimés
+            {rate !== null && <> au taux {formatPercent(rate)}</>}, versés à
+            l&apos;échéance)
+          </dt>
+          <dd className="font-mono">+ {formatEuro(interestEstimated)}</dd>
+        </div>
+      )}
     </dl>
   );
 }

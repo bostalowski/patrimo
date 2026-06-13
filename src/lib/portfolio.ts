@@ -8,6 +8,7 @@ import type {
 import {
   computeLivretState,
   livretFlows,
+  livretInterestEvents,
   type LivretState,
 } from "@/lib/livret";
 
@@ -41,6 +42,8 @@ export type AccountSummary = {
   realizedPnL: number;
   realizedIncome: number;
   cashInterest: number;
+  cashInterestRecorded: number;
+  cashInterestEstimated: number;
 };
 
 export type PortfolioTotals = {
@@ -258,17 +261,18 @@ function livretAccountPosition(
       source: "manual",
       currency: "EUR",
     },
-    quantity: state.balance,
+    quantity: state.availableBalance,
     costBasis: state.principalNet,
     pru: 1,
-    realizedIncome: state.interest,
+    realizedIncome: state.recordedInterest,
     realizedPnL: 0,
     fees: 0,
     currentPrice: 1,
-    marketValue: state.balance,
+    marketValue: state.availableBalance,
     unrealizedPnL: 0,
-    totalReturn: state.interest,
-    totalReturnPct: state.principalNet > 0 ? state.interest / state.principalNet : 0,
+    totalReturn: state.recordedInterest,
+    totalReturnPct:
+      state.principalNet > 0 ? state.recordedInterest / state.principalNet : 0,
   };
 }
 
@@ -315,19 +319,28 @@ export function buildPortfolio(
   }
 
   const now = new Date();
-  const livretInterestByAccount = new Map<string, number>();
+  const livretStateByAccount = new Map<string, LivretState>();
   let livretMarketValue = 0;
   let livretCostBasis = 0;
   for (const account of livretAccounts) {
     const flows = livretFlows(account.id, workbook.transactions);
-    if (flows.length === 0) continue;
-    const state = computeLivretState(account.rate ?? 0, flows, now);
+    const interestEvents = livretInterestEvents(
+      account.id,
+      workbook.transactions,
+    );
+    if (flows.length === 0 && interestEvents.length === 0) continue;
+    const state = computeLivretState(
+      account.rate ?? 0,
+      flows,
+      interestEvents,
+      now,
+    );
     const position = livretAccountPosition(account, state);
     const list = accountPositions.get(account.id) ?? [];
     list.push({ ...position, accountId: account.id });
     accountPositions.set(account.id, list);
-    livretInterestByAccount.set(account.id, state.interest);
-    livretMarketValue += state.balance;
+    livretStateByAccount.set(account.id, state);
+    livretMarketValue += state.availableBalance;
     livretCostBasis += state.principalNet;
   }
 
@@ -335,6 +348,7 @@ export function buildPortfolio(
   for (const [accountId, positions] of accountPositions.entries()) {
     const cash = perAccountCash.get(accountId);
     const account = accountMap.get(accountId);
+    const livretState = livretStateByAccount.get(accountId);
     const marketValue = positions.reduce((s, p) => s + p.marketValue, 0);
     const costBasis = positions.reduce((s, p) => s + p.costBasis, 0);
     accounts.push({
@@ -346,8 +360,9 @@ export function buildPortfolio(
       unrealizedPnL: positions.reduce((s, p) => s + p.unrealizedPnL, 0),
       realizedPnL: positions.reduce((s, p) => s + p.realizedPnL, 0),
       realizedIncome: positions.reduce((s, p) => s + p.realizedIncome, 0),
-      cashInterest:
-        livretInterestByAccount.get(accountId) ?? cash?.interest ?? 0,
+      cashInterest: livretState?.recordedInterest ?? cash?.interest ?? 0,
+      cashInterestRecorded: livretState?.recordedInterest ?? 0,
+      cashInterestEstimated: livretState?.estimatedInterest ?? 0,
     });
   }
   accounts.sort((a, b) => b.marketValue - a.marketValue);
