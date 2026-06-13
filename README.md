@@ -5,6 +5,29 @@ comme source de vérité et récupère les cours en ligne (BTC via CoinGecko, ET
 actions via Yahoo Finance). Les FCPE et autres actifs sans API se renseignent à
 la main.
 
+## Installer Patrimo (pour mes proches)
+
+1. Aller sur la page des releases :
+   [github.com/bostalowski/patrimo/releases/latest](https://github.com/bostalowski/patrimo/releases/latest).
+2. Télécharger le `.dmg` correspondant à ton Mac :
+   - **`Patrimo-<version>-arm64.dmg`** pour les Mac Apple Silicon (M1/M2/M3/M4),
+   - **`Patrimo-<version>.dmg`** pour les Mac Intel.
+3. Ouvrir le `.dmg` et glisser **Patrimo** dans **Applications**.
+4. L'app n'est pas signée par un compte Apple Developer : au premier lancement,
+   macOS affiche « développeur non identifié ». Fais **clic droit sur Patrimo →
+   Ouvrir**, puis confirme. À défaut, retire la quarantaine :
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Patrimo.app"
+```
+
+### Mises à jour
+
+Patrimo vérifie automatiquement au démarrage s'il existe une version plus
+récente sur GitHub. Si oui, une fenêtre propose de **Télécharger** : il suffit
+de réinstaller le nouveau `.dmg` par-dessus. On peut aussi déclencher la
+vérification à la main via le menu **Configuration → Vérifier les mises à jour…**.
+
 ## Démarrage
 
 ### Mode développement (navigateur)
@@ -47,6 +70,21 @@ npm run electron:pack
 > Au premier lancement de l'app, macOS affichera un avertissement parce que
 > le binaire n'est pas signé. Fais clic droit → **Ouvrir** pour passer outre,
 > ou retire la quarantaine avec `xattr -dr com.apple.quarantine "/Applications/Patrimo.app"`.
+
+### Publier une nouvelle version
+
+La distribution passe par les **Releases GitHub** (gratuit, aucun serveur à
+gérer). Un workflow GitHub Actions ([.github/workflows/release.yml](.github/workflows/release.yml))
+build l'app sur macOS et publie les `.dmg`/`.zip` dès qu'un tag `v*` est poussé.
+
+```bash
+npm version patch   # ou minor / major : bump package.json + crée le tag git
+git push --follow-tags
+```
+
+GitHub Actions construit alors les `.dmg` (arm64 + Intel) et crée la release.
+Les apps déjà installées la détecteront au prochain démarrage. Les runners
+macOS sont gratuits car le repo est public.
 
 #### Configuration dans l'app packagée
 
