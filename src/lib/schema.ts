@@ -102,7 +102,7 @@ export const DcaConfig = z.object({
 });
 export type DcaConfig = z.infer<typeof DcaConfig>;
 
-export const BudgetKind = z.enum(["REVENU", "DEPENSE"]);
+export const BudgetKind = z.enum(["REVENU", "DEPENSE", "EPARGNE"]);
 export type BudgetKind = z.infer<typeof BudgetKind>;
 
 export const BudgetFrequency = z.enum(["MENSUEL", "TRIMESTRIEL", "ANNUEL"]);
@@ -122,6 +122,10 @@ export const BudgetCategory = z.enum([
   "SANTE",
   "IMPOTS",
   "AUTRE_DEPENSE",
+  "EPARGNE_LIQUIDE",
+  "CRYPTO",
+  "ACTIONS",
+  "AUTRE_EPARGNE",
 ]);
 export type BudgetCategory = z.infer<typeof BudgetCategory>;
 

@@ -11,7 +11,7 @@ import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { getBudget } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { formatEuro, formatPercent, signClass } from "@/lib/utils";
-import type { BudgetLine } from "@/lib/schema";
+import type { BudgetKind, BudgetLine } from "@/lib/schema";
 import {
   CATEGORY_LABELS,
   FREQUENCY_LABELS,
@@ -32,6 +32,9 @@ export default async function BudgetPage() {
     .sort((a, b) => monthlyAmount(b) - monthlyAmount(a));
   const depenses = lines
     .filter((l) => l.kind === "DEPENSE")
+    .sort((a, b) => monthlyAmount(b) - monthlyAmount(a));
+  const epargne = lines
+    .filter((l) => l.kind === "EPARGNE")
     .sort((a, b) => monthlyAmount(b) - monthlyAmount(a));
 
   return (
@@ -64,20 +67,22 @@ export default async function BudgetPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Capacité d&apos;épargne</CardTitle>
-            <CardValue className={signClass(summary.capaciteEpargne)}>
-              {formatEuro(summary.capaciteEpargne)}
+            <CardTitle>Épargne & Investissement</CardTitle>
+            <CardValue className="text-indigo-600 dark:text-indigo-400">
+              {formatEuro(summary.epargneMensuelle)}
             </CardValue>
-            <p className="text-xs text-zinc-500">par mois</p>
+            <p className="text-xs text-zinc-500">{epargne.length} ligne(s)</p>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Taux d&apos;épargne</CardTitle>
-            <CardValue className={signClass(summary.tauxEpargne)}>
-              {formatPercent(summary.tauxEpargne)}
+            <CardTitle>Restant non alloué</CardTitle>
+            <CardValue className={signClass(summary.restant)}>
+              {formatEuro(summary.restant)}
             </CardValue>
-            <p className="text-xs text-zinc-500">épargne / revenus</p>
+            <p className="text-xs text-zinc-500">
+              Taux d&apos;épargne : {formatPercent(summary.tauxEpargne)}
+            </p>
           </CardHeader>
         </Card>
       </div>
@@ -106,6 +111,14 @@ export default async function BudgetPage() {
         defaultKind="DEPENSE"
         amountClass="text-rose-600 dark:text-rose-400"
       />
+
+      <BudgetSection
+        title="Épargne & Investissement"
+        lines={epargne}
+        total={summary.epargneMensuelle}
+        defaultKind="EPARGNE"
+        amountClass="text-indigo-600 dark:text-indigo-400"
+      />
     </div>
   );
 }
@@ -120,7 +133,7 @@ function BudgetSection({
   title: string;
   lines: BudgetLine[];
   total: number;
-  defaultKind: "REVENU" | "DEPENSE";
+  defaultKind: BudgetKind;
   amountClass: string;
 }) {
   return (

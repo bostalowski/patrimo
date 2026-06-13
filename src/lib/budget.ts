@@ -24,6 +24,10 @@ export const CATEGORY_LABELS: Record<BudgetCategory, string> = {
   SANTE: "Santé",
   IMPOTS: "Impôts",
   AUTRE_DEPENSE: "Autre dépense",
+  EPARGNE_LIQUIDE: "Épargne liquide",
+  CRYPTO: "Crypto",
+  ACTIONS: "Bourse (PEA, ETF...)",
+  AUTRE_EPARGNE: "Autre placement",
 };
 
 export const FREQUENCY_LABELS: Record<BudgetFrequency, string> = {
@@ -51,49 +55,76 @@ export const DEPENSE_CATEGORIES: BudgetCategory[] = [
   "AUTRE_DEPENSE",
 ];
 
+export const EPARGNE_CATEGORIES: BudgetCategory[] = [
+  "EPARGNE_LIQUIDE",
+  "CRYPTO",
+  "ACTIONS",
+  "AUTRE_EPARGNE",
+];
+
 export function monthlyAmount(line: BudgetLine): number {
   return line.amount * MONTHLY_FACTOR[line.frequency];
 }
 
+type CategorieMontant = { category: BudgetCategory; name: string; value: number };
+
 export type BudgetSummary = {
   revenusMensuels: number;
   depensesMensuelles: number;
-  capaciteEpargne: number;
+  epargneMensuelle: number;
+  restant: number;
   tauxEpargne: number;
-  depensesParCategorie: { category: BudgetCategory; name: string; value: number }[];
+  depensesParCategorie: CategorieMontant[];
+  epargneParCategorie: CategorieMontant[];
 };
 
-export function summarizeBudget(lines: BudgetLine[]): BudgetSummary {
-  let revenusMensuels = 0;
-  let depensesMensuelles = 0;
-  const byCategory = new Map<BudgetCategory, number>();
-
-  for (const line of lines) {
-    const monthly = monthlyAmount(line);
-    if (line.kind === "REVENU") {
-      revenusMensuels += monthly;
-    } else {
-      depensesMensuelles += monthly;
-      byCategory.set(line.category, (byCategory.get(line.category) ?? 0) + monthly);
-    }
-  }
-
-  const capaciteEpargne = revenusMensuels - depensesMensuelles;
-  const tauxEpargne = revenusMensuels > 0 ? capaciteEpargne / revenusMensuels : 0;
-
-  const depensesParCategorie = Array.from(byCategory.entries())
+function parCategorie(byCategory: Map<BudgetCategory, number>): CategorieMontant[] {
+  return Array.from(byCategory.entries())
     .map(([category, value]) => ({
       category,
       name: CATEGORY_LABELS[category],
       value,
     }))
     .sort((a, b) => b.value - a.value);
+}
+
+export function summarizeBudget(lines: BudgetLine[]): BudgetSummary {
+  let revenusMensuels = 0;
+  let depensesMensuelles = 0;
+  let epargneMensuelle = 0;
+  const depensesByCategory = new Map<BudgetCategory, number>();
+  const epargneByCategory = new Map<BudgetCategory, number>();
+
+  for (const line of lines) {
+    const monthly = monthlyAmount(line);
+    if (line.kind === "REVENU") {
+      revenusMensuels += monthly;
+    } else if (line.kind === "EPARGNE") {
+      epargneMensuelle += monthly;
+      epargneByCategory.set(
+        line.category,
+        (epargneByCategory.get(line.category) ?? 0) + monthly,
+      );
+    } else {
+      depensesMensuelles += monthly;
+      depensesByCategory.set(
+        line.category,
+        (depensesByCategory.get(line.category) ?? 0) + monthly,
+      );
+    }
+  }
+
+  const restant = revenusMensuels - depensesMensuelles - epargneMensuelle;
+  const tauxEpargne =
+    revenusMensuels > 0 ? (epargneMensuelle + restant) / revenusMensuels : 0;
 
   return {
     revenusMensuels,
     depensesMensuelles,
-    capaciteEpargne,
+    epargneMensuelle,
+    restant,
     tauxEpargne,
-    depensesParCategorie,
+    depensesParCategorie: parCategorie(depensesByCategory),
+    epargneParCategorie: parCategorie(epargneByCategory),
   };
 }
