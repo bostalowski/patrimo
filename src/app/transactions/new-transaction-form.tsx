@@ -10,6 +10,7 @@ import {
   TransactionFields,
   validateTxValue,
   type Option,
+  type TxAccountOption,
   type TxFormValue,
 } from "./transaction-form";
 
@@ -18,7 +19,7 @@ export function NewTransactionForm({
   accounts,
 }: {
   assets: Option[];
-  accounts: Option[];
+  accounts: TxAccountOption[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);

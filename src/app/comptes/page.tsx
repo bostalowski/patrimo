@@ -179,12 +179,18 @@ export default async function ComptesPage() {
                           {account.positions.map((p) => (
                             <TR key={p.assetId}>
                               <TD>
-                                <Link
-                                  href={`/actifs/${encodeURIComponent(p.assetId)}`}
-                                  className="font-medium hover:underline"
-                                >
-                                  {p.asset?.label ?? p.assetId}
-                                </Link>
+                                {meta?.envelope === "LIVRET" ? (
+                                  <span className="font-medium">
+                                    {p.asset?.label ?? p.assetId}
+                                  </span>
+                                ) : (
+                                  <Link
+                                    href={`/actifs/${encodeURIComponent(p.assetId)}`}
+                                    className="font-medium hover:underline"
+                                  >
+                                    {p.asset?.label ?? p.assetId}
+                                  </Link>
+                                )}
                               </TD>
                               <TD className="text-right font-mono text-xs">
                                 {formatQuantity(p.quantity)}

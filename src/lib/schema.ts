@@ -17,7 +17,6 @@ export const AssetType = z.enum([
   "ACTION",
   "FCPE",
   "CASH",
-  "LIVRET",
 ]);
 export type AssetType = z.infer<typeof AssetType>;
 
@@ -29,10 +28,11 @@ export const AccountType = z.enum([
   "EXCHANGE_CRYPTO",
   "WALLET_CRYPTO",
   "EPARGNE_SALARIALE",
+  "BANQUE",
 ]);
 export type AccountType = z.infer<typeof AccountType>;
 
-export const Envelope = z.enum(["CTO", "PEA", "PEE", "AV"]);
+export const Envelope = z.enum(["CTO", "PEA", "PEE", "AV", "LIVRET"]);
 export type Envelope = z.infer<typeof Envelope>;
 
 export const Transaction = z.object({
@@ -40,7 +40,7 @@ export const Transaction = z.object({
   type: TransactionType,
   compte: z.string().min(1),
   compteDestination: z.string().optional(),
-  actif: z.string().min(1),
+  actif: z.string().default(""),
   quantite: z.number().nonnegative(),
   prixUnitaire: z.number().nullable(),
   devise: z.string().default("EUR"),
@@ -59,8 +59,6 @@ export const Asset = z.object({
   source: PriceSource,
   param: z.string().optional(),
   currency: z.string().default("EUR"),
-  rate: z.number().nonnegative().optional(),
-  plafond: z.number().positive().optional(),
 });
 export type Asset = z.infer<typeof Asset>;
 
@@ -70,6 +68,8 @@ export const Account = z.object({
   type: AccountType,
   envelope: Envelope,
   openDate: z.coerce.date().optional(),
+  rate: z.number().nonnegative().optional(),
+  plafond: z.number().positive().optional(),
 });
 export type Account = z.infer<typeof Account>;
 

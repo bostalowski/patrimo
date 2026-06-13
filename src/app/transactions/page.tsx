@@ -57,7 +57,7 @@ export default function TransactionsPage() {
         ? (accountLabels.get(tx.compteDestination) ?? tx.compteDestination)
         : null,
       actif: tx.actif,
-      actifLabel: assetLabels.get(tx.actif) ?? tx.actif,
+      actifLabel: tx.actif ? (assetLabels.get(tx.actif) ?? tx.actif) : "—",
       quantite: tx.quantite,
       prixUnitaire: tx.prixUnitaire,
       montant: gross !== null ? sign * gross : null,
@@ -69,7 +69,7 @@ export default function TransactionsPage() {
   });
 
   const allAccounts = accounts
-    .map((a) => ({ id: a.id, label: a.label }))
+    .map((a) => ({ id: a.id, label: a.label, envelope: a.envelope }))
     .sort((a, b) => a.label.localeCompare(b.label));
   const allAssets = assets
     .map((a) => ({ id: a.id, label: a.label }))

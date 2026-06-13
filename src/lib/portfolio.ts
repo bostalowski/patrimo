@@ -1,4 +1,5 @@
 import type {
+  Account,
   Asset,
   Transaction,
   TransactionType,
@@ -244,10 +245,19 @@ function materializePosition(
   };
 }
 
-function livretAssetPosition(asset: Asset, state: LivretState): AssetPosition {
+function livretAccountPosition(
+  account: Account,
+  state: LivretState,
+): AssetPosition {
   return {
-    assetId: asset.id,
-    asset,
+    assetId: account.id,
+    asset: {
+      id: account.id,
+      label: "Liquidités",
+      type: "CASH",
+      source: "manual",
+      currency: "EUR",
+    },
     quantity: state.balance,
     costBasis: state.principalNet,
     pru: 1,
@@ -275,11 +285,13 @@ export function buildPortfolio(
 
   const assetMap = new Map(workbook.assets.map((a) => [a.id, a]));
   const accountMap = new Map(workbook.accounts.map((a) => [a.id, a]));
-  const livretAssets = workbook.assets.filter((a) => a.type === "LIVRET");
-  const livretIds = new Set(livretAssets.map((a) => a.id));
+  const livretAccounts = workbook.accounts.filter(
+    (a) => a.envelope === "LIVRET",
+  );
+  const livretAccountIds = new Set(livretAccounts.map((a) => a.id));
 
   for (const tx of workbook.transactions) {
-    if (livretIds.has(tx.actif)) continue;
+    if (livretAccountIds.has(tx.compte)) continue;
     applyTransaction(tx, perAccount, perAsset, perAccountCash);
   }
 
@@ -303,29 +315,21 @@ export function buildPortfolio(
   }
 
   const now = new Date();
-  for (const asset of livretAssets) {
-    const flows = livretFlows(asset.id, workbook.transactions);
+  const livretInterestByAccount = new Map<string, number>();
+  let livretMarketValue = 0;
+  let livretCostBasis = 0;
+  for (const account of livretAccounts) {
+    const flows = livretFlows(account.id, workbook.transactions);
     if (flows.length === 0) continue;
-    assetPositions.push(
-      livretAssetPosition(asset, computeLivretState(asset, flows, now)),
-    );
-
-    const accountIds = new Set(
-      workbook.transactions
-        .filter((tx) => tx.actif === asset.id)
-        .map((tx) => tx.compte),
-    );
-    for (const accountId of accountIds) {
-      const accountFlows = livretFlows(asset.id, workbook.transactions, accountId);
-      if (accountFlows.length === 0) continue;
-      const state = computeLivretState(asset, accountFlows, now);
-      const position = livretAssetPosition(asset, state);
-      const list = accountPositions.get(accountId) ?? [];
-      list.push({ ...position, accountId });
-      accountPositions.set(accountId, list);
-    }
+    const state = computeLivretState(account.rate ?? 0, flows, now);
+    const position = livretAccountPosition(account, state);
+    const list = accountPositions.get(account.id) ?? [];
+    list.push({ ...position, accountId: account.id });
+    accountPositions.set(account.id, list);
+    livretInterestByAccount.set(account.id, state.interest);
+    livretMarketValue += state.balance;
+    livretCostBasis += state.principalNet;
   }
-  assetPositions.sort((a, b) => b.marketValue - a.marketValue);
 
   const accounts: AccountSummary[] = [];
   for (const [accountId, positions] of accountPositions.entries()) {
@@ -342,13 +346,16 @@ export function buildPortfolio(
       unrealizedPnL: positions.reduce((s, p) => s + p.unrealizedPnL, 0),
       realizedPnL: positions.reduce((s, p) => s + p.realizedPnL, 0),
       realizedIncome: positions.reduce((s, p) => s + p.realizedIncome, 0),
-      cashInterest: cash?.interest ?? 0,
+      cashInterest:
+        livretInterestByAccount.get(accountId) ?? cash?.interest ?? 0,
     });
   }
   accounts.sort((a, b) => b.marketValue - a.marketValue);
 
-  const totalsCostBasis = assetPositions.reduce((s, p) => s + p.costBasis, 0);
-  const totalsMarketValue = assetPositions.reduce((s, p) => s + p.marketValue, 0);
+  const totalsCostBasis =
+    assetPositions.reduce((s, p) => s + p.costBasis, 0) + livretCostBasis;
+  const totalsMarketValue =
+    assetPositions.reduce((s, p) => s + p.marketValue, 0) + livretMarketValue;
   const totalsRealizedPnL = assetPositions.reduce((s, p) => s + p.realizedPnL, 0);
   const totalsRealizedIncome = assetPositions.reduce(
     (s, p) => s + p.realizedIncome,

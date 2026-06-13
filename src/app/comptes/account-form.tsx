@@ -31,7 +31,14 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
   const [type, setType] = useState<AccountTypeValue>(account?.type ?? accountTypes[0]);
   const [envelope, setEnvelope] = useState<Envelope>(account?.envelope ?? envelopes[0]);
   const [openDate, setOpenDate] = useState(toDateInput(account?.openDate));
+  const [rate, setRate] = useState(
+    account?.rate !== undefined ? String(account.rate * 100) : "",
+  );
+  const [plafond, setPlafond] = useState(
+    account?.plafond !== undefined ? String(account.plafond) : "",
+  );
 
+  const isLivret = envelope === "LIVRET";
   const isLoading = busy || pending;
 
   function reset() {
@@ -39,6 +46,8 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
     setType(account?.type ?? accountTypes[0]);
     setEnvelope(account?.envelope ?? envelopes[0]);
     setOpenDate(toDateInput(account?.openDate));
+    setRate(account?.rate !== undefined ? String(account.rate * 100) : "");
+    setPlafond(account?.plafond !== undefined ? String(account.plafond) : "");
     setError(null);
   }
 
@@ -58,6 +67,27 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
       return;
     }
 
+    let rateValue: number | undefined;
+    let plafondValue: number | undefined;
+    if (isLivret) {
+      if (rate.trim() !== "") {
+        const parsed = Number(rate.replace(",", "."));
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          setError("Taux invalide.");
+          return;
+        }
+        rateValue = parsed / 100;
+      }
+      if (plafond.trim() !== "") {
+        const parsed = Number(plafond.replace(",", "."));
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          setError("Plafond invalide.");
+          return;
+        }
+        plafondValue = parsed;
+      }
+    }
+
     setBusy(true);
     try {
       const res = await fetch("/api/accounts", {
@@ -69,6 +99,8 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
           type,
           envelope,
           openDate: openDate ? new Date(`${openDate}T00:00:00Z`).toISOString() : undefined,
+          rate: rateValue,
+          plafond: plafondValue,
         }),
       });
       if (!res.ok) {
@@ -168,6 +200,32 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
                 ))}
               </select>
             </Field>
+
+            {isLivret && (
+              <>
+                <Field label="Taux (%)">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={rate}
+                    onChange={(e) => setRate(e.target.value)}
+                    placeholder="3"
+                    className={inputClasses}
+                  />
+                </Field>
+
+                <Field label="Plafond (EUR)">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={plafond}
+                    onChange={(e) => setPlafond(e.target.value)}
+                    placeholder="22950"
+                    className={inputClasses}
+                  />
+                </Field>
+              </>
+            )}
 
             <Field label="Date d'ouverture" className="sm:col-span-2 lg:col-span-4">
               <input
