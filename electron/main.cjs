@@ -10,6 +10,7 @@ const {
 const path = require("node:path");
 const fs = require("node:fs");
 const net = require("node:net");
+const http = require("node:http");
 
 function parseEnvFile(filePath) {
   const env = {};
@@ -104,18 +105,36 @@ function findFreePort() {
   });
 }
 
-function waitForUrl(url, timeoutMs = 30000, intervalMs = 250) {
+function probeUrl(url) {
+  return new Promise((resolve) => {
+    const req = http.request(
+      url,
+      { method: "HEAD", timeout: 2000, agent: false },
+      (res) => {
+        res.resume();
+        resolve((res.statusCode ?? 500) < 500);
+      },
+    );
+    req.on("error", () => resolve(false));
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+    req.end();
+  });
+}
+
+function waitForUrl(url, timeoutMs = 60000, intervalMs = 250, isAlive) {
   const deadline = Date.now() + timeoutMs;
   return new Promise((resolve, reject) => {
     const tick = async () => {
-      try {
-        const res = await fetch(url, { method: "HEAD" });
-        if (res.ok || res.status < 500) {
-          resolve();
-          return;
-        }
-      } catch {
-        // server not ready yet
+      if (typeof isAlive === "function" && !isAlive()) {
+        reject(new Error(`Server process exited before ${url} became reachable`));
+        return;
+      }
+      if (await probeUrl(url)) {
+        resolve();
+        return;
       }
       if (Date.now() > deadline) {
         reject(new Error(`Timed out waiting for ${url}`));
@@ -125,6 +144,15 @@ function waitForUrl(url, timeoutMs = 30000, intervalMs = 250) {
     };
     tick();
   });
+}
+
+function tailFile(filePath, maxBytes = 2000) {
+  try {
+    const content = fs.readFileSync(filePath, "utf8");
+    return content.length > maxBytes ? content.slice(-maxBytes) : content;
+  } catch {
+    return "";
+  }
 }
 
 let nextServerUrl = null;
@@ -181,7 +209,9 @@ async function startNextServer() {
   nextServerProcess.stdout?.pipe(logStream);
   nextServerProcess.stderr?.pipe(logStream);
 
+  let serverAlive = true;
   nextServerProcess.on("exit", (code) => {
+    serverAlive = false;
     log(`Next server exited with code ${code}`);
     if (code !== 0 && mainWindow) {
       dialog.showErrorBox(
@@ -195,7 +225,16 @@ async function startNextServer() {
   });
 
   nextServerUrl = `http://127.0.0.1:${nextServerPort}`;
-  await waitForUrl(nextServerUrl);
+  try {
+    await waitForUrl(nextServerUrl, 60000, 250, () => serverAlive);
+  } catch (error) {
+    const logTail = tailFile(logPath);
+    log(`Next server readiness failed: ${error}`);
+    const detail = logTail
+      ? `\n\nDerniers logs du serveur :\n${logTail}`
+      : `\n\n(Aucun log serveur à ${logPath})`;
+    throw new Error(`${error instanceof Error ? error.message : error}${detail}`);
+  }
   log(`Next server ready at ${nextServerUrl}`);
   return nextServerUrl;
 }
