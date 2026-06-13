@@ -5,6 +5,10 @@ import { Card, CardBody, CardHeader, CardTitle, CardValue } from "@/components/u
 import { ProjectionCurve } from "@/components/charts/projection-curve";
 import { projectLivret } from "@/lib/livret";
 import { cn, formatDate, formatEuro, formatPercent } from "@/lib/utils";
+import {
+  RestantProjection,
+  type SerializedEnvelope,
+} from "./restant-projection";
 
 export type LivretOption = {
   id: string;
@@ -17,7 +21,54 @@ export type LivretOption = {
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
 
-export function ProjectionClient({ livrets }: { livrets: LivretOption[] }) {
+type Mode = "livrets" | "restant";
+
+const TABS: { key: Mode; label: string }[] = [
+  { key: "livrets", label: "Livrets" },
+  { key: "restant", label: "Restant à investir" },
+];
+
+export function ProjectionClient({
+  livrets,
+  monthlyRestant,
+  envelopes,
+}: {
+  livrets: LivretOption[];
+  monthlyRestant: number;
+  envelopes: SerializedEnvelope[];
+}) {
+  const [mode, setMode] = useState<Mode>("livrets");
+
+  return (
+    <div className="space-y-6">
+      <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setMode(tab.key)}
+            className={cn(
+              "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
+              mode === tab.key
+                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-950 dark:text-zinc-50"
+                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "livrets" ? (
+        <LivretProjection livrets={livrets} />
+      ) : (
+        <RestantProjection defaultMonthly={monthlyRestant} envelopes={envelopes} />
+      )}
+    </div>
+  );
+}
+
+function LivretProjection({ livrets }: { livrets: LivretOption[] }) {
   const [selectedId, setSelectedId] = useState(livrets[0]?.id ?? "");
   const [monthlyDeposit, setMonthlyDeposit] = useState("100");
   const [years, setYears] = useState("10");
