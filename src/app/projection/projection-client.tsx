@@ -13,6 +13,7 @@ import {
   EnvelopeProjection,
   type EnvelopeProjectionInput,
 } from "./envelope-projection";
+import { PerProjection } from "./per-projection";
 
 export type LivretOption = {
   id: string;
@@ -25,12 +26,13 @@ export type LivretOption = {
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
 
-type Mode = "livrets" | "enveloppe" | "restant";
+type Mode = "livrets" | "enveloppe" | "restant" | "per";
 
 const TABS: { key: Mode; label: string }[] = [
   { key: "livrets", label: "Livrets" },
   { key: "enveloppe", label: "Par enveloppe" },
   { key: "restant", label: "Restant à investir" },
+  { key: "per", label: "PER" },
 ];
 
 export function ProjectionClient({
@@ -70,6 +72,8 @@ export function ProjectionClient({
         <LivretProjection livrets={livrets} />
       ) : mode === "enveloppe" ? (
         <EnvelopeProjection envelopes={envelopeInputs} />
+      ) : mode === "per" ? (
+        <PerProjection />
       ) : (
         <RestantProjection defaultMonthly={monthlyRestant} envelopes={envelopes} />
       )}
