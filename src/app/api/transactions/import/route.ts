@@ -75,7 +75,7 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      if (!knownAssetIds.has(tx.actif)) {
+      if (tx.actif && !knownAssetIds.has(tx.actif)) {
         return NextResponse.json(
           { error: `Actif inconnu : ${tx.actif}` },
           { status: 400 },

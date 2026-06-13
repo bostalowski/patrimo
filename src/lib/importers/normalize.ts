@@ -21,6 +21,13 @@ import type {
 
 const ISIN_PATTERN = /^[A-Z]{2}[A-Z0-9]{9}\d$/;
 
+const ASSET_REQUIRED_TYPES = new Set<Tx["type"]>([
+  "ACHAT",
+  "VENTE",
+  "DIVIDENDE",
+  "TRANSFERT",
+]);
+
 export type ResolveContext = {
   existingAssets: Asset[];
   existingAccounts: Account[];
@@ -88,7 +95,7 @@ export function buildPreview(
       });
       return;
     }
-    if (!draft.actif) {
+    if (!draft.actif && ASSET_REQUIRED_TYPES.has(draft.type)) {
       rowsPreview.push({
         rowIndex,
         source: row,
@@ -107,13 +114,13 @@ export function buildPreview(
       return;
     }
 
-    const matchedAsset = matchers.matchAsset(draft.actif);
+    const matchedAsset = draft.actif ? matchers.matchAsset(draft.actif) : null;
     const matchedAccount = matchers.matchAccount(draft.compte);
     const matchedDestination = draft.compteDestination
       ? matchers.matchAccount(draft.compteDestination)
       : null;
 
-    if (!matchedAsset) {
+    if (draft.actif && !matchedAsset) {
       registerAssetSuggestion(assetSuggestions, draft.actif);
     }
     if (!matchedAccount) {
@@ -123,7 +130,7 @@ export function buildPreview(
       registerAccountSuggestion(accountSuggestions, draft.compteDestination);
     }
 
-    const resolvedActif = matchedAsset?.id ?? draft.actif.trim();
+    const resolvedActif = matchedAsset?.id ?? draft.actif?.trim() ?? "";
     const resolvedCompte = matchedAccount?.id ?? draft.compte.trim();
     const resolvedDest = draft.compteDestination
       ? (matchedDestination?.id ?? draft.compteDestination.trim())
@@ -179,7 +186,7 @@ export function buildPreview(
       matchedAssetId: matchedAsset?.id,
       matchedAccountId: matchedAccount?.id,
       matchedDestinationAccountId: matchedDestination?.id ?? undefined,
-      actifIdentifier: draft.actif,
+      actifIdentifier: draft.actif ?? undefined,
       compteIdentifier: draft.compte,
       compteDestinationIdentifier: draft.compteDestination ?? undefined,
       signature,

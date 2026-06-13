@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import type { RawRow } from "./types";
 
 export type ParsedCsv = {
@@ -6,60 +5,132 @@ export type ParsedCsv = {
   rows: RawRow[];
 };
 
+const DELIMITERS = [";", ",", "\t", "|"];
+
 export function parseCsv(content: string): ParsedCsv {
-  const trimmed = content.replace(/^\uFEFF/, "").trim();
-  if (trimmed.length === 0) return { headers: [], rows: [] };
+  const text = content.replace(/^\uFEFF/, "");
+  if (text.trim().length === 0) return { headers: [], rows: [] };
 
-  const workbook = XLSX.read(content, {
-    type: "string",
-    raw: false,
-    cellDates: false,
-  });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) return { headers: [], rows: [] };
-  const sheet = workbook.Sheets[sheetName];
-  if (!sheet) return { headers: [], rows: [] };
+  const delimiter = detectDelimiter(text);
+  const records = parseDelimited(text, delimiter);
+  if (records.length === 0) return { headers: [], rows: [] };
 
-  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
-    header: 1,
-    defval: "",
-    raw: false,
-    blankrows: false,
-  });
-  if (aoa.length === 0) return { headers: [], rows: [] };
-
-  const rawHeaders = (aoa[0] ?? []).map((value) =>
-    value === null || value === undefined ? "" : String(value).trim(),
-  );
+  const rawHeaders = (records[0] ?? []).map((value) => value.trim());
   if (rawHeaders.every((h) => h.length === 0)) {
     return { headers: [], rows: [] };
   }
   const headers = dedupeHeaders(rawHeaders);
 
   const rows: RawRow[] = [];
-  for (let i = 1; i < aoa.length; i++) {
-    const cells = aoa[i] ?? [];
-    if (
-      cells.every((cell) => cell === "" || cell === null || cell === undefined)
-    ) {
-      continue;
-    }
+  for (let i = 1; i < records.length; i++) {
+    const cells = records[i] ?? [];
+    if (cells.every((cell) => cell.trim().length === 0)) continue;
     const row: RawRow = {};
     for (let j = 0; j < headers.length; j++) {
-      const key = headers[j];
       const value = cells[j];
-      if (value === undefined || value === null) {
-        row[key] = null;
-      } else if (typeof value === "number") {
-        row[key] = value;
-      } else {
-        row[key] = String(value);
-      }
+      row[headers[j]] = value === undefined ? null : value;
     }
     rows.push(row);
   }
 
   return { headers, rows };
+}
+
+function detectDelimiter(text: string): string {
+  const firstLine =
+    text.split(/\r?\n/).find((line) => line.trim().length > 0) ?? "";
+  let best = DELIMITERS[0];
+  let bestCount = -1;
+  for (const delimiter of DELIMITERS) {
+    const count = splitLine(firstLine, delimiter).length;
+    if (count > bestCount) {
+      bestCount = count;
+      best = delimiter;
+    }
+  }
+  return best;
+}
+
+function parseDelimited(text: string, delimiter: string): string[][] {
+  const records: string[][] = [];
+  let field = "";
+  let record: string[] = [];
+  let inQuotes = false;
+  let started = false;
+
+  const pushField = () => {
+    record.push(field);
+    field = "";
+  };
+  const pushRecord = () => {
+    pushField();
+    records.push(record);
+    record = [];
+    started = false;
+  };
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    started = true;
+
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += c;
+      }
+      continue;
+    }
+
+    if (c === '"') {
+      inQuotes = true;
+    } else if (c === delimiter) {
+      pushField();
+    } else if (c === "\n") {
+      pushRecord();
+    } else if (c === "\r") {
+      pushRecord();
+      if (text[i + 1] === "\n") i++;
+    } else {
+      field += c;
+    }
+  }
+
+  if (started || field.length > 0 || record.length > 0) {
+    pushField();
+    records.push(record);
+  }
+
+  return records;
+}
+
+function splitLine(line: string, delimiter: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === delimiter && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += c;
+    }
+  }
+  result.push(current);
+  return result;
 }
 
 function dedupeHeaders(headers: string[]): string[] {

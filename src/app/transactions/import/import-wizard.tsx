@@ -28,6 +28,7 @@ import type {
 } from "@/lib/schema";
 import type {
   AccountSuggestion,
+  AmountSignTypes,
   AssetSuggestion,
   ColumnMapping,
   ImportPreview,
@@ -106,6 +107,13 @@ type RowEdit = {
   notes?: string;
 };
 
+type MappingDefaults = {
+  compte: string;
+  devise: string;
+  fraisDevise: string;
+  type: TransactionType | "";
+};
+
 const TRANSACTION_TYPES: TransactionType[] = [
   "ACHAT",
   "VENTE",
@@ -156,10 +164,15 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
   const defaultCompte = existingAccounts[0]?.id ?? "";
 
   const [mapping, setMapping] = useState<ColumnMapping>({});
-  const [mappingDefaults, setMappingDefaults] = useState({
+  const [mappingDefaults, setMappingDefaults] = useState<MappingDefaults>({
     compte: existingAccounts[0]?.id ?? "",
     devise: "EUR",
     fraisDevise: "EUR",
+    type: "",
+  });
+  const [amountSignTypes, setAmountSignTypes] = useState<AmountSignTypes>({
+    positive: "DEPOT",
+    negative: "RETRAIT",
   });
 
   const [preview, setPreview] = useState<ImportPreview | null>(null);
@@ -189,6 +202,13 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     setCsvContent(null);
     setDetectedHeaders([]);
     setMapping({});
+    setMappingDefaults({
+      compte: existingAccounts[0]?.id ?? "",
+      devise: "EUR",
+      fraisDevise: "EUR",
+      type: "",
+    });
+    setAmountSignTypes({ positive: "DEPOT", negative: "RETRAIT" });
     setPreview(null);
     setAssetForms({});
     setAccountForms({});
@@ -232,12 +252,20 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
       }
       profile = { source: "trade-republic", defaultCompte };
     } else {
-      const missing = REQUIRED_FIELDS.filter(
-        (f) => !mapping[f] && !(f === "compte" && mappingDefaults.compte),
-      );
+      const missing = REQUIRED_FIELDS.filter((f) => !mapping[f]);
       if (missing.length > 0) {
         setError(
           `Mappe au moins : ${missing.map((m) => TX_FIELD_LABELS[m]).join(", ")}.`,
+        );
+        return;
+      }
+      if (!mapping.montant && !mapping.quantite) {
+        setError("Mappe la colonne Montant (signé) ou la colonne Quantité.");
+        return;
+      }
+      if (!mapping.montant && !mapping.type && !mappingDefaults.type) {
+        setError(
+          "Mappe la colonne Type, ou définis un type par défaut, ou mappe un Montant signé.",
         );
         return;
       }
@@ -248,7 +276,9 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
           compte: mappingDefaults.compte || undefined,
           devise: mappingDefaults.devise || "EUR",
           fraisDevise: mappingDefaults.fraisDevise || "EUR",
+          type: mappingDefaults.type || undefined,
         },
+        amountSignTypes,
       };
     }
 
@@ -476,6 +506,8 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
           onMappingChange={setMapping}
           mappingDefaults={mappingDefaults}
           onMappingDefaultsChange={setMappingDefaults}
+          amountSignTypes={amountSignTypes}
+          onAmountSignTypesChange={setAmountSignTypes}
           onBack={() => setStep("source")}
           onPreview={runPreview}
           busy={busy}
@@ -619,12 +651,10 @@ type ConfigureStepProps = {
   onFileSelected: (file: File) => Promise<void> | void;
   mapping: ColumnMapping;
   onMappingChange: (mapping: ColumnMapping) => void;
-  mappingDefaults: { compte: string; devise: string; fraisDevise: string };
-  onMappingDefaultsChange: (next: {
-    compte: string;
-    devise: string;
-    fraisDevise: string;
-  }) => void;
+  mappingDefaults: MappingDefaults;
+  onMappingDefaultsChange: (next: MappingDefaults) => void;
+  amountSignTypes: AmountSignTypes;
+  onAmountSignTypesChange: (next: AmountSignTypes) => void;
   onBack: () => void;
   onPreview: () => void;
   busy: boolean;
@@ -642,6 +672,8 @@ function ConfigureStep(props: ConfigureStepProps) {
     onMappingChange,
     mappingDefaults,
     onMappingDefaultsChange,
+    amountSignTypes,
+    onAmountSignTypesChange,
     onBack,
     onPreview,
     busy,
@@ -771,8 +803,84 @@ function ConfigureStep(props: ConfigureStepProps) {
                     className={inputClasses}
                   />
                 </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    Type par défaut
+                  </label>
+                  <select
+                    value={mappingDefaults.type}
+                    onChange={(e) =>
+                      onMappingDefaultsChange({
+                        ...mappingDefaults,
+                        type: e.target.value as TransactionType | "",
+                      })
+                    }
+                    className={inputClasses}
+                  >
+                    <option value="">—</option>
+                    {TRANSACTION_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
+
+            {mapping.montant && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold">Montant signé</h4>
+                <p className="text-xs text-zinc-500">
+                  Le type est déduit du signe du montant : la quantité importée
+                  est la valeur absolue.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                      Montant positif =
+                    </label>
+                    <select
+                      value={amountSignTypes.positive}
+                      onChange={(e) =>
+                        onAmountSignTypesChange({
+                          ...amountSignTypes,
+                          positive: e.target.value as TransactionType,
+                        })
+                      }
+                      className={inputClasses}
+                    >
+                      {TRANSACTION_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                      Montant négatif =
+                    </label>
+                    <select
+                      value={amountSignTypes.negative}
+                      onChange={(e) =>
+                        onAmountSignTypesChange({
+                          ...amountSignTypes,
+                          negative: e.target.value as TransactionType,
+                        })
+                      }
+                      className={inputClasses}
+                    >
+                      {TRANSACTION_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1700,6 +1808,7 @@ function autoGuessMapping(headers: string[]): ColumnMapping {
     type: find("type", "operation", "opération"),
     actif: find("isin", "actif", "ticker", "instrument", "name"),
     quantite: find("quantité", "quantite", "quantity", "shares", "stück"),
+    montant: find("montant", "amount", "betrag"),
     prixUnitaire: find("prix unitaire", "prix", "price", "kurs"),
     devise: find("devise", "currency", "währung"),
     frais: find("frais", "fee", "fees", "gebühren"),

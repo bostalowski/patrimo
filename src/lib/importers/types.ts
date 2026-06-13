@@ -13,6 +13,7 @@ export const TX_FIELD_KEYS = [
   "compteDestination",
   "actif",
   "quantite",
+  "montant",
   "prixUnitaire",
   "devise",
   "frais",
@@ -28,6 +29,7 @@ export const TX_FIELD_LABELS: Record<TxFieldKey, string> = {
   compteDestination: "Compte destination",
   actif: "Actif (ID, ISIN ou ticker)",
   quantite: "Quantité",
+  montant: "Montant (signé)",
   prixUnitaire: "Prix unitaire",
   devise: "Devise",
   frais: "Frais",
@@ -35,7 +37,7 @@ export const TX_FIELD_LABELS: Record<TxFieldKey, string> = {
   notes: "Notes",
 };
 
-export const REQUIRED_FIELDS: TxFieldKey[] = ["date", "type", "actif", "quantite"];
+export const REQUIRED_FIELDS: TxFieldKey[] = ["date"];
 
 export const ColumnMapping = z.object({
   date: z.string().optional(),
@@ -44,6 +46,7 @@ export const ColumnMapping = z.object({
   compteDestination: z.string().optional(),
   actif: z.string().optional(),
   quantite: z.string().optional(),
+  montant: z.string().optional(),
   prixUnitaire: z.string().optional(),
   devise: z.string().optional(),
   frais: z.string().optional(),
@@ -51,6 +54,17 @@ export const ColumnMapping = z.object({
   notes: z.string().optional(),
 });
 export type ColumnMapping = z.infer<typeof ColumnMapping>;
+
+export const AmountSignTypes = z.object({
+  positive: TransactionType,
+  negative: TransactionType,
+});
+export type AmountSignTypes = z.infer<typeof AmountSignTypes>;
+
+export const DEFAULT_AMOUNT_SIGN_TYPES: AmountSignTypes = {
+  positive: "DEPOT",
+  negative: "RETRAIT",
+};
 
 export const ProfileDefaults = z.object({
   compte: z.string().optional(),
@@ -68,6 +82,7 @@ export const GenericProfile = z.object({
   mapping: ColumnMapping,
   defaults: ProfileDefaults,
   typeValueMap: TypeValueMap.optional(),
+  amountSignTypes: AmountSignTypes.default(DEFAULT_AMOUNT_SIGN_TYPES),
 });
 export type GenericProfile = z.infer<typeof GenericProfile>;
 
