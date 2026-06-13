@@ -7,7 +7,7 @@ import type { TransactionType } from "@/lib/schema";
 export type Option = { id: string; label: string };
 export type TxAccountOption = { id: string; label: string; envelope?: string };
 
-const LIVRET_TX_TYPES: TransactionType[] = ["DEPOT", "RETRAIT"];
+const LIVRET_TX_TYPES: TransactionType[] = ["DEPOT", "RETRAIT", "INTERET"];
 
 export const TX_TYPES: TransactionType[] = [
   "ACHAT",
@@ -143,7 +143,7 @@ export function TransactionFields({
     if (!isLivret) return;
     const patch: Partial<TxFormValue> = {};
     if (value.actif !== "") patch.actif = "";
-    if (value.type !== "DEPOT" && value.type !== "RETRAIT") patch.type = "DEPOT";
+    if (!LIVRET_TX_TYPES.includes(value.type)) patch.type = "DEPOT";
     if (value.quantite !== "1") patch.quantite = "1";
     if (Object.keys(patch).length > 0) onChange(patch);
   }, [isLivret, value.actif, value.type, value.quantite, onChange]);

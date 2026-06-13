@@ -6,7 +6,10 @@ export type LivretFlow = { date: Date; amount: number };
 
 export type LivretState = {
   principalNet: number;
+  recordedInterest: number;
+  estimatedInterest: number;
   interest: number;
+  availableBalance: number;
   balance: number;
 };
 
@@ -27,6 +30,12 @@ export function isLivretAccount(account: Account | undefined): boolean {
   return account?.envelope === "LIVRET";
 }
 
+function flowAmount(tx: Transaction): number {
+  return tx.prixUnitaire && tx.prixUnitaire > 0
+    ? tx.quantite * tx.prixUnitaire
+    : tx.quantite;
+}
+
 export function livretFlows(
   accountId: string,
   transactions: Transaction[],
@@ -34,15 +43,26 @@ export function livretFlows(
   const flows: LivretFlow[] = [];
   for (const tx of transactions) {
     if (tx.compte !== accountId) continue;
-    const amount =
-      tx.prixUnitaire && tx.prixUnitaire > 0
-        ? tx.quantite * tx.prixUnitaire
-        : tx.quantite;
+    const amount = flowAmount(tx);
     if (tx.type === "DEPOT") flows.push({ date: tx.date, amount });
     else if (tx.type === "RETRAIT") flows.push({ date: tx.date, amount: -amount });
   }
   flows.sort((a, b) => a.date.getTime() - b.date.getTime());
   return flows;
+}
+
+export function livretInterestEvents(
+  accountId: string,
+  transactions: Transaction[],
+): LivretFlow[] {
+  const events: LivretFlow[] = [];
+  for (const tx of transactions) {
+    if (tx.compte !== accountId) continue;
+    if (tx.type !== "INTERET") continue;
+    events.push({ date: tx.date, amount: flowAmount(tx) });
+  }
+  events.sort((a, b) => a.date.getTime() - b.date.getTime());
+  return events;
 }
 
 function utc(year: number, monthIndex: number, day: number): Date {
@@ -79,22 +99,37 @@ type ValueFlow = { valueTime: number; amount: number };
 
 function buildInterestCheckpoints(
   flows: LivretFlow[],
+  interestEvents: LivretFlow[],
   rate: number,
   endTime: number,
 ): Checkpoint[] {
-  if (flows.length === 0 || rate <= 0) return [];
+  if (rate <= 0) return [];
+  if (flows.length === 0 && interestEvents.length === 0) return [];
 
-  const valueFlows: ValueFlow[] = flows
-    .map((flow) => {
+  const baseFlows: ValueFlow[] = [
+    ...flows.map((flow) => {
       const valueDate =
         flow.amount >= 0
           ? depositValueDate(flow.date)
           : withdrawalValueDate(flow.date);
       return { valueTime: valueDate.getTime(), amount: flow.amount };
-    })
-    .sort((a, b) => a.valueTime - b.valueTime);
+    }),
+    ...interestEvents.map((event) => ({
+      valueTime: depositValueDate(event.date).getTime(),
+      amount: event.amount,
+    })),
+  ].sort((a, b) => a.valueTime - b.valueTime);
 
-  const firstQuinzaine = quinzaineStart(flows[0].date);
+  const lastInterestTime = interestEvents.reduce(
+    (max, event) => Math.max(max, event.date.getTime()),
+    Number.NEGATIVE_INFINITY,
+  );
+
+  const firstDate = [...flows, ...interestEvents].reduce(
+    (min, flow) => (flow.date.getTime() < min.getTime() ? flow.date : min),
+    [...flows, ...interestEvents][0].date,
+  );
+  const firstQuinzaine = quinzaineStart(firstDate);
   if (firstQuinzaine.getTime() > endTime) return [];
 
   const checkpoints: Checkpoint[] = [];
@@ -103,7 +138,7 @@ function buildInterestCheckpoints(
   let runningInterest = 0;
   let currentYear = firstQuinzaine.getUTCFullYear();
   let flowIndex = 0;
-  let netDeposits = 0;
+  let base = 0;
 
   for (
     let quinzaine = firstQuinzaine;
@@ -120,24 +155,34 @@ function buildInterestCheckpoints(
     }
 
     while (
-      flowIndex < valueFlows.length &&
-      valueFlows[flowIndex].valueTime <= quinzaineTime
+      flowIndex < baseFlows.length &&
+      baseFlows[flowIndex].valueTime <= quinzaineTime
     ) {
-      netDeposits += valueFlows[flowIndex].amount;
+      base += baseFlows[flowIndex].amount;
       flowIndex += 1;
     }
 
-    const principal = capitalizedInterest + netDeposits;
-    if (principal > 0) {
-      const quinzaineInterest = (principal * rate) / QUINZAINES_PER_YEAR;
-      accruedThisYear += quinzaineInterest;
-      runningInterest += quinzaineInterest;
+    if (quinzaineTime > lastInterestTime) {
+      const principal = capitalizedInterest + base;
+      if (principal > 0) {
+        const quinzaineInterest = (principal * rate) / QUINZAINES_PER_YEAR;
+        accruedThisYear += quinzaineInterest;
+        runningInterest += quinzaineInterest;
+      }
     }
 
     checkpoints.push({ time: quinzaineTime, interest: runningInterest });
   }
 
   return checkpoints;
+}
+
+function sumInterestUpTo(events: LivretFlow[], time: number): number {
+  let total = 0;
+  for (const event of events) {
+    if (event.date.getTime() <= time) total += event.amount;
+  }
+  return total;
 }
 
 function interestAt(checkpoints: Checkpoint[], time: number): number {
@@ -161,36 +206,45 @@ function principalAt(flows: LivretFlow[], time: number): number {
 export function computeLivretState(
   rate: number,
   flows: LivretFlow[],
+  interestEvents: LivretFlow[],
   asOf: Date = new Date(),
 ): LivretState {
   const asOfTime = asOf.getTime();
   const principalNet = principalAt(flows, asOfTime);
-  const checkpoints = buildInterestCheckpoints(flows, rate, asOfTime);
-  const interest = interestAt(checkpoints, asOfTime);
+  const recordedInterest = sumInterestUpTo(interestEvents, asOfTime);
+  const checkpoints = buildInterestCheckpoints(
+    flows,
+    interestEvents,
+    rate,
+    asOfTime,
+  );
+  const estimatedInterest = interestAt(checkpoints, asOfTime);
+  const interest = recordedInterest + estimatedInterest;
   return {
     principalNet,
+    recordedInterest,
+    estimatedInterest,
     interest,
+    availableBalance: principalNet + recordedInterest,
     balance: principalNet + interest,
   };
 }
 
 export function livretDailyValues(
-  rate: number,
   flows: LivretFlow[],
+  interestEvents: LivretFlow[],
   dates: string[],
 ): { values: number[]; invested: number[] } {
   const values = new Array<number>(dates.length).fill(0);
   const invested = new Array<number>(dates.length).fill(0);
   if (dates.length === 0) return { values, invested };
 
-  const lastTime = new Date(`${dates[dates.length - 1]}T00:00:00Z`).getTime();
-  const checkpoints = buildInterestCheckpoints(flows, rate, lastTime);
-
   dates.forEach((date, index) => {
     const time = new Date(`${date}T00:00:00Z`).getTime();
     const principal = principalAt(flows, time);
+    const recordedInterest = sumInterestUpTo(interestEvents, time);
     invested[index] = principal;
-    values[index] = principal + interestAt(checkpoints, time);
+    values[index] = principal + recordedInterest;
   });
 
   return { values, invested };

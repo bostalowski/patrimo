@@ -1,6 +1,10 @@
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
-import { computeLivretState, livretFlows } from "@/lib/livret";
+import {
+  computeLivretState,
+  livretFlows,
+  livretInterestEvents,
+} from "@/lib/livret";
 import { ProjectionClient, type LivretOption } from "./projection-client";
 
 export const dynamic = "force-dynamic";
@@ -14,13 +18,22 @@ export default async function ProjectionPage() {
     .filter((account) => account.envelope === "LIVRET")
     .map((account) => {
       const flows = livretFlows(account.id, workbook.transactions);
-      const state = computeLivretState(account.rate ?? 0, flows, now);
+      const interestEvents = livretInterestEvents(
+        account.id,
+        workbook.transactions,
+      );
+      const state = computeLivretState(
+        account.rate ?? 0,
+        flows,
+        interestEvents,
+        now,
+      );
       return {
         id: account.id,
         label: account.label,
         rate: account.rate ?? 0,
         plafond: account.plafond ?? null,
-        balance: state.balance,
+        balance: state.availableBalance,
       };
     });
 
