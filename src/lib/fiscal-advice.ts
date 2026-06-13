@@ -38,7 +38,7 @@ function yearsSince(date: Date | undefined, now: Date): number | null {
   return (now.getTime() - date.getTime()) / (365.25 * 24 * 3600 * 1000);
 }
 
-function rateForEnvelope(
+export function rateForEnvelope(
   info: EnvelopeInfo,
   horizonYears: number,
   now: Date,
@@ -134,4 +134,33 @@ export function buildFiscalAdvice(params: {
   });
 
   return advices;
+}
+
+export type EnvelopeProjectionInfo = EnvelopeInfo & {
+  grossGain: number;
+  totalContributed: number;
+};
+
+export function buildEnvelopeProjectionAdvice(params: {
+  envelopes: EnvelopeProjectionInfo[];
+  horizonYears: number;
+  now?: Date;
+}): EnvelopeAdvice[] {
+  const { envelopes, horizonYears } = params;
+  const now = params.now ?? new Date();
+
+  return envelopes.map((info, index) => {
+    const { rate, tips } = rateForEnvelope(info, horizonYears, now);
+    const netGain = info.grossGain * (1 - rate);
+    return {
+      envelope: info.envelope,
+      label: ENVELOPE_LABELS[info.envelope],
+      taxRateOnGain: rate,
+      grossGain: info.grossGain,
+      netGain,
+      netFinalValue: info.totalContributed + netGain,
+      priority: index + 1,
+      tips,
+    };
+  });
 }
