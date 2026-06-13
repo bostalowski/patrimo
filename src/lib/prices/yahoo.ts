@@ -26,7 +26,7 @@ async function fetchChart(
   const res = await fetch(url, {
     headers: {
       "user-agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) financial-graphs/0.1",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) patrimo/0.1",
       accept: "application/json",
     },
     cache: "no-store",

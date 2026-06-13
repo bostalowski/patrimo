@@ -38,7 +38,7 @@ export function Sidebar() {
       <div className="mb-8 flex items-center gap-2 px-2">
         <BarChart3 className="h-5 w-5 text-emerald-500" />
         <span className="text-base font-semibold tracking-tight">
-          Financial Graphs
+          Patrimo
         </span>
       </div>
 

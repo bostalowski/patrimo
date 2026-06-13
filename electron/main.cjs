@@ -289,7 +289,7 @@ async function createMainWindow(targetUrl) {
     height: 900,
     minWidth: 1024,
     minHeight: 640,
-    title: "Financial Graphs",
+    title: "Patrimo",
     backgroundColor: "#0a0a0a",
     icon: iconPath,
     webPreferences: {

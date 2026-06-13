@@ -1,5 +1,5 @@
-appId: com.bastien.financial-graphs
-productName: Financial Graphs
+appId: com.bastien.patrimo
+productName: Patrimo
 copyright: Bastien Ostalowski
 asar: true
 directories:
@@ -56,17 +56,17 @@ mac:
   identity: null
   extendInfo:
     NSDocumentsFolderUsageDescription: >-
-      Financial Graphs a besoin de lire et écrire votre classeur Excel de
+      Patrimo a besoin de lire et écrire votre classeur Excel de
       transactions dans le dossier Documents.
     NSDownloadsFolderUsageDescription: >-
-      Financial Graphs a besoin de lire les exports CSV (Trade Republic et
+      Patrimo a besoin de lire les exports CSV (Trade Republic et
       autres) et d'enregistrer votre classeur Excel dans le dossier
       Téléchargements.
     NSDesktopFolderUsageDescription: >-
-      Financial Graphs a besoin d'accéder à votre Bureau pour y lire ou
+      Patrimo a besoin d'accéder à votre Bureau pour y lire ou
       enregistrer votre classeur Excel.
     NSRemovableVolumesUsageDescription: >-
-      Financial Graphs a besoin d'accéder aux volumes amovibles pour y lire
+      Patrimo a besoin d'accéder aux volumes amovibles pour y lire
       ou enregistrer votre classeur Excel.
 dmg:
   writeUpdateInfo: false

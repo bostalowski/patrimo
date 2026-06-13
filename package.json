@@ -1,5 +1,5 @@
 {
-  "name": "financial-graphs",
+  "name": "patrimo",
   "version": "0.1.1",
   "private": true,
   "description": "Application locale de suivi de patrimoine : lit un Excel comme source de vérité, récupère les cours en ligne et calcule positions, PRU et P&L.",
