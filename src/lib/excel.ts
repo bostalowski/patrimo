@@ -44,11 +44,17 @@ const ACTIFS_HEADERS = [
   "Source prix",
   "Param source",
   "Devise",
+];
+
+const COMPTES_HEADERS = [
+  "ID",
+  "Libellé",
+  "Type",
+  "Enveloppe",
+  "Date d'ouverture",
   "Taux",
   "Plafond",
 ];
-
-const COMPTES_HEADERS = ["ID", "Libellé", "Type", "Enveloppe", "Date d'ouverture"];
 
 const BUDGET_HEADERS = [
   "ID",
@@ -216,7 +222,7 @@ function parseTransactions(rows: Record<string, unknown>[]): Transaction[] {
       type: row["Type"],
       compte: row["Compte"],
       compteDestination: emptyToUndefined(row["Compte destination"]),
-      actif: row["Actif"],
+      actif: emptyToUndefined(row["Actif"]) ?? "",
       quantite: toNumber(row["Quantité"]) ?? 0,
       prixUnitaire: toNumber(row["Prix unitaire"]),
       devise: (row["Devise"] as string) ?? "EUR",
@@ -244,8 +250,6 @@ function parseAssets(rows: Record<string, unknown>[]): Asset[] {
       source: row["Source prix"],
       param: emptyToUndefined(row["Param source"]),
       currency: (row["Devise"] as string) ?? "EUR",
-      rate: toNumber(row["Taux"]) ?? undefined,
-      plafond: toNumber(row["Plafond"]) ?? undefined,
     });
     if (!parsed.success) {
       throw new Error(`Invalid asset at row ${i + 2}: ${parsed.error.message}`);
@@ -266,6 +270,8 @@ function parseAccounts(rows: Record<string, unknown>[]): Account[] {
         rawOpenDate === null || rawOpenDate === undefined || rawOpenDate === ""
           ? undefined
           : coerceDate(rawOpenDate),
+      rate: toNumber(row["Taux"]) ?? undefined,
+      plafond: toNumber(row["Plafond"]) ?? undefined,
     });
     if (!parsed.success) {
       throw new Error(`Invalid account at row ${i + 2}: ${parsed.error.message}`);
@@ -386,7 +392,7 @@ function transactionValueByHeader(
     Type: transaction.type,
     Compte: transaction.compte,
     "Compte destination": transaction.compteDestination ?? null,
-    Actif: transaction.actif,
+    Actif: transaction.actif || null,
     "Quantité": transaction.quantite,
     "Prix unitaire": transaction.prixUnitaire,
     Devise: transaction.devise,
@@ -589,8 +595,6 @@ function assetEntry(asset: Asset): UpsertEntry {
       "Source prix": asset.source,
       "Param source": asset.param ?? null,
       Devise: asset.currency,
-      Taux: asset.rate ?? null,
-      Plafond: asset.plafond ?? null,
     },
   };
 }
@@ -604,6 +608,8 @@ function accountEntry(account: Account): UpsertEntry {
       Type: account.type,
       Enveloppe: account.envelope,
       "Date d'ouverture": account.openDate ?? null,
+      Taux: account.rate ?? null,
+      Plafond: account.plafond ?? null,
     },
   };
 }

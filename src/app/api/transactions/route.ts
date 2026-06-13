@@ -14,14 +14,20 @@ function validateReferences(tx: Transaction): string | null {
   }
 
   const { assets, accounts } = loadWorkbook();
-  if (!accounts.some((a) => a.id === tx.compte)) {
+  const account = accounts.find((a) => a.id === tx.compte);
+  if (!account) {
     return `Compte inconnu : ${tx.compte}`;
   }
   if (tx.compteDestination && !accounts.some((a) => a.id === tx.compteDestination)) {
     return `Compte de destination inconnu : ${tx.compteDestination}`;
   }
-  if (!assets.some((a) => a.id === tx.actif)) {
-    return `Actif inconnu : ${tx.actif}`;
+  if (account.envelope !== "LIVRET") {
+    if (!tx.actif) {
+      return "Un actif est requis pour ce compte.";
+    }
+    if (!assets.some((a) => a.id === tx.actif)) {
+      return `Actif inconnu : ${tx.actif}`;
+    }
   }
   return null;
 }

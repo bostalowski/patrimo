@@ -121,6 +121,9 @@ export function buildHistorySeries(
   const firstDate = toIsoDate(txs[0].date);
   const lastDate = toIsoDate(new Date());
 
+  const livretAccountIds = new Set(
+    workbook.accounts.filter((a) => a.envelope === "LIVRET").map((a) => a.id),
+  );
   const assetById = new Map(workbook.assets.map((a) => [a.id, a]));
   const qtyByAsset = new Map<string, number>();
   const investedByAsset = new Map<string, number>();
@@ -146,9 +149,10 @@ export function buildHistorySeries(
   for (let cursor = firstDate; cursor <= lastDate; cursor = addDays(cursor, 1)) {
     while (txIndex < txs.length && toIsoDate(txs[txIndex].date) <= cursor) {
       const tx = txs[txIndex];
+      txIndex += 1;
+      if (livretAccountIds.has(tx.compte)) continue;
       applyTxToQuantities(tx, qtyByAsset, investedByAsset);
       if (tx.actif !== INCOME_ASSET) ensureSeries(tx.actif);
-      txIndex += 1;
     }
 
     const dateIndex = dates.length;
@@ -172,14 +176,21 @@ export function buildHistorySeries(
     }
   }
 
-  for (const asset of workbook.assets) {
-    if (asset.type !== "LIVRET") continue;
-    const livretSeries = series.get(asset.id);
-    if (!livretSeries) continue;
-    const flows = livretFlows(asset.id, workbook.transactions);
-    const { values, invested } = livretDailyValues(asset, flows, dates);
-    livretSeries.values = values;
-    livretSeries.invested = invested;
+  for (const account of workbook.accounts) {
+    if (account.envelope !== "LIVRET") continue;
+    const flows = livretFlows(account.id, workbook.transactions);
+    if (flows.length === 0) continue;
+    const { values, invested } = livretDailyValues(
+      account.rate ?? 0,
+      flows,
+      dates,
+    );
+    series.set(`livret:${account.id}`, {
+      assetId: `livret:${account.id}`,
+      label: account.label,
+      values,
+      invested,
+    });
   }
 
   const perAsset = [...series.values()].sort((a, b) => {

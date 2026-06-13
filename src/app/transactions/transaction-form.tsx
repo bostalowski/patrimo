@@ -1,9 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { TransactionType } from "@/lib/schema";
 
 export type Option = { id: string; label: string };
+export type TxAccountOption = { id: string; label: string; envelope?: string };
+
+const LIVRET_TX_TYPES: TransactionType[] = ["DEPOT", "RETRAIT"];
 
 export const TX_TYPES: TransactionType[] = [
   "ACHAT",
@@ -128,10 +132,22 @@ export function TransactionFields({
 }: {
   value: TxFormValue;
   onChange: (patch: Partial<TxFormValue>) => void;
-  accounts: Option[];
+  accounts: TxAccountOption[];
   assets: Option[];
 }) {
+  const selectedAccount = accounts.find((a) => a.id === value.compte);
+  const isLivret = selectedAccount?.envelope === "LIVRET";
   const isTransfert = value.type === "TRANSFERT";
+
+  useEffect(() => {
+    if (!isLivret) return;
+    const patch: Partial<TxFormValue> = {};
+    if (value.actif !== "") patch.actif = "";
+    if (value.type !== "DEPOT" && value.type !== "RETRAIT") patch.type = "DEPOT";
+    if (Object.keys(patch).length > 0) onChange(patch);
+  }, [isLivret, value.actif, value.type, onChange]);
+
+  const typeOptions = isLivret ? LIVRET_TX_TYPES : TX_TYPES;
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -154,7 +170,7 @@ export function TransactionFields({
           }
           className={txInputClasses}
         >
-          {TX_TYPES.map((t) => (
+          {typeOptions.map((t) => (
             <option key={t} value={t}>
               {t}
             </option>
@@ -197,22 +213,24 @@ export function TransactionFields({
         </Field>
       )}
 
-      <Field label="Actif">
-        <select
-          value={value.actif}
-          onChange={(e) => onChange({ actif: e.target.value })}
-          className={txInputClasses}
-          required
-        >
-          {assets.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+      {!isLivret && (
+        <Field label="Actif">
+          <select
+            value={value.actif}
+            onChange={(e) => onChange({ actif: e.target.value })}
+            className={txInputClasses}
+            required
+          >
+            {assets.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
 
-      <Field label="Quantité">
+      <Field label={isLivret ? "Montant (€)" : "Quantité"}>
         <input
           type="text"
           inputMode="decimal"
@@ -224,55 +242,59 @@ export function TransactionFields({
         />
       </Field>
 
-      <Field label="Prix unitaire">
-        <input
-          type="text"
-          inputMode="decimal"
-          value={value.prixUnitaire}
-          onChange={(e) => onChange({ prixUnitaire: e.target.value })}
-          placeholder="—"
-          className={txInputClasses}
-        />
-      </Field>
+      {!isLivret && (
+        <>
+          <Field label="Prix unitaire">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={value.prixUnitaire}
+              onChange={(e) => onChange({ prixUnitaire: e.target.value })}
+              placeholder="—"
+              className={txInputClasses}
+            />
+          </Field>
 
-      <Field label="Devise">
-        <select
-          value={value.devise}
-          onChange={(e) => onChange({ devise: e.target.value })}
-          className={txInputClasses}
-        >
-          {TX_CURRENCIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-      </Field>
+          <Field label="Devise">
+            <select
+              value={value.devise}
+              onChange={(e) => onChange({ devise: e.target.value })}
+              className={txInputClasses}
+            >
+              {TX_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </Field>
 
-      <Field label="Frais">
-        <input
-          type="text"
-          inputMode="decimal"
-          value={value.frais}
-          onChange={(e) => onChange({ frais: e.target.value })}
-          placeholder="0"
-          className={txInputClasses}
-        />
-      </Field>
+          <Field label="Frais">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={value.frais}
+              onChange={(e) => onChange({ frais: e.target.value })}
+              placeholder="0"
+              className={txInputClasses}
+            />
+          </Field>
 
-      <Field label="Frais devise">
-        <select
-          value={value.fraisDevise}
-          onChange={(e) => onChange({ fraisDevise: e.target.value })}
-          className={txInputClasses}
-        >
-          {TX_CURRENCIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-      </Field>
+          <Field label="Frais devise">
+            <select
+              value={value.fraisDevise}
+              onChange={(e) => onChange({ fraisDevise: e.target.value })}
+              className={txInputClasses}
+            >
+              {TX_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </>
+      )}
 
       <Field label="Notes" className="sm:col-span-2">
         <input

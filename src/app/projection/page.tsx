@@ -10,16 +10,16 @@ export default async function ProjectionPage() {
   const workbook = loadWorkbook();
   const now = new Date();
 
-  const livrets: LivretOption[] = workbook.assets
-    .filter((asset) => asset.type === "LIVRET")
-    .map((asset) => {
-      const flows = livretFlows(asset.id, workbook.transactions);
-      const state = computeLivretState(asset, flows, now);
+  const livrets: LivretOption[] = workbook.accounts
+    .filter((account) => account.envelope === "LIVRET")
+    .map((account) => {
+      const flows = livretFlows(account.id, workbook.transactions);
+      const state = computeLivretState(account.rate ?? 0, flows, now);
       return {
-        id: asset.id,
-        label: asset.label,
-        rate: asset.rate ?? 0,
-        plafond: asset.plafond ?? null,
+        id: account.id,
+        label: account.label,
+        rate: account.rate ?? 0,
+        plafond: account.plafond ?? null,
         balance: state.balance,
       };
     });

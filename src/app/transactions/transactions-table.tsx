@@ -17,7 +17,7 @@ import {
 } from "@/lib/utils";
 import type { TransactionType } from "@/lib/schema";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
-import type { Option } from "./transaction-form";
+import type { Option, TxAccountOption } from "./transaction-form";
 
 type BadgeVariant = "default" | "success" | "danger" | "warning" | "info";
 
@@ -113,7 +113,7 @@ export function TransactionsTable({
 }: {
   rows: TransactionRow[];
   accounts: AccountOption[];
-  allAccounts: Option[];
+  allAccounts: TxAccountOption[];
   allAssets: Option[];
 }) {
   const router = useRouter();

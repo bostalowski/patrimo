@@ -34,14 +34,7 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
   const [ticker, setTicker] = useState(asset?.ticker ?? "");
   const [param, setParam] = useState(asset?.param ?? "");
   const [currency, setCurrency] = useState(asset?.currency ?? "EUR");
-  const [rate, setRate] = useState(
-    asset?.rate !== undefined ? String(asset.rate * 100) : "",
-  );
-  const [plafond, setPlafond] = useState(
-    asset?.plafond !== undefined ? String(asset.plafond) : "",
-  );
 
-  const isLivret = type === "LIVRET";
   const isLoading = busy || pending;
 
   function reset() {
@@ -52,8 +45,6 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
     setTicker(asset?.ticker ?? "");
     setParam(asset?.param ?? "");
     setCurrency(asset?.currency ?? "EUR");
-    setRate(asset?.rate !== undefined ? String(asset.rate * 100) : "");
-    setPlafond(asset?.plafond !== undefined ? String(asset.plafond) : "");
     setError(null);
   }
 
@@ -73,29 +64,6 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
       return;
     }
 
-    let rateValue: number | undefined;
-    let plafondValue: number | undefined;
-    if (isLivret) {
-      if (rate.trim() !== "") {
-        const parsed = Number(rate.replace(",", "."));
-        if (!Number.isFinite(parsed) || parsed < 0) {
-          setError("Taux invalide.");
-          return;
-        }
-        rateValue = parsed / 100;
-      }
-      if (plafond.trim() !== "") {
-        const parsed = Number(plafond.replace(",", "."));
-        if (!Number.isFinite(parsed) || parsed <= 0) {
-          setError("Plafond invalide.");
-          return;
-        }
-        plafondValue = parsed;
-      }
-    }
-
-    const effectiveSource = isLivret ? "manual" : source;
-
     setBusy(true);
     try {
       const res = await fetch("/api/assets", {
@@ -105,13 +73,11 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
           ...(isEdit ? { id: asset!.id } : {}),
           label: trimmedLabel,
           type,
-          source: effectiveSource,
-          isin: isLivret ? undefined : isin.trim() || undefined,
-          ticker: isLivret ? undefined : ticker.trim() || undefined,
-          param: isLivret ? undefined : param.trim() || undefined,
+          source,
+          isin: isin.trim() || undefined,
+          ticker: ticker.trim() || undefined,
+          param: param.trim() || undefined,
           currency: currency.trim() || "EUR",
-          rate: rateValue,
-          plafond: plafondValue,
         }),
       });
       const body = (await res.json().catch(() => null)) as {
@@ -123,7 +89,7 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
       }
 
       const assetId = isEdit ? asset!.id : body?.id;
-      if (effectiveSource !== "manual" && assetId) {
+      if (source !== "manual" && assetId) {
         await fetch(`/api/prices/sync?assetId=${encodeURIComponent(assetId)}`, {
           method: "POST",
         }).catch(() => null);
@@ -207,21 +173,19 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
               </select>
             </Field>
 
-            {!isLivret && (
-              <Field label="Source prix">
-                <select
-                  value={source}
-                  onChange={(e) => setSource(e.target.value as PriceSource)}
-                  className={inputClasses}
-                >
-                  {priceSources.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            )}
+            <Field label="Source prix">
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value as PriceSource)}
+                className={inputClasses}
+              >
+                {priceSources.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </Field>
 
             <Field label="Devise">
               <select
@@ -237,63 +201,35 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
               </select>
             </Field>
 
-            {isLivret ? (
-              <>
-                <Field label="Taux (%)">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={rate}
-                    onChange={(e) => setRate(e.target.value)}
-                    placeholder="3"
-                    className={inputClasses}
-                  />
-                </Field>
+            <Field label="ISIN">
+              <input
+                type="text"
+                value={isin}
+                onChange={(e) => setIsin(e.target.value)}
+                placeholder="Optionnel"
+                className={inputClasses}
+              />
+            </Field>
 
-                <Field label="Plafond (EUR)">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={plafond}
-                    onChange={(e) => setPlafond(e.target.value)}
-                    placeholder="22950"
-                    className={inputClasses}
-                  />
-                </Field>
-              </>
-            ) : (
-              <>
-                <Field label="ISIN">
-                  <input
-                    type="text"
-                    value={isin}
-                    onChange={(e) => setIsin(e.target.value)}
-                    placeholder="Optionnel"
-                    className={inputClasses}
-                  />
-                </Field>
+            <Field label="Ticker">
+              <input
+                type="text"
+                value={ticker}
+                onChange={(e) => setTicker(e.target.value)}
+                placeholder="Optionnel"
+                className={inputClasses}
+              />
+            </Field>
 
-                <Field label="Ticker">
-                  <input
-                    type="text"
-                    value={ticker}
-                    onChange={(e) => setTicker(e.target.value)}
-                    placeholder="Optionnel"
-                    className={inputClasses}
-                  />
-                </Field>
-
-                <Field label="Param source" className="sm:col-span-2">
-                  <input
-                    type="text"
-                    value={param}
-                    onChange={(e) => setParam(e.target.value)}
-                    placeholder="ID coingecko, ticker Yahoo, slug Investir…"
-                    className={inputClasses}
-                  />
-                </Field>
-              </>
-            )}
+            <Field label="Param source" className="sm:col-span-2">
+              <input
+                type="text"
+                value={param}
+                onChange={(e) => setParam(e.target.value)}
+                placeholder="ID coingecko, ticker Yahoo, slug Investir…"
+                className={inputClasses}
+              />
+            </Field>
           </div>
 
           {error && (

@@ -1,4 +1,4 @@
-import type { Asset, Transaction } from "@/lib/schema";
+import type { Account, Transaction } from "@/lib/schema";
 
 const QUINZAINES_PER_YEAR = 24;
 
@@ -23,19 +23,17 @@ export type LivretProjection = {
   plafondReachedDate: string | null;
 };
 
-export function isLivret(asset: Asset | undefined): boolean {
-  return asset?.type === "LIVRET";
+export function isLivretAccount(account: Account | undefined): boolean {
+  return account?.envelope === "LIVRET";
 }
 
 export function livretFlows(
-  assetId: string,
+  accountId: string,
   transactions: Transaction[],
-  accountId?: string,
 ): LivretFlow[] {
   const flows: LivretFlow[] = [];
   for (const tx of transactions) {
-    if (tx.actif !== assetId) continue;
-    if (accountId !== undefined && tx.compte !== accountId) continue;
+    if (tx.compte !== accountId) continue;
     const amount =
       tx.prixUnitaire && tx.prixUnitaire > 0
         ? tx.quantite * tx.prixUnitaire
@@ -161,13 +159,12 @@ function principalAt(flows: LivretFlow[], time: number): number {
 }
 
 export function computeLivretState(
-  asset: Asset,
+  rate: number,
   flows: LivretFlow[],
   asOf: Date = new Date(),
 ): LivretState {
   const asOfTime = asOf.getTime();
   const principalNet = principalAt(flows, asOfTime);
-  const rate = asset.rate ?? 0;
   const checkpoints = buildInterestCheckpoints(flows, rate, asOfTime);
   const interest = interestAt(checkpoints, asOfTime);
   return {
@@ -178,7 +175,7 @@ export function computeLivretState(
 }
 
 export function livretDailyValues(
-  asset: Asset,
+  rate: number,
   flows: LivretFlow[],
   dates: string[],
 ): { values: number[]; invested: number[] } {
@@ -186,7 +183,6 @@ export function livretDailyValues(
   const invested = new Array<number>(dates.length).fill(0);
   if (dates.length === 0) return { values, invested };
 
-  const rate = asset.rate ?? 0;
   const lastTime = new Date(`${dates[dates.length - 1]}T00:00:00Z`).getTime();
   const checkpoints = buildInterestCheckpoints(flows, rate, lastTime);
 

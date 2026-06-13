@@ -7,6 +7,7 @@ import {
   TransactionFields,
   validateTxValue,
   type Option,
+  type TxAccountOption,
   type TxFormValue,
 } from "./transaction-form";
 import type { TransactionRow } from "./transactions-table";
@@ -39,7 +40,7 @@ export function EditTransactionDialog({
   onSaved,
 }: {
   row: TransactionRow;
-  accounts: Option[];
+  accounts: TxAccountOption[];
   assets: Option[];
   onClose: () => void;
   onSaved: () => void;
