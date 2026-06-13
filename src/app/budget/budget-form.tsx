@@ -14,6 +14,7 @@ import type {
 import {
   CATEGORY_LABELS,
   DEPENSE_CATEGORIES,
+  EPARGNE_CATEGORIES,
   FREQUENCY_LABELS,
   REVENU_CATEGORIES,
 } from "@/lib/budget";
@@ -35,8 +36,14 @@ function parseDecimal(value: string): number {
   return Number.isFinite(n) ? n : NaN;
 }
 
+function categoriesFor(kind: BudgetKind): BudgetCategory[] {
+  if (kind === "REVENU") return REVENU_CATEGORIES;
+  if (kind === "EPARGNE") return EPARGNE_CATEGORIES;
+  return DEPENSE_CATEGORIES;
+}
+
 function defaultCategoryFor(kind: BudgetKind): BudgetCategory {
-  return kind === "REVENU" ? REVENU_CATEGORIES[0] : DEPENSE_CATEGORIES[0];
+  return categoriesFor(kind)[0];
 }
 
 export function BudgetForm({ line, defaultKind = "REVENU", trigger = "primary" }: Props) {
@@ -58,7 +65,7 @@ export function BudgetForm({ line, defaultKind = "REVENU", trigger = "primary" }
   const [notes, setNotes] = useState(line?.notes ?? "");
 
   const isLoading = busy || pending;
-  const availableCategories = kind === "REVENU" ? REVENU_CATEGORIES : DEPENSE_CATEGORIES;
+  const availableCategories = categoriesFor(kind);
 
   function reset() {
     setLabel(line?.label ?? "");
@@ -78,7 +85,7 @@ export function BudgetForm({ line, defaultKind = "REVENU", trigger = "primary" }
 
   function handleKindChange(next: BudgetKind) {
     setKind(next);
-    const nextCategories = next === "REVENU" ? REVENU_CATEGORIES : DEPENSE_CATEGORIES;
+    const nextCategories = categoriesFor(next);
     if (!nextCategories.includes(category)) {
       setCategory(nextCategories[0]);
     }
@@ -168,7 +175,12 @@ export function BudgetForm({ line, defaultKind = "REVENU", trigger = "primary" }
         </button>
       );
     }
-    const buttonLabel = defaultKind === "REVENU" ? "Nouveau revenu" : "Nouvelle dépense";
+    const buttonLabel =
+      defaultKind === "REVENU"
+        ? "Nouveau revenu"
+        : defaultKind === "EPARGNE"
+          ? "Nouvelle épargne"
+          : "Nouvelle dépense";
     return (
       <button
         type="button"
@@ -185,7 +197,9 @@ export function BudgetForm({ line, defaultKind = "REVENU", trigger = "primary" }
     ? `Éditer ${line?.label}`
     : kind === "REVENU"
       ? "Nouveau revenu"
-      : "Nouvelle dépense";
+      : kind === "EPARGNE"
+        ? "Nouvelle épargne"
+        : "Nouvelle dépense";
 
   const card = (
     <Card className={trigger === "icon" ? "w-full max-w-3xl" : undefined}>
@@ -211,6 +225,7 @@ export function BudgetForm({ line, defaultKind = "REVENU", trigger = "primary" }
               >
                 <option value="REVENU">Revenu</option>
                 <option value="DEPENSE">Dépense</option>
+                <option value="EPARGNE">Épargne / Investissement</option>
               </select>
             </Field>
 
@@ -219,7 +234,13 @@ export function BudgetForm({ line, defaultKind = "REVENU", trigger = "primary" }
                 type="text"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder={kind === "REVENU" ? "Salaire net" : "Loyer"}
+                placeholder={
+                  kind === "REVENU"
+                    ? "Salaire net"
+                    : kind === "EPARGNE"
+                      ? "PEA, Livret A, Bitcoin..."
+                      : "Loyer"
+                }
                 className={inputClasses}
                 required
               />
