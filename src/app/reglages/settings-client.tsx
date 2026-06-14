@@ -27,7 +27,7 @@ export type SettingsStatus = {
   excelPath: string | null;
   configured: boolean;
   valid: boolean;
-  reason?: "not_found" | "missing_sheets" | "read_error";
+  reason?: "not_found" | "missing_sheets" | "read_error" | "parse_error";
   detail?: string;
 };
 
@@ -35,6 +35,7 @@ const REASON_LABELS: Record<NonNullable<SettingsStatus["reason"]>, string> = {
   not_found: "Fichier introuvable",
   missing_sheets: "Onglets manquants",
   read_error: "Erreur de lecture",
+  parse_error: "Données invalides",
 };
 
 const inputClasses =
@@ -273,6 +274,10 @@ function StatusBanner({ status }: { status: SettingsStatus }) {
             {status.detail}
           </p>
         )}
+        <p className="mt-2 text-rose-700/90 dark:text-rose-300/70">
+          Corrige le fichier puis recharge, ou choisis un autre fichier
+          ci-dessous.
+        </p>
       </div>
     );
   }

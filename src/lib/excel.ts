@@ -7,6 +7,7 @@ import {
 } from "node:fs";
 import { dirname } from "node:path";
 import * as XLSX from "xlsx";
+import type { ZodError } from "zod";
 import {
   Account,
   Asset,
@@ -89,22 +90,19 @@ export function isExcelConfigured(): boolean {
 
 export type ExcelFileStatus =
   | { valid: true }
-  | { valid: false; reason: "not_found" | "missing_sheets" | "read_error"; detail?: string };
+  | {
+      valid: false;
+      reason: "not_found" | "missing_sheets" | "read_error" | "parse_error";
+      detail?: string;
+    };
 
 export function validateExcelFile(path: string): ExcelFileStatus {
   if (!existsSync(path)) return { valid: false, reason: "not_found" };
+
+  let wb: XLSX.WorkBook;
   try {
     const fileBuffer = readFileSync(path);
-    const wb = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
-    const missing = REQUIRED_SHEETS.filter((name) => !wb.Sheets[name]);
-    if (missing.length > 0) {
-      return {
-        valid: false,
-        reason: "missing_sheets",
-        detail: missing.join(", "),
-      };
-    }
-    return { valid: true };
+    wb = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
   } catch (err) {
     return {
       valid: false,
@@ -112,6 +110,27 @@ export function validateExcelFile(path: string): ExcelFileStatus {
       detail: err instanceof Error ? err.message : String(err),
     };
   }
+
+  const missing = REQUIRED_SHEETS.filter((name) => !wb.Sheets[name]);
+  if (missing.length > 0) {
+    return {
+      valid: false,
+      reason: "missing_sheets",
+      detail: missing.join(", "),
+    };
+  }
+
+  try {
+    buildWorkbookFromXlsx(wb);
+  } catch (err) {
+    return {
+      valid: false,
+      reason: "parse_error",
+      detail: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  return { valid: true };
 }
 
 export function createEmptyWorkbook(rawPath: string): string {
@@ -215,68 +234,86 @@ function readTransactionRowsFromSheet(workbook: XLSX.WorkBook): {
   return { headers, dataRows: aoa.slice(1) as unknown[][] };
 }
 
+function describeZodError(error: ZodError): string {
+  return error.issues
+    .map((issue) => {
+      const field = issue.path.join(" → ") || "valeur";
+      return `champ « ${field} » : ${issue.message}`;
+    })
+    .join(" ; ");
+}
+
+function rowError(sheet: string, rowNumber: number, err: unknown): Error {
+  const base = err instanceof Error ? err.message : String(err);
+  return new Error(`Onglet « ${sheet} », ligne ${rowNumber} : ${base}`);
+}
+
 function parseTransactions(rows: Record<string, unknown>[]): Transaction[] {
   return rows.map((row, i) => {
-    const parsed = Transaction.safeParse({
-      date: coerceDate(row["Date"]),
-      type: row["Type"],
-      compte: row["Compte"],
-      compteDestination: emptyToUndefined(row["Compte destination"]),
-      actif: emptyToUndefined(row["Actif"]) ?? "",
-      quantite: toNumber(row["Quantité"]) ?? 0,
-      prixUnitaire: toNumber(row["Prix unitaire"]),
-      devise: (row["Devise"] as string) ?? "EUR",
-      frais: toNumber(row["Frais"]) ?? 0,
-      fraisDevise: (row["Frais devise"] as string) ?? "EUR",
-      notes: emptyToUndefined(row["Notes"]),
-    });
-    if (!parsed.success) {
-      throw new Error(
-        `Invalid transaction at row ${i + 2}: ${parsed.error.message}`,
-      );
+    try {
+      const parsed = Transaction.safeParse({
+        date: coerceDate(row["Date"]),
+        type: row["Type"],
+        compte: row["Compte"],
+        compteDestination: emptyToUndefined(row["Compte destination"]),
+        actif: emptyToUndefined(row["Actif"]) ?? "",
+        quantite: toNumber(row["Quantité"]) ?? 0,
+        prixUnitaire: toNumber(row["Prix unitaire"]),
+        devise: (row["Devise"] as string) ?? "EUR",
+        frais: toNumber(row["Frais"]) ?? 0,
+        fraisDevise: (row["Frais devise"] as string) ?? "EUR",
+        notes: emptyToUndefined(row["Notes"]),
+      });
+      if (!parsed.success) throw new Error(describeZodError(parsed.error));
+      return parsed.data;
+    } catch (err) {
+      throw rowError(SHEET_TRANSACTIONS, i + 2, err);
     }
-    return parsed.data;
   });
 }
 
 function parseAssets(rows: Record<string, unknown>[]): Asset[] {
   return rows.map((row, i) => {
-    const parsed = Asset.safeParse({
-      id: row["ID"],
-      label: row["Libellé"],
-      type: row["Type"],
-      isin: emptyToUndefined(row["ISIN"]),
-      ticker: emptyToUndefined(row["Ticker"]),
-      source: row["Source prix"],
-      param: emptyToUndefined(row["Param source"]),
-      currency: (row["Devise"] as string) ?? "EUR",
-    });
-    if (!parsed.success) {
-      throw new Error(`Invalid asset at row ${i + 2}: ${parsed.error.message}`);
+    try {
+      const parsed = Asset.safeParse({
+        id: row["ID"],
+        label: row["Libellé"],
+        type: row["Type"],
+        isin: emptyToUndefined(row["ISIN"]),
+        ticker: emptyToUndefined(row["Ticker"]),
+        source: row["Source prix"],
+        param: emptyToUndefined(row["Param source"]),
+        currency: (row["Devise"] as string) ?? "EUR",
+      });
+      if (!parsed.success) throw new Error(describeZodError(parsed.error));
+      return parsed.data;
+    } catch (err) {
+      throw rowError(SHEET_ACTIFS, i + 2, err);
     }
-    return parsed.data;
   });
 }
 
 function parseAccounts(rows: Record<string, unknown>[]): Account[] {
   return rows.map((row, i) => {
-    const rawOpenDate = row["Date d'ouverture"];
-    const parsed = Account.safeParse({
-      id: row["ID"],
-      label: row["Libellé"],
-      type: row["Type"],
-      envelope: row["Enveloppe"],
-      openDate:
-        rawOpenDate === null || rawOpenDate === undefined || rawOpenDate === ""
-          ? undefined
-          : coerceDate(rawOpenDate),
-      rate: toNumber(row["Taux"]) ?? undefined,
-      plafond: toNumber(row["Plafond"]) ?? undefined,
-    });
-    if (!parsed.success) {
-      throw new Error(`Invalid account at row ${i + 2}: ${parsed.error.message}`);
+    try {
+      const rawOpenDate = row["Date d'ouverture"];
+      const parsed = Account.safeParse({
+        id: row["ID"],
+        label: row["Libellé"],
+        type: row["Type"],
+        envelope: row["Enveloppe"],
+        openDate:
+          rawOpenDate === null || rawOpenDate === undefined || rawOpenDate === ""
+            ? undefined
+            : coerceDate(rawOpenDate),
+        rate: toNumber(row["Taux"]) ?? undefined,
+        plafond: toNumber(row["Plafond"]) ?? undefined,
+      });
+      if (!parsed.success) throw new Error(describeZodError(parsed.error));
+      return parsed.data;
+    } catch (err) {
+      throw rowError(SHEET_COMPTES, i + 2, err);
     }
-    return parsed.data;
   });
 }
 
@@ -284,21 +321,21 @@ function parseBudget(rows: Record<string, unknown>[]): BudgetLine[] {
   return rows
     .filter((row) => emptyToUndefined(row["ID"]) !== undefined)
     .map((row, i) => {
-      const parsed = BudgetLine.safeParse({
-        id: row["ID"],
-        label: row["Libellé"],
-        kind: row["Type"],
-        amount: toNumber(row["Montant"]) ?? 0,
-        frequency: row["Fréquence"],
-        category: row["Catégorie"],
-        notes: emptyToUndefined(row["Notes"]),
-      });
-      if (!parsed.success) {
-        throw new Error(
-          `Invalid budget line at row ${i + 2}: ${parsed.error.message}`,
-        );
+      try {
+        const parsed = BudgetLine.safeParse({
+          id: row["ID"],
+          label: row["Libellé"],
+          kind: row["Type"],
+          amount: toNumber(row["Montant"]) ?? 0,
+          frequency: row["Fréquence"],
+          category: row["Catégorie"],
+          notes: emptyToUndefined(row["Notes"]),
+        });
+        if (!parsed.success) throw new Error(describeZodError(parsed.error));
+        return parsed.data;
+      } catch (err) {
+        throw rowError(SHEET_BUDGET, i + 2, err);
       }
-      return parsed.data;
     });
 }
 
@@ -335,17 +372,10 @@ let cache: {
   transactionRows: LoadedTransaction[];
 } | null = null;
 
-export function loadWorkbook(): Workbook {
-  const path = getExcelPath();
-  const mtime = statSync(path).mtimeMs;
-
-  if (cache && cache.mtime === mtime && process.env.NODE_ENV === "production") {
-    return cache.workbook;
-  }
-
-  const fileBuffer = readFileSync(path);
-  const sheet = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
-
+function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
+  workbook: Workbook;
+  transactionRows: LoadedTransaction[];
+} {
   const { headers, dataRows } = readTransactionRowsFromSheet(sheet);
   const parsedTransactions = parseTransactions(
     dataRows.map((row) => aoaRowToObject(headers, row)),
@@ -362,7 +392,25 @@ export function loadWorkbook(): Workbook {
     (a, b) => a.date.getTime() - b.date.getTime(),
   );
 
-  const workbook: Workbook = { transactions, assets, accounts, budget };
+  return {
+    workbook: { transactions, assets, accounts, budget },
+    transactionRows,
+  };
+}
+
+export function loadWorkbook(): Workbook {
+  const path = getExcelPath();
+  const mtime = statSync(path).mtimeMs;
+
+  if (cache && cache.mtime === mtime && process.env.NODE_ENV === "production") {
+    return cache.workbook;
+  }
+
+  const fileBuffer = readFileSync(path);
+  const sheet = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+
+  const { workbook, transactionRows } = buildWorkbookFromXlsx(sheet);
+
   cache = { mtime, workbook, transactionRows };
   return workbook;
 }
