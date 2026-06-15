@@ -6,6 +6,7 @@ export const IS_RATE_REDUCED = 0.15;
 export const IS_RATE_NORMAL = 0.25;
 export const IS_THRESHOLD = 42500;
 export const MICRO_FONCIER_ABATTEMENT = 0.3;
+export const MICRO_BIC_ABATTEMENT = 0.5;
 export const PV_IMMO_IR_RATE = 0.19;
 
 export function corporateTax(profit: number): number {
@@ -23,6 +24,7 @@ export type AnnualTaxInput = {
   loanInsurance: number;
   amortization: number;
   priorDeficit: number;
+  priorAmortization: number;
 };
 
 export type AnnualTaxResult = {
@@ -32,6 +34,8 @@ export type AnnualTaxResult = {
   is: number;
   total: number;
   deficitCarried: number;
+  amortizationUsed: number;
+  amortizationDeferred: number;
 };
 
 export function annualTax(input: AnnualTaxInput): AnnualTaxResult {
@@ -43,18 +47,41 @@ export function annualTax(input: AnnualTaxInput): AnnualTaxResult {
     loanInsurance,
     amortization,
     priorDeficit,
+    priorAmortization,
   } = input;
   const tmi = property.tmiAssocie;
 
   if (property.regime === "RESIDENCE_PRINCIPALE") {
-    return { taxableBase: 0, ir: 0, ps: 0, is: 0, total: 0, deficitCarried: 0 };
+    return {
+      taxableBase: 0,
+      ir: 0,
+      ps: 0,
+      is: 0,
+      total: 0,
+      deficitCarried: 0,
+      amortizationUsed: 0,
+      amortizationDeferred: 0,
+    };
   }
 
-  if (property.regime === "IR_MICRO") {
-    const base = grossRent * (1 - MICRO_FONCIER_ABATTEMENT);
+  if (property.regime === "IR_MICRO" || property.regime === "LMNP_MICRO") {
+    const abattement =
+      property.regime === "LMNP_MICRO"
+        ? MICRO_BIC_ABATTEMENT
+        : MICRO_FONCIER_ABATTEMENT;
+    const base = grossRent * (1 - abattement);
     const ir = base * tmi;
     const ps = base * PS_RATE;
-    return { taxableBase: base, ir, ps, is: 0, total: ir + ps, deficitCarried: 0 };
+    return {
+      taxableBase: base,
+      ir,
+      ps,
+      is: 0,
+      total: ir + ps,
+      deficitCarried: 0,
+      amortizationUsed: 0,
+      amortizationDeferred: 0,
+    };
   }
 
   if (property.regime === "IR_REEL") {
@@ -68,6 +95,8 @@ export function annualTax(input: AnnualTaxInput): AnnualTaxResult {
         is: 0,
         total: 0,
         deficitCarried: priorDeficit - netBeforeDeficit,
+        amortizationUsed: 0,
+        amortizationDeferred: 0,
       };
     }
     const usedDeficit = Math.min(priorDeficit, netBeforeDeficit);
@@ -81,6 +110,42 @@ export function annualTax(input: AnnualTaxInput): AnnualTaxResult {
       is: 0,
       total: ir + ps,
       deficitCarried: priorDeficit - usedDeficit,
+      amortizationUsed: 0,
+      amortizationDeferred: 0,
+    };
+  }
+
+  if (property.regime === "LMNP_REEL") {
+    const operatingResult =
+      grossRent - deductibleCharges - loanInterest - loanInsurance;
+    if (operatingResult < 0) {
+      return {
+        taxableBase: 0,
+        ir: 0,
+        ps: 0,
+        is: 0,
+        total: 0,
+        deficitCarried: priorDeficit - operatingResult,
+        amortizationUsed: 0,
+        amortizationDeferred: priorAmortization + amortization,
+      };
+    }
+    const usedDeficit = Math.min(priorDeficit, operatingResult);
+    const resultAfterDeficit = operatingResult - usedDeficit;
+    const amortizationStock = priorAmortization + amortization;
+    const amortizationUsed = Math.min(amortizationStock, resultAfterDeficit);
+    const base = resultAfterDeficit - amortizationUsed;
+    const ir = base * tmi;
+    const ps = base * PS_RATE;
+    return {
+      taxableBase: base,
+      ir,
+      ps,
+      is: 0,
+      total: ir + ps,
+      deficitCarried: priorDeficit - usedDeficit,
+      amortizationUsed,
+      amortizationDeferred: amortizationStock - amortizationUsed,
     };
   }
 
@@ -98,6 +163,8 @@ export function annualTax(input: AnnualTaxInput): AnnualTaxResult {
       is: 0,
       total: 0,
       deficitCarried: priorDeficit - resultBeforeDeficit,
+      amortizationUsed: 0,
+      amortizationDeferred: 0,
     };
   }
   const usedDeficit = Math.min(priorDeficit, resultBeforeDeficit);
@@ -110,6 +177,8 @@ export function annualTax(input: AnnualTaxInput): AnnualTaxResult {
     is,
     total: is,
     deficitCarried: priorDeficit - usedDeficit,
+    amortizationUsed: 0,
+    amortizationDeferred: 0,
   };
 }
 
@@ -134,6 +203,7 @@ export type ResaleInput = {
   remainingLoan: number;
   holdingYears: number;
   cumulativeAmortization: number;
+  cumulativeAmortizationDeducted: number;
 };
 
 export type ResaleResult = {
@@ -145,8 +215,14 @@ export type ResaleResult = {
 };
 
 export function resaleTax(input: ResaleInput): ResaleResult {
-  const { property, salePrice, remainingLoan, holdingYears, cumulativeAmortization } =
-    input;
+  const {
+    property,
+    salePrice,
+    remainingLoan,
+    holdingYears,
+    cumulativeAmortization,
+    cumulativeAmortizationDeducted,
+  } = input;
 
   if (property.regime === "RESIDENCE_PRINCIPALE") {
     return {
@@ -174,7 +250,11 @@ export function resaleTax(input: ResaleInput): ResaleResult {
     };
   }
 
-  const plusValue = Math.max(0, salePrice - acquisitionCost(property));
+  const acquisition =
+    property.regime === "LMNP_REEL"
+      ? acquisitionCost(property) - cumulativeAmortizationDeducted
+      : acquisitionCost(property);
+  const plusValue = Math.max(0, salePrice - acquisition);
   const irPV = plusValue * (1 - abattementIR(holdingYears)) * PV_IMMO_IR_RATE;
   const psPV = plusValue * (1 - abattementPS(holdingYears)) * PS_RATE;
   const totalTax = irPV + psPV;

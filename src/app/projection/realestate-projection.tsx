@@ -28,6 +28,8 @@ const inputClasses =
 const REGIME_LABELS: Record<PropertyRegime, string> = {
   IR_REEL: "Revenus fonciers (réel)",
   IR_MICRO: "Revenus fonciers (micro-foncier)",
+  LMNP_REEL: "LMNP meublé (réel)",
+  LMNP_MICRO: "LMNP meublé (micro-BIC)",
   IS: "Impôt sur les sociétés (IS)",
   RESIDENCE_PRINCIPALE: "Résidence principale",
 };
@@ -148,6 +150,7 @@ export function RealEstateProjection({
   const totalTaxFoncier = projection.years.reduce((s, y) => s + y.tax, 0);
   const isIS = selected.regime === "IS";
   const isResidence = selected.regime === "RESIDENCE_PRINCIPALE";
+  const isLmnpReel = selected.regime === "LMNP_REEL";
 
   return (
     <div className="space-y-6">
@@ -321,7 +324,11 @@ export function RealEstateProjection({
             Hypothèses simplifiées : loyers constants, charges déductibles selon
             le régime, abattements PV immobilière des particuliers pour l&apos;IR,
             réintégration des amortissements et flat tax sur distribution pour
-            l&apos;IS. Indicatif, ne constitue pas un conseil fiscal.
+            l&apos;IS.
+            {isLmnpReel
+              ? " En LMNP réel, les amortissements déduits sont réintégrés dans la plus-value de revente (réforme 2025)."
+              : ""}{" "}
+            Indicatif, ne constitue pas un conseil fiscal.
           </p>
         </CardBody>
       </Card>

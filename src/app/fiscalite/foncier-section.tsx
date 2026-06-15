@@ -7,6 +7,8 @@ import type { Detention, PropertyRegime } from "@/lib/schema";
 const REGIME_LABELS: Record<PropertyRegime, string> = {
   IR_REEL: "IR réel",
   IR_MICRO: "Micro-foncier",
+  LMNP_REEL: "LMNP réel",
+  LMNP_MICRO: "LMNP micro-BIC",
   IS: "IS",
   RESIDENCE_PRINCIPALE: "Résidence principale",
 };
@@ -36,11 +38,12 @@ export function FoncierSection({ rows }: { rows: FoncierRow[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Revenus fonciers / SCI</CardTitle>
+        <CardTitle>Revenus fonciers / locatifs</CardTitle>
         <p className="text-xs leading-relaxed text-zinc-500">
           Impôt annuel estimé sur les revenus locatifs selon le régime de chaque
-          SCI (IR : barème au TMI + PS 17,2 % ; IS : 15 % puis 25 % après
-          amortissement). Indicatif.
+          bien (IR / LMNP : barème au TMI + PS 17,2 %, avec amortissement
+          déductible en LMNP réel ; IS : 15 % puis 25 % après amortissement).
+          Indicatif.
         </p>
       </CardHeader>
       <CardBody className="px-0">
