@@ -1,4 +1,5 @@
 import type { Account, Transaction } from "@/lib/schema";
+import { deflate } from "@/lib/inflation";
 
 const QUINZAINES_PER_YEAR = 24;
 
@@ -17,11 +18,13 @@ export type ProjectionPoint = {
   date: string;
   value: number;
   invested: number;
+  realValue: number;
 };
 
 export type LivretProjection = {
   points: ProjectionPoint[];
   finalValue: number;
+  finalRealValue: number;
   totalInterest: number;
   plafondReachedDate: string | null;
 };
@@ -257,8 +260,10 @@ export function projectLivret(params: {
   monthlyDeposit: number;
   years: number;
   start?: Date;
+  inflationRate?: number;
 }): LivretProjection {
   const { startBalance, rate, plafond, monthlyDeposit, years } = params;
+  const inflationRate = params.inflationRate ?? 0;
   const start = params.start ?? new Date();
   const startMonth = utc(start.getUTCFullYear(), start.getUTCMonth(), 1);
 
@@ -269,7 +274,12 @@ export function projectLivret(params: {
 
   const toIso = (date: Date) => date.toISOString().slice(0, 10);
   const points: ProjectionPoint[] = [
-    { date: toIso(startMonth), value: startBalance, invested },
+    {
+      date: toIso(startMonth),
+      value: startBalance,
+      invested,
+      realValue: deflate(startBalance, 0, inflationRate),
+    },
   ];
 
   const totalMonths = Math.max(0, Math.round(years * 12));
@@ -301,13 +311,20 @@ export function projectLivret(params: {
       plafondReachedDate = toIso(date);
     }
 
-    points.push({ date: toIso(date), value: principal + accrued, invested });
+    const value = principal + accrued;
+    points.push({
+      date: toIso(date),
+      value,
+      invested,
+      realValue: deflate(value, month / 12, inflationRate),
+    });
   }
 
   const finalValue = principal + accrued;
   return {
     points,
     finalValue,
+    finalRealValue: deflate(finalValue, totalMonths / 12, inflationRate),
     totalInterest: finalValue - invested,
     plafondReachedDate,
   };

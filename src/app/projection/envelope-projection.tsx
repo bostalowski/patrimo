@@ -21,6 +21,7 @@ import {
   type EnvelopeInfo,
 } from "@/lib/fiscal-advice";
 import { cn, formatEuro, formatPercent, signClass } from "@/lib/utils";
+import type { InflationView } from "./projection-client";
 
 export type EnvelopeProjectionInput = {
   envelope: EnvelopeInfo["envelope"];
@@ -48,8 +49,10 @@ function parseNumber(value: string): number {
 
 export function EnvelopeProjection({
   envelopes,
+  inflation,
 }: {
   envelopes: EnvelopeProjectionInput[];
+  inflation: InflationView;
 }) {
   const [years, setYears] = useState("10");
   const [rates, setRates] = useState<Record<ScenarioKey, string>>(() =>
@@ -86,6 +89,7 @@ export function EnvelopeProjection({
             monthlyContribution,
             annualRate: parseNumber(rates[preset.key]) / 100,
             years: horizonYears,
+            inflationRate: inflation.rate,
           });
           return acc;
         },
@@ -93,7 +97,7 @@ export function EnvelopeProjection({
       );
       return { envelope, byScenario };
     });
-  }, [envelopes, monthly, rates, horizonYears]);
+  }, [envelopes, monthly, rates, horizonYears, inflation.rate]);
 
   const chartData = useMemo(() => {
     const base = projections[0]?.byScenario.prudent.points ?? [];
@@ -110,27 +114,46 @@ export function EnvelopeProjection({
           (sum, p) => sum + (p.byScenario[preset.key].points[index]?.value ?? 0),
           0,
         );
+        row[`${preset.key}_real`] = projections.reduce(
+          (sum, p) =>
+            sum + (p.byScenario[preset.key].points[index]?.realValue ?? 0),
+          0,
+        );
       }
       return row;
     });
   }, [projections]);
 
-  const series: ScenarioSeries[] = SCENARIO_PRESETS.map((preset) => ({
-    key: preset.key,
-    label: preset.label,
-    color: SCENARIO_COLORS[preset.key],
-  }));
+  const series: ScenarioSeries[] = [
+    ...SCENARIO_PRESETS.map((preset) => ({
+      key: preset.key,
+      label: preset.label,
+      color: SCENARIO_COLORS[preset.key],
+    })),
+    ...SCENARIO_PRESETS.map((preset) => ({
+      key: `${preset.key}_real`,
+      label: `${preset.label} après inflation`,
+      color: SCENARIO_COLORS[preset.key],
+      dashed: true,
+    })),
+  ];
 
   const totals = useMemo(() => {
     return SCENARIO_PRESETS.reduce(
       (acc, preset) => {
-        acc[preset.key] = projections.reduce(
-          (sum, p) => sum + p.byScenario[preset.key].finalValue,
-          0,
-        );
+        acc[preset.key] = {
+          nominal: projections.reduce(
+            (sum, p) => sum + p.byScenario[preset.key].finalValue,
+            0,
+          ),
+          real: projections.reduce(
+            (sum, p) => sum + p.byScenario[preset.key].finalRealValue,
+            0,
+          ),
+        };
         return acc;
       },
-      {} as Record<ScenarioKey, number>,
+      {} as Record<ScenarioKey, { nominal: number; real: number }>,
     );
   }, [projections]);
 
@@ -251,9 +274,12 @@ export function EnvelopeProjection({
                 />
                 {preset.label}
               </CardTitle>
-              <CardValue>{formatEuro(totals[preset.key] ?? 0)}</CardValue>
-              <p className={cn("text-xs", signClass((totals[preset.key] ?? 0) - currentTotal))}>
-                {formatEuro((totals[preset.key] ?? 0) - currentTotal)} de croissance
+              <CardValue>{formatEuro(totals[preset.key]?.nominal ?? 0)}</CardValue>
+              <p className={cn("text-xs", signClass((totals[preset.key]?.nominal ?? 0) - currentTotal))}>
+                {formatEuro((totals[preset.key]?.nominal ?? 0) - currentTotal)} de croissance
+              </p>
+              <p className="text-xs text-sky-600 dark:text-sky-400">
+                ≈ {formatEuro(totals[preset.key]?.real ?? 0)} après inflation
               </p>
             </CardHeader>
           </Card>
@@ -271,8 +297,8 @@ export function EnvelopeProjection({
         <CardHeader>
           <CardTitle>Patrimoine projeté</CardTitle>
           <p className="text-xs leading-relaxed text-zinc-500">
-            Valeur totale des enveloppes par scénario de rendement vs total versé
-            (pointillé).
+            Valeur totale par scénario : trait plein = nominal, pointillé = après
+            inflation ({formatPercent(inflation.rate)}). Total versé en gris.
           </p>
         </CardHeader>
         <CardBody>

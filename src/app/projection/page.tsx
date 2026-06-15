@@ -1,4 +1,5 @@
 import { loadWorkbook, getBudget } from "@/lib/excel";
+import { getInflationRate } from "@/lib/config";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { summarizeBudget } from "@/lib/budget";
 import { buildPortfolio } from "@/lib/portfolio";
@@ -20,6 +21,7 @@ export default async function ProjectionPage() {
   requireExcelConfigured();
   const workbook = loadWorkbook();
   const now = new Date();
+  const inflationRate = getInflationRate();
 
   const livrets: LivretOption[] = workbook.accounts
     .filter((account) => account.envelope === "LIVRET")
@@ -81,6 +83,7 @@ export default async function ProjectionPage() {
         envelopes={envelopes}
         envelopeInputs={envelopeInputs}
         properties={properties}
+        inflationRate={inflationRate}
       />
     </div>
   );

@@ -1,3 +1,5 @@
+import { deflate } from "@/lib/inflation";
+
 export type ScenarioKey = "prudent" | "modere" | "dynamique";
 
 export type ScenarioPreset = {
@@ -16,11 +18,13 @@ export type ProjectionPoint = {
   date: string;
   value: number;
   invested: number;
+  realValue: number;
 };
 
 export type InvestmentProjection = {
   points: ProjectionPoint[];
   finalValue: number;
+  finalRealValue: number;
   totalContributed: number;
   gain: number;
 };
@@ -35,8 +39,10 @@ export function projectInvestment(params: {
   annualRate: number;
   years: number;
   start?: Date;
+  inflationRate?: number;
 }): InvestmentProjection {
   const { startBalance, monthlyContribution, annualRate, years } = params;
+  const inflationRate = params.inflationRate ?? 0;
   const start = params.start ?? new Date();
   const startMonth = utc(start.getUTCFullYear(), start.getUTCMonth(), 1);
   const monthlyRate = annualRate / 12;
@@ -46,7 +52,12 @@ export function projectInvestment(params: {
 
   const toIso = (date: Date) => date.toISOString().slice(0, 10);
   const points: ProjectionPoint[] = [
-    { date: toIso(startMonth), value, invested },
+    {
+      date: toIso(startMonth),
+      value,
+      invested,
+      realValue: deflate(value, 0, inflationRate),
+    },
   ];
 
   const totalMonths = Math.max(0, Math.round(years * 12));
@@ -58,12 +69,18 @@ export function projectInvestment(params: {
     );
     value = value * (1 + monthlyRate) + monthlyContribution;
     invested += monthlyContribution;
-    points.push({ date: toIso(date), value, invested });
+    points.push({
+      date: toIso(date),
+      value,
+      invested,
+      realValue: deflate(value, month / 12, inflationRate),
+    });
   }
 
   return {
     points,
     finalValue: value,
+    finalRealValue: deflate(value, totalMonths / 12, inflationRate),
     totalContributed: invested,
     gain: value - invested,
   };

@@ -32,5 +32,10 @@ export async function POST(request: Request) {
   writeConfig({ ...config, excelPath: absolute });
   resetWorkbookCache();
 
-  return NextResponse.json({ excelPath: absolute, configured: true, valid: true });
+  return NextResponse.json({
+    excelPath: absolute,
+    configured: true,
+    valid: true,
+    inflationRate: config.inflationRate,
+  });
 }

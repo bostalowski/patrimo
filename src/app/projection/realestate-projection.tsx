@@ -20,6 +20,7 @@ import {
 } from "@/lib/realestate/projection";
 import type { Detention, Property, PropertyRegime } from "@/lib/schema";
 import { cn, formatEuro, formatPercent, signClass } from "@/lib/utils";
+import type { InflationView } from "./projection-client";
 
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
@@ -59,8 +60,10 @@ function parseNumber(value: string): number {
 
 export function RealEstateProjection({
   properties,
+  inflation,
 }: {
   properties: SerializedProperty[];
+  inflation: InflationView;
 }) {
   const [selectedId, setSelectedId] = useState(properties[0]?.id ?? "");
   const [years, setYears] = useState("20");
@@ -80,8 +83,9 @@ export function RealEstateProjection({
     return projectProperty(selected, {
       horizonYears: horizon,
       revaloAnnuelle: revaloOverride,
+      inflationRate: inflation.rate,
     });
-  }, [selected, horizon, revaloOverride]);
+  }, [selected, horizon, revaloOverride, inflation.rate]);
 
   if (!selected || !projection) {
     return (
@@ -95,12 +99,15 @@ export function RealEstateProjection({
   }
 
   const now = new Date();
+  const startValue = selected.valeurActuelle * selected.partDetenue;
   const startEquity = currentEquity(selected, now);
   const chartData: ScenarioPoint[] = [
     {
       date: now.toISOString().slice(0, 10),
-      value: selected.valeurActuelle * selected.partDetenue,
+      value: startValue,
+      value_real: startValue,
       equity: startEquity,
+      equity_real: startEquity,
       invested: projection.apport,
     },
     ...projection.years.map((y) => ({
@@ -110,14 +117,28 @@ export function RealEstateProjection({
         .toISOString()
         .slice(0, 10),
       value: y.propertyValue,
+      value_real: y.realPropertyValue,
       equity: y.equity,
+      equity_real: y.realEquity,
       invested: projection.apport,
     })),
   ];
 
   const series: ScenarioSeries[] = [
     { key: "value", label: "Valeur du bien", color: "#8b5cf6" },
+    {
+      key: "value_real",
+      label: "Valeur après inflation",
+      color: "#8b5cf6",
+      dashed: true,
+    },
     { key: "equity", label: "Équité", color: "#10b981" },
+    {
+      key: "equity_real",
+      label: "Équité après inflation",
+      color: "#10b981",
+      dashed: true,
+    },
   ];
 
   const totalInterest = projection.years.reduce(
@@ -182,6 +203,9 @@ export function RealEstateProjection({
           <CardHeader>
             <CardTitle>Équité à {horizon} ans</CardTitle>
             <CardValue>{formatEuro(projection.finalEquity)}</CardValue>
+            <p className="text-xs text-sky-600 dark:text-sky-400">
+              ≈ {formatEuro(projection.finalRealEquity)} après inflation
+            </p>
           </CardHeader>
         </Card>
         <Card>
@@ -217,8 +241,9 @@ export function RealEstateProjection({
         <CardHeader>
           <CardTitle>Valeur du bien et équité</CardTitle>
           <p className="text-xs leading-relaxed text-zinc-500">
-            Valeur revalorisée (violet) et équité = valeur − capital restant dû
-            (vert). L&apos;apport est en pointillé.
+            Valeur revalorisée (violet) et équité (vert) ; en pointillé, les mêmes
+            après inflation ({formatPercent(inflation.rate)}). L&apos;apport est en
+            gris.
           </p>
         </CardHeader>
         <CardBody>

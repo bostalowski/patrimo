@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
+import { clampInflationRate, DEFAULT_INFLATION_RATE } from "@/lib/inflation";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
   ? resolve(process.env.FINGRAPHS_DATA_DIR)
@@ -10,9 +11,13 @@ const CONFIG_FILE = resolve(DATA_DIR, "config.json");
 
 export type AppConfig = {
   excelPath: string | null;
+  inflationRate: number;
 };
 
-const DEFAULT_CONFIG: AppConfig = { excelPath: null };
+const DEFAULT_CONFIG: AppConfig = {
+  excelPath: null,
+  inflationRate: DEFAULT_INFLATION_RATE,
+};
 
 export function getConfigFilePath(): string {
   return CONFIG_FILE;
@@ -31,6 +36,10 @@ export function readConfig(): AppConfig {
         typeof parsed.excelPath === "string" && parsed.excelPath.trim().length > 0
           ? parsed.excelPath
           : null,
+      inflationRate:
+        typeof parsed.inflationRate === "number"
+          ? clampInflationRate(parsed.inflationRate)
+          : DEFAULT_INFLATION_RATE,
     };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") {
@@ -53,6 +62,10 @@ export function expandUserPath(input: string): string {
 
 export function resolveUserPath(input: string): string {
   return resolve(expandUserPath(input));
+}
+
+export function getInflationRate(): number {
+  return clampInflationRate(readConfig().inflationRate);
 }
 
 export function getConfiguredExcelPath(): string | null {
