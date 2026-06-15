@@ -6,9 +6,11 @@ import {
   CardValue,
 } from "@/components/ui/card";
 import { loadWorkbook } from "@/lib/excel";
+import { getInflationRate } from "@/lib/config";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
-import { buildHistorySeries } from "@/lib/portfolio-history";
+import { aggregateHistory, buildHistorySeries } from "@/lib/portfolio-history";
+import { realCostBasis } from "@/lib/inflation";
 import { currentEquity } from "@/lib/realestate/projection";
 import {
   readBenchmarks,
@@ -20,7 +22,7 @@ import { BENCHMARKS } from "@/lib/benchmarks";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { PerformanceSection } from "@/components/performance-section";
 import { SyncButton } from "@/components/sync-button";
-import { formatEuro, signClass } from "@/lib/utils";
+import { formatEuro, formatPercent, signClass } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +50,15 @@ export default async function DashboardPage() {
   );
   const netWorth = portfolio.totals.marketValue + realEstateEquity;
 
+  const inflationRate = getInflationRate();
+  const today = new Date().toISOString().slice(0, 10);
+  const realInvested = realCostBasis(
+    aggregateHistory(history),
+    today,
+    inflationRate,
+  );
+  const realUnrealizedPnL = portfolio.totals.marketValue - realInvested;
+
   const donut = portfolio.assets
     .filter((p) => p.marketValue > 0)
     .map((p) => ({ name: p.asset?.label ?? p.assetId, value: p.marketValue }));
@@ -66,7 +77,7 @@ export default async function DashboardPage() {
       </header>
 
       <div
-        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${realEstateEquity > 0 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${realEstateEquity > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}
       >
         <Card>
           <CardHeader>
@@ -102,6 +113,18 @@ export default async function DashboardPage() {
             <CardValue className={signClass(portfolio.totals.unrealizedPnL)}>
               {formatEuro(portfolio.totals.unrealizedPnL)}
             </CardValue>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Plus-value réelle (€ d&apos;aujourd&apos;hui)</CardTitle>
+            <CardValue className={signClass(realUnrealizedPnL)}>
+              {formatEuro(realUnrealizedPnL)}
+            </CardValue>
+            <p className="text-xs text-zinc-500">
+              Coût réévalué {formatEuro(realInvested)} • inflation{" "}
+              {formatPercent(inflationRate)}
+            </p>
           </CardHeader>
         </Card>
       </div>

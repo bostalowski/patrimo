@@ -17,7 +17,9 @@ import {
 } from "@/components/charts/scenario-curve";
 import { projectInvestment, SCENARIO_PRESETS, type ScenarioKey } from "@/lib/projection";
 import { computePerOutcome } from "@/lib/per";
+import { deflate } from "@/lib/inflation";
 import { cn, formatEuro, formatPercent, signClass } from "@/lib/utils";
+import type { InflationView } from "./projection-client";
 
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
@@ -37,7 +39,7 @@ function parseNumber(value: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function PerProjection() {
+export function PerProjection({ inflation }: { inflation: InflationView }) {
   const [encours, setEncours] = useState("0");
   const [monthly, setMonthly] = useState("200");
   const [years, setYears] = useState("20");
@@ -67,9 +69,10 @@ export function PerProjection() {
         monthlyContribution: monthlyValue,
         annualRate: parseNumber(rates[preset.key]) / 100,
         years: horizonYears,
+        inflationRate: inflation.rate,
       }),
     }));
-  }, [encoursValue, monthlyValue, horizonYears, rates]);
+  }, [encoursValue, monthlyValue, horizonYears, rates, inflation.rate]);
 
   const versementsFuturs = Math.round(monthlyValue * horizonYears * 12);
 
@@ -99,16 +102,25 @@ export function PerProjection() {
       };
       for (const { preset, result } of projections) {
         row[preset.key] = result.points[index]?.value ?? 0;
+        row[`${preset.key}_real`] = result.points[index]?.realValue ?? 0;
       }
       return row;
     });
   }, [projections]);
 
-  const series: ScenarioSeries[] = SCENARIO_PRESETS.map((preset) => ({
-    key: preset.key,
-    label: preset.label,
-    color: SCENARIO_COLORS[preset.key],
-  }));
+  const series: ScenarioSeries[] = [
+    ...SCENARIO_PRESETS.map((preset) => ({
+      key: preset.key,
+      label: preset.label,
+      color: SCENARIO_COLORS[preset.key],
+    })),
+    ...SCENARIO_PRESETS.map((preset) => ({
+      key: `${preset.key}_real`,
+      label: `${preset.label} après inflation`,
+      color: SCENARIO_COLORS[preset.key],
+      dashed: true,
+    })),
+  ];
 
   const adviceOutcome = outcomes.get(ADVICE_SCENARIO);
 
@@ -206,6 +218,8 @@ export function PerProjection() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {projections.map(({ preset, result }) => {
           const outcome = outcomes.get(preset.key);
+          const netSortie = outcome?.valeurNetteSortie ?? 0;
+          const realNet = deflate(netSortie, horizonYears, inflation.rate);
           return (
             <Card key={preset.key}>
               <CardHeader>
@@ -218,8 +232,10 @@ export function PerProjection() {
                 </CardTitle>
                 <CardValue>{formatEuro(result.finalValue)}</CardValue>
                 <p className="text-xs text-zinc-500">
-                  Net après sortie{" "}
-                  {formatEuro(outcome?.valeurNetteSortie ?? 0)}
+                  Net après sortie {formatEuro(netSortie)}
+                </p>
+                <p className="text-xs text-sky-600 dark:text-sky-400">
+                  ≈ {formatEuro(realNet)} net après inflation
                 </p>
               </CardHeader>
             </Card>
@@ -242,8 +258,9 @@ export function PerProjection() {
         <CardHeader>
           <CardTitle>Croissance projetée</CardTitle>
           <p className="text-xs leading-relaxed text-zinc-500">
-            Capital brut du PER par scénario de rendement vs total versé
-            (pointillé). La fiscalité s&apos;applique à la sortie.
+            Capital brut du PER par scénario : trait plein = nominal, pointillé =
+            après inflation ({formatPercent(inflation.rate)}). La fiscalité
+            s&apos;applique à la sortie (bilan en nominal).
           </p>
         </CardHeader>
         <CardBody>

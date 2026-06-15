@@ -1,4 +1,5 @@
 import type { Property } from "@/lib/schema";
+import { deflate } from "@/lib/inflation";
 import { monthlyPayment, remainingBalance } from "./loan";
 import {
   acquisitionCost,
@@ -25,6 +26,8 @@ export type RealEstateYear = {
   cashFlowBeforeTax: number;
   cashFlowAfterTax: number;
   cumulativeCashFlow: number;
+  realPropertyValue: number;
+  realEquity: number;
 };
 
 export type RealEstateProjection = {
@@ -33,9 +36,11 @@ export type RealEstateProjection = {
   monthlyPayment: number;
   years: RealEstateYear[];
   finalEquity: number;
+  finalRealEquity: number;
   cumulativeNetCashFlow: number;
   resale: ResaleResult & { salePrice: number; remainingLoan: number };
   netIfSold: number;
+  realNetIfSold: number;
   totalReturn: number;
   annualizedReturn: number;
 };
@@ -44,6 +49,7 @@ export type ProjectionOptions = {
   horizonYears: number;
   revaloAnnuelle?: number;
   now?: Date;
+  inflationRate?: number;
 };
 
 export function projectProperty(
@@ -53,6 +59,7 @@ export function projectProperty(
   const now = options.now ?? new Date();
   const horizon = Math.max(0, Math.round(options.horizonYears));
   const revalo = options.revaloAnnuelle ?? property.revaloAnnuelle;
+  const inflationRate = options.inflationRate ?? 0;
   const share = property.partDetenue;
 
   const loan = {
@@ -126,11 +133,12 @@ export function projectProperty(
     const cashFlowAfterTax = cashFlowBeforeTax - tax.total;
     cumulativeCashFlow += cashFlowAfterTax;
 
+    const yearEquity = (propertyValue - remainingLoan) * share;
     years.push({
       year: k,
       propertyValue: propertyValue * share,
       remainingLoan: remainingLoan * share,
-      equity: (propertyValue - remainingLoan) * share,
+      equity: yearEquity,
       grossRent: operating.grossRent * share,
       operatingCharges: operating.operatingCharges * share,
       loanInterest: loanInterest * share,
@@ -142,6 +150,8 @@ export function projectProperty(
       cashFlowBeforeTax: cashFlowBeforeTax * share,
       cashFlowAfterTax: cashFlowAfterTax * share,
       cumulativeCashFlow: cumulativeCashFlow * share,
+      realPropertyValue: deflate(propertyValue * share, k, inflationRate),
+      realEquity: deflate(yearEquity, k, inflationRate),
     });
   }
 
@@ -176,6 +186,7 @@ export function projectProperty(
     monthlyPayment: (payment + monthlyInsurance) * share,
     years,
     finalEquity,
+    finalRealEquity: deflate(finalEquity, horizon, inflationRate),
     cumulativeNetCashFlow,
     resale: {
       ...resaleRaw,
@@ -187,6 +198,7 @@ export function projectProperty(
       remainingLoan: remainingLoanFinal * share,
     },
     netIfSold,
+    realNetIfSold: deflate(netIfSold, horizon, inflationRate),
     totalReturn,
     annualizedReturn,
   };
