@@ -14,6 +14,10 @@ import {
   type EnvelopeProjectionInput,
 } from "./envelope-projection";
 import { PerProjection } from "./per-projection";
+import {
+  RealEstateProjection,
+  type SerializedProperty,
+} from "./realestate-projection";
 
 export type LivretOption = {
   id: string;
@@ -26,13 +30,14 @@ export type LivretOption = {
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
 
-type Mode = "livrets" | "enveloppe" | "restant" | "per";
+type Mode = "livrets" | "enveloppe" | "restant" | "per" | "immobilier";
 
 const TABS: { key: Mode; label: string }[] = [
   { key: "livrets", label: "Livrets" },
   { key: "enveloppe", label: "Par enveloppe" },
   { key: "restant", label: "Restant à investir" },
   { key: "per", label: "PER" },
+  { key: "immobilier", label: "Immobilier" },
 ];
 
 export function ProjectionClient({
@@ -40,11 +45,13 @@ export function ProjectionClient({
   monthlyRestant,
   envelopes,
   envelopeInputs,
+  properties,
 }: {
   livrets: LivretOption[];
   monthlyRestant: number;
   envelopes: SerializedEnvelope[];
   envelopeInputs: EnvelopeProjectionInput[];
+  properties: SerializedProperty[];
 }) {
   const [mode, setMode] = useState<Mode>("livrets");
 
@@ -74,6 +81,8 @@ export function ProjectionClient({
         <EnvelopeProjection envelopes={envelopeInputs} />
       ) : mode === "per" ? (
         <PerProjection />
+      ) : mode === "immobilier" ? (
+        <RealEstateProjection properties={properties} />
       ) : (
         <RestantProjection defaultMonthly={monthlyRestant} envelopes={envelopes} />
       )}

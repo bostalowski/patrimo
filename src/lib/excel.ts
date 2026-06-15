@@ -12,6 +12,7 @@ import {
   Account,
   Asset,
   BudgetLine,
+  Property,
   Transaction,
   type Workbook,
 } from "@/lib/schema";
@@ -21,6 +22,7 @@ const SHEET_TRANSACTIONS = "Transactions";
 const SHEET_ACTIFS = "Actifs";
 const SHEET_COMPTES = "Comptes";
 const SHEET_BUDGET = "Budget";
+const SHEET_IMMOBILIER = "Immobilier";
 
 const TRANSACTIONS_HEADERS = [
   "Date",
@@ -64,6 +66,34 @@ const BUDGET_HEADERS = [
   "Montant",
   "Fréquence",
   "Catégorie",
+  "Notes",
+];
+
+const IMMOBILIER_HEADERS = [
+  "ID",
+  "Libellé",
+  "Détention",
+  "Régime",
+  "Part détenue",
+  "Date acquisition",
+  "Prix achat",
+  "Frais notaire",
+  "Travaux",
+  "Valeur actuelle",
+  "Revalo annuelle",
+  "Montant emprunté",
+  "Taux crédit",
+  "Durée (mois)",
+  "Date début crédit",
+  "Taux assurance",
+  "Loyer mensuel HC",
+  "Charges non récup",
+  "Taxe foncière",
+  "Vacance",
+  "Frais gestion",
+  "TMI associé",
+  "Part amortissable",
+  "Durée amortissement",
   "Notes",
 ];
 
@@ -160,6 +190,11 @@ export function createEmptyWorkbook(rawPath: string): string {
     wb,
     XLSX.utils.aoa_to_sheet([BUDGET_HEADERS]),
     SHEET_BUDGET,
+  );
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([IMMOBILIER_HEADERS]),
+    SHEET_IMMOBILIER,
   );
 
   const out = XLSX.write(wb, {
@@ -339,6 +374,53 @@ function parseBudget(rows: Record<string, unknown>[]): BudgetLine[] {
     });
 }
 
+function parseProperties(rows: Record<string, unknown>[]): Property[] {
+  return rows
+    .filter((row) => emptyToUndefined(row["ID"]) !== undefined)
+    .map((row, i) => {
+      try {
+        const rawAcquisition = row["Date acquisition"];
+        const rawDebutCredit = row["Date début crédit"];
+        const parsed = Property.safeParse({
+          id: row["ID"],
+          label: row["Libellé"],
+          detention: emptyToUndefined(row["Détention"]) ?? "SCI",
+          regime: row["Régime"],
+          partDetenue: toNumber(row["Part détenue"]) ?? 1,
+          dateAcquisition: optionalDate(rawAcquisition),
+          prixAchat: toNumber(row["Prix achat"]) ?? 0,
+          fraisNotaire: toNumber(row["Frais notaire"]) ?? 0,
+          travaux: toNumber(row["Travaux"]) ?? 0,
+          valeurActuelle: toNumber(row["Valeur actuelle"]) ?? 0,
+          revaloAnnuelle: toNumber(row["Revalo annuelle"]) ?? 0,
+          montantEmprunte: toNumber(row["Montant emprunté"]) ?? 0,
+          tauxCredit: toNumber(row["Taux crédit"]) ?? 0,
+          dureeMois: toNumber(row["Durée (mois)"]) ?? 0,
+          dateDebutCredit: optionalDate(rawDebutCredit),
+          tauxAssurance: toNumber(row["Taux assurance"]) ?? 0,
+          loyerMensuelHC: toNumber(row["Loyer mensuel HC"]) ?? 0,
+          chargesNonRecupAnnuelles: toNumber(row["Charges non récup"]) ?? 0,
+          taxeFonciere: toNumber(row["Taxe foncière"]) ?? 0,
+          vacancePct: toNumber(row["Vacance"]) ?? 0,
+          fraisGestionPct: toNumber(row["Frais gestion"]) ?? 0,
+          tmiAssocie: toNumber(row["TMI associé"]) ?? 0.3,
+          partAmortissable: toNumber(row["Part amortissable"]) ?? 0.85,
+          dureeAmortissement: toNumber(row["Durée amortissement"]) ?? 30,
+          notes: emptyToUndefined(row["Notes"]),
+        });
+        if (!parsed.success) throw new Error(describeZodError(parsed.error));
+        return parsed.data;
+      } catch (err) {
+        throw rowError(SHEET_IMMOBILIER, i + 2, err);
+      }
+    });
+}
+
+function optionalDate(value: unknown): Date | string | undefined {
+  if (value === null || value === undefined || value === "") return undefined;
+  return coerceDate(value);
+}
+
 function coerceDate(value: unknown): Date | string {
   if (value instanceof Date) return value;
   if (typeof value === "number") {
@@ -387,13 +469,14 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
   const assets = parseAssets(readSheet(sheet, SHEET_ACTIFS));
   const accounts = parseAccounts(readSheet(sheet, SHEET_COMPTES));
   const budget = parseBudget(readSheetOptional(sheet, SHEET_BUDGET));
+  const properties = parseProperties(readSheetOptional(sheet, SHEET_IMMOBILIER));
 
   const transactions = [...parsedTransactions].sort(
     (a, b) => a.date.getTime() - b.date.getTime(),
   );
 
   return {
-    workbook: { transactions, assets, accounts, budget },
+    workbook: { transactions, assets, accounts, budget, properties },
     transactionRows,
   };
 }
@@ -422,6 +505,10 @@ export function loadTransactionRows(): LoadedTransaction[] {
 
 export function getBudget(): BudgetLine[] {
   return loadWorkbook().budget;
+}
+
+export function getProperties(): Property[] {
+  return loadWorkbook().properties;
 }
 
 export function getAssetMap(): Map<string, Asset> {
@@ -791,4 +878,60 @@ export function upsertBudgetLine(line: BudgetLine): void {
 
 export function deleteBudgetLine(id: string): void {
   deleteRow(SHEET_BUDGET, "ID", id);
+}
+
+function propertyEntry(property: Property): UpsertEntry {
+  return {
+    id: property.id,
+    valueByHeader: {
+      ID: property.id,
+      "Libellé": property.label,
+      "Détention": property.detention,
+      "Régime": property.regime,
+      "Part détenue": property.partDetenue,
+      "Date acquisition": property.dateAcquisition ?? null,
+      "Prix achat": property.prixAchat,
+      "Frais notaire": property.fraisNotaire,
+      Travaux: property.travaux,
+      "Valeur actuelle": property.valeurActuelle,
+      "Revalo annuelle": property.revaloAnnuelle,
+      "Montant emprunté": property.montantEmprunte,
+      "Taux crédit": property.tauxCredit,
+      "Durée (mois)": property.dureeMois,
+      "Date début crédit": property.dateDebutCredit ?? null,
+      "Taux assurance": property.tauxAssurance,
+      "Loyer mensuel HC": property.loyerMensuelHC,
+      "Charges non récup": property.chargesNonRecupAnnuelles,
+      "Taxe foncière": property.taxeFonciere,
+      Vacance: property.vacancePct,
+      "Frais gestion": property.fraisGestionPct,
+      "TMI associé": property.tmiAssocie,
+      "Part amortissable": property.partAmortissable,
+      "Durée amortissement": property.dureeAmortissement,
+      Notes: property.notes ?? null,
+    },
+  };
+}
+
+export function upsertProperty(property: Property): void {
+  upsertProperties([property]);
+}
+
+export function upsertProperties(properties: Property[]): void {
+  if (properties.length === 0) return;
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+  upsertRowsInWorkbook(
+    workbook,
+    SHEET_IMMOBILIER,
+    "ID",
+    properties.map(propertyEntry),
+    IMMOBILIER_HEADERS,
+  );
+  writeWorkbook(workbook, path);
+}
+
+export function deleteProperty(id: string): void {
+  deleteRow(SHEET_IMMOBILIER, "ID", id);
 }
