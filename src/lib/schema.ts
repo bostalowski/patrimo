@@ -143,6 +143,8 @@ export type BudgetLine = z.infer<typeof BudgetLine>;
 export const PropertyRegime = z.enum([
   "IR_REEL",
   "IR_MICRO",
+  "LMNP_REEL",
+  "LMNP_MICRO",
   "IS",
   "RESIDENCE_PRINCIPALE",
 ]);

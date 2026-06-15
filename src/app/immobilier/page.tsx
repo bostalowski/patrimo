@@ -18,6 +18,8 @@ export const dynamic = "force-dynamic";
 const REGIME_LABELS: Record<PropertyRegime, string> = {
   IR_REEL: "IR réel",
   IR_MICRO: "Micro-foncier",
+  LMNP_REEL: "LMNP réel",
+  LMNP_MICRO: "LMNP micro-BIC",
   IS: "IS",
   RESIDENCE_PRINCIPALE: "Résidence principale",
 };

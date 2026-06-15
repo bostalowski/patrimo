@@ -13,6 +13,8 @@ const inputClasses =
 const REGIME_LABELS: Record<PropertyRegime, string> = {
   IR_REEL: "Revenus fonciers (régime réel)",
   IR_MICRO: "Revenus fonciers (micro-foncier)",
+  LMNP_REEL: "LMNP meublé (réel, amortissement)",
+  LMNP_MICRO: "LMNP meublé (micro-BIC)",
   IS: "Impôt sur les sociétés (IS)",
   RESIDENCE_PRINCIPALE: "Résidence principale / usage perso",
 };
@@ -24,7 +26,13 @@ const DETENTION_LABELS: Record<Detention, string> = {
 
 const REGIMES_BY_DETENTION: Record<Detention, PropertyRegime[]> = {
   SCI: ["IR_REEL", "IR_MICRO", "IS"],
-  DIRECT: ["IR_REEL", "IR_MICRO", "RESIDENCE_PRINCIPALE"],
+  DIRECT: [
+    "IR_REEL",
+    "IR_MICRO",
+    "LMNP_REEL",
+    "LMNP_MICRO",
+    "RESIDENCE_PRINCIPALE",
+  ],
 };
 
 const TMI_OPTIONS = [0, 0.11, 0.3, 0.41, 0.45];
@@ -111,7 +119,12 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
   const [notes, setNotes] = useState(property?.notes ?? "");
 
   const isResidence = regime === "RESIDENCE_PRINCIPALE";
-  const isIR = regime === "IR_REEL" || regime === "IR_MICRO";
+  const isIR =
+    regime === "IR_REEL" ||
+    regime === "IR_MICRO" ||
+    regime === "LMNP_REEL" ||
+    regime === "LMNP_MICRO";
+  const showAmortization = regime === "IS" || regime === "LMNP_REEL";
   const isLoading = busy || pending;
 
   function changeDetention(next: Detention) {
@@ -454,7 +467,7 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
                 </select>
               </Field>
             )}
-            {regime === "IS" && (
+            {showAmortization && (
               <>
                 <Field label="Part amortissable (%)">
                   <input
