@@ -1,12 +1,17 @@
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
-import { getConfiguredExcelPath } from "@/lib/config";
+import { getConfiguredExcelPath, getInflationRate } from "@/lib/config";
 import { validateExcelFile } from "@/lib/excel";
-import { SettingsClient, type SettingsStatus } from "./settings-client";
+import {
+  InflationSettings,
+  SettingsClient,
+  type SettingsStatus,
+} from "./settings-client";
 
 export const dynamic = "force-dynamic";
 
 export default function ReglagesPage() {
   const excelPath = getConfiguredExcelPath();
+  const inflationRate = getInflationRate();
   const initialStatus: SettingsStatus = excelPath
     ? (() => {
         const validation = validateExcelFile(excelPath);
@@ -37,6 +42,15 @@ export default function ReglagesPage() {
         </CardHeader>
         <CardBody>
           <SettingsClient initialStatus={initialStatus} />
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Hypothèse d&apos;inflation</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <InflationSettings initialRate={inflationRate} />
         </CardBody>
       </Card>
     </div>
