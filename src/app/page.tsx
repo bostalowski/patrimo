@@ -21,7 +21,7 @@ import {
 } from "@/lib/store";
 import { BENCHMARKS } from "@/lib/benchmarks";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
-import { PerformanceSection } from "@/components/performance-section";
+import { PortfolioCurve } from "@/components/charts/portfolio-curve";
 import { SyncButton } from "@/components/sync-button";
 import { formatEuro, formatPercent, signClass } from "@/lib/utils";
 
@@ -40,12 +40,7 @@ export default async function DashboardPage() {
     ]);
   const portfolio = buildPortfolio(workbook, priceMap);
   const history = buildHistorySeries(workbook, priceStore, manualStore);
-
-  const wpea = BENCHMARKS.find((b) => b.id === "WPEA");
-  const benchmark =
-    wpea && benchmarkStore[wpea.id]
-      ? { label: wpea.label, history: benchmarkStore[wpea.id] }
-      : undefined;
+  const historyPoints = aggregateHistory(history);
 
   const realEstateEquity = workbook.properties.reduce(
     (sum, property) => sum + currentEquity(property),
@@ -135,7 +130,18 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <PerformanceSection history={history} benchmark={benchmark} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Évolution du patrimoine</CardTitle>
+          <p className="text-xs text-zinc-500">
+            Valeur (zone verte) vs capital investi cumulé (pointillé). Détail et
+            comparaison aux indices sur la page Performance.
+          </p>
+        </CardHeader>
+        <CardBody>
+          <PortfolioCurve data={historyPoints} />
+        </CardBody>
+      </Card>
 
       <Card>
         <CardHeader>
