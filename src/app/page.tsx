@@ -9,6 +9,7 @@ import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
 import { buildHistorySeries } from "@/lib/portfolio-history";
+import { currentEquity } from "@/lib/realestate/projection";
 import {
   readBenchmarks,
   readManualPrices,
@@ -41,6 +42,12 @@ export default async function DashboardPage() {
       ? { label: wpea.label, history: benchmarkStore[wpea.id] }
       : undefined;
 
+  const realEstateEquity = workbook.properties.reduce(
+    (sum, property) => sum + currentEquity(property),
+    0,
+  );
+  const netWorth = portfolio.totals.marketValue + realEstateEquity;
+
   const donut = portfolio.assets
     .filter((p) => p.marketValue > 0)
     .map((p) => ({ name: p.asset?.label ?? p.assetId, value: p.marketValue }));
@@ -58,13 +65,31 @@ export default async function DashboardPage() {
         <SyncButton />
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div
+        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${realEstateEquity > 0 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+      >
         <Card>
           <CardHeader>
-            <CardTitle>Valeur totale</CardTitle>
-            <CardValue>{formatEuro(portfolio.totals.marketValue)}</CardValue>
+            <CardTitle>
+              {realEstateEquity > 0 ? "Patrimoine net total" : "Valeur totale"}
+            </CardTitle>
+            <CardValue>{formatEuro(netWorth)}</CardValue>
+            {realEstateEquity > 0 && (
+              <p className="text-xs text-zinc-500">
+                Dont {formatEuro(portfolio.totals.marketValue)} placements +{" "}
+                {formatEuro(realEstateEquity)} immobilier
+              </p>
+            )}
           </CardHeader>
         </Card>
+        {realEstateEquity > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Immobilier (équité)</CardTitle>
+              <CardValue>{formatEuro(realEstateEquity)}</CardValue>
+            </CardHeader>
+          </Card>
+        )}
         <Card>
           <CardHeader>
             <CardTitle>Capital investi (net)</CardTitle>

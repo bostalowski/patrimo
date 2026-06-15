@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Building2,
   Calculator,
   Coins,
   Landmark,
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/actifs", label: "Actifs", icon: Coins },
   { href: "/comptes", label: "Comptes", icon: Wallet },
+  { href: "/immobilier", label: "Immobilier", icon: Building2 },
   { href: "/transactions", label: "Transactions", icon: ListOrdered },
   { href: "/fiscalite", label: "Fiscalité", icon: Landmark },
   { href: "/budget", label: "Budget", icon: PiggyBank },
