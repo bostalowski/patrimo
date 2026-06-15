@@ -13,14 +13,21 @@ import {
 } from "recharts";
 import { formatEuro } from "@/lib/utils";
 
-type Point = { date: string; value: number; invested: number };
+type Point = {
+  date: string;
+  value: number;
+  invested: number;
+  realValue?: number;
+};
 
 export function ProjectionCurve({
   data,
   plafond,
+  showReal = true,
 }: {
   data: Point[];
   plafond?: number | null;
+  showReal?: boolean;
 }) {
   if (data.length === 0) {
     return (
@@ -75,7 +82,13 @@ export function ProjectionCurve({
             }
             formatter={(value, name) => {
               const v = typeof value === "number" ? value : 0;
-              return [formatEuro(v), name === "value" ? "Valeur" : "Versé"];
+              const label =
+                name === "invested"
+                  ? "Versé"
+                  : name === "realValue"
+                    ? "Valeur après inflation"
+                    : "Valeur";
+              return [formatEuro(v), label];
             }}
           />
           {plafond ? (
@@ -99,12 +112,23 @@ export function ProjectionCurve({
             fill="url(#projectionValue)"
             isAnimationActive={false}
           />
+          {showReal ? (
+            <Line
+              type="monotone"
+              dataKey="realValue"
+              stroke="#0ea5e9"
+              strokeWidth={2}
+              strokeDasharray="5 4"
+              dot={false}
+              isAnimationActive={false}
+            />
+          ) : null}
           <Line
             type="monotone"
             dataKey="invested"
             stroke="#71717a"
             strokeWidth={1.5}
-            strokeDasharray="5 4"
+            strokeDasharray="2 3"
             dot={false}
             isAnimationActive={false}
           />

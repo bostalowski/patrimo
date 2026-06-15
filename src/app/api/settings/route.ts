@@ -6,21 +6,25 @@ import {
   resolveUserPath,
   writeConfig,
 } from "@/lib/config";
+import { clampInflationRate, MAX_INFLATION_RATE } from "@/lib/inflation";
 import { resetWorkbookCache, validateExcelFile } from "@/lib/excel";
 
 export const dynamic = "force-dynamic";
 
 const SetInput = z.object({
-  excelPath: z.string().min(1),
+  excelPath: z.string().min(1).optional(),
+  inflationRate: z.number().min(0).max(MAX_INFLATION_RATE).optional(),
 });
 
 export async function GET() {
+  const config = readConfig();
   const path = getConfiguredExcelPath();
   if (!path) {
     return NextResponse.json({
       excelPath: null,
       configured: false,
       valid: false,
+      inflationRate: config.inflationRate,
     });
   }
   const status = validateExcelFile(path);
@@ -30,6 +34,7 @@ export async function GET() {
     valid: status.valid,
     reason: status.valid ? undefined : status.reason,
     detail: status.valid ? undefined : status.detail,
+    inflationRate: config.inflationRate,
   });
 }
 
@@ -40,21 +45,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const absolute = resolveUserPath(parsed.data.excelPath.trim());
-  const status = validateExcelFile(absolute);
-  if (!status.valid) {
-    const message =
-      status.reason === "not_found"
-        ? `Fichier introuvable : ${absolute}`
-        : status.reason === "missing_sheets"
-          ? `Onglets manquants dans le classeur : ${status.detail}`
-          : `Impossible de lire le fichier : ${status.detail ?? ""}`;
-    return NextResponse.json({ error: message }, { status: 400 });
+  const config = readConfig();
+  const nextConfig = { ...config };
+
+  if (parsed.data.inflationRate !== undefined) {
+    nextConfig.inflationRate = clampInflationRate(parsed.data.inflationRate);
   }
 
-  const config = readConfig();
-  writeConfig({ ...config, excelPath: absolute });
+  if (parsed.data.excelPath !== undefined) {
+    const absolute = resolveUserPath(parsed.data.excelPath.trim());
+    const status = validateExcelFile(absolute);
+    if (!status.valid) {
+      const message =
+        status.reason === "not_found"
+          ? `Fichier introuvable : ${absolute}`
+          : status.reason === "missing_sheets"
+            ? `Onglets manquants dans le classeur : ${status.detail}`
+            : `Impossible de lire le fichier : ${status.detail ?? ""}`;
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    nextConfig.excelPath = absolute;
+  }
+
+  writeConfig(nextConfig);
   resetWorkbookCache();
 
-  return NextResponse.json({ excelPath: absolute, configured: true, valid: true });
+  const finalPath = getConfiguredExcelPath();
+  return NextResponse.json({
+    excelPath: finalPath,
+    configured: Boolean(finalPath),
+    valid: finalPath ? validateExcelFile(finalPath).valid : false,
+    inflationRate: nextConfig.inflationRate,
+  });
 }

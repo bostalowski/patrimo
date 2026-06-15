@@ -40,57 +40,96 @@ const TABS: { key: Mode; label: string }[] = [
   { key: "immobilier", label: "Immobilier" },
 ];
 
+function parseNumber(value: string): number {
+  const n = Number(value.replace(",", ".").replace(/\s/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function ProjectionClient({
   livrets,
   monthlyRestant,
   envelopes,
   envelopeInputs,
   properties,
+  inflationRate,
 }: {
   livrets: LivretOption[];
   monthlyRestant: number;
   envelopes: SerializedEnvelope[];
   envelopeInputs: EnvelopeProjectionInput[];
   properties: SerializedProperty[];
+  inflationRate: number;
 }) {
   const [mode, setMode] = useState<Mode>("livrets");
+  const [rateInput, setRateInput] = useState(
+    String(Math.round(inflationRate * 1000) / 10),
+  );
+
+  const effectiveRate = Math.max(0, parseNumber(rateInput) / 100);
+  const inflation: InflationView = { rate: effectiveRate };
 
   return (
     <div className="space-y-6">
-      <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setMode(tab.key)}
-            className={cn(
-              "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
-              mode === tab.key
-                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-950 dark:text-zinc-50"
-                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setMode(tab.key)}
+              className={cn(
+                "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
+                mode === tab.key
+                  ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-950 dark:text-zinc-50"
+                  : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <label className="flex items-center gap-1.5 text-xs text-zinc-500">
+          Inflation
+          <input
+            type="text"
+            inputMode="decimal"
+            value={rateInput}
+            onChange={(e) => setRateInput(e.target.value)}
+            className="w-16 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+          />
+          %
+        </label>
       </div>
 
       {mode === "livrets" ? (
-        <LivretProjection livrets={livrets} />
+        <LivretProjection livrets={livrets} inflation={inflation} />
       ) : mode === "enveloppe" ? (
-        <EnvelopeProjection envelopes={envelopeInputs} />
+        <EnvelopeProjection envelopes={envelopeInputs} inflation={inflation} />
       ) : mode === "per" ? (
-        <PerProjection />
+        <PerProjection inflation={inflation} />
       ) : mode === "immobilier" ? (
-        <RealEstateProjection properties={properties} />
+        <RealEstateProjection properties={properties} inflation={inflation} />
       ) : (
-        <RestantProjection defaultMonthly={monthlyRestant} envelopes={envelopes} />
+        <RestantProjection
+          defaultMonthly={monthlyRestant}
+          envelopes={envelopes}
+          inflation={inflation}
+        />
       )}
     </div>
   );
 }
 
-function LivretProjection({ livrets }: { livrets: LivretOption[] }) {
+export type InflationView = { rate: number };
+
+function LivretProjection({
+  livrets,
+  inflation,
+}: {
+  livrets: LivretOption[];
+  inflation: InflationView;
+}) {
   const [selectedId, setSelectedId] = useState(livrets[0]?.id ?? "");
   const [monthlyDeposit, setMonthlyDeposit] = useState("100");
   const [years, setYears] = useState("10");
@@ -108,8 +147,9 @@ function LivretProjection({ livrets }: { livrets: LivretOption[] }) {
       plafond: selected.plafond ?? undefined,
       monthlyDeposit: monthly,
       years: horizon,
+      inflationRate: inflation.rate,
     });
-  }, [selected, monthlyDeposit, years]);
+  }, [selected, monthlyDeposit, years, inflation.rate]);
 
   if (!selected) {
     return (
@@ -122,8 +162,6 @@ function LivretProjection({ livrets }: { livrets: LivretOption[] }) {
       </Card>
     );
   }
-
-  const annualInterest = selected.balance * selected.rate;
 
   return (
     <div className="space-y-6">
@@ -186,16 +224,19 @@ function LivretProjection({ livrets }: { livrets: LivretOption[] }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Intérêts cumulés</CardTitle>
-            <CardValue className="text-emerald-600 dark:text-emerald-400">
-              {formatEuro(projection?.totalInterest ?? 0)}
-            </CardValue>
+            <CardTitle>Valeur après inflation</CardTitle>
+            <CardValue>{formatEuro(projection?.finalRealValue ?? 0)}</CardValue>
+            <p className="text-xs text-zinc-500">
+              Pouvoir d&apos;achat à {formatPercent(inflation.rate)} d&apos;inflation
+            </p>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Intérêts annuels actuels</CardTitle>
-            <CardValue>{formatEuro(annualInterest)}</CardValue>
+            <CardTitle>Intérêts cumulés</CardTitle>
+            <CardValue className="text-emerald-600 dark:text-emerald-400">
+              {formatEuro(projection?.totalInterest ?? 0)}
+            </CardValue>
           </CardHeader>
         </Card>
         <Card>
@@ -216,8 +257,10 @@ function LivretProjection({ livrets }: { livrets: LivretOption[] }) {
         <CardHeader>
           <CardTitle>Croissance projetée</CardTitle>
           <p className="text-xs leading-relaxed text-zinc-500">
-            Valeur (zone verte, intérêts composés capitalisés au 31/12) vs total
-            versé (pointillé).
+            Valeur nominale (zone verte) vs valeur après inflation à{" "}
+            {formatPercent(inflation.rate)} (bleu pointillé) vs total versé (gris).
+            L&apos;écart entre les deux courbes est l&apos;érosion du pouvoir
+            d&apos;achat.
           </p>
         </CardHeader>
         <CardBody>

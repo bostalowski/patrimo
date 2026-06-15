@@ -18,6 +18,7 @@ import {
 import { projectInvestment, SCENARIO_PRESETS, type ScenarioKey } from "@/lib/projection";
 import { buildFiscalAdvice, type EnvelopeInfo } from "@/lib/fiscal-advice";
 import { cn, formatEuro, formatPercent, signClass } from "@/lib/utils";
+import type { InflationView } from "./projection-client";
 
 export type SerializedEnvelope = {
   envelope: EnvelopeInfo["envelope"];
@@ -44,9 +45,11 @@ function parseNumber(value: string): number {
 export function RestantProjection({
   defaultMonthly,
   envelopes,
+  inflation,
 }: {
   defaultMonthly: number;
   envelopes: SerializedEnvelope[];
+  inflation: InflationView;
 }) {
   const [monthly, setMonthly] = useState(
     String(Math.max(0, Math.round(defaultMonthly))),
@@ -75,9 +78,10 @@ export function RestantProjection({
         monthlyContribution: monthlyValue,
         annualRate: parseNumber(rates[preset.key]) / 100,
         years: horizonYears,
+        inflationRate: inflation.rate,
       }),
     }));
-  }, [capitalValue, monthlyValue, horizonYears, rates]);
+  }, [capitalValue, monthlyValue, horizonYears, rates, inflation.rate]);
 
   const chartData = useMemo(() => {
     const base = projections[0]?.result.points ?? [];
@@ -88,16 +92,25 @@ export function RestantProjection({
       };
       for (const { preset, result } of projections) {
         row[preset.key] = result.points[index]?.value ?? 0;
+        row[`${preset.key}_real`] = result.points[index]?.realValue ?? 0;
       }
       return row;
     });
   }, [projections]);
 
-  const series: ScenarioSeries[] = SCENARIO_PRESETS.map((preset) => ({
-    key: preset.key,
-    label: preset.label,
-    color: SCENARIO_COLORS[preset.key],
-  }));
+  const series: ScenarioSeries[] = [
+    ...SCENARIO_PRESETS.map((preset) => ({
+      key: preset.key,
+      label: preset.label,
+      color: SCENARIO_COLORS[preset.key],
+    })),
+    ...SCENARIO_PRESETS.map((preset) => ({
+      key: `${preset.key}_real`,
+      label: `${preset.label} après inflation`,
+      color: SCENARIO_COLORS[preset.key],
+      dashed: true,
+    })),
+  ];
 
   const adviceProjection = projections.find(
     (p) => p.preset.key === ADVICE_SCENARIO,
@@ -208,6 +221,9 @@ export function RestantProjection({
               <p className={cn("text-xs", signClass(result.gain))}>
                 Plus-value {formatEuro(result.gain)}
               </p>
+              <p className="text-xs text-sky-600 dark:text-sky-400">
+                ≈ {formatEuro(result.finalRealValue)} après inflation
+              </p>
             </CardHeader>
           </Card>
         ))}
@@ -226,7 +242,8 @@ export function RestantProjection({
         <CardHeader>
           <CardTitle>Croissance projetée</CardTitle>
           <p className="text-xs leading-relaxed text-zinc-500">
-            Valeur par scénario de rendement vs total versé (pointillé).
+            Valeur par scénario : trait plein = nominal, pointillé = après
+            inflation ({formatPercent(inflation.rate)}). Total versé en gris.
           </p>
         </CardHeader>
         <CardBody>

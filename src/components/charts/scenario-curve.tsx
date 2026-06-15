@@ -15,6 +15,7 @@ export type ScenarioSeries = {
   key: string;
   label: string;
   color: string;
+  dashed?: boolean;
 };
 
 export type ScenarioPoint = Record<string, string | number>;
@@ -85,7 +86,9 @@ export function ScenarioCurve({
               type="monotone"
               dataKey={s.key}
               stroke={s.color}
-              strokeWidth={2}
+              strokeWidth={s.dashed ? 1.5 : 2}
+              strokeDasharray={s.dashed ? "5 4" : undefined}
+              strokeOpacity={s.dashed ? 0.7 : 1}
               dot={false}
               isAnimationActive={false}
             />
