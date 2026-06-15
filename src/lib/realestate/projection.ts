@@ -79,11 +79,13 @@ export function projectProperty(
   const amortPerYear =
     property.dureeAmortissement > 0 ? amortBase / property.dureeAmortissement : 0;
   let cumulativeAmort = Math.min(amortPerYear * yearsHeld, amortBase);
+  let cumulativeAmortDeducted = cumulativeAmort;
 
   const operating = operatingForYear(property);
 
   const years: RealEstateYear[] = [];
   let priorDeficit = 0;
+  let priorAmortDeferred = 0;
   let cumulativeCashFlow = 0;
 
   for (let k = 1; k <= horizon; k += 1) {
@@ -125,8 +127,11 @@ export function projectProperty(
       loanInsurance,
       amortization,
       priorDeficit,
+      priorAmortization: priorAmortDeferred,
     });
     priorDeficit = tax.deficitCarried;
+    priorAmortDeferred = tax.amortizationDeferred;
+    cumulativeAmortDeducted += tax.amortizationUsed;
 
     const cashFlowBeforeTax =
       operating.grossRent - operating.operatingCharges - loanPayment;
@@ -167,6 +172,7 @@ export function projectProperty(
     remainingLoan: remainingLoanFinal,
     holdingYears: yearsHeld + horizon,
     cumulativeAmortization: cumulativeAmort,
+    cumulativeAmortizationDeducted: cumulativeAmortDeducted,
   });
 
   const apportValue = computeApport(property) * share;
