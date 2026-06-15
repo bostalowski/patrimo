@@ -1,8 +1,11 @@
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildRealizedEvents, buildYearlyReports } from "@/lib/fiscalite";
+import { propertySnapshot } from "@/lib/realestate/projection";
+import { grossAnnualRent } from "@/lib/realestate/property";
 import type { Envelope } from "@/lib/schema";
 import { FiscaliteReport, type SerializedEvent } from "./fiscalite-report";
+import { FoncierSection, type FoncierRow } from "./foncier-section";
 
 export const dynamic = "force-dynamic";
 
@@ -50,12 +53,31 @@ export default async function FiscalitePage() {
     )
     .map((a) => ({ label: a.label, envelope: a.envelope }));
 
+  const foncierRows: FoncierRow[] = workbook.properties
+    .filter((property) => property.regime !== "RESIDENCE_PRINCIPALE")
+    .map((property) => {
+      const snapshot = propertySnapshot(property);
+      return {
+        id: property.id,
+        label: property.label,
+        detention: property.detention,
+        regime: property.regime,
+        grossRent: grossAnnualRent(property) * property.partDetenue,
+        taxeFonciere: property.taxeFonciere * property.partDetenue,
+        annualTax: snapshot.annualTaxFoncier,
+        monthlyCashFlow: snapshot.monthlyCashFlowAfterTax,
+      };
+    });
+
   return (
-    <FiscaliteReport
-      events={serializedEvents}
-      yearlyTotals={yearlyTotals}
-      openDates={openDates}
-      missingOpenDates={missingOpenDates}
-    />
+    <div className="space-y-8">
+      <FiscaliteReport
+        events={serializedEvents}
+        yearlyTotals={yearlyTotals}
+        openDates={openDates}
+        missingOpenDates={missingOpenDates}
+      />
+      <FoncierSection rows={foncierRows} />
+    </div>
   );
 }

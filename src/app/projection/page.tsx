@@ -12,6 +12,7 @@ import type { Envelope } from "@/lib/schema";
 import { ProjectionClient, type LivretOption } from "./projection-client";
 import type { SerializedEnvelope } from "./restant-projection";
 import type { EnvelopeProjectionInput } from "./envelope-projection";
+import type { SerializedProperty } from "./realestate-projection";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,12 @@ export default async function ProjectionPage() {
     dcaConfigs,
   );
 
+  const properties: SerializedProperty[] = workbook.properties.map((p) => ({
+    ...p,
+    dateAcquisition: p.dateAcquisition?.toISOString(),
+    dateDebutCredit: p.dateDebutCredit?.toISOString(),
+  }));
+
   return (
     <div className="space-y-8">
       <header className="space-y-1.5">
@@ -73,6 +80,7 @@ export default async function ProjectionPage() {
         monthlyRestant={restant}
         envelopes={envelopes}
         envelopeInputs={envelopeInputs}
+        properties={properties}
       />
     </div>
   );
