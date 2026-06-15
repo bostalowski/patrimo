@@ -9,6 +9,7 @@ import {
   Coins,
   Landmark,
   LayoutDashboard,
+  LineChart,
   ListOrdered,
   Pencil,
   PiggyBank,
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/performance", label: "Performance", icon: LineChart },
   { href: "/actifs", label: "Actifs", icon: Coins },
   { href: "/comptes", label: "Comptes", icon: Wallet },
   { href: "/immobilier", label: "Immobilier", icon: Building2 },

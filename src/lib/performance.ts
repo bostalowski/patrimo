@@ -206,6 +206,50 @@ export function annualReturns(points: DailyPoint[]): AnnualReturn[] {
   );
 }
 
+export function annualizedTwr(points: DailyPoint[]): number | null {
+  const series = twrIndex(points);
+  if (series.length < 2) return null;
+  const first = series[0];
+  const last = series[series.length - 1];
+  const years = yearFraction(first.date, last.date);
+  if (years <= 0 || first.index <= 0) return null;
+  const totalGrowth = last.index / first.index;
+  if (totalGrowth <= 0) return null;
+  return totalGrowth ** (1 / years) - 1;
+}
+
+export function annualizedVolatility(points: DailyPoint[]): number | null {
+  const series = twrIndex(points);
+  if (series.length < 3) return null;
+  const returns: number[] = [];
+  for (let i = 1; i < series.length; i++) {
+    const prev = series[i - 1].index;
+    if (prev > EPSILON) returns.push(series[i].index / prev - 1);
+  }
+  if (returns.length < 2) return null;
+  const mean = returns.reduce((sum, value) => sum + value, 0) / returns.length;
+  const variance =
+    returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
+    (returns.length - 1);
+  return Math.sqrt(variance) * Math.sqrt(365);
+}
+
+export function sharpeRatio(
+  points: DailyPoint[],
+  riskFreeRate = 0,
+): number | null {
+  const annualReturn = annualizedTwr(points);
+  const volatility = annualizedVolatility(points);
+  if (annualReturn === null || volatility === null || volatility < EPSILON) {
+    return null;
+  }
+  return (annualReturn - riskFreeRate) / volatility;
+}
+
+export function realReturn(nominalAnnual: number, inflationAnnual: number): number {
+  return (1 + nominalAnnual) / (1 + inflationAnnual) - 1;
+}
+
 export function maxDrawdown(points: DailyPoint[]): Drawdown {
   const series = twrIndex(points);
   let peak = -Infinity;
