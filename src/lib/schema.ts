@@ -140,9 +140,50 @@ export const BudgetLine = z.object({
 });
 export type BudgetLine = z.infer<typeof BudgetLine>;
 
+export const PropertyRegime = z.enum([
+  "IR_REEL",
+  "IR_MICRO",
+  "IS",
+  "RESIDENCE_PRINCIPALE",
+]);
+export type PropertyRegime = z.infer<typeof PropertyRegime>;
+
+export const Detention = z.enum(["SCI", "DIRECT"]);
+export type Detention = z.infer<typeof Detention>;
+
+export const Property = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  detention: Detention.default("SCI"),
+  regime: PropertyRegime,
+  partDetenue: z.number().min(0).max(1).default(1),
+  dateAcquisition: z.coerce.date().optional(),
+  prixAchat: z.number().nonnegative(),
+  fraisNotaire: z.number().nonnegative().default(0),
+  travaux: z.number().nonnegative().default(0),
+  valeurActuelle: z.number().nonnegative(),
+  revaloAnnuelle: z.number().default(0),
+  montantEmprunte: z.number().nonnegative().default(0),
+  tauxCredit: z.number().nonnegative().default(0),
+  dureeMois: z.number().int().nonnegative().default(0),
+  dateDebutCredit: z.coerce.date().optional(),
+  tauxAssurance: z.number().nonnegative().default(0),
+  loyerMensuelHC: z.number().nonnegative().default(0),
+  chargesNonRecupAnnuelles: z.number().nonnegative().default(0),
+  taxeFonciere: z.number().nonnegative().default(0),
+  vacancePct: z.number().min(0).max(1).default(0),
+  fraisGestionPct: z.number().min(0).max(1).default(0),
+  tmiAssocie: z.number().min(0).max(1).default(0.3),
+  partAmortissable: z.number().min(0).max(1).default(0.85),
+  dureeAmortissement: z.number().positive().default(30),
+  notes: z.string().optional(),
+});
+export type Property = z.infer<typeof Property>;
+
 export type Workbook = {
   transactions: Transaction[];
   assets: Asset[];
   accounts: Account[];
   budget: BudgetLine[];
+  properties: Property[];
 };
