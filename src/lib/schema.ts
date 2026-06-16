@@ -32,8 +32,29 @@ export const AccountType = z.enum([
 ]);
 export type AccountType = z.infer<typeof AccountType>;
 
-export const Envelope = z.enum(["CTO", "PEA", "PEE", "AV", "LIVRET"]);
+export const Envelope = z.enum(["CTO", "PEA", "PEE", "AV", "LIVRET", "PER"]);
 export type Envelope = z.infer<typeof Envelope>;
+
+export function clampRetirementAge(val: unknown): number {
+  if (val === undefined || val === null || val === "") return 64;
+  const n = typeof val === "number" ? val : Number(val);
+  if (!Number.isFinite(n)) return 64;
+  return Math.min(75, Math.max(50, Math.round(n)));
+}
+
+export const RetirementProfile = z.object({
+  birthDate: z.preprocess(
+    (val) => (val === null || val === "" ? undefined : val),
+    z.coerce.date().optional(),
+  ),
+  targetRetirementAge: z.preprocess(
+    clampRetirementAge,
+    z.number().int(),
+  ),
+  estimatedPublicPension: z.number().nonnegative().optional(),
+  withdrawalRate: z.number().min(0).max(0.1).default(0.04).optional(),
+});
+export type RetirementProfile = z.infer<typeof RetirementProfile>;
 
 export const Transaction = z.object({
   date: z.coerce.date(),

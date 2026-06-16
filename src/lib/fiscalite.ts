@@ -29,7 +29,7 @@ type EnvelopeState = {
   bookedGains: number;
 };
 
-const TAXABLE_ON_WITHDRAWAL: ReadonlySet<Envelope> = new Set(["PEA", "PEE", "AV"]);
+const TAXABLE_ON_WITHDRAWAL: ReadonlySet<Envelope> = new Set(["PEA", "PEE", "AV", "PER"]);
 
 const accountAssetKey = (accountId: string, assetId: string): string =>
   `${accountId}::${assetId}`;
@@ -236,7 +236,7 @@ export type YearlyReport = {
   envelopes: EnvelopeYearlySummary[];
 };
 
-const ENVELOPE_ORDER: Envelope[] = ["CTO", "PEA", "PEE", "AV"];
+const ENVELOPE_ORDER: Envelope[] = ["CTO", "PEA", "PEE", "AV", "PER"];
 
 export function buildYearlyReports(events: RealizedEvent[]): YearlyReport[] {
   const byYear = new Map<number, Map<Envelope, EnvelopeYearlySummary>>();

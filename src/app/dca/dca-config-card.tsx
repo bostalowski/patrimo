@@ -9,7 +9,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { computeDcaPlan } from "@/lib/dca";
 import { cn, formatEuro, formatPercent } from "@/lib/utils";
 
-const ENVELOPES = ["CTO", "PEA", "PEE", "AV"] as const;
+const ENVELOPES = ["CTO", "PEA", "PEE", "AV", "PER"] as const;
 type Envelope = (typeof ENVELOPES)[number];
 
 type LineWithUid = DcaLine & { _uid: string };

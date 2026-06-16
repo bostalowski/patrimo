@@ -38,7 +38,7 @@ export default async function FiscalitePage() {
   });
 
   const openDates: Partial<Record<Envelope, string>> = {};
-  for (const envelope of ["CTO", "PEA", "PEE", "AV"] as Envelope[]) {
+  for (const envelope of ["CTO", "PEA", "PEE", "AV", "PER"] as Envelope[]) {
     const dates = workbook.accounts
       .filter((a) => a.envelope === envelope && a.openDate)
       .map((a) => a.openDate as Date)

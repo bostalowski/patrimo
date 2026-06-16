@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { getProperties } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { propertySnapshot } from "@/lib/realestate/projection";
+import { loanEndDate } from "@/lib/realestate/property";
 import type { Detention, PropertyRegime } from "@/lib/schema";
-import { formatEuro, formatPercent, signClass } from "@/lib/utils";
+import { formatDate, formatEuro, formatPercent, signClass } from "@/lib/utils";
 import { PropertyForm } from "./property-form";
 import { DeletePropertyButton } from "./delete-property-button";
 
@@ -82,6 +83,7 @@ export default function ImmobilierPage() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {snapshots.map((s) => {
               const p = s.property;
+              const creditEnd = loanEndDate(p);
               const value = p.valeurActuelle * p.partDetenue;
               const isResidence = p.regime === "RESIDENCE_PRINCIPALE";
               return (
@@ -115,6 +117,12 @@ export default function ImmobilierPage() {
                         label="Mensualité (crédit + assurance)"
                         value={formatEuro(s.monthlyPayment)}
                       />
+                      {creditEnd && (
+                        <Row
+                          label="Fin de crédit (estimée)"
+                          value={formatDate(creditEnd)}
+                        />
+                      )}
                       <Row
                         label={isResidence ? "Coût mensuel" : "Cash-flow mensuel net"}
                         value={formatEuro(s.monthlyCashFlowAfterTax)}

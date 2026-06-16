@@ -45,3 +45,10 @@ export function monthsSince(date: Date | undefined, reference: Date): number {
     (reference.getUTCMonth() - date.getUTCMonth());
   return Math.max(0, months);
 }
+
+export function loanEndDate(property: Property): Date | null {
+  if (!property.dateDebutCredit || property.dureeMois <= 0) return null;
+  const d = new Date(property.dateDebutCredit);
+  d.setUTCMonth(d.getUTCMonth() + Math.round(property.dureeMois));
+  return d;
+}
