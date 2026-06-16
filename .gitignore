@@ -44,6 +44,7 @@ next-env.d.ts
 /data/dca-configs.json
 /data/benchmarks.json
 /data/config.json
+/data/retirement-profile.json
 /data/*.xlsx
 
 # electron build artifacts

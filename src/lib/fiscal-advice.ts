@@ -29,6 +29,7 @@ const ENVELOPE_LABELS: Record<Envelope, string> = {
   PEE: "PEE / FCPE",
   AV: "Assurance-vie",
   LIVRET: "Livret (A / LDDS)",
+  PER: "PER (plan épargne retraite)",
 };
 
 const PEA_PLAFOND = 150_000;
@@ -94,6 +95,12 @@ export function rateForEnvelope(
       tips.push("Gains exonérés d'IR, seuls les prélèvements sociaux s'appliquent à la sortie.");
       tips.push("Pensez à l'abondement employeur s'il est disponible.");
       return { rate: PS_RATE, tips };
+
+    case "PER":
+      tips.push("Versements déductibles du revenu imposable (dans les plafonds).");
+      tips.push("Sortie en capital ou rente à la retraite, imposée à l'IR (versements) + PFU (gains).");
+      tips.push("Intéressant si TMI élevé aujourd'hui et plus faible à la retraite.");
+      return { rate: FLAT_TAX_RATE, tips };
 
     case "CTO":
     default:

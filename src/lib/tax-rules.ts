@@ -17,7 +17,7 @@ export type TaxRegime =
   | "HOLD"
   | "EXEMPT";
 
-export type TaxBucketKey = "CTO" | "CRYPTO" | "PEA" | "PEE" | "AV";
+export type TaxBucketKey = "CTO" | "CRYPTO" | "PEA" | "PEE" | "AV" | "PER";
 
 export type TaxEstimate = {
   bucket: TaxBucketKey;
@@ -272,6 +272,42 @@ export function estimateAvTax(
   };
 }
 
+export function estimatePerTax(
+  summary: EnvelopeYearlySummary | undefined,
+): TaxEstimate {
+  const withdrawalAmount = summary?.withdrawalAmount ?? 0;
+  if (withdrawalAmount === 0) {
+    return {
+      bucket: "PER",
+      envelope: "PER",
+      label: "PER",
+      regime: "HOLD",
+      base: 0,
+      ir: 0,
+      ps: 0,
+      total: 0,
+      rateLabel: "Aucun retrait — non imposable",
+      notes: [
+        "Le PER est imposé à la sortie (capital : IR sur versements + PFU sur gains ; rente : IR). Non modélisé finement ici.",
+      ],
+    };
+  }
+  return {
+    bucket: "PER",
+    envelope: "PER",
+    label: "PER",
+    regime: "PFU_FULL",
+    base: withdrawalAmount,
+    ir: withdrawalAmount * IR_RATE,
+    ps: withdrawalAmount * PS_RATE,
+    total: withdrawalAmount * FLAT_TAX_RATE,
+    rateLabel: "PFU 30 % (simplification — le PER réel dépend du TMI)",
+    notes: [
+      "Estimation très simplifiée : le régime réel distingue la part « versements déduits » (IR au TMI) de la part « gains » (PFU).",
+    ],
+  };
+}
+
 export function estimateAllTaxes(
   summariesByEnvelope: Map<Envelope, EnvelopeYearlySummary>,
   context: TaxContext,
@@ -282,6 +318,7 @@ export function estimateAllTaxes(
     estimatePeaTax(summariesByEnvelope.get("PEA"), context),
     estimatePeeTax(summariesByEnvelope.get("PEE")),
     estimateAvTax(summariesByEnvelope.get("AV"), context),
+    estimatePerTax(summariesByEnvelope.get("PER")),
   ];
 }
 

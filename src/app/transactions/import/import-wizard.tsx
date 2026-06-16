@@ -131,7 +131,7 @@ const ACCOUNT_TYPES: AccountType[] = [
   "WALLET_CRYPTO",
   "EPARGNE_SALARIALE",
 ];
-const ENVELOPES: Envelope[] = ["CTO", "PEA", "PEE", "AV"];
+const ENVELOPES: Envelope[] = ["CTO", "PEA", "PEE", "AV", "PER"];
 const PRICE_SOURCES: PriceSource[] = [
   "yahoo",
   "coingecko",

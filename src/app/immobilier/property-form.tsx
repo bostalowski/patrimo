@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, Plus, X } from "lucide-react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import type { Detention, Property, PropertyRegime } from "@/lib/schema";
 
 const inputClasses =
@@ -119,6 +119,17 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
   const [notes, setNotes] = useState(property?.notes ?? "");
 
   const isResidence = regime === "RESIDENCE_PRINCIPALE";
+  const loanEndPreview = useMemo(() => {
+    const start = dateDebutCredit.trim();
+    if (!start) return null;
+    const months = Math.round(parseNum(dureeMois));
+    if (!Number.isFinite(months) || months <= 0) return null;
+    const d = new Date(`${start}T12:00:00.000Z`);
+    if (Number.isNaN(d.getTime())) return null;
+    const end = new Date(d);
+    end.setUTCMonth(end.getUTCMonth() + months);
+    return end;
+  }, [dateDebutCredit, dureeMois]);
   const isIR =
     regime === "IR_REEL" ||
     regime === "IR_MICRO" ||
@@ -155,7 +166,7 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
         method: isEdit ? "PUT" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          ...(isEdit ? { id: property!.id } : {}),
+          ...(isEdit && property ? { id: property.id } : {}),
           label: trimmedLabel,
           detention,
           regime,
@@ -387,6 +398,13 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
                 className={inputClasses}
               />
             </Field>
+            {loanEndPreview && (
+              <Field label="Fin de crédit (estimée)">
+                <p className="text-sm text-zinc-800 dark:text-zinc-200">
+                  {formatDate(loanEndPreview)}
+                </p>
+              </Field>
+            )}
             <Field label="Taux assurance (%)">
               <input
                 type="text"
