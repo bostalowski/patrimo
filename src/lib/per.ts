@@ -34,7 +34,10 @@ export function computePerOutcome(params: {
   const valeurNetteSortie = valeurFinale - impotSortieTotal;
   const valeurNetteAvecEconomie = valeurNetteSortie + economieImpot;
 
-  const ctoValeurNette = valeurFinale - plusValue * FLAT_TAX_RATE;
+  const ctoCapital = capitalVerse * (1 - tmiNow);
+  const ctoValeurFinale = valeurFinale * (1 - tmiNow);
+  const ctoPlusValue = Math.max(0, ctoValeurFinale - ctoCapital);
+  const ctoValeurNette = ctoValeurFinale - ctoPlusValue * FLAT_TAX_RATE;
 
   return {
     economieImpot,
@@ -46,6 +49,6 @@ export function computePerOutcome(params: {
     valeurNetteSortie,
     valeurNetteAvecEconomie,
     ctoValeurNette,
-    avantageNetVsCto: valeurNetteAvecEconomie - ctoValeurNette,
+    avantageNetVsCto: valeurNetteSortie - ctoValeurNette,
   };
 }
