@@ -1,4 +1,14 @@
 import { deflate } from "@/lib/inflation";
+import type { Envelope } from "@/lib/schema";
+
+export const DEFAULT_ENVELOPE_RATES: Record<Envelope, number> = {
+  CTO: 0.08,
+  PEA: 0.07,
+  PEE: 0.06,
+  AV: 0.04,
+  LIVRET: 0.024,
+  PER: 0.06,
+};
 
 export type ScenarioKey = "prudent" | "modere" | "dynamique";
 
@@ -40,8 +50,10 @@ export function projectInvestment(params: {
   years: number;
   start?: Date;
   inflationRate?: number;
+  plafond?: number;
 }): InvestmentProjection {
-  const { startBalance, monthlyContribution, annualRate, years } = params;
+  const { startBalance, monthlyContribution, annualRate, years, plafond } =
+    params;
   const inflationRate = params.inflationRate ?? 0;
   const start = params.start ?? new Date();
   const startMonth = utc(start.getUTCFullYear(), start.getUTCMonth(), 1);
@@ -67,8 +79,10 @@ export function projectInvestment(params: {
       startMonth.getUTCMonth() + month,
       1,
     );
-    value = value * (1 + monthlyRate) + monthlyContribution;
-    invested += monthlyContribution;
+    const room = plafond !== undefined ? Math.max(0, plafond - invested) : Infinity;
+    const contribution = Math.max(0, Math.min(monthlyContribution, room));
+    value = value * (1 + monthlyRate) + contribution;
+    invested += contribution;
     points.push({
       date: toIso(date),
       value,

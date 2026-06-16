@@ -23,7 +23,7 @@ export type EnvelopeAdvice = {
   tips: string[];
 };
 
-const ENVELOPE_LABELS: Record<Envelope, string> = {
+export const ENVELOPE_LABELS: Record<Envelope, string> = {
   CTO: "CTO (compte-titres)",
   PEA: "PEA",
   PEE: "PEE / FCPE",
@@ -33,6 +33,36 @@ const ENVELOPE_LABELS: Record<Envelope, string> = {
 };
 
 const PEA_PLAFOND = 150_000;
+const LIVRET_A_PLAFOND = 22_950;
+
+export const RECOMMENDED_ENVELOPES: Envelope[] = [
+  "PEA",
+  "AV",
+  "PER",
+  "LIVRET",
+  "CTO",
+];
+
+const DEFAULT_PLAFONDS: Partial<Record<Envelope, number>> = {
+  LIVRET: LIVRET_A_PLAFOND,
+  PEA: PEA_PLAFOND,
+};
+
+function applyPlafond(
+  info: EnvelopeInfo,
+  favorableRate: number,
+  investedAmount: number,
+  tips: string[],
+): number {
+  const plafond = info.plafond ?? DEFAULT_PLAFONDS[info.envelope];
+  if (!plafond || investedAmount <= plafond) return favorableRate;
+
+  const share = plafond / investedAmount;
+  tips.push(
+    `Plafond ${plafond.toLocaleString("fr-FR")} € dépassé par les versements (${Math.round(investedAmount).toLocaleString("fr-FR")} €) : seule la part sous plafond garde son avantage, le surplus bascule au PFU 30 %.`,
+  );
+  return favorableRate * share + FLAT_TAX_RATE * (1 - share);
+}
 
 function yearsSince(date: Date | undefined, now: Date): number | null {
   if (!date) return null;
@@ -120,13 +150,24 @@ export function buildFiscalAdvice(params: {
   const { envelopes, grossGain, totalContributed, horizonYears } = params;
   const now = params.now ?? new Date();
 
-  const advices = envelopes.map((info) => {
+  const byEnvelope = new Map<Envelope, EnvelopeInfo>();
+  for (const info of envelopes) {
+    byEnvelope.set(info.envelope, info);
+  }
+  for (const envelope of RECOMMENDED_ENVELOPES) {
+    if (!byEnvelope.has(envelope)) {
+      byEnvelope.set(envelope, { envelope });
+    }
+  }
+
+  const advices = Array.from(byEnvelope.values()).map((info) => {
     const { rate, tips } = rateForEnvelope(info, horizonYears, now);
-    const netGain = grossGain * (1 - rate);
+    const effectiveRate = applyPlafond(info, rate, totalContributed, tips);
+    const netGain = grossGain * (1 - effectiveRate);
     return {
       envelope: info.envelope,
       label: ENVELOPE_LABELS[info.envelope],
-      taxRateOnGain: rate,
+      taxRateOnGain: effectiveRate,
       grossGain,
       netGain,
       netFinalValue: totalContributed + netGain,
@@ -152,17 +193,19 @@ export function buildEnvelopeProjectionAdvice(params: {
   envelopes: EnvelopeProjectionInfo[];
   horizonYears: number;
   now?: Date;
+  sort?: boolean;
 }): EnvelopeAdvice[] {
-  const { envelopes, horizonYears } = params;
+  const { envelopes, horizonYears, sort } = params;
   const now = params.now ?? new Date();
 
-  return envelopes.map((info, index) => {
+  const advices = envelopes.map((info, index) => {
     const { rate, tips } = rateForEnvelope(info, horizonYears, now);
-    const netGain = info.grossGain * (1 - rate);
+    const effectiveRate = applyPlafond(info, rate, info.totalContributed, tips);
+    const netGain = info.grossGain * (1 - effectiveRate);
     return {
       envelope: info.envelope,
       label: ENVELOPE_LABELS[info.envelope],
-      taxRateOnGain: rate,
+      taxRateOnGain: effectiveRate,
       grossGain: info.grossGain,
       netGain,
       netFinalValue: info.totalContributed + netGain,
@@ -170,4 +213,15 @@ export function buildEnvelopeProjectionAdvice(params: {
       tips,
     };
   });
+
+  if (sort) {
+    advices.sort(
+      (a, b) => b.netGain - a.netGain || a.taxRateOnGain - b.taxRateOnGain,
+    );
+    advices.forEach((advice, index) => {
+      advice.priority = index + 1;
+    });
+  }
+
+  return advices;
 }

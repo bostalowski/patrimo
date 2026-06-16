@@ -123,6 +123,11 @@ export const DcaConfig = z.object({
 });
 export type DcaConfig = z.infer<typeof DcaConfig>;
 
+export const ExpectedReturns = z.object({
+  rates: z.record(z.string(), z.number()).default({}),
+});
+export type ExpectedReturns = z.infer<typeof ExpectedReturns>;
+
 export const BudgetKind = z.enum(["REVENU", "DEPENSE", "EPARGNE"]);
 export type BudgetKind = z.infer<typeof BudgetKind>;
 
