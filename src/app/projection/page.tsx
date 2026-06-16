@@ -3,7 +3,8 @@ import { getInflationRate } from "@/lib/config";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { summarizeBudget } from "@/lib/budget";
 import { buildPortfolio } from "@/lib/portfolio";
-import { readPriceMap, readDcaConfigs } from "@/lib/store";
+import { readPriceMap, readDcaConfigs, readExpectedReturns } from "@/lib/store";
+import { DEFAULT_ENVELOPE_RATES } from "@/lib/projection";
 import {
   computeLivretState,
   livretFlows,
@@ -11,7 +12,6 @@ import {
 } from "@/lib/livret";
 import type { Envelope } from "@/lib/schema";
 import { ProjectionClient, type LivretOption } from "./projection-client";
-import type { SerializedEnvelope } from "./restant-projection";
 import type { EnvelopeProjectionInput } from "./envelope-projection";
 import type { SerializedProperty } from "./realestate-projection";
 
@@ -47,12 +47,16 @@ export default async function ProjectionPage() {
     });
 
   const { restant } = summarizeBudget(getBudget());
-  const envelopes = buildEnvelopes(workbook.accounts);
 
-  const [priceMap, dcaConfigs] = await Promise.all([
+  const [priceMap, dcaConfigs, expectedReturns] = await Promise.all([
     readPriceMap(workbook.assets),
     readDcaConfigs(),
+    readExpectedReturns(),
   ]);
+  const envelopeRates: Record<Envelope, number> = {
+    ...DEFAULT_ENVELOPE_RATES,
+    ...expectedReturns,
+  };
   const portfolio = buildPortfolio(workbook, priceMap);
   const envelopeInputs = buildEnvelopeInputs(
     portfolio.accounts,
@@ -71,50 +75,22 @@ export default async function ProjectionPage() {
       <header className="space-y-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">Projection</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-          Simulez la croissance de vos livrets à taux connu, ou projetez le restant
-          non alloué de votre budget sur plusieurs scénarios de rendement avec
-          conseils d&apos;optimisation fiscale.
+          Simulez la croissance de vos livrets à taux connu, ou projetez vos
+          enveloppes engagées et votre reste à allouer au taux estimé de chaque
+          enveloppe, avec conseils d&apos;optimisation fiscale.
         </p>
       </header>
 
       <ProjectionClient
         livrets={livrets}
         monthlyRestant={restant}
-        envelopes={envelopes}
         envelopeInputs={envelopeInputs}
+        envelopeRates={envelopeRates}
         properties={properties}
         inflationRate={inflationRate}
       />
     </div>
   );
-}
-
-function buildEnvelopes(
-  accounts: ReturnType<typeof loadWorkbook>["accounts"],
-): SerializedEnvelope[] {
-  const byEnvelope = new Map<Envelope, SerializedEnvelope>();
-  for (const account of accounts) {
-    const existing = byEnvelope.get(account.envelope);
-    const openDate = account.openDate?.toISOString();
-    if (!existing) {
-      byEnvelope.set(account.envelope, {
-        envelope: account.envelope,
-        openDate,
-        plafond: account.plafond,
-      });
-      continue;
-    }
-    if (
-      openDate &&
-      (!existing.openDate || openDate < existing.openDate)
-    ) {
-      existing.openDate = openDate;
-    }
-    if (account.plafond && (!existing.plafond || account.plafond > existing.plafond)) {
-      existing.plafond = account.plafond;
-    }
-  }
-  return Array.from(byEnvelope.values());
 }
 
 function buildEnvelopeInputs(

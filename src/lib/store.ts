@@ -1,7 +1,11 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { Asset, DcaConfig } from "@/lib/schema";
-import { DcaConfig as DcaConfigSchema, RetirementProfile } from "@/lib/schema";
+import type { Asset, DcaConfig, Envelope } from "@/lib/schema";
+import {
+  DcaConfig as DcaConfigSchema,
+  ExpectedReturns,
+  RetirementProfile,
+} from "@/lib/schema";
 import { z } from "zod";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
@@ -11,6 +15,7 @@ const PRICES_FILE = resolve(DATA_DIR, "prices.json");
 const MANUAL_PRICES_FILE = resolve(DATA_DIR, "manual-prices.json");
 const BENCHMARKS_FILE = resolve(DATA_DIR, "benchmarks.json");
 const DCA_CONFIGS_FILE = resolve(DATA_DIR, "dca-configs.json");
+const EXPECTED_RETURNS_FILE = resolve(DATA_DIR, "expected-returns.json");
 const RETIREMENT_PROFILE_FILE = resolve(DATA_DIR, "retirement-profile.json");
 
 export type AssetPriceHistory = Record<string, number>;
@@ -86,6 +91,15 @@ export async function readDcaConfigs(): Promise<DcaConfig[]> {
 
 export async function writeDcaConfigs(configs: DcaConfig[]): Promise<void> {
   await writeJson(DCA_CONFIGS_FILE, { configs });
+}
+
+export async function readExpectedReturns(): Promise<
+  Partial<Record<Envelope, number>>
+> {
+  const raw = await readJson<unknown>(EXPECTED_RETURNS_FILE, { rates: {} });
+  const parsed = ExpectedReturns.safeParse(raw);
+  if (!parsed.success) return {};
+  return parsed.data.rates as Partial<Record<Envelope, number>>;
 }
 
 const RetirementProfileStoreSchema = z.object({

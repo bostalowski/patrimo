@@ -4,11 +4,8 @@ import { useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle, CardValue } from "@/components/ui/card";
 import { ProjectionCurve } from "@/components/charts/projection-curve";
 import { projectLivret } from "@/lib/livret";
+import type { Envelope } from "@/lib/schema";
 import { cn, formatDate, formatEuro, formatPercent } from "@/lib/utils";
-import {
-  RestantProjection,
-  type SerializedEnvelope,
-} from "./restant-projection";
 import {
   EnvelopeProjection,
   type EnvelopeProjectionInput,
@@ -29,12 +26,11 @@ export type LivretOption = {
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
 
-type Mode = "livrets" | "enveloppe" | "restant" | "immobilier";
+type Mode = "livrets" | "enveloppe" | "immobilier";
 
 const TABS: { key: Mode; label: string }[] = [
   { key: "livrets", label: "Livrets" },
   { key: "enveloppe", label: "Par enveloppe" },
-  { key: "restant", label: "Restant à investir" },
   { key: "immobilier", label: "Immobilier" },
 ];
 
@@ -46,15 +42,15 @@ function parseNumber(value: string): number {
 export function ProjectionClient({
   livrets,
   monthlyRestant,
-  envelopes,
   envelopeInputs,
+  envelopeRates,
   properties,
   inflationRate,
 }: {
   livrets: LivretOption[];
   monthlyRestant: number;
-  envelopes: SerializedEnvelope[];
   envelopeInputs: EnvelopeProjectionInput[];
+  envelopeRates: Record<Envelope, number>;
   properties: SerializedProperty[];
   inflationRate: number;
 }) {
@@ -103,15 +99,14 @@ export function ProjectionClient({
       {mode === "livrets" ? (
         <LivretProjection livrets={livrets} inflation={inflation} />
       ) : mode === "enveloppe" ? (
-        <EnvelopeProjection envelopes={envelopeInputs} inflation={inflation} />
-      ) : mode === "immobilier" ? (
-        <RealEstateProjection properties={properties} inflation={inflation} />
-      ) : (
-        <RestantProjection
-          defaultMonthly={monthlyRestant}
-          envelopes={envelopes}
+        <EnvelopeProjection
+          envelopes={envelopeInputs}
+          defaultRates={envelopeRates}
+          monthlyRestant={monthlyRestant}
           inflation={inflation}
         />
+      ) : (
+        <RealEstateProjection properties={properties} inflation={inflation} />
       )}
     </div>
   );
