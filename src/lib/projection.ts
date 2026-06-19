@@ -1,5 +1,5 @@
 import { deflate } from "@/lib/inflation";
-import type { Envelope } from "@/lib/schema";
+import type { DcaFrequency, Envelope } from "@/lib/schema";
 
 export const DEFAULT_ENVELOPE_RATES: Record<Envelope, number> = {
   CTO: 0.08,
@@ -43,21 +43,50 @@ function utc(year: number, monthIndex: number, day: number): Date {
   return new Date(Date.UTC(year, monthIndex, day));
 }
 
+export type ContributionStream = {
+  amount: number;
+  frequency: DcaFrequency;
+  paymentMonth?: number;
+};
+
+function streamContribution(
+  stream: ContributionStream,
+  monthDate: Date,
+  startMonth: Date,
+): number {
+  if (stream.amount <= 0) return 0;
+  if (stream.frequency === "MENSUEL") return stream.amount;
+
+  const calendarMonth = monthDate.getUTCMonth() + 1;
+  const anchor = stream.paymentMonth ?? startMonth.getUTCMonth() + 1;
+
+  if (stream.frequency === "ANNUEL") {
+    return calendarMonth === anchor ? stream.amount : 0;
+  }
+
+  return (((calendarMonth - anchor) % 3) + 3) % 3 === 0 ? stream.amount : 0;
+}
+
 export function projectInvestment(params: {
   startBalance: number;
-  monthlyContribution: number;
+  monthlyContribution?: number;
+  contributions?: ContributionStream[];
   annualRate: number;
   years: number;
   start?: Date;
   inflationRate?: number;
   plafond?: number;
 }): InvestmentProjection {
-  const { startBalance, monthlyContribution, annualRate, years, plafond } =
-    params;
+  const { startBalance, annualRate, years, plafond } = params;
   const inflationRate = params.inflationRate ?? 0;
   const start = params.start ?? new Date();
   const startMonth = utc(start.getUTCFullYear(), start.getUTCMonth(), 1);
   const monthlyRate = annualRate / 12;
+  const streams: ContributionStream[] =
+    params.contributions ??
+    (params.monthlyContribution
+      ? [{ amount: params.monthlyContribution, frequency: "MENSUEL" }]
+      : []);
 
   let value = startBalance;
   let invested = startBalance;
@@ -80,7 +109,11 @@ export function projectInvestment(params: {
       1,
     );
     const room = plafond !== undefined ? Math.max(0, plafond - invested) : Infinity;
-    const contribution = Math.max(0, Math.min(monthlyContribution, room));
+    const due = streams.reduce(
+      (sum, stream) => sum + streamContribution(stream, date, startMonth),
+      0,
+    );
+    const contribution = Math.max(0, Math.min(due, room));
     value = value * (1 + monthlyRate) + contribution;
     invested += contribution;
     points.push({

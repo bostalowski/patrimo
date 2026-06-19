@@ -22,7 +22,8 @@ function makeDraft(): DcaConfig {
     id: `dca-${Date.now()}`,
     label: "Nouveau plan",
     envelope: "PEA",
-    monthlyAmount: 200,
+    amount: 200,
+    frequency: "MENSUEL",
     lines: [{ label: undefined, assetIds: [], targetPct: 1 }],
   };
 }
@@ -36,15 +37,15 @@ export function DcaPlanner({
   const [drafts, setDrafts] = useState<DcaConfig[]>([]);
 
   const items: Item[] = [
-    ...configs.map((config) => ({ config, isDraft: false as const })),
     ...drafts.map((config) => ({ config, isDraft: true as const })),
+    ...configs.map((config) => ({ config, isDraft: false as const })),
   ];
 
   const showSeed =
     configs.length === 0 && drafts.length === 0 && seedConfig !== null;
 
   function addDraft(seed?: DcaConfig) {
-    setDrafts((current) => [...current, seed ?? makeDraft()]);
+    setDrafts((current) => [seed ?? makeDraft(), ...current]);
   }
 
   function removeDraft(id: string) {

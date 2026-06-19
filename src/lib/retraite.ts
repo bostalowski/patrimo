@@ -1,7 +1,12 @@
 import type { DcaConfig, Envelope, Property, RetirementProfile } from "@/lib/schema";
 import { Envelope as EnvelopeSchema } from "@/lib/schema";
 import type { Portfolio } from "@/lib/portfolio";
-import { projectInvestment, SCENARIO_PRESETS, type ScenarioKey } from "@/lib/projection";
+import {
+  projectInvestment,
+  SCENARIO_PRESETS,
+  type ContributionStream,
+  type ScenarioKey,
+} from "@/lib/projection";
 import { projectProperty } from "@/lib/realestate/projection";
 import { propertySnapshot } from "@/lib/realestate/projection";
 
@@ -63,13 +68,18 @@ function valueByEnvelope(portfolio: Portfolio): Map<Envelope, number> {
   return map;
 }
 
-function monthlyByEnvelope(configs: DcaConfig[]): Map<Envelope, number> {
-  const map = new Map<Envelope, number>();
+function contributionsByEnvelope(
+  configs: DcaConfig[],
+): Map<Envelope, ContributionStream[]> {
+  const map = new Map<Envelope, ContributionStream[]>();
   for (const config of configs) {
-    map.set(
-      config.envelope,
-      (map.get(config.envelope) ?? 0) + config.monthlyAmount,
-    );
+    const streams = map.get(config.envelope) ?? [];
+    streams.push({
+      amount: config.amount,
+      frequency: config.frequency,
+      paymentMonth: config.paymentMonth,
+    });
+    map.set(config.envelope, streams);
   }
   return map;
 }
@@ -85,10 +95,12 @@ export function buildRetirementSources(params: {
   const now = params.now ?? new Date();
   const { horizonYears, inflationRate, properties } = params;
   const values = valueByEnvelope(params.portfolio);
-  const monthly = monthlyByEnvelope(params.dcaConfigs);
+  const contributions = contributionsByEnvelope(params.dcaConfigs);
 
   const envelopes = (EnvelopeSchema.options as readonly Envelope[]).filter(
-    (env) => (values.get(env) ?? 0) > 0 || (monthly.get(env) ?? 0) > 0,
+    (env) =>
+      (values.get(env) ?? 0) > 0 ||
+      (contributions.get(env)?.some((s) => s.amount > 0) ?? false),
   );
 
   let realEstateEquityNominal = 0;
@@ -122,10 +134,9 @@ export function buildRetirementSources(params: {
 
     for (const envelope of envelopes) {
       const startBalance = values.get(envelope) ?? 0;
-      const monthlyContribution = monthly.get(envelope) ?? 0;
       const result = projectInvestment({
         startBalance,
-        monthlyContribution,
+        contributions: contributions.get(envelope) ?? [],
         annualRate: preset.rate,
         years: horizonYears,
         inflationRate,

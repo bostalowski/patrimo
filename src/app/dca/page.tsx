@@ -11,7 +11,8 @@ const DEFAULT_PEA_CONFIG: DcaConfig = {
   id: "pea",
   label: "PEA — DCA mensuel",
   envelope: "PEA",
-  monthlyAmount: 500,
+  amount: 500,
+  frequency: "MENSUEL",
   lines: [
     { label: "Mondes", assetIds: ["WPEA"], targetPct: 0.75 },
     { label: "Émergents", assetIds: ["PLEM"], targetPct: 0.25 },
