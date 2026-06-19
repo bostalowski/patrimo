@@ -1,11 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { Asset, DcaConfig, Envelope } from "@/lib/schema";
-import {
-  DcaConfig as DcaConfigSchema,
-  ExpectedReturns,
-  RetirementProfile,
-} from "@/lib/schema";
+import { ExpectedReturns, RetirementProfile } from "@/lib/schema";
+import { getDcaConfigs, saveDcaConfigs } from "@/lib/excel";
 import { z } from "zod";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
@@ -14,7 +11,6 @@ const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
 const PRICES_FILE = resolve(DATA_DIR, "prices.json");
 const MANUAL_PRICES_FILE = resolve(DATA_DIR, "manual-prices.json");
 const BENCHMARKS_FILE = resolve(DATA_DIR, "benchmarks.json");
-const DCA_CONFIGS_FILE = resolve(DATA_DIR, "dca-configs.json");
 const EXPECTED_RETURNS_FILE = resolve(DATA_DIR, "expected-returns.json");
 const RETIREMENT_PROFILE_FILE = resolve(DATA_DIR, "retirement-profile.json");
 
@@ -78,19 +74,12 @@ export async function readPriceMap(assets: Asset[]): Promise<Map<string, number>
   return map;
 }
 
-const DcaStoreSchema = z.object({
-  configs: z.array(DcaConfigSchema),
-});
-
 export async function readDcaConfigs(): Promise<DcaConfig[]> {
-  const raw = await readJson<unknown>(DCA_CONFIGS_FILE, { configs: [] });
-  const parsed = DcaStoreSchema.safeParse(raw);
-  if (!parsed.success) return [];
-  return parsed.data.configs;
+  return getDcaConfigs();
 }
 
 export async function writeDcaConfigs(configs: DcaConfig[]): Promise<void> {
-  await writeJson(DCA_CONFIGS_FILE, { configs });
+  saveDcaConfigs(configs);
 }
 
 export async function readExpectedReturns(): Promise<

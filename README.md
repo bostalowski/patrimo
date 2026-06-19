@@ -193,7 +193,9 @@ Quatre onglets :
   Budget, et reste éditable à la main (saisie en masse possible).
 
 Les cibles d'allocation sont gérées dans le **DCA Planner** (config par
-enveloppe persistée dans `data/dca-configs.json`).
+enveloppe persistée dans l'onglet **DCA** du fichier Excel : `ID · Libellé ·
+Enveloppe · Montant mensuel · Panier · Actifs · Cible %`, une ligne par panier
+d'actifs). Les plans survivent ainsi aux mises à jour de l'application.
 
 Pour migrer un ancien fichier (schéma single-sheet « Mouvements »), utilise :
 

@@ -12,17 +12,20 @@ import {
   Account,
   Asset,
   BudgetLine,
+  type DcaConfig,
   Property,
   Transaction,
   type Workbook,
 } from "@/lib/schema";
 import { getConfiguredExcelPath, resolveUserPath } from "@/lib/config";
+import { DCA_HEADERS, dcaConfigsToRows, parseDcaConfigs } from "@/lib/dca-excel";
 
 const SHEET_TRANSACTIONS = "Transactions";
 const SHEET_ACTIFS = "Actifs";
 const SHEET_COMPTES = "Comptes";
 const SHEET_BUDGET = "Budget";
 const SHEET_IMMOBILIER = "Immobilier";
+const SHEET_DCA = "DCA";
 
 const TRANSACTIONS_HEADERS = [
   "Date",
@@ -195,6 +198,11 @@ export function createEmptyWorkbook(rawPath: string): string {
     wb,
     XLSX.utils.aoa_to_sheet([IMMOBILIER_HEADERS]),
     SHEET_IMMOBILIER,
+  );
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([[...DCA_HEADERS]]),
+    SHEET_DCA,
   );
 
   const out = XLSX.write(wb, {
@@ -470,13 +478,14 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
   const accounts = parseAccounts(readSheet(sheet, SHEET_COMPTES));
   const budget = parseBudget(readSheetOptional(sheet, SHEET_BUDGET));
   const properties = parseProperties(readSheetOptional(sheet, SHEET_IMMOBILIER));
+  const dca = parseDcaConfigs(readSheetOptional(sheet, SHEET_DCA));
 
   const transactions = [...parsedTransactions].sort(
     (a, b) => a.date.getTime() - b.date.getTime(),
   );
 
   return {
-    workbook: { transactions, assets, accounts, budget, properties },
+    workbook: { transactions, assets, accounts, budget, properties, dca },
     transactionRows,
   };
 }
@@ -509,6 +518,29 @@ export function getBudget(): BudgetLine[] {
 
 export function getProperties(): Property[] {
   return loadWorkbook().properties;
+}
+
+export function getDcaConfigs(): DcaConfig[] {
+  if (!isExcelConfigured()) return [];
+  return loadWorkbook().dca;
+}
+
+export function saveDcaConfigs(configs: DcaConfig[]): void {
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+
+  const headers = [...DCA_HEADERS];
+  const rows = dcaConfigsToRows(configs).map((row) =>
+    headers.map((header) => row[header] ?? null),
+  );
+  const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  workbook.Sheets[SHEET_DCA] = sheet;
+  if (!workbook.SheetNames.includes(SHEET_DCA)) {
+    workbook.SheetNames.push(SHEET_DCA);
+  }
+  writeWorkbook(workbook, path);
 }
 
 export function getAssetMap(): Map<string, Asset> {
