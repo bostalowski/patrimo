@@ -74,6 +74,15 @@ export function EnvelopeProjection({
       {} as Record<string, string>,
     ),
   );
+  const [monthly, setMonthly] = useState<Record<string, string>>(() =>
+    envelopes.reduce(
+      (acc, envelope) => {
+        acc[envelope.envelope] = String(Math.max(0, envelope.monthlyDefault));
+        return acc;
+      },
+      {} as Record<string, string>,
+    ),
+  );
   const [perEncours, setPerEncours] = useState("0");
   const [perMonthly, setPerMonthly] = useState("0");
   const [tmiNow, setTmiNow] = useState("0.3");
@@ -92,6 +101,15 @@ export function EnvelopeProjection({
     [rates],
   );
 
+  const monthlyOf = useCallback(
+    (input: EnvelopeProjectionInput): number => {
+      const raw = monthly[input.envelope];
+      const value = raw === undefined ? input.monthlyDefault : parseNumber(raw);
+      return Math.max(0, value);
+    },
+    [monthly],
+  );
+
   const candidateEnvelopes = useMemo<Envelope[]>(() => {
     const set = new Set<Envelope>([
       ...envelopes.map((e) => e.envelope),
@@ -105,14 +123,14 @@ export function EnvelopeProjection({
       envelope,
       result: projectInvestment({
         startBalance: envelope.currentValue,
-        monthlyContribution: Math.max(0, envelope.monthlyDefault),
+        monthlyContribution: monthlyOf(envelope),
         annualRate: rateOf(envelope.envelope),
         years: horizonYears,
         inflationRate: inflation.rate,
         plafond: envelope.plafond,
       }),
     }));
-  }, [envelopes, rateOf, horizonYears, inflation.rate]);
+  }, [envelopes, monthlyOf, rateOf, horizonYears, inflation.rate]);
 
   const perResult = useMemo(
     () =>
@@ -206,9 +224,9 @@ export function EnvelopeProjection({
 
   const monthlyByEnvelope = useMemo(() => {
     const map = new Map<string, number>();
-    for (const e of envelopes) map.set(e.envelope, e.monthlyDefault);
+    for (const e of envelopes) map.set(e.envelope, monthlyOf(e));
     return map;
-  }, [envelopes]);
+  }, [envelopes, monthlyOf]);
 
   const resteAdvice = useMemo(() => {
     if (resteValue <= 0) return [];
@@ -286,6 +304,38 @@ export function EnvelopeProjection({
               />
             </Field>
           </div>
+
+          {envelopes.length > 0 ? (
+            <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                Versement mensuel par enveloppe (EUR / mois)
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {envelopes.map((envelope) => (
+                  <Field
+                    key={envelope.envelope}
+                    label={ENVELOPE_LABELS[envelope.envelope]}
+                  >
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={
+                        monthly[envelope.envelope] ??
+                        String(Math.max(0, envelope.monthlyDefault))
+                      }
+                      onChange={(e) =>
+                        setMonthly((prev) => ({
+                          ...prev,
+                          [envelope.envelope]: e.target.value,
+                        }))
+                      }
+                      className={inputClasses}
+                    />
+                  </Field>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
@@ -366,9 +416,10 @@ export function EnvelopeProjection({
           <p className="mt-4 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
             Investissements engagés ({formatEuro(currentTotal)} aujourd&apos;hui)
             projetés au taux estimé propre à chaque enveloppe. Les versements
-            mensuels sont figés sur tes plans DCA et les plafonds (Livret A, PEA)
-            sont respectés. Le PER se simule à part avec sa fiscalité propre.
-            Capitalisation mensuelle.
+            mensuels sont pré-remplis depuis tes plans DCA mais restent
+            ajustables ici, et les plafonds (Livret A, PEA) sont respectés. Le
+            PER se simule à part avec sa fiscalité propre. Capitalisation
+            mensuelle.
           </p>
         </CardBody>
       </Card>
@@ -437,7 +488,7 @@ export function EnvelopeProjection({
             <THead>
               <TR>
                 <TH>Enveloppe</TH>
-                <TH className="text-right">DCA / mois</TH>
+                <TH className="text-right">Versement / mois</TH>
                 <TH className="text-right">Valeur actuelle</TH>
                 <TH className="text-right">Valeur projetée</TH>
                 <TH className="text-right">Plus-value brute</TH>

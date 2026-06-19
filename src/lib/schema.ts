@@ -214,4 +214,5 @@ export type Workbook = {
   accounts: Account[];
   budget: BudgetLine[];
   properties: Property[];
+  dca: DcaConfig[];
 };
