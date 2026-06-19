@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatEuro } from "@/lib/utils";
+import { formatEuro, formatEuroCompact } from "@/lib/utils";
 
 type Point = {
   date: string;
@@ -64,7 +64,7 @@ export function PortfolioCurve({
           <YAxis
             stroke="#a1a1aa"
             tick={{ fontSize: 11 }}
-            tickFormatter={(v) => `${Math.round(v / 1000)}k €`}
+            tickFormatter={(v) => formatEuroCompact(Number(v))}
             width={64}
           />
           <Tooltip

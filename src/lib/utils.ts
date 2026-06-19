@@ -37,6 +37,13 @@ const eurFormatterPreciseSmall = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 6,
 });
 
+const eurCompactFormatter = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
 const percentFormatter = new Intl.NumberFormat("fr-FR", {
   style: "percent",
   minimumFractionDigits: 2,
@@ -57,6 +64,11 @@ export function formatEuro(value: number, precise = false): string {
   if (!Number.isFinite(value)) return "—";
   if (precise && Math.abs(value) < 1) return eurFormatterPreciseSmall.format(value);
   return eurFormatter.format(value);
+}
+
+export function formatEuroCompact(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  return eurCompactFormatter.format(value);
 }
 
 export function formatPercent(value: number): string {

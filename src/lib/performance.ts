@@ -107,7 +107,11 @@ export function twrIndex(points: DailyPoint[]): TwrPoint[] {
   for (const point of points) {
     const flow = point.invested - previousInvested;
     const base = previousValue + flow;
-    if (base > EPSILON) {
+    // A null value means the portfolio was emptied (positions sold or moved
+    // out), not a -100% loss. Skip compounding so the index is carried forward
+    // and resumes cleanly when capital is invested again, instead of locking at
+    // zero for the rest of the series.
+    if (base > EPSILON && point.value > EPSILON) {
       index *= point.value / base;
     }
     series.push({ date: point.date, index });
