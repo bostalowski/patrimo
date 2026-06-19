@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, Save, Trash2, X } from "lucide-react";
-import type { Asset, DcaConfig, DcaLine } from "@/lib/schema";
+import type { Asset, DcaConfig, DcaFrequency, DcaLine } from "@/lib/schema";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { computeDcaPlan } from "@/lib/dca";
@@ -11,6 +11,35 @@ import { cn, formatEuro, formatPercent } from "@/lib/utils";
 
 const ENVELOPES = ["CTO", "PEA", "PEE", "AV", "PER"] as const;
 type Envelope = (typeof ENVELOPES)[number];
+
+const FREQUENCIES: DcaFrequency[] = ["MENSUEL", "TRIMESTRIEL", "ANNUEL"];
+
+const FREQUENCY_LABELS: Record<DcaFrequency, string> = {
+  MENSUEL: "Mensuel",
+  TRIMESTRIEL: "Trimestriel",
+  ANNUEL: "Annuel",
+};
+
+const AMOUNT_SUFFIX: Record<DcaFrequency, string> = {
+  MENSUEL: "€/mois",
+  TRIMESTRIEL: "€/trimestre",
+  ANNUEL: "€/an",
+};
+
+const MONTH_LABELS = [
+  "Janvier",
+  "Février",
+  "Mars",
+  "Avril",
+  "Mai",
+  "Juin",
+  "Juillet",
+  "Août",
+  "Septembre",
+  "Octobre",
+  "Novembre",
+  "Décembre",
+];
 
 type LineWithUid = DcaLine & { _uid: string };
 
@@ -172,10 +201,10 @@ export function DcaConfigCard({
       return;
     }
     if (
-      persistableConfig.monthlyAmount < 0 ||
-      !Number.isFinite(persistableConfig.monthlyAmount)
+      persistableConfig.amount < 0 ||
+      !Number.isFinite(persistableConfig.amount)
     ) {
-      setError("Montant mensuel invalide.");
+      setError("Montant invalide.");
       return;
     }
 
@@ -228,7 +257,7 @@ export function DcaConfigCard({
   return (
     <Card>
       <CardHeader className="gap-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_140px_160px]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_140px]">
           <input
             type="text"
             value={config.label}
@@ -251,25 +280,68 @@ export function DcaConfigCard({
               </option>
             ))}
           </select>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <input
               type="text"
               inputMode="decimal"
               value={
-                Number.isFinite(config.monthlyAmount)
-                  ? String(config.monthlyAmount)
-                  : ""
+                Number.isFinite(config.amount) ? String(config.amount) : ""
               }
               onChange={(e) =>
                 setConfig((c) => ({
                   ...c,
-                  monthlyAmount: parseDecimal(e.target.value),
+                  amount: parseDecimal(e.target.value),
                 }))
               }
-              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className="w-32 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
             />
-            <span className="text-sm text-zinc-500">€/mois</span>
+            <span className="text-sm text-zinc-500">
+              {AMOUNT_SUFFIX[config.frequency]}
+            </span>
           </div>
+          <select
+            value={config.frequency}
+            onChange={(e) =>
+              setConfig((c) => ({
+                ...c,
+                frequency: e.target.value as DcaFrequency,
+                paymentMonth:
+                  e.target.value === "MENSUEL"
+                    ? undefined
+                    : (c.paymentMonth ?? 12),
+              }))
+            }
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+          >
+            {FREQUENCIES.map((freq) => (
+              <option key={freq} value={freq}>
+                {FREQUENCY_LABELS[freq]}
+              </option>
+            ))}
+          </select>
+          {config.frequency !== "MENSUEL" && (
+            <label className="flex items-center gap-2 text-sm text-zinc-500">
+              <span>Mois</span>
+              <select
+                value={config.paymentMonth ?? 12}
+                onChange={(e) =>
+                  setConfig((c) => ({
+                    ...c,
+                    paymentMonth: Number(e.target.value),
+                  }))
+                }
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              >
+                {MONTH_LABELS.map((month, i) => (
+                  <option key={month} value={i + 1}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
 
         <div className="flex items-center justify-between text-xs">

@@ -15,7 +15,7 @@ import {
   type ScenarioPoint,
   type ScenarioSeries,
 } from "@/components/charts/scenario-curve";
-import { projectInvestment } from "@/lib/projection";
+import { projectInvestment, type ContributionStream } from "@/lib/projection";
 import { computePerOutcome } from "@/lib/per";
 import {
   buildEnvelopeProjectionAdvice,
@@ -31,9 +31,37 @@ export type EnvelopeProjectionInput = {
   envelope: EnvelopeInfo["envelope"];
   currentValue: number;
   monthlyDefault: number;
+  extraContributions: ContributionStream[];
   openDate?: string;
   plafond?: number;
 };
+
+const FREQUENCY_SUFFIX: Record<ContributionStream["frequency"], string> = {
+  MENSUEL: "/mois",
+  TRIMESTRIEL: "/trim.",
+  ANNUEL: "/an",
+};
+
+const MONTH_SHORT = [
+  "janv.",
+  "févr.",
+  "mars",
+  "avr.",
+  "mai",
+  "juin",
+  "juil.",
+  "août",
+  "sept.",
+  "oct.",
+  "nov.",
+  "déc.",
+];
+
+function formatStream(stream: ContributionStream): string {
+  const base = `${formatEuro(stream.amount)}${FREQUENCY_SUFFIX[stream.frequency]}`;
+  if (stream.frequency === "MENSUEL" || !stream.paymentMonth) return base;
+  return `${base} · ${MONTH_SHORT[stream.paymentMonth - 1]}`;
+}
 
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
@@ -123,7 +151,10 @@ export function EnvelopeProjection({
       envelope,
       result: projectInvestment({
         startBalance: envelope.currentValue,
-        monthlyContribution: monthlyOf(envelope),
+        contributions: [
+          { amount: monthlyOf(envelope), frequency: "MENSUEL" as const },
+          ...envelope.extraContributions,
+        ],
         annualRate: rateOf(envelope.envelope),
         years: horizonYears,
         inflationRate: inflation.rate,
@@ -331,6 +362,18 @@ export function EnvelopeProjection({
                       }
                       className={inputClasses}
                     />
+                    {envelope.extraContributions.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {envelope.extraContributions.map((stream, i) => (
+                          <span
+                            key={`${envelope.envelope}-${i}`}
+                            className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+                          >
+                            + {formatStream(stream)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </Field>
                 ))}
               </div>

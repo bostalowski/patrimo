@@ -4,7 +4,7 @@ import { requireExcelConfigured } from "@/lib/page-guards";
 import { summarizeBudget } from "@/lib/budget";
 import { buildPortfolio } from "@/lib/portfolio";
 import { readPriceMap, readDcaConfigs, readExpectedReturns } from "@/lib/store";
-import { DEFAULT_ENVELOPE_RATES } from "@/lib/projection";
+import { DEFAULT_ENVELOPE_RATES, type ContributionStream } from "@/lib/projection";
 import {
   computeLivretState,
   livretFlows,
@@ -108,13 +108,16 @@ function buildEnvelopeInputs(
     );
   }
 
-  const monthlyByEnvelope = new Map<Envelope, number>();
+  const streamsByEnvelope = new Map<Envelope, ContributionStream[]>();
   for (const config of dcaConfigs) {
     if (config.envelope === "LIVRET") continue;
-    monthlyByEnvelope.set(
-      config.envelope,
-      (monthlyByEnvelope.get(config.envelope) ?? 0) + config.monthlyAmount,
-    );
+    const streams = streamsByEnvelope.get(config.envelope) ?? [];
+    streams.push({
+      amount: config.amount,
+      frequency: config.frequency,
+      paymentMonth: config.paymentMonth,
+    });
+    streamsByEnvelope.set(config.envelope, streams);
   }
 
   const openDateByEnvelope = new Map<Envelope, string | undefined>();
@@ -139,12 +142,22 @@ function buildEnvelopeInputs(
 
   return Array.from(valueByEnvelope.entries())
     .filter(([, currentValue]) => currentValue > 0)
-    .map(([envelope, currentValue]) => ({
-      envelope,
-      currentValue,
-      monthlyDefault: monthlyByEnvelope.get(envelope) ?? 0,
-      openDate: openDateByEnvelope.get(envelope),
-      plafond: plafondByEnvelope.get(envelope),
-    }))
+    .map(([envelope, currentValue]) => {
+      const streams = streamsByEnvelope.get(envelope) ?? [];
+      const monthlyDefault = streams
+        .filter((s) => s.frequency === "MENSUEL")
+        .reduce((sum, s) => sum + s.amount, 0);
+      const extraContributions = streams.filter(
+        (s) => s.frequency !== "MENSUEL",
+      );
+      return {
+        envelope,
+        currentValue,
+        monthlyDefault,
+        extraContributions,
+        openDate: openDateByEnvelope.get(envelope),
+        plafond: plafondByEnvelope.get(envelope),
+      };
+    })
     .sort((a, b) => b.currentValue - a.currentValue);
 }

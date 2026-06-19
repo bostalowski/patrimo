@@ -23,7 +23,7 @@ export type BasketAllocation = {
 
 export type DcaPlan = {
   configId: string;
-  monthlyAmount: number;
+  amount: number;
   totalCurrent: number;
   totalAfter: number;
   targetSum: number;
@@ -57,7 +57,7 @@ export function computeDcaPlan(
   currentValues: Record<string, number>,
 ): DcaPlan {
   const lines = config.lines;
-  const monthly = Math.max(0, config.monthlyAmount);
+  const monthly = Math.max(0, config.amount);
 
   const targetSum = lines.reduce((sum, line) => sum + line.targetPct, 0);
   const targetValid = Math.abs(targetSum - 1) < TARGET_SUM_TOLERANCE;
@@ -154,7 +154,7 @@ export function computeDcaPlan(
 
   return {
     configId: config.id,
-    monthlyAmount: monthly,
+    amount: monthly,
     totalCurrent,
     totalAfter,
     targetSum,

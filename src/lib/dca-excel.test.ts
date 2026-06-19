@@ -6,7 +6,9 @@ const sampleConfig: DcaConfig = {
   id: "dca-1",
   label: "PEA mensuel",
   envelope: "PEA",
-  monthlyAmount: 500,
+  amount: 500,
+  frequency: "MENSUEL",
+  paymentMonth: undefined,
   lines: [
     { label: "Monde", assetIds: ["CW8", "ESE"], targetPct: 0.6 },
     { label: "Émergents", assetIds: ["PAEEM"], targetPct: 0.4 },
@@ -21,7 +23,8 @@ describe("dcaConfigsToRows", () => {
       expect(row["ID"]).toBe("dca-1");
       expect(row["Libellé"]).toBe("PEA mensuel");
       expect(row["Enveloppe"]).toBe("PEA");
-      expect(row["Montant mensuel"]).toBe(500);
+      expect(row["Montant"]).toBe(500);
+      expect(row["Fréquence"]).toBe("MENSUEL");
     }
   });
 
@@ -118,6 +121,42 @@ describe("parseDcaConfigs", () => {
       },
     ]);
     expect(config.lines[0].label).toBeUndefined();
+  });
+
+  it("falls back to the legacy 'Montant mensuel' column and defaults frequency to MENSUEL", () => {
+    const [config] = parseDcaConfigs([
+      {
+        ID: "dca-1",
+        "Libellé": "PEA legacy",
+        Enveloppe: "PEA",
+        "Montant mensuel": 300,
+        Panier: "Monde",
+        Actifs: "CW8",
+        "Cible %": 100,
+      },
+    ]);
+    expect(config.amount).toBe(300);
+    expect(config.frequency).toBe("MENSUEL");
+    expect(config.paymentMonth).toBeUndefined();
+  });
+
+  it("parses an annual contribution with a payment month", () => {
+    const [config] = parseDcaConfigs([
+      {
+        ID: "pee",
+        "Libellé": "Dotation PEE",
+        Enveloppe: "PEE",
+        Montant: 3000,
+        "Fréquence": "ANNUEL",
+        "Mois versement": 12,
+        Panier: "FCPE",
+        Actifs: "FCPE1",
+        "Cible %": 100,
+      },
+    ]);
+    expect(config.amount).toBe(3000);
+    expect(config.frequency).toBe("ANNUEL");
+    expect(config.paymentMonth).toBe(12);
   });
 });
 

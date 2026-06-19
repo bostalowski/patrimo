@@ -1,11 +1,13 @@
 import type { z } from "zod";
-import { DcaConfig } from "@/lib/schema";
+import { DcaConfig, DcaFrequency } from "@/lib/schema";
 
 export const DCA_HEADERS = [
   "ID",
   "Libellé",
   "Enveloppe",
-  "Montant mensuel",
+  "Montant",
+  "Fréquence",
+  "Mois versement",
   "Panier",
   "Actifs",
   "Cible %",
@@ -26,6 +28,18 @@ function toCleanString(value: unknown): string | undefined {
   return str.length === 0 ? undefined : str;
 }
 
+function toFrequency(value: unknown): DcaFrequency {
+  const parsed = DcaFrequency.safeParse(toCleanString(value)?.toUpperCase());
+  return parsed.success ? parsed.data : "MENSUEL";
+}
+
+function toPaymentMonth(value: unknown): number | undefined {
+  const str = toCleanString(value);
+  if (str === undefined) return undefined;
+  const month = Math.round(Number(str.replace(",", ".")));
+  return month >= 1 && month <= 12 ? month : undefined;
+}
+
 export function dcaConfigsToRows(
   configs: DcaConfig[],
 ): Record<string, unknown>[] {
@@ -36,7 +50,9 @@ export function dcaConfigsToRows(
         ID: config.id,
         "Libellé": config.label,
         Enveloppe: config.envelope,
-        "Montant mensuel": config.monthlyAmount,
+        Montant: config.amount,
+        "Fréquence": config.frequency,
+        "Mois versement": config.paymentMonth ?? null,
         Panier: line.label ?? null,
         Actifs: line.assetIds.join(", "),
         "Cible %": Math.round(line.targetPct * 1000) / 10,
@@ -78,7 +94,9 @@ export function parseDcaConfigs(
       id,
       label: toCleanString(row["Libellé"]) ?? id,
       envelope: row["Enveloppe"] as DcaConfig["envelope"],
-      monthlyAmount: toNumber(row["Montant mensuel"]),
+      amount: toNumber(row["Montant"] ?? row["Montant mensuel"]),
+      frequency: toFrequency(row["Fréquence"]),
+      paymentMonth: toPaymentMonth(row["Mois versement"]),
       lines: [line],
     });
     order.push(id);

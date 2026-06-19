@@ -114,11 +114,16 @@ export const DcaLine = z
   );
 export type DcaLine = z.infer<typeof DcaLine>;
 
+export const DcaFrequency = z.enum(["MENSUEL", "TRIMESTRIEL", "ANNUEL"]);
+export type DcaFrequency = z.infer<typeof DcaFrequency>;
+
 export const DcaConfig = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
   envelope: Envelope,
-  monthlyAmount: z.number().nonnegative(),
+  amount: z.number().nonnegative(),
+  frequency: DcaFrequency.default("MENSUEL"),
+  paymentMonth: z.number().int().min(1).max(12).optional(),
   lines: z.array(DcaLine).min(1),
 });
 export type DcaConfig = z.infer<typeof DcaConfig>;
