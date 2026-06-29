@@ -14,6 +14,7 @@ import { AssetPriceCurve } from "@/components/charts/asset-price-curve";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
+import { feesByCurrency } from "@/lib/fees";
 import { getAssetSourceUrl, getSourceLabel } from "@/lib/prices/source-url";
 import { AssetType, PriceSource } from "@/lib/schema";
 import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
@@ -70,6 +71,12 @@ export default async function AssetDetailPage({
         .map(([date, price]) => ({ date, price }))
         .sort((a, b) => (a.date < b.date ? -1 : 1))
     : [];
+
+  const feeTotals = feesByCurrency(txs, decodedId);
+  const feesLabel =
+    feeTotals.length > 0
+      ? feeTotals.map((f) => formatFee(f.total, f.currency)).join(" + ")
+      : "—";
 
   const sourceUrl = getAssetSourceUrl(asset);
 
@@ -169,7 +176,15 @@ export default async function AssetDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Transactions ({txs.length})</CardTitle>
+          <div className="flex items-center justify-between gap-4">
+            <CardTitle>Transactions ({txs.length})</CardTitle>
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+              Frais totaux{" "}
+              <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                {feesLabel}
+              </span>
+            </span>
+          </div>
         </CardHeader>
         <CardBody className="px-0">
           <Table>
