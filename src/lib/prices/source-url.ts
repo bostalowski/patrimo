@@ -11,6 +11,15 @@ export function getSourceLabel(source: PriceSource): string {
   return SOURCE_LABELS[source];
 }
 
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function getAssetSourceUrl(asset: Asset): string | null {
   if (!asset.param) return null;
   switch (asset.source) {
@@ -21,7 +30,7 @@ export function getAssetSourceUrl(asset: Asset): string | null {
     case "investir":
       return `https://investir.lesechos.fr/cours/opcvm/-${asset.param.toLowerCase()}`;
     case "manual":
-      return null;
+      return isHttpUrl(asset.param) ? asset.param : null;
     default:
       return null;
   }

@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Loader2, Plus, Trash2 } from "lucide-react";
 import type { Asset } from "@/lib/schema";
+import { getAssetSourceUrl } from "@/lib/prices/source-url";
 import { cn, formatDate, formatEuro } from "@/lib/utils";
 
 type Entry = { assetId: string; date: string; price: number };
@@ -69,6 +70,8 @@ export function ManualPriceForm({
 
   const isLoading = busy || pending;
   const assetLabels = new Map(assets.map((a) => [a.id, a.label]));
+  const selectedAsset = assets.find((a) => a.id === assetId);
+  const vlUrl = selectedAsset ? getAssetSourceUrl(selectedAsset) : null;
 
   return (
     <div className="space-y-6">
@@ -117,6 +120,18 @@ export function ManualPriceForm({
           Ajouter
         </button>
       </form>
+
+      {vlUrl && (
+        <a
+          href={vlUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Voir la VL de {selectedAsset?.label}
+        </a>
+      )}
 
       {error && (
         <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
