@@ -336,7 +336,7 @@ export function TransactionsTable({
             <SortableTH label="Actif" columnKey="actif" activeKey={sort.key} direction={sort.direction} onSort={handleSort} />
             <SortableTH label="Quantité" columnKey="quantite" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
             <SortableTH label="Prix unitaire" columnKey="prixUnitaire" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
-            <SortableTH label="Montant" columnKey="montant" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
+            <SortableTH label="Montant (hors frais)" columnKey="montant" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
             <SortableTH label="Frais" columnKey="frais" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
             <TH className="text-right">Actions</TH>
           </TR>
