@@ -2,6 +2,10 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { clampInflationRate, DEFAULT_INFLATION_RATE } from "@/lib/inflation";
+import {
+  clampSyncIntervalMinutes,
+  DEFAULT_SYNC_INTERVAL_MINUTES,
+} from "@/lib/prices/schedule";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
   ? resolve(process.env.FINGRAPHS_DATA_DIR)
@@ -12,11 +16,13 @@ const CONFIG_FILE = resolve(DATA_DIR, "config.json");
 export type AppConfig = {
   excelPath: string | null;
   inflationRate: number;
+  syncIntervalMinutes: number;
 };
 
 const DEFAULT_CONFIG: AppConfig = {
   excelPath: null,
   inflationRate: DEFAULT_INFLATION_RATE,
+  syncIntervalMinutes: DEFAULT_SYNC_INTERVAL_MINUTES,
 };
 
 export function getConfigFilePath(): string {
@@ -40,6 +46,7 @@ export function readConfig(): AppConfig {
         typeof parsed.inflationRate === "number"
           ? clampInflationRate(parsed.inflationRate)
           : DEFAULT_INFLATION_RATE,
+      syncIntervalMinutes: clampSyncIntervalMinutes(parsed.syncIntervalMinutes),
     };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") {
@@ -66,6 +73,10 @@ export function resolveUserPath(input: string): string {
 
 export function getInflationRate(): number {
   return clampInflationRate(readConfig().inflationRate);
+}
+
+export function getSyncIntervalMinutes(): number {
+  return clampSyncIntervalMinutes(readConfig().syncIntervalMinutes);
 }
 
 export function getConfiguredExcelPath(): string | null {
