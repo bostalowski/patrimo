@@ -251,6 +251,52 @@ function stopNextServer() {
   }
 }
 
+const BACKGROUND_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+const BACKGROUND_SYNC_INITIAL_DELAY_MS = 10 * 1000;
+let backgroundSyncTimer = null;
+let backgroundSyncInitialTimeout = null;
+
+function triggerBackgroundSync(baseUrl) {
+  try {
+    const target = new URL("/api/prices/sync?ifStale=1", baseUrl);
+    const req = http.request(
+      target,
+      { method: "POST", timeout: 60000, agent: false },
+      (res) => {
+        res.resume();
+      },
+    );
+    req.on("error", (err) => {
+      log(`Background sync failed: ${err instanceof Error ? err.message : err}`);
+    });
+    req.on("timeout", () => req.destroy());
+    req.end();
+  } catch (err) {
+    log(`Background sync error: ${err instanceof Error ? err.message : err}`);
+  }
+}
+
+function startBackgroundSync(baseUrl) {
+  stopBackgroundSync();
+  backgroundSyncInitialTimeout = setTimeout(() => {
+    triggerBackgroundSync(baseUrl);
+  }, BACKGROUND_SYNC_INITIAL_DELAY_MS);
+  backgroundSyncTimer = setInterval(() => {
+    triggerBackgroundSync(baseUrl);
+  }, BACKGROUND_SYNC_INTERVAL_MS);
+}
+
+function stopBackgroundSync() {
+  if (backgroundSyncInitialTimeout) {
+    clearTimeout(backgroundSyncInitialTimeout);
+    backgroundSyncInitialTimeout = null;
+  }
+  if (backgroundSyncTimer) {
+    clearInterval(backgroundSyncTimer);
+    backgroundSyncTimer = null;
+  }
+}
+
 function compareVersions(a, b) {
   const segments = (v) =>
     String(v)
@@ -526,6 +572,7 @@ async function bootstrap() {
     }
     log(`Loading window at ${url}`);
     await createMainWindow(url);
+    startBackgroundSync(url);
     if (!isDev) {
       checkForUpdates({ silent: true });
     }
@@ -545,5 +592,11 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
-app.on("before-quit", stopNextServer);
-app.on("will-quit", stopNextServer);
+app.on("before-quit", () => {
+  stopBackgroundSync();
+  stopNextServer();
+});
+app.on("will-quit", () => {
+  stopBackgroundSync();
+  stopNextServer();
+});

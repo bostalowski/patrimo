@@ -13,6 +13,10 @@ import {
   Upload,
 } from "lucide-react";
 import { clampInflationRate } from "@/lib/inflation";
+import {
+  clampSyncIntervalMinutes,
+  SYNC_INTERVAL_PRESETS,
+} from "@/lib/prices/schedule";
 
 declare global {
   interface Window {
@@ -312,6 +316,105 @@ export function InflationSettings({ initialRate }: { initialRate: number }) {
             onChange={(e) => setValue(e.target.value)}
             className="w-32 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
           />
+        </div>
+        <button
+          type="button"
+          onClick={save}
+          disabled={busy}
+          className={primaryButton}
+        >
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4" />
+          )}
+          Enregistrer
+        </button>
+      </div>
+      {error && (
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
+          {error}
+        </p>
+      )}
+      {success && !error && (
+        <p className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4" />
+          {success}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function SyncIntervalSettings({
+  initialMinutes,
+}: {
+  initialMinutes: number;
+}) {
+  const router = useRouter();
+  const fieldId = useId();
+  const [value, setValue] = useState(String(clampSyncIntervalMinutes(initialMinutes)));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  async function save() {
+    setError(null);
+    setSuccess(null);
+    const minutes = clampSyncIntervalMinutes(Number(value));
+    setBusy(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ syncIntervalMinutes: minutes }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(body?.error ?? "Une erreur est survenue.");
+      }
+      const next = (await res.json()) as { syncIntervalMinutes?: number };
+      if (typeof next.syncIntervalMinutes === "number") {
+        setValue(String(next.syncIntervalMinutes));
+      }
+      setSuccess("Fréquence de synchronisation mise à jour.");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-zinc-600 dark:text-zinc-300">
+        À quelle fréquence l&apos;application rafraîchit automatiquement les
+        cours en arrière-plan. Le bouton « Sync cours » reste disponible pour
+        forcer une synchronisation immédiate.
+      </p>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <label
+            htmlFor={fieldId}
+            className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+          >
+            Fréquence de synchronisation
+          </label>
+          <select
+            id={fieldId}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="w-48 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+          >
+            {SYNC_INTERVAL_PRESETS.map((preset) => (
+              <option key={preset.minutes} value={preset.minutes}>
+                {preset.label}
+              </option>
+            ))}
+          </select>
         </div>
         <button
           type="button"

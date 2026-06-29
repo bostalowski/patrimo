@@ -46,6 +46,7 @@ next-env.d.ts
 /data/benchmarks.json
 /data/config.json
 /data/retirement-profile.json
+/data/sync-meta.json
 /data/*.xlsx
 
 # electron build artifacts

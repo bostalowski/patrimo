@@ -13,6 +13,7 @@ const MANUAL_PRICES_FILE = resolve(DATA_DIR, "manual-prices.json");
 const BENCHMARKS_FILE = resolve(DATA_DIR, "benchmarks.json");
 const EXPECTED_RETURNS_FILE = resolve(DATA_DIR, "expected-returns.json");
 const RETIREMENT_PROFILE_FILE = resolve(DATA_DIR, "retirement-profile.json");
+const SYNC_META_FILE = resolve(DATA_DIR, "sync-meta.json");
 
 export type AssetPriceHistory = Record<string, number>;
 export type PriceStore = Record<string, AssetPriceHistory>;
@@ -54,6 +55,16 @@ export async function readBenchmarks(): Promise<PriceStore> {
 
 export async function writeBenchmarks(store: PriceStore): Promise<void> {
   await writeJson(BENCHMARKS_FILE, store);
+}
+
+export type SyncMeta = { lastSync: string | null };
+
+export async function readSyncMeta(): Promise<SyncMeta> {
+  return readJson<SyncMeta>(SYNC_META_FILE, { lastSync: null });
+}
+
+export async function writeSyncMeta(meta: SyncMeta): Promise<void> {
+  await writeJson(SYNC_META_FILE, meta);
 }
 
 function latestPrice(history: AssetPriceHistory | undefined): number | null {

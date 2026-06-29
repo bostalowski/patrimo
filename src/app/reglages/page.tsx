@@ -1,9 +1,14 @@
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
-import { getConfiguredExcelPath, getInflationRate } from "@/lib/config";
+import {
+  getConfiguredExcelPath,
+  getInflationRate,
+  getSyncIntervalMinutes,
+} from "@/lib/config";
 import { validateExcelFile } from "@/lib/excel";
 import {
   InflationSettings,
   SettingsClient,
+  SyncIntervalSettings,
   type SettingsStatus,
 } from "./settings-client";
 
@@ -12,6 +17,7 @@ export const dynamic = "force-dynamic";
 export default function ReglagesPage() {
   const excelPath = getConfiguredExcelPath();
   const inflationRate = getInflationRate();
+  const syncIntervalMinutes = getSyncIntervalMinutes();
   const initialStatus: SettingsStatus = excelPath
     ? (() => {
         const validation = validateExcelFile(excelPath);
@@ -42,6 +48,15 @@ export default function ReglagesPage() {
         </CardHeader>
         <CardBody>
           <SettingsClient initialStatus={initialStatus} />
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Synchronisation des cours</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <SyncIntervalSettings initialMinutes={syncIntervalMinutes} />
         </CardBody>
       </Card>
 

@@ -6,7 +6,7 @@ import {
   CardValue,
 } from "@/components/ui/card";
 import { loadWorkbook } from "@/lib/excel";
-import { getInflationRate } from "@/lib/config";
+import { getInflationRate, getSyncIntervalMinutes } from "@/lib/config";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
 import { aggregateHistory, buildHistorySeries } from "@/lib/portfolio-history";
@@ -17,6 +17,7 @@ import {
   readManualPrices,
   readPriceMap,
   readPrices,
+  readSyncMeta,
 } from "@/lib/store";
 import { BENCHMARKS } from "@/lib/benchmarks";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
@@ -29,12 +30,14 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   requireExcelConfigured();
   const workbook = loadWorkbook();
-  const [priceMap, priceStore, manualStore, benchmarkStore] = await Promise.all([
-    readPriceMap(workbook.assets),
-    readPrices(),
-    readManualPrices(),
-    readBenchmarks(),
-  ]);
+  const [priceMap, priceStore, manualStore, benchmarkStore, syncMeta] =
+    await Promise.all([
+      readPriceMap(workbook.assets),
+      readPrices(),
+      readManualPrices(),
+      readBenchmarks(),
+      readSyncMeta(),
+    ]);
   const portfolio = buildPortfolio(workbook, priceMap);
   const history = buildHistorySeries(workbook, priceStore, manualStore);
 
@@ -73,7 +76,10 @@ export default async function DashboardPage() {
             actifs en portefeuille.
           </p>
         </div>
-        <SyncButton />
+        <SyncButton
+          lastSync={syncMeta.lastSync}
+          intervalMinutes={getSyncIntervalMinutes()}
+        />
       </header>
 
       <div

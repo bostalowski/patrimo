@@ -7,6 +7,7 @@ import {
   writeConfig,
 } from "@/lib/config";
 import { clampInflationRate, MAX_INFLATION_RATE } from "@/lib/inflation";
+import { clampSyncIntervalMinutes } from "@/lib/prices/schedule";
 import { resetWorkbookCache, validateExcelFile } from "@/lib/excel";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 const SetInput = z.object({
   excelPath: z.string().min(1).optional(),
   inflationRate: z.number().min(0).max(MAX_INFLATION_RATE).optional(),
+  syncIntervalMinutes: z.number().optional(),
 });
 
 export async function GET() {
@@ -25,6 +27,7 @@ export async function GET() {
       configured: false,
       valid: false,
       inflationRate: config.inflationRate,
+      syncIntervalMinutes: config.syncIntervalMinutes,
     });
   }
   const status = validateExcelFile(path);
@@ -35,6 +38,7 @@ export async function GET() {
     reason: status.valid ? undefined : status.reason,
     detail: status.valid ? undefined : status.detail,
     inflationRate: config.inflationRate,
+    syncIntervalMinutes: config.syncIntervalMinutes,
   });
 }
 
@@ -50,6 +54,12 @@ export async function POST(request: Request) {
 
   if (parsed.data.inflationRate !== undefined) {
     nextConfig.inflationRate = clampInflationRate(parsed.data.inflationRate);
+  }
+
+  if (parsed.data.syncIntervalMinutes !== undefined) {
+    nextConfig.syncIntervalMinutes = clampSyncIntervalMinutes(
+      parsed.data.syncIntervalMinutes,
+    );
   }
 
   if (parsed.data.excelPath !== undefined) {
@@ -76,5 +86,6 @@ export async function POST(request: Request) {
     configured: Boolean(finalPath),
     valid: finalPath ? validateExcelFile(finalPath).valid : false,
     inflationRate: nextConfig.inflationRate,
+    syncIntervalMinutes: nextConfig.syncIntervalMinutes,
   });
 }
