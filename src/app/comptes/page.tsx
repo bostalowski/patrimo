@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Lock, LockOpen } from "lucide-react";
+import { ChevronRight, Lock, LockOpen } from "lucide-react";
 import {
   Card,
   CardBody,
@@ -10,7 +10,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
-import { buildPortfolio } from "@/lib/portfolio";
+import { buildPortfolio, type AccountAssetPosition } from "@/lib/portfolio";
 import { buildAccountUnlocks, type AccountUnlock } from "@/lib/deblocage";
 import { readPriceMap } from "@/lib/store";
 import {
@@ -141,6 +141,12 @@ export default async function ComptesPage() {
               {accounts.map((account) => {
                 const meta = accountMap.get(account.accountId);
                 const unlock = unlockMap.get(account.accountId);
+                const activePositions = account.positions.filter(
+                  (p) => p.quantity > 0,
+                );
+                const closedPositions = account.positions.filter(
+                  (p) => p.quantity <= 0,
+                );
                 return (
                   <div key={account.accountId} className="pt-4 first:pt-0">
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-zinc-50/70 px-6 py-3 dark:bg-zinc-900/40">
@@ -177,60 +183,62 @@ export default async function ComptesPage() {
                         balance={account.marketValue}
                         rate={meta?.rate ?? null}
                       />
-                    ) : account.positions.length === 0 ? (
+                    ) : activePositions.length === 0 &&
+                      closedPositions.length === 0 ? (
                       <p className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                         Aucune position pour ce compte.
                       </p>
                     ) : (
-                      <Table>
-                        <THead>
-                          <TR>
-                            <TH>Actif</TH>
-                            <TH className="text-right">Quantité</TH>
-                            <TH className="text-right">PRU</TH>
-                            <TH className="text-right">Valeur</TH>
-                            <TH className="text-right">P&amp;L</TH>
-                          </TR>
-                        </THead>
-                        <TBody>
-                          {account.positions.map((p) => (
-                            <TR key={p.assetId}>
-                              <TD>
-                                {meta?.envelope === "LIVRET" ? (
-                                  <span className="font-medium">
-                                    {p.asset?.label ?? p.assetId}
-                                  </span>
-                                ) : (
-                                  <Link
-                                    href={`/actifs/${encodeURIComponent(p.assetId)}`}
-                                    className="font-medium hover:underline"
+                      <>
+                        {activePositions.length > 0 && (
+                          <Table>
+                            <THead>
+                              <TR>
+                                <TH>Actif</TH>
+                                <TH className="text-right">Quantité</TH>
+                                <TH className="text-right">PRU</TH>
+                                <TH className="text-right">Valeur</TH>
+                                <TH className="text-right">P&amp;L</TH>
+                              </TR>
+                            </THead>
+                            <TBody>
+                              {activePositions.map((p) => (
+                                <TR key={p.assetId}>
+                                  <TD>
+                                    <Link
+                                      href={`/actifs/${encodeURIComponent(p.assetId)}`}
+                                      className="font-medium hover:underline"
+                                    >
+                                      {p.asset?.label ?? p.assetId}
+                                    </Link>
+                                  </TD>
+                                  <TD className="text-right font-mono text-xs">
+                                    {formatQuantity(p.quantity)}
+                                  </TD>
+                                  <TD className="text-right font-mono text-xs">
+                                    {formatEuro(p.pru, true)}
+                                  </TD>
+                                  <TD className="text-right font-mono text-xs">
+                                    {p.currentPrice !== null
+                                      ? formatEuro(p.marketValue)
+                                      : "—"}
+                                  </TD>
+                                  <TD
+                                    className={`text-right font-mono text-xs ${signClass(p.unrealizedPnL)}`}
                                   >
-                                    {p.asset?.label ?? p.assetId}
-                                  </Link>
-                                )}
-                              </TD>
-                              <TD className="text-right font-mono text-xs">
-                                {formatQuantity(p.quantity)}
-                              </TD>
-                              <TD className="text-right font-mono text-xs">
-                                {p.quantity > 0 ? formatEuro(p.pru, true) : "—"}
-                              </TD>
-                              <TD className="text-right font-mono text-xs">
-                                {p.currentPrice !== null
-                                  ? formatEuro(p.marketValue)
-                                  : "—"}
-                              </TD>
-                              <TD
-                                className={`text-right font-mono text-xs ${signClass(p.unrealizedPnL)}`}
-                              >
-                                {p.currentPrice !== null
-                                  ? formatEuro(p.unrealizedPnL)
-                                  : "—"}
-                              </TD>
-                            </TR>
-                          ))}
-                        </TBody>
-                      </Table>
+                                    {p.currentPrice !== null
+                                      ? formatEuro(p.unrealizedPnL)
+                                      : "—"}
+                                  </TD>
+                                </TR>
+                              ))}
+                            </TBody>
+                          </Table>
+                        )}
+                        {closedPositions.length > 0 && (
+                          <ClosedPositions positions={closedPositions} />
+                        )}
+                      </>
                     )}
                   </div>
                 );
@@ -240,6 +248,80 @@ export default async function ComptesPage() {
         );
       })}
     </div>
+  );
+}
+
+function ClosedPositions({
+  positions,
+}: {
+  positions: AccountAssetPosition[];
+}) {
+  const total = positions.reduce(
+    (s, p) => s + p.realizedPnL + p.realizedIncome,
+    0,
+  );
+  const count = positions.length;
+  return (
+    <details className="group border-t border-zinc-200 dark:border-zinc-800">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-3 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200">
+        <span className="inline-flex items-center gap-1.5">
+          <ChevronRight
+            className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90"
+            aria-hidden
+          />
+          {count} position{count > 1 ? "s" : ""} clôturée
+          {count > 1 ? "s" : ""}
+        </span>
+        <span className={`font-mono text-xs ${signClass(total)}`}>
+          {total >= 0 ? "+" : ""}
+          {formatEuro(total)}
+        </span>
+      </summary>
+      <Table>
+        <THead>
+          <TR>
+            <TH>Actif</TH>
+            <TH className="text-right">Plus-value</TH>
+            <TH className="text-right">Revenus</TH>
+            <TH className="text-right">Total réalisé</TH>
+          </TR>
+        </THead>
+        <TBody>
+          {positions.map((p) => {
+            const totalReturn = p.realizedPnL + p.realizedIncome;
+            return (
+              <TR key={p.assetId}>
+                <TD>
+                  <Link
+                    href={`/actifs/${encodeURIComponent(p.assetId)}`}
+                    className="font-medium hover:underline"
+                  >
+                    {p.asset?.label ?? p.assetId}
+                  </Link>
+                </TD>
+                <TD
+                  className={`text-right font-mono text-xs ${signClass(p.realizedPnL)}`}
+                >
+                  {p.realizedPnL >= 0 ? "+" : ""}
+                  {formatEuro(p.realizedPnL)}
+                </TD>
+                <TD className="text-right font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                  {p.realizedIncome > 0
+                    ? `+ ${formatEuro(p.realizedIncome)}`
+                    : "—"}
+                </TD>
+                <TD
+                  className={`text-right font-mono text-xs ${signClass(totalReturn)}`}
+                >
+                  {totalReturn >= 0 ? "+" : ""}
+                  {formatEuro(totalReturn)}
+                </TD>
+              </TR>
+            );
+          })}
+        </TBody>
+      </Table>
+    </details>
   );
 }
 
