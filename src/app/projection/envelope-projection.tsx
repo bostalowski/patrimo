@@ -80,36 +80,24 @@ function parseNumber(value: string): number {
 
 export function EnvelopeProjection({
   envelopes,
-  defaultRates,
   monthlyRestant,
   inflation,
+  monthly,
+  setMonthly,
+  rates,
+  setRates,
 }: {
   envelopes: EnvelopeProjectionInput[];
-  defaultRates: Record<Envelope, number>;
   monthlyRestant: number;
   inflation: InflationView;
+  monthly: Record<string, string>;
+  setMonthly: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  rates: Record<string, string>;
+  setRates: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }) {
   const [years, setYears] = useState("10");
   const [reste, setReste] = useState(
     String(Math.max(0, Math.round(monthlyRestant))),
-  );
-  const [rates, setRates] = useState<Record<string, string>>(() =>
-    Object.entries(defaultRates).reduce(
-      (acc, [envelope, rate]) => {
-        acc[envelope] = String(Math.round(rate * 1000) / 10);
-        return acc;
-      },
-      {} as Record<string, string>,
-    ),
-  );
-  const [monthly, setMonthly] = useState<Record<string, string>>(() =>
-    envelopes.reduce(
-      (acc, envelope) => {
-        acc[envelope.envelope] = String(Math.max(0, envelope.monthlyDefault));
-        return acc;
-      },
-      {} as Record<string, string>,
-    ),
   );
   const [perEncours, setPerEncours] = useState("0");
   const [perMonthly, setPerMonthly] = useState("0");
