@@ -76,6 +76,7 @@ type SourceId = "generic" | "trade-republic";
 type AssetForm = {
   identifier: string;
   occurrenceCount: number;
+  linkedExistingId: string;
   id: string;
   label: string;
   type: AssetType;
@@ -90,6 +91,7 @@ type AssetForm = {
 type AccountForm = {
   identifier: string;
   occurrenceCount: number;
+  linkedExistingId: string;
   id: string;
   label: string;
   type: AccountType;
@@ -105,13 +107,6 @@ type RowEdit = {
   prixUnitaire?: number | null;
   frais?: number;
   notes?: string;
-};
-
-type MappingDefaults = {
-  compte: string;
-  devise: string;
-  fraisDevise: string;
-  type: TransactionType | "";
 };
 
 const TRANSACTION_TYPES: TransactionType[] = [
@@ -165,12 +160,6 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
   const defaultCompte = existingAccounts[0]?.id ?? "";
 
   const [mapping, setMapping] = useState<ColumnMapping>({});
-  const [mappingDefaults, setMappingDefaults] = useState<MappingDefaults>({
-    compte: existingAccounts[0]?.id ?? "",
-    devise: "EUR",
-    fraisDevise: "EUR",
-    type: "",
-  });
   const [amountSignTypes, setAmountSignTypes] = useState<AmountSignTypes>({
     positive: "DEPOT",
     negative: "RETRAIT",
@@ -203,12 +192,6 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     setCsvContent(null);
     setDetectedHeaders([]);
     setMapping({});
-    setMappingDefaults({
-      compte: existingAccounts[0]?.id ?? "",
-      devise: "EUR",
-      fraisDevise: "EUR",
-      type: "",
-    });
     setAmountSignTypes({ positive: "DEPOT", negative: "RETRAIT" });
     setPreview(null);
     setAssetForms({});
@@ -264,9 +247,9 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
         setError("Mappe la colonne Montant (signé) ou la colonne Quantité.");
         return;
       }
-      if (!mapping.montant && !mapping.type && !mappingDefaults.type) {
+      if (!mapping.montant && !mapping.type) {
         setError(
-          "Mappe la colonne Type, ou définis un type par défaut, ou mappe un Montant signé.",
+          "Mappe la colonne Type ou mappe un Montant signé.",
         );
         return;
       }
@@ -274,10 +257,8 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
         source: "generic",
         mapping,
         defaults: {
-          compte: mappingDefaults.compte || undefined,
-          devise: mappingDefaults.devise || "EUR",
-          fraisDevise: mappingDefaults.fraisDevise || "EUR",
-          type: mappingDefaults.type || undefined,
+          devise: "EUR",
+          fraisDevise: "EUR",
         },
         amountSignTypes,
       };
@@ -329,6 +310,13 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     for (const suggestion of preview.newAssets) {
       const form = assetForms[suggestion.identifier.toLowerCase()];
       if (!form) continue;
+      if (form.linkedExistingId) {
+        assetIdByIdentifier.set(
+          suggestion.identifier.toLowerCase(),
+          form.linkedExistingId,
+        );
+        continue;
+      }
       const validation = validateAssetForm(form);
       if (validation) {
         setError(`Actif "${suggestion.identifier}" : ${validation}`);
@@ -347,6 +335,13 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
     for (const suggestion of preview.newAccounts) {
       const form = accountForms[suggestion.identifier.toLowerCase()];
       if (!form) continue;
+      if (form.linkedExistingId) {
+        accountIdByIdentifier.set(
+          suggestion.identifier.toLowerCase(),
+          form.linkedExistingId,
+        );
+        continue;
+      }
       const validation = validateAccountForm(form);
       if (validation) {
         setError(`Compte "${suggestion.identifier}" : ${validation}`);
@@ -498,15 +493,12 @@ export function ImportWizard({ existingAssets, existingAccounts }: Props) {
       {step === "configure" && source && (
         <ConfigureStep
           source={source}
-          existingAccounts={existingAccounts}
           fileName={fileName}
           headers={detectedHeaders}
           fileInputRef={fileInputRef}
           onFileSelected={onFileSelected}
           mapping={mapping}
           onMappingChange={setMapping}
-          mappingDefaults={mappingDefaults}
-          onMappingDefaultsChange={setMappingDefaults}
           amountSignTypes={amountSignTypes}
           onAmountSignTypesChange={setAmountSignTypes}
           onBack={() => setStep("source")}
@@ -645,15 +637,12 @@ function SourceCard({
 
 type ConfigureStepProps = {
   source: SourceId;
-  existingAccounts: ExistingAccount[];
   fileName: string | null;
   headers: string[];
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFileSelected: (file: File) => Promise<void> | void;
   mapping: ColumnMapping;
   onMappingChange: (mapping: ColumnMapping) => void;
-  mappingDefaults: MappingDefaults;
-  onMappingDefaultsChange: (next: MappingDefaults) => void;
   amountSignTypes: AmountSignTypes;
   onAmountSignTypesChange: (next: AmountSignTypes) => void;
   onBack: () => void;
@@ -664,15 +653,12 @@ type ConfigureStepProps = {
 function ConfigureStep(props: ConfigureStepProps) {
   const {
     source,
-    existingAccounts,
     fileName,
     headers,
     fileInputRef,
     onFileSelected,
     mapping,
     onMappingChange,
-    mappingDefaults,
-    onMappingDefaultsChange,
     amountSignTypes,
     onAmountSignTypesChange,
     onBack,
@@ -748,85 +734,6 @@ function ConfigureStep(props: ConfigureStepProps) {
                   </select>
                 </div>
               ))}
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold">Valeurs par défaut</h4>
-              <p className="text-xs text-zinc-500">
-                Utilisées quand la colonne n&apos;est pas mappée.
-              </p>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                    Compte par défaut
-                  </label>
-                  <AccountSelect
-                    value={mappingDefaults.compte}
-                    accounts={existingAccounts}
-                    onChange={(value) =>
-                      onMappingDefaultsChange({
-                        ...mappingDefaults,
-                        compte: value,
-                      })
-                    }
-                    allowEmpty
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                    Devise
-                  </label>
-                  <input
-                    type="text"
-                    value={mappingDefaults.devise}
-                    onChange={(e) =>
-                      onMappingDefaultsChange({
-                        ...mappingDefaults,
-                        devise: e.target.value.toUpperCase(),
-                      })
-                    }
-                    className={inputClasses}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                    Devise des frais
-                  </label>
-                  <input
-                    type="text"
-                    value={mappingDefaults.fraisDevise}
-                    onChange={(e) =>
-                      onMappingDefaultsChange({
-                        ...mappingDefaults,
-                        fraisDevise: e.target.value.toUpperCase(),
-                      })
-                    }
-                    className={inputClasses}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                    Type par défaut
-                  </label>
-                  <select
-                    value={mappingDefaults.type}
-                    onChange={(e) =>
-                      onMappingDefaultsChange({
-                        ...mappingDefaults,
-                        type: e.target.value as TransactionType | "",
-                      })
-                    }
-                    className={inputClasses}
-                  >
-                    <option value="">—</option>
-                    {TRANSACTION_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
             </div>
 
             {mapping.montant && (
@@ -1027,32 +934,6 @@ function TradeRepublicDetection({ headers }: { headers: string[] }) {
   );
 }
 
-function AccountSelect({
-  value,
-  accounts,
-  onChange,
-  allowEmpty = false,
-}: {
-  value: string;
-  accounts: ExistingAccount[];
-  onChange: (value: string) => void;
-  allowEmpty?: boolean;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={inputClasses}
-    >
-      {allowEmpty && <option value="">—</option>}
-      {accounts.map((a) => (
-        <option key={a.id} value={a.id}>
-          {a.label} ({a.envelope})
-        </option>
-      ))}
-    </select>
-  );
-}
 
 type PreviewStepProps = {
   preview: ImportPreview;
@@ -1079,6 +960,7 @@ type PreviewStepProps = {
 function PreviewStep(props: PreviewStepProps) {
   const {
     preview,
+    existingAssets,
     existingAccounts,
     assetForms,
     accountForms,
@@ -1141,7 +1023,7 @@ function PreviewStep(props: PreviewStepProps) {
         <Card>
           <CardHeader>
             <CardTitle>
-              Nouveaux comptes à créer ({preview.newAccounts.length})
+              Comptes non reconnus ({preview.newAccounts.length})
             </CardTitle>
           </CardHeader>
           <CardBody className="space-y-4">
@@ -1154,6 +1036,7 @@ function PreviewStep(props: PreviewStepProps) {
                   key={key}
                   suggestion={suggestion}
                   form={form}
+                  existingAccounts={existingAccounts}
                   onChange={(patch) => onAccountFormChange(key, patch)}
                 />
               );
@@ -1166,7 +1049,7 @@ function PreviewStep(props: PreviewStepProps) {
         <Card>
           <CardHeader>
             <CardTitle>
-              Nouveaux actifs à créer ({preview.newAssets.length})
+              Actifs non reconnus ({preview.newAssets.length})
             </CardTitle>
           </CardHeader>
           <CardBody className="space-y-4">
@@ -1179,7 +1062,9 @@ function PreviewStep(props: PreviewStepProps) {
                   key={key}
                   suggestion={suggestion}
                   form={form}
+                  existingAssets={existingAssets}
                   existingAccounts={existingAccounts}
+                  pendingAccounts={accountForms}
                   onChange={(patch) => onAssetFormChange(key, patch)}
                 />
               );
@@ -1271,14 +1156,23 @@ function Stat({
 function NewAssetFormRow({
   suggestion,
   form,
+  existingAssets,
   existingAccounts,
+  pendingAccounts,
   onChange,
 }: {
   suggestion: AssetSuggestion;
   form: AssetForm;
+  existingAssets: ExistingAsset[];
   existingAccounts: ExistingAccount[];
+  pendingAccounts: Record<string, AccountForm>;
   onChange: (patch: Partial<AssetForm>) => void;
 }) {
+  const linked = Boolean(form.linkedExistingId);
+  const pendingAccountList = Object.values(pendingAccounts).filter(
+    (a) => !a.linkedExistingId && a.id.trim(),
+  );
+
   return (
     <div className="space-y-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
       <div className="flex items-center justify-between">
@@ -1290,118 +1184,168 @@ function NewAssetFormRow({
         </div>
         <Badge variant="info">{suggestion.occurrenceCount} ligne(s)</Badge>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <FormField label="ID *">
+
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
           <input
-            type="text"
-            value={form.id}
-            onChange={(e) => onChange({ id: e.target.value })}
-            className={inputClasses}
+            type="radio"
+            name={`asset-mode-${suggestion.identifier}`}
+            checked={!linked}
+            onChange={() => onChange({ linkedExistingId: "" })}
           />
-        </FormField>
-        <FormField label="Libellé *">
+          Créer un nouvel actif
+        </label>
+        <label className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
           <input
-            type="text"
-            value={form.label}
-            onChange={(e) => onChange({ label: e.target.value })}
-            className={inputClasses}
-          />
-        </FormField>
-        <FormField label="Type">
-          <select
-            value={form.type}
-            onChange={(e) =>
-              onChange({ type: e.target.value as AssetType })
-            }
-            className={inputClasses}
-          >
-            {ASSET_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </FormField>
-        <FormField label="Devise">
-          <input
-            type="text"
-            value={form.currency}
-            onChange={(e) =>
-              onChange({ currency: e.target.value.toUpperCase() })
-            }
-            className={inputClasses}
-          />
-        </FormField>
-        <FormField label="ISIN">
-          <input
-            type="text"
-            value={form.isin}
-            onChange={(e) =>
-              onChange({ isin: e.target.value.toUpperCase() })
-            }
-            className={inputClasses}
-          />
-        </FormField>
-        <FormField label="Ticker">
-          <input
-            type="text"
-            value={form.ticker}
-            onChange={(e) => onChange({ ticker: e.target.value })}
-            className={inputClasses}
-          />
-        </FormField>
-        <FormField label="Source de prix">
-          <select
-            value={form.source}
-            onChange={(e) =>
-              onChange({ source: e.target.value as PriceSource })
-            }
-            className={inputClasses}
-          >
-            {PRICE_SOURCES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </FormField>
-        <FormField label="Param source">
-          <input
-            type="text"
-            value={form.param}
-            onChange={(e) => onChange({ param: e.target.value })}
-            className={inputClasses}
-            placeholder={
-              form.source === "yahoo"
-                ? "ex. CW8.PA"
-                : form.source === "coingecko"
-                  ? "ex. bitcoin"
-                  : ""
+            type="radio"
+            name={`asset-mode-${suggestion.identifier}`}
+            checked={linked}
+            onChange={() =>
+              onChange({ linkedExistingId: existingAssets[0]?.id ?? "" })
             }
           />
-        </FormField>
-        <FormField label="Compte associé">
-          <select
-            value={form.compte}
-            onChange={(e) => onChange({ compte: e.target.value })}
-            className={inputClasses}
-          >
-            {existingAccounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label} ({a.envelope})
-              </option>
-            ))}
-            {form.compte &&
-              !existingAccounts.some((a) => a.id === form.compte) && (
-                <option value={form.compte}>{form.compte}</option>
-              )}
-          </select>
-        </FormField>
+          Utiliser un actif existant
+        </label>
       </div>
-      <p className="text-xs text-zinc-500">
-        Toutes les lignes de cet actif seront affectées à ce compte (modifiable
-        ligne par ligne plus bas).
-      </p>
+
+      {linked ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FormField label="Actif existant">
+            <select
+              value={form.linkedExistingId}
+              onChange={(e) => onChange({ linkedExistingId: e.target.value })}
+              className={inputClasses}
+            >
+              {existingAssets.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label} ({a.type})
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <FormField label="ID *">
+              <input
+                type="text"
+                value={form.id}
+                onChange={(e) => onChange({ id: e.target.value })}
+                className={inputClasses}
+              />
+            </FormField>
+            <FormField label="Libellé *">
+              <input
+                type="text"
+                value={form.label}
+                onChange={(e) => onChange({ label: e.target.value })}
+                className={inputClasses}
+              />
+            </FormField>
+            <FormField label="Type">
+              <select
+                value={form.type}
+                onChange={(e) =>
+                  onChange({ type: e.target.value as AssetType })
+                }
+                className={inputClasses}
+              >
+                {ASSET_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label="Devise">
+              <input
+                type="text"
+                value={form.currency}
+                onChange={(e) =>
+                  onChange({ currency: e.target.value.toUpperCase() })
+                }
+                className={inputClasses}
+              />
+            </FormField>
+            <FormField label="ISIN">
+              <input
+                type="text"
+                value={form.isin}
+                onChange={(e) =>
+                  onChange({ isin: e.target.value.toUpperCase() })
+                }
+                className={inputClasses}
+              />
+            </FormField>
+            <FormField label="Ticker">
+              <input
+                type="text"
+                value={form.ticker}
+                onChange={(e) => onChange({ ticker: e.target.value })}
+                className={inputClasses}
+              />
+            </FormField>
+            <FormField label="Source de prix">
+              <select
+                value={form.source}
+                onChange={(e) =>
+                  onChange({ source: e.target.value as PriceSource })
+                }
+                className={inputClasses}
+              >
+                {PRICE_SOURCES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label="Param source">
+              <input
+                type="text"
+                value={form.param}
+                onChange={(e) => onChange({ param: e.target.value })}
+                className={inputClasses}
+                placeholder={
+                  form.source === "yahoo"
+                    ? "ex. CW8.PA"
+                    : form.source === "coingecko"
+                      ? "ex. bitcoin"
+                      : ""
+                }
+              />
+            </FormField>
+            <FormField label="Compte associé">
+              <select
+                value={form.compte}
+                onChange={(e) => onChange({ compte: e.target.value })}
+                className={inputClasses}
+              >
+                {existingAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label} ({a.envelope})
+                  </option>
+                ))}
+                {pendingAccountList.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label} ({a.envelope}) — nouveau
+                  </option>
+                ))}
+                {form.compte &&
+                  !existingAccounts.some((a) => a.id === form.compte) &&
+                  !pendingAccountList.some((a) => a.id === form.compte) && (
+                    <option value={form.compte}>{form.compte}</option>
+                  )}
+              </select>
+            </FormField>
+          </div>
+          <p className="text-xs text-zinc-500">
+            Toutes les lignes de cet actif seront affectées à ce compte
+            (modifiable ligne par ligne plus bas).
+          </p>
+        </>
+      )}
     </div>
   );
 }
@@ -1409,12 +1353,16 @@ function NewAssetFormRow({
 function NewAccountFormRow({
   suggestion,
   form,
+  existingAccounts,
   onChange,
 }: {
   suggestion: AccountSuggestion;
   form: AccountForm;
+  existingAccounts: ExistingAccount[];
   onChange: (patch: Partial<AccountForm>) => void;
 }) {
+  const linked = Boolean(form.linkedExistingId);
+
   return (
     <div className="space-y-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
       <div className="flex items-center justify-between">
@@ -1423,54 +1371,96 @@ function NewAccountFormRow({
         </p>
         <Badge variant="info">{suggestion.occurrenceCount} ligne(s)</Badge>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <FormField label="ID *">
+
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
           <input
-            type="text"
-            value={form.id}
-            onChange={(e) => onChange({ id: e.target.value })}
-            className={inputClasses}
+            type="radio"
+            name={`account-mode-${suggestion.identifier}`}
+            checked={!linked}
+            onChange={() => onChange({ linkedExistingId: "" })}
           />
-        </FormField>
-        <FormField label="Libellé *">
+          Créer un nouveau compte
+        </label>
+        <label className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
           <input
-            type="text"
-            value={form.label}
-            onChange={(e) => onChange({ label: e.target.value })}
-            className={inputClasses}
+            type="radio"
+            name={`account-mode-${suggestion.identifier}`}
+            checked={linked}
+            onChange={() =>
+              onChange({ linkedExistingId: existingAccounts[0]?.id ?? "" })
+            }
           />
-        </FormField>
-        <FormField label="Type">
-          <select
-            value={form.type}
-            onChange={(e) =>
-              onChange({ type: e.target.value as AccountType })
-            }
-            className={inputClasses}
-          >
-            {ACCOUNT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </FormField>
-        <FormField label="Enveloppe">
-          <select
-            value={form.envelope}
-            onChange={(e) =>
-              onChange({ envelope: e.target.value as Envelope })
-            }
-            className={inputClasses}
-          >
-            {ENVELOPES.map((env) => (
-              <option key={env} value={env}>
-                {env}
-              </option>
-            ))}
-          </select>
-        </FormField>
+          Utiliser un compte existant
+        </label>
       </div>
+
+      {linked ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FormField label="Compte existant">
+            <select
+              value={form.linkedExistingId}
+              onChange={(e) => onChange({ linkedExistingId: e.target.value })}
+              className={inputClasses}
+            >
+              {existingAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label} ({a.envelope})
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <FormField label="ID *">
+            <input
+              type="text"
+              value={form.id}
+              onChange={(e) => onChange({ id: e.target.value })}
+              className={inputClasses}
+            />
+          </FormField>
+          <FormField label="Libellé *">
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => onChange({ label: e.target.value })}
+              className={inputClasses}
+            />
+          </FormField>
+          <FormField label="Type">
+            <select
+              value={form.type}
+              onChange={(e) =>
+                onChange({ type: e.target.value as AccountType })
+              }
+              className={inputClasses}
+            >
+              {ACCOUNT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Enveloppe">
+            <select
+              value={form.envelope}
+              onChange={(e) =>
+                onChange({ envelope: e.target.value as Envelope })
+              }
+              className={inputClasses}
+            >
+              {ENVELOPES.map((env) => (
+                <option key={env} value={env}>
+                  {env}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </div>
+      )}
     </div>
   );
 }
@@ -1833,6 +1823,7 @@ function buildAssetForms(
     out[key] = {
       identifier: s.identifier,
       occurrenceCount: s.occurrenceCount,
+      linkedExistingId: "",
       id: guessedId,
       label: s.label,
       type: "ETF",
@@ -1856,6 +1847,7 @@ function buildAccountForms(
     out[key] = {
       identifier: s.identifier,
       occurrenceCount: s.occurrenceCount,
+      linkedExistingId: "",
       id: slugify(s.label || s.identifier) || key,
       label: s.label,
       type: "BROKER",
