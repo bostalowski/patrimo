@@ -24,6 +24,11 @@ const nextConfig: NextConfig = {
         destination: "/actifs",
         permanent: false,
       },
+      {
+        source: "/performance",
+        destination: "/",
+        permanent: false,
+      },
     ];
   },
 };
