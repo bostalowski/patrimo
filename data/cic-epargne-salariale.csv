@@ -1,0 +1,29 @@
+date;type;compte;actif;quantite;prixUnitaire;frais;notes
+2017-05-17;ACHAT;cic-pee;AVENIR-MONETAIRE;68.3332;3.9862;0.95;Versement participation ex. 12/2016
+2017-05-17;ACHAT;cic-per;AVENIR-MONETAIRE;10.2503;3.9862;0.14;Versement participation PERCO ex. 12/2016
+2017-05-17;ACHAT;cic-per;AVENIR-ACTIONS-EUROPE;1.204;33.9288;0.14;Versement participation PERCO ex. 12/2016
+2017-05-17;ACHAT;cic-per;AVENIR-OBLIG;5.116;31.9416;0.57;Versement participation PERCO ex. 12/2016
+2017-05-17;ACHAT;cic-per;STRATEGIE-PME-ETI;2.0973;12.983;0.10;Versement participation PERCO ex. 12/2016
+2020-12-30;VENTE;cic-per;STRATEGIE-PME-ETI;0.7154;21.192;0;Arbitrage automatique gestion pilotee
+2020-12-30;ACHAT;cic-per;AVENIR-OBLIG;0.354;32.2412;0;Arbitrage automatique gestion pilotee
+2020-12-30;ACHAT;cic-per;AVENIR-MONETAIRE;0.9497;3.9168;0;Arbitrage automatique gestion pilotee
+2021-12-06;VENTE;cic-pee;AVENIR-MONETAIRE;7.4525;3.8913;0;Frais de tenue de compte 2021 (29 EUR)
+2022-12-05;VENTE;cic-pee;AVENIR-MONETAIRE;7.4788;3.8776;0;Frais de tenue de compte 2022 (29 EUR)
+2023-06-29;VENTE;cic-per;AVENIR-ACTIONS-EUROPE;0.176;40.1251;0;Arbitrage automatique gestion pilotee
+2023-06-29;ACHAT;cic-per;STRATEGIE-PME-ETI;0.3717;15.6291;0;Arbitrage automatique gestion pilotee
+2023-06-29;ACHAT;cic-per;AVENIR-OBLIG;0.043;28.8874;0;Arbitrage automatique gestion pilotee
+2023-06-29;VENTE;cic-per;AVENIR-MONETAIRE;0.8331;3.9309;0;Arbitrage automatique gestion pilotee
+2023-06-29;ACHAT;cic-per;AVENIR-OBLIG;0.113;28.8874;0;Arbitrage automatique gestion pilotee
+2023-12-11;VENTE;cic-pee;AVENIR-MONETAIRE;7.2650;3.9917;0;Frais de tenue de compte 2023 (29 EUR)
+2024-10-01;VENTE;cic-per;AVENIR-MONETAIRE;10.3669;4.1112;0;Arbitrage automatique gestion pilotee
+2024-10-01;ACHAT;cic-per;STRATEGIE-PME-ETI;0.0853;15.5788;0;Arbitrage automatique gestion pilotee
+2024-10-01;ACHAT;cic-per;AVENIR-OBLIG;0.952;30.8793;0;Arbitrage automatique gestion pilotee
+2024-10-01;ACHAT;cic-per;AVENIR-ACTIONS-EUROPE;0.270;43.8458;0;Arbitrage automatique gestion pilotee
+2024-10-14;VENTE;cic-pee;AVENIR-MONETAIRE;7.5330;4.1152;0;Frais de tenue de compte 2024 (31 EUR)
+2025-02-05;VENTE;cic-pee;AVENIR-MONETAIRE;38.6039;4.1522;31;Retrait disponible PEE (prel. sociaux 1 EUR + fiscaux 31 EUR)
+2025-02-07;VENTE;cic-per;AVENIR-OBLIG;6.578;31.0491;0;Arbitrage vers gestion libre
+2025-02-07;ACHAT;cic-per;AVENIR-DYNAMIQUE;22.5612;9.0527;0;Arbitrage vers gestion libre
+2025-02-07;VENTE;cic-per;AVENIR-ACTIONS-EUROPE;1.298;46.9438;0;Arbitrage vers gestion libre
+2025-02-07;ACHAT;cic-per;AVENIR-DYNAMIQUE;6.7305;9.0527;0;Arbitrage vers gestion libre
+2025-02-07;VENTE;cic-per;STRATEGIE-PME-ETI;1.8389;15.8878;0;Arbitrage vers gestion libre
+2025-02-07;ACHAT;cic-per;AVENIR-DYNAMIQUE;3.2277;9.0527;0;Arbitrage vers gestion libre
