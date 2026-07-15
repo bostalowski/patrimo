@@ -9,6 +9,7 @@ import {
 import { fetchCoingeckoHistory } from "@/lib/prices/coingecko";
 import { fetchYahooHistory } from "@/lib/prices/yahoo";
 import { fetchInvestirHistory } from "@/lib/prices/investir";
+import { fetchZonebourseHistory } from "@/lib/prices/zonebourse";
 import { BENCHMARKS } from "@/lib/benchmarks";
 
 export type SyncResult = {
@@ -30,6 +31,8 @@ async function fetchHistoryForAsset(
       return fetchYahooHistory(asset.param);
     case "investir":
       return fetchInvestirHistory(asset.param);
+    case "zonebourse":
+      return fetchZonebourseHistory(asset.param);
     case "manual":
       return null;
     default:

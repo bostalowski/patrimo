@@ -20,7 +20,7 @@ export const AssetType = z.enum([
 ]);
 export type AssetType = z.infer<typeof AssetType>;
 
-export const PriceSource = z.enum(["coingecko", "yahoo", "investir", "manual"]);
+export const PriceSource = z.enum(["coingecko", "yahoo", "investir", "zonebourse", "manual"]);
 export type PriceSource = z.infer<typeof PriceSource>;
 
 export const AccountType = z.enum([
