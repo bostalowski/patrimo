@@ -8,7 +8,6 @@ import {
   Coins,
   Landmark,
   LayoutDashboard,
-  LineChart,
   ListOrdered,
   PiggyBank,
   Settings,
@@ -19,14 +18,13 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/performance", label: "Performance", icon: LineChart },
   { href: "/actifs", label: "Actifs", icon: Coins },
   { href: "/comptes", label: "Comptes", icon: Wallet },
   { href: "/transactions", label: "Transactions", icon: ListOrdered },
-  { href: "/fiscalite", label: "Fiscalité", icon: Landmark },
   { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/investissements", label: "Investissements", icon: Briefcase },
   { href: "/projection", label: "Projection", icon: TrendingUp },
+  { href: "/fiscalite", label: "Fiscalité", icon: Landmark },
   { href: "/reglages", label: "Réglages", icon: Settings },
 ];
 
