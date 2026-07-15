@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { AlertCircle, RotateCcw } from "lucide-react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -46,6 +46,20 @@ export function DcaExecutionCalculator({
     return initial;
   });
 
+  const [amountOverrides, setAmountOverrides] = useState<Record<string, string>>({});
+
+  const setAmountOverride = useCallback((configId: string, value: string) => {
+    setAmountOverrides((prev) => ({ ...prev, [configId]: value }));
+  }, []);
+
+  const resetAmountOverride = useCallback((configId: string) => {
+    setAmountOverrides((prev) => {
+      const next = { ...prev };
+      delete next[configId];
+      return next;
+    });
+  }, []);
+
   const priceMapObj = useMemo(
     () => new Map(Object.entries(priceMap)),
     [priceMap],
@@ -74,13 +88,26 @@ export function DcaExecutionCalculator({
     return parsedMinOrders[envelope] ?? 0;
   }
 
+  const parsedAmountOverrides = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const [id, raw] of Object.entries(amountOverrides)) {
+      const n = Number(raw.replace(",", "."));
+      if (Number.isFinite(n) && n >= 0) result[id] = n;
+    }
+    return result;
+  }, [amountOverrides]);
+
   const executions = useMemo<DcaExecution[]>(() => {
     return configs.map((config) => {
       const currentValues = portfolioByEnvelope[config.envelope] ?? {};
-      const plan = computeDcaPlan(config, currentValues);
+      const effectiveConfig =
+        config.id in parsedAmountOverrides
+          ? { ...config, amount: parsedAmountOverrides[config.id] }
+          : config;
+      const plan = computeDcaPlan(effectiveConfig, currentValues);
       return computeDcaExecution(plan, priceMapObj, parsedMinOrders[config.envelope] ?? 0);
     });
-  }, [configs, portfolioByEnvelope, priceMapObj, parsedMinOrders]);
+  }, [configs, portfolioByEnvelope, priceMapObj, parsedMinOrders, parsedAmountOverrides]);
 
   if (configs.length === 0) return null;
 
@@ -127,17 +154,39 @@ export function DcaExecutionCalculator({
       {executions.map((execution, i) => {
         const config = configs[i];
         const minOrder = getMinOrder(config.envelope);
+        const hasOverride = config.id in parsedAmountOverrides;
         return (
           <Card key={execution.configId}>
             <CardHeader>
               <CardTitle className="text-base">{config.label}</CardTitle>
-              <div className="flex items-center gap-4 text-xs text-zinc-500">
-                <span>
-                  Budget:{" "}
-                  <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">
-                    {formatEuro(execution.totalBudget)}
-                  </span>
-                </span>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
+                <label className="flex items-center gap-1.5">
+                  Budget :
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={amountOverrides[config.id] ?? String(config.amount)}
+                      onChange={(e) => setAmountOverride(config.id, e.target.value)}
+                      className={`w-24 font-mono font-medium ${inputClasses} ${
+                        hasOverride
+                          ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+                          : "text-zinc-700 dark:text-zinc-300"
+                      }`}
+                    />
+                    <span className="text-xs text-zinc-400">€</span>
+                    {hasOverride && (
+                      <button
+                        type="button"
+                        onClick={() => resetAmountOverride(config.id)}
+                        className="rounded p-0.5 text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900/40 dark:hover:text-blue-300"
+                        title={`Revenir au montant du plan (${formatEuro(config.amount)})`}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </label>
                 <span>
                   Total ordres:{" "}
                   <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">
