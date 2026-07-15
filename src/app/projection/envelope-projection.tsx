@@ -623,6 +623,70 @@ export function EnvelopeProjection({
                   </TD>
                 </TR>
               ) : null}
+              <TR className="border-t-2 border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/50">
+                <TD>
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                    Total
+                  </span>
+                </TD>
+                <TD className="text-right font-mono font-semibold tabular-nums">
+                  {formatEuro(
+                    advice.reduce(
+                      (sum, row) =>
+                        sum + (monthlyByEnvelope.get(row.envelope) ?? 0),
+                      perActive ? perMonthlyValue : 0,
+                    ),
+                  )}
+                </TD>
+                <TD className="text-right font-mono font-semibold tabular-nums">
+                  {formatEuro(
+                    advice.reduce(
+                      (sum, row) =>
+                        sum +
+                        (projectedValueByEnvelope.get(row.envelope)?.current ??
+                          0),
+                      perActive ? perEncoursValue : 0,
+                    ),
+                  )}
+                </TD>
+                <TD className="text-right font-mono font-semibold tabular-nums">
+                  {formatEuro(
+                    advice.reduce(
+                      (sum, row) =>
+                        sum +
+                        (projectedValueByEnvelope.get(row.envelope)
+                          ?.projected ?? 0),
+                      perActive ? perProjectedValue : 0,
+                    ),
+                  )}
+                </TD>
+                <TD className="text-right font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {formatEuro(
+                    advice.reduce(
+                      (sum, row) => sum + row.grossGain,
+                      perActive ? perOutcome.plusValue : 0,
+                    ),
+                  )}
+                </TD>
+                <TD />
+                <TD className="text-right font-mono font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {formatEuro(
+                    advice.reduce(
+                      (sum, row) => sum + row.netGain,
+                      perActive ? perNetGain : 0,
+                    ),
+                  )}
+                </TD>
+                <TD className="text-right font-mono font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {formatEuro(
+                    advice.reduce(
+                      (sum, row) => sum + row.netFinalValue,
+                      perActive ? perNetValue : 0,
+                    ),
+                  )}
+                </TD>
+                <TD />
+              </TR>
             </TBody>
           </Table>
           <p className="px-6 pt-4 text-xs leading-relaxed text-zinc-400">
