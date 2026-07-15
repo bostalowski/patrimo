@@ -1,11 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Card, CardBody, CardHeader, CardTitle, CardValue } from "@/components/ui/card";
-import { ProjectionCurve } from "@/components/charts/projection-curve";
-import { projectLivret } from "@/lib/livret";
+import { useState } from "react";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Envelope } from "@/lib/schema";
-import { cn, formatDate, formatEuro, formatPercent } from "@/lib/utils";
+import { cn, formatEuro, formatPercent } from "@/lib/utils";
 import {
   EnvelopeProjection,
   type EnvelopeProjectionInput,
@@ -15,22 +13,17 @@ import {
   type SerializedProperty,
 } from "./realestate-projection";
 
-export type LivretOption = {
-  id: string;
-  label: string;
-  rate: number;
-  plafond: number | null;
-  balance: number;
+type RetirementData = {
+  horizonYears: number;
+  targetRetirementAge: number;
+  monthlyRealEstateNet: number;
+  estimatedPublicPension?: number;
 };
 
-const inputClasses =
-  "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
+type Tab = "envelopes" | "immobilier";
 
-type Mode = "livrets" | "enveloppe" | "immobilier";
-
-const TABS: { key: Mode; label: string }[] = [
-  { key: "livrets", label: "Livrets" },
-  { key: "enveloppe", label: "Par enveloppe" },
+const TABS: { key: Tab; label: string }[] = [
+  { key: "envelopes", label: "Par enveloppe" },
   { key: "immobilier", label: "Immobilier" },
 ];
 
@@ -39,22 +32,24 @@ function parseNumber(value: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+export type InflationView = { rate: number };
+
 export function ProjectionClient({
-  livrets,
   monthlyRestant,
   envelopeInputs,
   envelopeRates,
   properties,
   inflationRate,
+  retirement,
 }: {
-  livrets: LivretOption[];
   monthlyRestant: number;
   envelopeInputs: EnvelopeProjectionInput[];
   envelopeRates: Record<Envelope, number>;
   properties: SerializedProperty[];
   inflationRate: number;
+  retirement: RetirementData | null;
 }) {
-  const [mode, setMode] = useState<Mode>("livrets");
+  const [tab, setTab] = useState<Tab>("envelopes");
   const [rateInput, setRateInput] = useState(
     String(Math.round(inflationRate * 1000) / 10),
   );
@@ -66,19 +61,19 @@ export function ProjectionClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
-          {TABS.map((tab) => (
+          {TABS.map((t) => (
             <button
-              key={tab.key}
+              key={t.key}
               type="button"
-              onClick={() => setMode(tab.key)}
+              onClick={() => setTab(t.key)}
               className={cn(
                 "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
-                mode === tab.key
+                tab === t.key
                   ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-950 dark:text-zinc-50"
                   : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
               )}
             >
-              {tab.label}
+              {t.label}
             </button>
           ))}
         </div>
@@ -96,190 +91,172 @@ export function ProjectionClient({
         </label>
       </div>
 
-      {mode === "livrets" ? (
-        <LivretProjection livrets={livrets} inflation={inflation} />
-      ) : mode === "enveloppe" ? (
-        <EnvelopeProjection
-          envelopes={envelopeInputs}
-          defaultRates={envelopeRates}
-          monthlyRestant={monthlyRestant}
-          inflation={inflation}
-        />
-      ) : (
+      {tab === "envelopes" && (
+        <div className="space-y-8">
+          <EnvelopeProjection
+            envelopes={envelopeInputs}
+            defaultRates={envelopeRates}
+            monthlyRestant={monthlyRestant}
+            inflation={inflation}
+          />
+
+          {retirement && (
+            <RetirementIncomeCard
+              retirement={retirement}
+              envelopeInputs={envelopeInputs}
+              envelopeRates={envelopeRates}
+              inflation={inflation}
+            />
+          )}
+        </div>
+      )}
+
+      {tab === "immobilier" && (
         <RealEstateProjection properties={properties} inflation={inflation} />
       )}
     </div>
   );
 }
 
-export type InflationView = { rate: number };
-
-function LivretProjection({
-  livrets,
+function RetirementIncomeCard({
+  retirement,
+  envelopeInputs,
+  envelopeRates,
   inflation,
 }: {
-  livrets: LivretOption[];
+  retirement: RetirementData;
+  envelopeInputs: EnvelopeProjectionInput[];
+  envelopeRates: Record<Envelope, number>;
   inflation: InflationView;
 }) {
-  const [selectedId, setSelectedId] = useState(livrets[0]?.id ?? "");
-  const [monthlyDeposit, setMonthlyDeposit] = useState("100");
-  const [years, setYears] = useState("10");
+  const projectedCapital = envelopeInputs.reduce((sum, env) => {
+    const rate = envelopeRates[env.envelope] ?? 0;
+    const monthly = env.monthlyDefault;
+    const months = Math.round(retirement.horizonYears * 12);
+    let balance = env.currentValue;
+    const monthlyRate = rate / 12;
+    for (let m = 0; m < months; m++) {
+      balance = balance * (1 + monthlyRate) + monthly;
+    }
+    return sum + balance;
+  }, 0);
 
-  const selected =
-    livrets.find((l) => l.id === selectedId) ?? livrets[0] ?? null;
+  const weightedRate = envelopeInputs.reduce((sum, env) => {
+    return sum + env.currentValue * (envelopeRates[env.envelope] ?? 0);
+  }, 0) / Math.max(1, envelopeInputs.reduce((s, e) => s + e.currentValue, 0));
 
-  const projection = useMemo(() => {
-    if (!selected) return null;
-    const monthly = Math.max(0, Number(monthlyDeposit.replace(",", ".")) || 0);
-    const horizon = Math.max(0, Number(years.replace(",", ".")) || 0);
-    return projectLivret({
-      startBalance: selected.balance,
-      rate: selected.rate,
-      plafond: selected.plafond ?? undefined,
-      monthlyDeposit: monthly,
-      years: horizon,
-      inflationRate: inflation.rate,
-    });
-  }, [selected, monthlyDeposit, years, inflation.rate]);
+  const annualReturns = projectedCapital * weightedRate;
+  const monthlyFromCapital = annualReturns / 12;
 
-  if (!selected) {
-    return (
-      <Card>
-        <CardBody className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Aucun livret pour le moment. Créez un actif de type{" "}
-          <code>LIVRET</code> (avec un taux) dans la page Actifs pour lancer une
-          projection.
-        </CardBody>
-      </Card>
-    );
-  }
+  const realMonthlyFromCapital =
+    monthlyFromCapital / Math.pow(1 + inflation.rate, retirement.horizonYears);
+
+  const pension = retirement.estimatedPublicPension ?? 0;
+  const totalMonthly = monthlyFromCapital + pension + retirement.monthlyRealEstateNet;
+  const totalReal = realMonthlyFromCapital + pension + retirement.monthlyRealEstateNet;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardBody className="pt-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Livret">
-              <select
-                value={selected.id}
-                onChange={(e) => setSelectedId(e.target.value)}
-                className={inputClasses}
-              >
-                {livrets.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Versement mensuel (EUR)">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={monthlyDeposit}
-                onChange={(e) => setMonthlyDeposit(e.target.value)}
-                placeholder="100"
-                className={inputClasses}
-              />
-            </Field>
-
-            <Field label="Horizon (années)">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={years}
-                onChange={(e) => setYears(e.target.value)}
-                placeholder="10"
-                className={inputClasses}
-              />
-            </Field>
-          </div>
-          <p className="mt-4 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-            Solde actuel {formatEuro(selected.balance)} • Taux{" "}
-            {formatPercent(selected.rate)}
-            {selected.plafond
-              ? ` • Plafond ${formatEuro(selected.plafond)}`
-              : ""}
-            .
-          </p>
-        </CardBody>
-      </Card>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Valeur projetée</CardTitle>
-            <CardValue>{formatEuro(projection?.finalValue ?? 0)}</CardValue>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Valeur après inflation</CardTitle>
-            <CardValue>{formatEuro(projection?.finalRealValue ?? 0)}</CardValue>
-            <p className="text-xs text-zinc-500">
-              Pouvoir d&apos;achat à {formatPercent(inflation.rate)} d&apos;inflation
+    <Card>
+      <CardHeader>
+        <CardTitle>Revenu mensuel à la retraite (sans toucher au capital)</CardTitle>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          À {retirement.targetRetirementAge} ans (dans{" "}
+          {Math.round(retirement.horizonYears)} ans) : combien tu peux retirer
+          chaque mois en vivant uniquement sur les rendements de ton capital,
+          sans l&apos;entamer.
+        </p>
+      </CardHeader>
+      <CardBody>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Capital projeté
             </p>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Intérêts cumulés</CardTitle>
-            <CardValue className="text-emerald-600 dark:text-emerald-400">
-              {formatEuro(projection?.totalInterest ?? 0)}
-            </CardValue>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Plafond atteint</CardTitle>
-            <CardValue>
-              {selected.plafond
-                ? projection?.plafondReachedDate
-                  ? formatDate(projection.plafondReachedDate)
-                  : "Non atteint"
-                : "—"}
-            </CardValue>
-          </CardHeader>
-        </Card>
-      </div>
+            <p className="text-xl font-semibold tabular-nums">
+              {formatEuro(projectedCapital)}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Rendement moyen pondéré
+            </p>
+            <p className="text-xl font-semibold tabular-nums">
+              {formatPercent(weightedRate)}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Intérêts mensuels (nominal)
+            </p>
+            <p className="text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+              {formatEuro(monthlyFromCapital)}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Intérêts mensuels (réel)
+            </p>
+            <p className="text-xl font-semibold tabular-nums text-sky-600 dark:text-sky-400">
+              {formatEuro(realMonthlyFromCapital)}
+            </p>
+            <p className="text-xs text-zinc-400">
+              ajusté de l&apos;inflation à {formatPercent(inflation.rate)}
+            </p>
+          </div>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Croissance projetée</CardTitle>
-          <p className="text-xs leading-relaxed text-zinc-500">
-            Valeur nominale (zone verte) vs valeur après inflation à{" "}
-            {formatPercent(inflation.rate)} (bleu pointillé) vs total versé (gris).
-            L&apos;écart entre les deux courbes est l&apos;érosion du pouvoir
-            d&apos;achat.
+        <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500">
+            Décomposition du revenu mensuel total
           </p>
-        </CardHeader>
-        <CardBody>
-          <ProjectionCurve
-            data={projection?.points ?? []}
-            plafond={selected.plafond}
-          />
-        </CardBody>
-      </Card>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex flex-col gap-2 text-xs", className)}>
-      <span className="font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </span>
-      {children}
-    </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-zinc-600 dark:text-zinc-300">
+                Rendements du capital
+              </span>
+              <span className="font-mono font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
+                {formatEuro(monthlyFromCapital)}
+              </span>
+            </div>
+            {pension > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-600 dark:text-zinc-300">
+                  Pension publique estimée
+                </span>
+                <span className="font-mono font-medium tabular-nums">
+                  {formatEuro(pension)}
+                </span>
+              </div>
+            )}
+            {retirement.monthlyRealEstateNet > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-600 dark:text-zinc-300">
+                  Loyers nets
+                </span>
+                <span className="font-mono font-medium tabular-nums">
+                  {formatEuro(retirement.monthlyRealEstateNet)}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between border-t border-zinc-100 pt-2 dark:border-zinc-800">
+              <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                Total mensuel
+              </span>
+              <span className="font-mono text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                {formatEuro(totalMonthly)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-zinc-500">
+              <span>
+                En pouvoir d&apos;achat (après {formatPercent(inflation.rate)} d&apos;inflation × {Math.round(retirement.horizonYears)} ans)
+              </span>
+              <span className="font-mono tabular-nums text-sky-600 dark:text-sky-400">
+                {formatEuro(totalReal)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </CardBody>
+    </Card>
   );
 }

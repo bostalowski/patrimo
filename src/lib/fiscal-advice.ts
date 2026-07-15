@@ -5,6 +5,7 @@ import {
   PEA_TAX_FREE_AGE_YEARS,
   PS_RATE,
 } from "@/lib/tax-rules";
+import { DEFAULT_ENVELOPE_PLAFONDS } from "@/lib/projection";
 
 export type EnvelopeInfo = {
   envelope: Envelope;
@@ -32,8 +33,7 @@ export const ENVELOPE_LABELS: Record<Envelope, string> = {
   PER: "PER (plan épargne retraite)",
 };
 
-const PEA_PLAFOND = 150_000;
-const LIVRET_A_PLAFOND = 22_950;
+const PEA_PLAFOND = DEFAULT_ENVELOPE_PLAFONDS.PEA ?? 150_000;
 
 export const RECOMMENDED_ENVELOPES: Envelope[] = [
   "PEA",
@@ -43,10 +43,7 @@ export const RECOMMENDED_ENVELOPES: Envelope[] = [
   "CTO",
 ];
 
-const DEFAULT_PLAFONDS: Partial<Record<Envelope, number>> = {
-  LIVRET: LIVRET_A_PLAFOND,
-  PEA: PEA_PLAFOND,
-};
+const DEFAULT_PLAFONDS = DEFAULT_ENVELOPE_PLAFONDS;
 
 function applyPlafond(
   info: EnvelopeInfo,

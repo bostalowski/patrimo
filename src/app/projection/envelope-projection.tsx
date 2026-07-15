@@ -243,11 +243,13 @@ export function EnvelopeProjection({
   }, [projections, horizonYears]);
 
   const projectedValueByEnvelope = useMemo(() => {
-    const map = new Map<string, { current: number; projected: number }>();
+    const map = new Map<string, { current: number; projected: number; plafondReachedMonth: number | null; plafond: number | undefined }>();
     for (const p of projections) {
       map.set(p.envelope.envelope, {
         current: p.envelope.currentValue,
         projected: p.result.finalValue,
+        plafondReachedMonth: p.result.plafondReachedMonth,
+        plafond: p.envelope.plafond,
       });
     }
     return map;
@@ -538,11 +540,14 @@ export function EnvelopeProjection({
                 <TH>Fiscalité du gain</TH>
                 <TH className="text-right">Gain net</TH>
                 <TH className="text-right">Valeur nette</TH>
+                <TH>Plafond</TH>
               </TR>
             </THead>
             <TBody>
               {advice.map((row) => {
                 const values = projectedValueByEnvelope.get(row.envelope);
+                const plafondMonth = values?.plafondReachedMonth ?? null;
+                const plafondValue = values?.plafond;
                 return (
                   <TR key={row.envelope}>
                     <TD>
@@ -583,6 +588,17 @@ export function EnvelopeProjection({
                     <TD className="text-right font-mono tabular-nums">
                       {formatEuro(row.netFinalValue)}
                     </TD>
+                    <TD>
+                      {plafondValue ? (
+                        <Badge variant={plafondMonth !== null ? "warning" : "default"}>
+                          {plafondMonth !== null
+                            ? `Atteint en ${Math.ceil(plafondMonth / 12)} an${Math.ceil(plafondMonth / 12) > 1 ? "s" : ""}`
+                            : formatEuro(plafondValue)}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-zinc-400">—</span>
+                      )}
+                    </TD>
                   </TR>
                 );
               })}
@@ -613,6 +629,9 @@ export function EnvelopeProjection({
                   </TD>
                   <TD className="text-right font-mono tabular-nums">
                     {formatEuro(perNetValue)}
+                  </TD>
+                  <TD>
+                    <span className="text-xs text-zinc-400">—</span>
                   </TD>
                 </TR>
               ) : null}

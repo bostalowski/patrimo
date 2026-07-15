@@ -2,6 +2,7 @@ import type { DcaConfig, Envelope, Property, RetirementProfile } from "@/lib/sch
 import { Envelope as EnvelopeSchema } from "@/lib/schema";
 import type { Portfolio } from "@/lib/portfolio";
 import {
+  DEFAULT_ENVELOPE_PLAFONDS,
   projectInvestment,
   SCENARIO_PRESETS,
   type ContributionStream,
@@ -141,6 +142,7 @@ export function buildRetirementSources(params: {
         years: horizonYears,
         inflationRate,
         start: now,
+        plafond: DEFAULT_ENVELOPE_PLAFONDS[envelope],
       });
       rows.push({
         envelope,
