@@ -136,6 +136,7 @@ const PRICE_SOURCES: PriceSource[] = [
   "yahoo",
   "coingecko",
   "investir",
+  "zonebourse",
   "manual",
 ];
 

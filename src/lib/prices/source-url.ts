@@ -4,6 +4,7 @@ const SOURCE_LABELS: Record<PriceSource, string> = {
   coingecko: "CoinGecko",
   yahoo: "Yahoo Finance",
   investir: "Investir Les Echos",
+  zonebourse: "Zonebourse",
   manual: "Saisie manuelle",
 };
 
@@ -29,6 +30,8 @@ export function getAssetSourceUrl(asset: Asset): string | null {
       return `https://finance.yahoo.com/quote/${encodeURIComponent(asset.param)}`;
     case "investir":
       return `https://investir.lesechos.fr/cours/opcvm/-${asset.param.toLowerCase()}`;
+    case "zonebourse":
+      return asset.param;
     case "manual":
       return isHttpUrl(asset.param) ? asset.param : null;
     default:

@@ -13,6 +13,17 @@ function manualAsset(param?: string): Asset {
   };
 }
 
+function zonebourseAsset(param?: string): Asset {
+  return {
+    id: "PER-CIC-AVENIR",
+    label: "CM-AM Avenir Dynamique",
+    type: "FCPE",
+    source: "zonebourse",
+    currency: "EUR",
+    param,
+  };
+}
+
 describe("getAssetSourceUrl — source manual", () => {
   it("renvoie l'URL quand param est une URL https", () => {
     const url =
@@ -36,5 +47,17 @@ describe("getAssetSourceUrl — source manual", () => {
   it("renvoie null pour un schéma non http(s)", () => {
     expect(getAssetSourceUrl(manualAsset("javascript:alert(1)"))).toBeNull();
     expect(getAssetSourceUrl(manualAsset("file:///etc/passwd"))).toBeNull();
+  });
+});
+
+describe("getAssetSourceUrl — source zonebourse", () => {
+  it("returns the param URL directly", () => {
+    const url =
+      "https://www.zonebourse.com/cours/fonds/CM-AM-AVENIR-DYNAMIQUE-159203373/";
+    expect(getAssetSourceUrl(zonebourseAsset(url))).toBe(url);
+  });
+
+  it("returns null when param is absent", () => {
+    expect(getAssetSourceUrl(zonebourseAsset(undefined))).toBeNull();
   });
 });
