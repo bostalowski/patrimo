@@ -1,5 +1,5 @@
 import type { AnnualReturn, MonthlyReturn } from "@/lib/performance";
-import { cn, formatPercentCompact } from "@/lib/utils";
+import { cn, formatPercent, formatPercentCompact } from "@/lib/utils";
 
 const MONTH_LABELS = [
   "Jan",
@@ -121,5 +121,42 @@ export function DrawdownBadge({
         {formatPercentCompact(value)}
       </span>
     </span>
+  );
+}
+
+function MetricBadge({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5 rounded-md bg-zinc-100 px-3 py-1.5 dark:bg-zinc-900">
+      <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        {label}
+      </span>
+      <span className="text-sm font-semibold tabular-nums text-zinc-800 dark:text-zinc-200">
+        {value}
+      </span>
+    </span>
+  );
+}
+
+export function RiskBadges({
+  volatility,
+  sharpe,
+  drawdown,
+}: {
+  volatility: number | null;
+  sharpe: number | null;
+  drawdown: number;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <MetricBadge
+        label="Volatilité"
+        value={volatility === null ? "—" : formatPercent(volatility)}
+      />
+      <MetricBadge
+        label="Sharpe"
+        value={sharpe === null ? "—" : sharpe.toFixed(2)}
+      />
+      <DrawdownBadge value={drawdown} />
+    </div>
   );
 }

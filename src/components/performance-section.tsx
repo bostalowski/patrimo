@@ -9,10 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PortfolioCurve } from "@/components/charts/portfolio-curve";
-import {
-  DrawdownBadge,
-  ReturnsHeatmap,
-} from "@/components/charts/returns-heatmap";
+import { ReturnsHeatmap, RiskBadges } from "@/components/charts/returns-heatmap";
 import { PerformanceSummary } from "@/components/performance-summary";
 import {
   aggregateHistory,
@@ -20,26 +17,32 @@ import {
   type HistorySeries,
 } from "@/lib/portfolio-history";
 import {
+  annualizedVolatility,
   annualReturns,
   maxDrawdown,
   monthlyReturns,
   periodReturns,
+  realReturn,
+  sharpeRatio,
   xirr,
 } from "@/lib/performance";
 import type { AssetPriceHistory } from "@/lib/store";
 import { cn, formatEuro, formatPercentCompact, signClass } from "@/lib/utils";
 
 type BenchmarkProp = {
+  id: string;
   label: string;
   history: AssetPriceHistory;
 };
 
+const DEFAULT_INFLATION_RATE = 0.02;
+
 export function PerformanceSection({
   history,
-  benchmark,
+  benchmarks = [],
 }: {
   history: HistorySeries;
-  benchmark?: BenchmarkProp;
+  benchmarks?: BenchmarkProp[];
 }) {
   const allIds = useMemo(
     () => history.perAsset.map((series) => series.assetId),
@@ -53,8 +56,17 @@ export function PerformanceSection({
     setSelected(new Set(allIds));
   }
 
-  const hasBenchmark = !!benchmark && Object.keys(benchmark.history).length > 0;
-  const [benchmarkOn, setBenchmarkOn] = useState(false);
+  const availableBenchmarks = useMemo(
+    () => benchmarks.filter((b) => Object.keys(b.history).length > 0),
+    [benchmarks],
+  );
+  const [benchmarkId, setBenchmarkId] = useState<string | null>(null);
+  const activeBenchmark = benchmarkId
+    ? (availableBenchmarks.find((b) => b.id === benchmarkId) ?? null)
+    : null;
+
+  const [realMode, setRealMode] = useState(false);
+  const [inflationRate, setInflationRate] = useState(DEFAULT_INFLATION_RATE);
 
   const aggregateSet = selected.size === allIds.length ? undefined : selected;
   const points = useMemo(
@@ -67,11 +79,18 @@ export function PerformanceSection({
   const monthly = useMemo(() => monthlyReturns(points), [points]);
   const annual = useMemo(() => annualReturns(points), [points]);
   const drawdown = useMemo(() => maxDrawdown(points), [points]);
+  const volatility = useMemo(() => annualizedVolatility(points), [points]);
+  const sharpe = useMemo(() => sharpeRatio(points), [points]);
+
+  const displayedXirr =
+    realMode && annualizedXirr !== null
+      ? realReturn(annualizedXirr, inflationRate)
+      : annualizedXirr;
 
   const benchmarkSeries = useMemo(() => {
-    if (!benchmarkOn || !benchmark) return null;
-    return buildBenchmarkSeries(points, benchmark.history);
-  }, [benchmarkOn, benchmark, points]);
+    if (!activeBenchmark) return null;
+    return buildBenchmarkSeries(points, activeBenchmark.history);
+  }, [activeBenchmark, points]);
 
   const chartData = useMemo(() => {
     if (!benchmarkSeries) return points;
@@ -139,21 +158,29 @@ export function PerformanceSection({
                 Neutralise l&apos;effet des apports successifs.
               </p>
             </div>
-            <span className="inline-flex items-baseline gap-1.5 rounded-md bg-zinc-100 px-3 py-1.5 dark:bg-zinc-900">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                TRI annualisé (XIRR)
+            <div className="flex flex-wrap items-center gap-2">
+              <InflationToggle
+                active={realMode}
+                rate={inflationRate}
+                onToggle={() => setRealMode((v) => !v)}
+                onRateChange={setInflationRate}
+              />
+              <span className="inline-flex items-baseline gap-1.5 rounded-md bg-zinc-100 px-3 py-1.5 dark:bg-zinc-900">
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                  TRI annualisé{realMode ? " réel" : ""} (XIRR)
+                </span>
+                <span
+                  className={cn(
+                    "text-sm font-semibold tabular-nums",
+                    displayedXirr === null ? "" : signClass(displayedXirr),
+                  )}
+                >
+                  {displayedXirr === null
+                    ? "—"
+                    : formatPercentCompact(displayedXirr)}
+                </span>
               </span>
-              <span
-                className={cn(
-                  "text-sm font-semibold tabular-nums",
-                  annualizedXirr === null ? "" : signClass(annualizedXirr),
-                )}
-              >
-                {annualizedXirr === null
-                  ? "—"
-                  : formatPercentCompact(annualizedXirr)}
-              </span>
-            </span>
+            </div>
           </div>
         </CardHeader>
         <CardBody>
@@ -168,21 +195,21 @@ export function PerformanceSection({
               <CardTitle>Évolution du patrimoine</CardTitle>
               <p className="text-xs text-zinc-500">
                 Valeur (zone verte) vs capital investi cumulé (pointillé)
-                {benchmarkOn && benchmark
-                  ? ` vs ${benchmark.label} simulé (indigo)`
+                {activeBenchmark
+                  ? ` vs ${activeBenchmark.label} simulé (indigo)`
                   : ""}
                 .
               </p>
             </div>
-            {hasBenchmark && benchmark && (
-              <BenchmarkToggle
-                label={benchmark.label}
-                active={benchmarkOn}
-                onToggle={() => setBenchmarkOn((v) => !v)}
+            {availableBenchmarks.length > 0 && (
+              <BenchmarkSelector
+                benchmarks={availableBenchmarks}
+                selectedId={benchmarkId}
+                onSelect={setBenchmarkId}
               />
             )}
           </div>
-          {benchmarkOn && benchmark && comparison && (
+          {activeBenchmark && comparison && (
             <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
               <span className="text-zinc-500 dark:text-zinc-400">
                 Portefeuille{" "}
@@ -191,7 +218,7 @@ export function PerformanceSection({
                 </span>
               </span>
               <span className="text-zinc-500 dark:text-zinc-400">
-                {benchmark.label} simulé{" "}
+                {activeBenchmark.label} simulé{" "}
                 <span className="font-medium text-zinc-800 dark:text-zinc-200">
                   {formatEuro(comparison.lastBench)}
                 </span>
@@ -199,7 +226,8 @@ export function PerformanceSection({
               <span className={cn("font-semibold", signClass(comparison.diff))}>
                 {comparison.diff >= 0 ? "+" : ""}
                 {formatEuro(comparison.diff)} ({comparison.diff >= 0 ? "+" : ""}
-                {formatPercentCompact(comparison.diffPct)}) vs {benchmark.label}
+                {formatPercentCompact(comparison.diffPct)}) vs{" "}
+                {activeBenchmark.label}
               </span>
             </div>
           )}
@@ -208,7 +236,7 @@ export function PerformanceSection({
           <PortfolioCurve
             data={chartData}
             benchmarkLabel={
-              benchmarkOn && benchmark ? `${benchmark.label} simulé` : undefined
+              activeBenchmark ? `${activeBenchmark.label} simulé` : undefined
             }
           />
         </CardBody>
@@ -223,7 +251,11 @@ export function PerformanceSection({
                 Rendement TWR par mois et par année.
               </p>
             </div>
-            <DrawdownBadge value={drawdown.value} />
+            <RiskBadges
+              volatility={volatility}
+              sharpe={sharpe}
+              drawdown={drawdown.value}
+            />
           </div>
         </CardHeader>
         <CardBody>
@@ -234,25 +266,23 @@ export function PerformanceSection({
   );
 }
 
-function BenchmarkToggle({
-  label,
-  active,
-  onToggle,
+function BenchmarkSelector({
+  benchmarks,
+  selectedId,
+  onSelect,
 }: {
-  label: string;
-  active: boolean;
-  onToggle: () => void;
+  benchmarks: BenchmarkProp[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
 }) {
+  const active = selectedId !== null;
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={active}
+    <label
       className={cn(
         "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium shadow-sm transition",
         active
-          ? "border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 dark:hover:bg-indigo-900"
-          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900",
+          ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-300"
+          : "border-zinc-200 bg-white text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200",
       )}
     >
       <span
@@ -262,8 +292,75 @@ function BenchmarkToggle({
         )}
         aria-hidden="true"
       />
-      <span>Comparer à {label}</span>
-    </button>
+      <span>Comparer à</span>
+      <select
+        value={selectedId ?? ""}
+        onChange={(event) => onSelect(event.target.value || null)}
+        className="cursor-pointer bg-transparent text-xs font-medium focus:outline-none"
+      >
+        <option value="">Aucun</option>
+        {benchmarks.map((benchmark) => (
+          <option key={benchmark.id} value={benchmark.id}>
+            {benchmark.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function InflationToggle({
+  active,
+  rate,
+  onToggle,
+  onRateChange,
+}: {
+  active: boolean;
+  rate: number;
+  onToggle: () => void;
+  onRateChange: (rate: number) => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium shadow-sm transition",
+        active
+          ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+          : "border-zinc-200 bg-white text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={active}
+        className="inline-flex items-center gap-2"
+      >
+        <span
+          className={cn(
+            "inline-block size-2 rounded-full",
+            active ? "bg-amber-500" : "bg-zinc-300 dark:bg-zinc-700",
+          )}
+          aria-hidden="true"
+        />
+        <span>Net d&apos;inflation</span>
+      </button>
+      {active && (
+        <span className="inline-flex items-center gap-1">
+          <input
+            type="number"
+            step="0.1"
+            min="0"
+            value={(rate * 100).toFixed(1)}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              if (Number.isFinite(next)) onRateChange(next / 100);
+            }}
+            className="w-12 rounded border border-amber-200 bg-white px-1 py-0.5 text-right tabular-nums text-amber-800 focus:outline-none dark:border-amber-800 dark:bg-zinc-950 dark:text-amber-200"
+          />
+          <span aria-hidden="true">%</span>
+        </span>
+      )}
+    </div>
   );
 }
 
