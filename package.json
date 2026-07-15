@@ -1,6 +1,6 @@
 {
   "name": "patrimo",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "Application locale de suivi de patrimoine : lit un Excel comme source de vérité, récupère les cours en ligne et calcule positions, PRU et P&L.",
   "author": {
