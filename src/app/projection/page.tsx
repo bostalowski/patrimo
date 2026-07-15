@@ -143,9 +143,19 @@ function buildEnvelopeInputs(
     }
   }
 
-  return Array.from(valueByEnvelope.entries())
-    .filter(([, currentValue]) => currentValue > 0)
-    .map(([envelope, currentValue]) => {
+  const allEnvelopes = new Set<Envelope>([
+    ...Array.from(valueByEnvelope.keys()),
+    ...Array.from(streamsByEnvelope.keys()),
+  ]);
+
+  return Array.from(allEnvelopes)
+    .filter(
+      (envelope) =>
+        (valueByEnvelope.get(envelope) ?? 0) > 0 ||
+        streamsByEnvelope.has(envelope),
+    )
+    .map((envelope) => {
+      const currentValue = valueByEnvelope.get(envelope) ?? 0;
       const streams = streamsByEnvelope.get(envelope) ?? [];
       const monthlyDefault = streams
         .filter((s) => s.frequency === "MENSUEL")

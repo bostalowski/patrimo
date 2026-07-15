@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { projectInvestment } from "@/lib/projection";
 import type { Envelope } from "@/lib/schema";
 import { cn, formatEuro, formatPercent } from "@/lib/utils";
 import {
@@ -54,6 +55,25 @@ export function ProjectionClient({
     String(Math.round(inflationRate * 1000) / 10),
   );
 
+  const [rates, setRates] = useState<Record<string, string>>(() =>
+    Object.entries(envelopeRates).reduce(
+      (acc, [envelope, rate]) => {
+        acc[envelope] = String(Math.round(rate * 1000) / 10);
+        return acc;
+      },
+      {} as Record<string, string>,
+    ),
+  );
+  const [monthly, setMonthly] = useState<Record<string, string>>(() =>
+    envelopeInputs.reduce(
+      (acc, env) => {
+        acc[env.envelope] = String(Math.max(0, env.monthlyDefault));
+        return acc;
+      },
+      {} as Record<string, string>,
+    ),
+  );
+
   const effectiveRate = Math.max(0, parseNumber(rateInput) / 100);
   const inflation: InflationView = { rate: effectiveRate };
 
@@ -95,17 +115,21 @@ export function ProjectionClient({
         <div className="space-y-8">
           <EnvelopeProjection
             envelopes={envelopeInputs}
-            defaultRates={envelopeRates}
             monthlyRestant={monthlyRestant}
             inflation={inflation}
+            monthly={monthly}
+            setMonthly={setMonthly}
+            rates={rates}
+            setRates={setRates}
           />
 
           {retirement && (
             <RetirementIncomeCard
               retirement={retirement}
               envelopeInputs={envelopeInputs}
-              envelopeRates={envelopeRates}
               inflation={inflation}
+              monthly={monthly}
+              rates={rates}
             />
           )}
         </div>
@@ -121,29 +145,66 @@ export function ProjectionClient({
 function RetirementIncomeCard({
   retirement,
   envelopeInputs,
-  envelopeRates,
   inflation,
+  monthly,
+  rates,
 }: {
   retirement: RetirementData;
   envelopeInputs: EnvelopeProjectionInput[];
-  envelopeRates: Record<Envelope, number>;
   inflation: InflationView;
+  monthly: Record<string, string>;
+  rates: Record<string, string>;
 }) {
-  const projectedCapital = envelopeInputs.reduce((sum, env) => {
-    const rate = envelopeRates[env.envelope] ?? 0;
-    const monthly = env.monthlyDefault;
-    const months = Math.round(retirement.horizonYears * 12);
-    let balance = env.currentValue;
-    const monthlyRate = rate / 12;
-    for (let m = 0; m < months; m++) {
-      balance = balance * (1 + monthlyRate) + monthly;
-    }
-    return sum + balance;
-  }, 0);
+  const rateOf = useCallback(
+    (envelope: Envelope): number =>
+      parseNumber(rates[envelope] ?? "0") / 100,
+    [rates],
+  );
 
-  const weightedRate = envelopeInputs.reduce((sum, env) => {
-    return sum + env.currentValue * (envelopeRates[env.envelope] ?? 0);
-  }, 0) / Math.max(1, envelopeInputs.reduce((s, e) => s + e.currentValue, 0));
+  const monthlyOf = useCallback(
+    (input: EnvelopeProjectionInput): number => {
+      const raw = monthly[input.envelope];
+      return Math.max(
+        0,
+        raw === undefined ? input.monthlyDefault : parseNumber(raw),
+      );
+    },
+    [monthly],
+  );
+
+  const projections = useMemo(
+    () =>
+      envelopeInputs.map((env) => ({
+        envelope: env,
+        result: projectInvestment({
+          startBalance: env.currentValue,
+          contributions: [
+            { amount: monthlyOf(env), frequency: "MENSUEL" as const },
+            ...env.extraContributions,
+          ],
+          annualRate: rateOf(env.envelope),
+          years: retirement.horizonYears,
+          inflationRate: inflation.rate,
+          plafond: env.plafond,
+        }),
+      })),
+    [envelopeInputs, monthlyOf, rateOf, retirement.horizonYears, inflation.rate],
+  );
+
+  const projectedCapital = projections.reduce(
+    (sum, p) => sum + p.result.finalValue,
+    0,
+  );
+
+  const weightedRate = useMemo(() => {
+    if (projectedCapital <= 0) return 0;
+    return (
+      projections.reduce(
+        (sum, p) => sum + p.result.finalValue * rateOf(p.envelope.envelope),
+        0,
+      ) / projectedCapital
+    );
+  }, [projections, projectedCapital, rateOf]);
 
   const annualReturns = projectedCapital * weightedRate;
   const monthlyFromCapital = annualReturns / 12;
@@ -152,8 +213,10 @@ function RetirementIncomeCard({
     monthlyFromCapital / Math.pow(1 + inflation.rate, retirement.horizonYears);
 
   const pension = retirement.estimatedPublicPension ?? 0;
-  const totalMonthly = monthlyFromCapital + pension + retirement.monthlyRealEstateNet;
-  const totalReal = realMonthlyFromCapital + pension + retirement.monthlyRealEstateNet;
+  const totalMonthly =
+    monthlyFromCapital + pension + retirement.monthlyRealEstateNet;
+  const totalReal =
+    realMonthlyFromCapital + pension + retirement.monthlyRealEstateNet;
 
   return (
     <Card>
