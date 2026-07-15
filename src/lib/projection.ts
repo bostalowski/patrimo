@@ -1,6 +1,11 @@
 import { deflate } from "@/lib/inflation";
 import type { DcaFrequency, Envelope } from "@/lib/schema";
 
+export const DEFAULT_ENVELOPE_PLAFONDS: Partial<Record<Envelope, number>> = {
+  LIVRET: 22_950,
+  PEA: 150_000,
+};
+
 export const DEFAULT_ENVELOPE_RATES: Record<Envelope, number> = {
   CTO: 0.08,
   PEA: 0.07,
@@ -37,6 +42,7 @@ export type InvestmentProjection = {
   finalRealValue: number;
   totalContributed: number;
   gain: number;
+  plafondReachedMonth: number | null;
 };
 
 function utc(year: number, monthIndex: number, day: number): Date {
@@ -90,6 +96,7 @@ export function projectInvestment(params: {
 
   let value = startBalance;
   let invested = startBalance;
+  let plafondReachedMonth: number | null = null;
 
   const toIso = (date: Date) => date.toISOString().slice(0, 10);
   const points: ProjectionPoint[] = [
@@ -114,6 +121,9 @@ export function projectInvestment(params: {
       0,
     );
     const contribution = Math.max(0, Math.min(due, room));
+    if (plafond !== undefined && plafondReachedMonth === null && invested + contribution >= plafond) {
+      plafondReachedMonth = month;
+    }
     value = value * (1 + monthlyRate) + contribution;
     invested += contribution;
     points.push({
@@ -130,5 +140,6 @@ export function projectInvestment(params: {
     finalRealValue: deflate(value, totalMonths / 12, inflationRate),
     totalContributed: invested,
     gain: value - invested,
+    plafondReachedMonth,
   };
 }

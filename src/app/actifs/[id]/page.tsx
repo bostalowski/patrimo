@@ -19,6 +19,7 @@ import { getAssetSourceUrl, getSourceLabel } from "@/lib/prices/source-url";
 import { AssetType, PriceSource } from "@/lib/schema";
 import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
 import { AssetForm } from "../asset-form";
+import { ManualPriceInput } from "./manual-price-input";
 import {
   formatDate,
   formatEuro,
@@ -173,6 +174,19 @@ export default async function AssetDetailPage({
           <AssetPriceCurve data={curveData} pru={position?.pru ?? 0} />
         </CardBody>
       </Card>
+
+      {asset.source === "manual" && (
+        <ManualPriceInput
+          asset={asset}
+          entries={
+            history
+              ? Object.entries(history)
+                  .map(([date, price]) => ({ date, price }))
+                  .sort((a, b) => (a.date > b.date ? -1 : 1))
+              : []
+          }
+        />
+      )}
 
       <Card>
         <CardHeader>

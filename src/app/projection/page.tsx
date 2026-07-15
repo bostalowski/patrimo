@@ -3,15 +3,14 @@ import { getInflationRate } from "@/lib/config";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { summarizeBudget } from "@/lib/budget";
 import { buildPortfolio } from "@/lib/portfolio";
-import { readPriceMap, readDcaConfigs, readExpectedReturns } from "@/lib/store";
-import { DEFAULT_ENVELOPE_RATES, type ContributionStream } from "@/lib/projection";
+import { readPriceMap, readDcaConfigs, readExpectedReturns, readRetirementProfile } from "@/lib/store";
+import { DEFAULT_ENVELOPE_PLAFONDS, DEFAULT_ENVELOPE_RATES, type ContributionStream } from "@/lib/projection";
 import {
-  computeLivretState,
-  livretFlows,
-  livretInterestEvents,
-} from "@/lib/livret";
+  buildRetirementSources,
+  computeRetirementHorizon,
+} from "@/lib/retraite";
 import type { Envelope } from "@/lib/schema";
-import { ProjectionClient, type LivretOption } from "./projection-client";
+import { ProjectionClient } from "./projection-client";
 import type { EnvelopeProjectionInput } from "./envelope-projection";
 import type { SerializedProperty } from "./realestate-projection";
 
@@ -23,35 +22,13 @@ export default async function ProjectionPage() {
   const now = new Date();
   const inflationRate = getInflationRate();
 
-  const livrets: LivretOption[] = workbook.accounts
-    .filter((account) => account.envelope === "LIVRET")
-    .map((account) => {
-      const flows = livretFlows(account.id, workbook.transactions);
-      const interestEvents = livretInterestEvents(
-        account.id,
-        workbook.transactions,
-      );
-      const state = computeLivretState(
-        account.rate ?? 0,
-        flows,
-        interestEvents,
-        now,
-      );
-      return {
-        id: account.id,
-        label: account.label,
-        rate: account.rate ?? 0,
-        plafond: account.plafond ?? null,
-        balance: state.availableBalance,
-      };
-    });
-
   const { restant } = summarizeBudget(getBudget());
 
-  const [priceMap, dcaConfigs, expectedReturns] = await Promise.all([
+  const [priceMap, dcaConfigs, expectedReturns, retirementProfile] = await Promise.all([
     readPriceMap(workbook.assets),
     readDcaConfigs(),
     readExpectedReturns(),
+    readRetirementProfile(),
   ]);
   const envelopeRates: Record<Envelope, number> = {
     ...DEFAULT_ENVELOPE_RATES,
@@ -70,24 +47,53 @@ export default async function ProjectionPage() {
     dateDebutCredit: p.dateDebutCredit?.toISOString(),
   }));
 
+  const retirementHorizon = retirementProfile.birthDate
+    ? computeRetirementHorizon(
+        retirementProfile.birthDate,
+        retirementProfile.targetRetirementAge,
+        now,
+      )
+    : null;
+
+  const retirementHorizonYears = retirementHorizon?.horizonYears ?? 10;
+
+  const retirementSources = retirementProfile.birthDate
+    ? buildRetirementSources({
+        portfolio,
+        dcaConfigs,
+        properties: workbook.properties,
+        horizonYears: retirementHorizonYears,
+        inflationRate,
+        now,
+      })
+    : null;
+
   return (
     <div className="space-y-8">
       <header className="space-y-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">Projection</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-          Simulez la croissance de vos livrets à taux connu, ou projetez vos
-          enveloppes engagées et votre reste à allouer au taux estimé de chaque
-          enveloppe, avec conseils d&apos;optimisation fiscale.
+          Projection de ton patrimoine financier et immobilier, avec objectif
+          retraite et conseils d&apos;optimisation fiscale.
         </p>
       </header>
 
       <ProjectionClient
-        livrets={livrets}
         monthlyRestant={restant}
         envelopeInputs={envelopeInputs}
         envelopeRates={envelopeRates}
         properties={properties}
         inflationRate={inflationRate}
+        retirement={
+          retirementHorizon
+            ? {
+                horizonYears: retirementHorizon.horizonYears,
+                targetRetirementAge: retirementProfile.targetRetirementAge,
+                monthlyRealEstateNet: retirementSources?.monthlyRealEstateNet ?? 0,
+                estimatedPublicPension: retirementProfile.estimatedPublicPension,
+              }
+            : null
+        }
       />
     </div>
   );
@@ -100,7 +106,6 @@ function buildEnvelopeInputs(
 ): EnvelopeProjectionInput[] {
   const valueByEnvelope = new Map<Envelope, number>();
   for (const account of portfolioAccounts) {
-    if (account.envelope === "LIVRET") continue;
     const envelope = account.envelope as Envelope;
     valueByEnvelope.set(
       envelope,
@@ -110,7 +115,6 @@ function buildEnvelopeInputs(
 
   const streamsByEnvelope = new Map<Envelope, ContributionStream[]>();
   for (const config of dcaConfigs) {
-    if (config.envelope === "LIVRET") continue;
     const streams = streamsByEnvelope.get(config.envelope) ?? [];
     streams.push({
       amount: config.amount,
@@ -123,7 +127,6 @@ function buildEnvelopeInputs(
   const openDateByEnvelope = new Map<Envelope, string | undefined>();
   const plafondByEnvelope = new Map<Envelope, number | undefined>();
   for (const account of accounts) {
-    if (account.envelope === "LIVRET") continue;
     const openDate = account.openDate?.toISOString();
     const existingOpen = openDateByEnvelope.get(account.envelope);
     if (openDate && (!existingOpen || openDate < existingOpen)) {
@@ -156,7 +159,7 @@ function buildEnvelopeInputs(
         monthlyDefault,
         extraContributions,
         openDate: openDateByEnvelope.get(envelope),
-        plafond: plafondByEnvelope.get(envelope),
+        plafond: plafondByEnvelope.get(envelope) ?? DEFAULT_ENVELOPE_PLAFONDS[envelope],
       };
     })
     .sort((a, b) => b.currentValue - a.currentValue);

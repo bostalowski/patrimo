@@ -4,17 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
-  Building2,
-  Calculator,
+  Briefcase,
   Coins,
   Landmark,
   LayoutDashboard,
   LineChart,
   ListOrdered,
-  Pencil,
   PiggyBank,
   Settings,
-  Sunset,
   TrendingUp,
   Wallet,
 } from "lucide-react";
@@ -25,14 +22,11 @@ const navItems = [
   { href: "/performance", label: "Performance", icon: LineChart },
   { href: "/actifs", label: "Actifs", icon: Coins },
   { href: "/comptes", label: "Comptes", icon: Wallet },
-  { href: "/immobilier", label: "Immobilier", icon: Building2 },
   { href: "/transactions", label: "Transactions", icon: ListOrdered },
   { href: "/fiscalite", label: "Fiscalité", icon: Landmark },
   { href: "/budget", label: "Budget", icon: PiggyBank },
+  { href: "/investissements", label: "Investissements", icon: Briefcase },
   { href: "/projection", label: "Projection", icon: TrendingUp },
-  { href: "/dca", label: "DCA", icon: Calculator },
-  { href: "/retraite", label: "Retraite", icon: Sunset },
-  { href: "/prix-manuels", label: "Prix manuels", icon: Pencil },
   { href: "/reglages", label: "Réglages", icon: Settings },
 ];
 
