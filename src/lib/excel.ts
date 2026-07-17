@@ -50,6 +50,7 @@ const ACTIFS_HEADERS = [
   "Source prix",
   "Param source",
   "Devise",
+  "TER",
 ];
 
 const COMPTES_HEADERS = [
@@ -327,6 +328,7 @@ function parseAssets(rows: Record<string, unknown>[]): Asset[] {
         source: row["Source prix"],
         param: emptyToUndefined(row["Param source"]),
         currency: (row["Devise"] as string) ?? "EUR",
+        ter: toNumber(row["TER"]) ?? undefined,
       });
       if (!parsed.success) throw new Error(describeZodError(parsed.error));
       return parsed.data;
@@ -762,6 +764,7 @@ function assetEntry(asset: Asset): UpsertEntry {
       "Source prix": asset.source,
       "Param source": asset.param ?? null,
       Devise: asset.currency,
+      TER: asset.ter ?? null,
     },
   };
 }

@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   ListOrdered,
   PiggyBank,
+  Receipt,
   Settings,
   TrendingUp,
   Wallet,
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/investissements", label: "Investissements", icon: Briefcase },
   { href: "/projection", label: "Projection", icon: TrendingUp },
+  { href: "/frais", label: "Frais", icon: Receipt },
   { href: "/fiscalite", label: "Fiscalité", icon: Landmark },
   { href: "/reglages", label: "Réglages", icon: Settings },
 ];

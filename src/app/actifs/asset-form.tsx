@@ -34,6 +34,7 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
   const [ticker, setTicker] = useState(asset?.ticker ?? "");
   const [param, setParam] = useState(asset?.param ?? "");
   const [currency, setCurrency] = useState(asset?.currency ?? "EUR");
+  const [ter, setTer] = useState(asset?.ter != null ? String(asset.ter * 100) : "");
 
   const isLoading = busy || pending;
 
@@ -45,6 +46,7 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
     setTicker(asset?.ticker ?? "");
     setParam(asset?.param ?? "");
     setCurrency(asset?.currency ?? "EUR");
+    setTer(asset?.ter != null ? String(asset.ter * 100) : "");
     setError(null);
   }
 
@@ -78,6 +80,7 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
           ticker: ticker.trim() || undefined,
           param: param.trim() || undefined,
           currency: currency.trim() || "EUR",
+          ter: ter.trim() ? Number(ter.replace(",", ".")) / 100 : undefined,
         }),
       });
       const body = (await res.json().catch(() => null)) as {
@@ -221,12 +224,23 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
               />
             </Field>
 
-            <Field label="Param source" className="sm:col-span-2">
+            <Field label="Param source">
               <input
                 type="text"
                 value={param}
                 onChange={(e) => setParam(e.target.value)}
                 placeholder="ID coingecko, ticker Yahoo, slug Investir…"
+                className={inputClasses}
+              />
+            </Field>
+
+            <Field label="TER (%)">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={ter}
+                onChange={(e) => setTer(e.target.value)}
+                placeholder="0.20"
                 className={inputClasses}
               />
             </Field>
