@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Patrimo",
+    "slug": "patrimo",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "patrimo",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#09090b"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#09090b"
+      },
+      "package": "com.patrimo.app"
+    },
+    "ios": {
+      "bundleIdentifier": "com.patrimo.app",
+      "supportsTablet": true
+    },
+    "plugins": ["expo-router"]
+  }
+}
