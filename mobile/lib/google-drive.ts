@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_CLIENT_ID = "__YOUR_GOOGLE_CLIENT_ID__";
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 const STORAGE_KEY_TOKEN = "patrimo:google_token";
 const STORAGE_KEY_FILE_ID = "patrimo:drive_file_id";
 
