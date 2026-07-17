@@ -80,6 +80,7 @@ export const Asset = z.object({
   source: PriceSource,
   param: z.string().optional(),
   currency: z.string().default("EUR"),
+  ter: z.number().nonnegative().optional(),
 });
 export type Asset = z.infer<typeof Asset>;
 

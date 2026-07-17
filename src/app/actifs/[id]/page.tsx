@@ -121,7 +121,7 @@ export default async function AssetDetailPage({
         </p>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${asset.ter ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
         <Card>
           <CardHeader>
             <CardTitle>Quantité</CardTitle>
@@ -164,6 +164,20 @@ export default async function AssetDetailPage({
             )}
           </CardHeader>
         </Card>
+        {asset.ter != null && asset.ter > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Frais de gestion (TER)</CardTitle>
+              <CardValue>{formatPercent(asset.ter)}</CardValue>
+              {position && position.marketValue > 0 && (
+                <p className="text-xs text-zinc-500">
+                  ≈ {formatEuro(position.marketValue * asset.ter)}/an sur{" "}
+                  {formatEuro(position.marketValue)}
+                </p>
+              )}
+            </CardHeader>
+          </Card>
+        )}
       </div>
 
       <Card>
