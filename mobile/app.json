@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "patrimo",
+    "scheme": ["patrimo", "com.googleusercontent.apps.12560355131-0q31f1ct528o6249qilucbnlg4hsg1ur"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {

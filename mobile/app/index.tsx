@@ -2,85 +2,102 @@ import { View, Text, ScrollView, useColorScheme } from "react-native";
 import { useWorkbook } from "../lib/use-workbook";
 import { buildPortfolio } from "@patrimo/core/portfolio";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
+import { useThemeColors, shared } from "../lib/theme";
 
 export default function DashboardScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useColorScheme() === "dark";
+  const t = useThemeColors(isDark);
   const { workbook, prices, loading, error } = useWorkbook();
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-zinc-950">
-        <Text className="text-zinc-400">Chargement...</Text>
+      <View style={[shared.emptyState, { backgroundColor: t.bg }]}>
+        <Text style={[shared.emptyText, { color: t.textSecondary }]}>
+          Chargement...
+        </Text>
       </View>
     );
   }
 
   if (error || !workbook) {
     return (
-      <View className="flex-1 items-center justify-center bg-zinc-950 px-6">
-        <Text className="text-zinc-400 text-center">
-          {error ?? "Configurez votre fichier Excel dans les réglages."}
+      <View style={[shared.emptyState, { backgroundColor: t.bg }]}>
+        <Text style={[shared.emptyText, { color: t.textSecondary }]}>
+          {error ?? "Connecte ton Google Drive dans les réglages pour commencer."}
         </Text>
       </View>
     );
   }
 
-  const portfolio = buildPortfolio(workbook, prices);
+  let portfolio: ReturnType<typeof buildPortfolio>;
+  try {
+    portfolio = buildPortfolio(workbook, prices);
+  } catch (e) {
+    console.log("[Dashboard] buildPortfolio error:", e instanceof Error ? e.message : e);
+    return (
+      <View style={[shared.emptyState, { backgroundColor: t.bg }]}>
+        <Text style={[shared.emptyText, { color: t.textSecondary }]}>
+          Erreur lors du calcul du portefeuille. Vérifie les données.
+        </Text>
+      </View>
+    );
+  }
   const { totals } = portfolio;
 
   return (
     <ScrollView
-      className={isDark ? "flex-1 bg-zinc-950" : "flex-1 bg-white"}
+      style={{ flex: 1, backgroundColor: t.bg }}
       contentContainerStyle={{ padding: 16 }}
     >
-      <View className="mb-6">
-        <Text className={isDark ? "text-zinc-400 text-sm" : "text-zinc-500 text-sm"}>
+      <View style={{ marginBottom: 24 }}>
+        <Text style={[shared.label, { color: t.textSecondary, marginBottom: 4 }]}>
           Patrimoine net
         </Text>
-        <Text className={isDark ? "text-white text-3xl font-bold" : "text-zinc-900 text-3xl font-bold"}>
+        <Text style={[shared.bigNumber, { color: t.text }]}>
           {formatEuro(totals.marketValue)}
         </Text>
       </View>
 
-      <View className="flex-row gap-4 mb-6">
-        <StatCard
-          label="Investi"
-          value={formatEuro(totals.costBasis)}
-          isDark={isDark}
-        />
+      <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
+        <StatCard label="Investi" value={formatEuro(totals.costBasis)} theme={t} />
         <StatCard
           label="Plus-value"
           value={formatEuro(totals.totalReturn)}
-          color={totals.totalReturn >= 0 ? "emerald" : "rose"}
-          isDark={isDark}
+          valueColor={totals.totalReturn >= 0 ? t.success : t.danger}
+          theme={t}
         />
       </View>
 
-      <View className="flex-row gap-4 mb-6">
+      <View style={{ flexDirection: "row", gap: 12, marginBottom: 24 }}>
         <StatCard
           label="Rendement"
           value={formatPercent(totals.totalReturnPct)}
-          color={totals.totalReturnPct >= 0 ? "emerald" : "rose"}
-          isDark={isDark}
+          valueColor={totals.totalReturnPct >= 0 ? t.success : t.danger}
+          theme={t}
         />
-        <StatCard
-          label="Frais payés"
-          value={formatEuro(totals.fees)}
-          isDark={isDark}
-        />
+        <StatCard label="Frais payés" value={formatEuro(totals.fees)} theme={t} />
       </View>
 
-      <View className={isDark ? "bg-zinc-900 rounded-xl p-4" : "bg-zinc-100 rounded-xl p-4"}>
-        <Text className={isDark ? "text-zinc-300 font-semibold mb-3" : "text-zinc-700 font-semibold mb-3"}>
+      <View style={[shared.card, { backgroundColor: t.card }]}>
+        <Text style={[shared.cardTitle, { color: t.text, marginBottom: 12 }]}>
           Répartition par enveloppe
         </Text>
-        {portfolio.accounts.map((account) => (
-          <View key={account.accountId} className="flex-row justify-between py-2">
-            <Text className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+        {portfolio.accounts.map((account, i) => (
+          <View
+            key={account.accountId}
+            style={[
+              shared.row,
+              {
+                paddingVertical: 10,
+                borderTopWidth: i > 0 ? 1 : 0,
+                borderTopColor: t.cardBorder,
+              },
+            ]}
+          >
+            <Text style={{ color: t.textSecondary, fontSize: 14 }}>
               {account.accountId}
             </Text>
-            <Text className={isDark ? "text-zinc-100 font-medium" : "text-zinc-900 font-medium"}>
+            <Text style={{ color: t.text, fontSize: 14, fontWeight: "600" }}>
               {formatEuro(account.marketValue)}
             </Text>
           </View>
@@ -93,28 +110,20 @@ export default function DashboardScreen() {
 function StatCard({
   label,
   value,
-  color,
-  isDark,
+  valueColor,
+  theme: t,
 }: {
   label: string;
   value: string;
-  color?: "emerald" | "rose";
-  isDark: boolean;
+  valueColor?: string;
+  theme: ReturnType<typeof useThemeColors>;
 }) {
-  const valueColor = color === "emerald"
-    ? "text-emerald-400"
-    : color === "rose"
-      ? "text-rose-400"
-      : isDark
-        ? "text-zinc-100"
-        : "text-zinc-900";
-
   return (
-    <View className={`flex-1 rounded-xl p-4 ${isDark ? "bg-zinc-900" : "bg-zinc-100"}`}>
-      <Text className={isDark ? "text-zinc-400 text-xs" : "text-zinc-500 text-xs"}>
+    <View style={[shared.card, { flex: 1, backgroundColor: t.card, marginBottom: 0 }]}>
+      <Text style={[shared.label, { color: t.textSecondary, marginBottom: 6 }]}>
         {label}
       </Text>
-      <Text className={`text-lg font-semibold ${valueColor}`}>
+      <Text style={{ fontSize: 18, fontWeight: "600", color: valueColor ?? t.text }}>
         {value}
       </Text>
     </View>

@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useFocusEffect } from "expo-router";
 import type { Workbook } from "@patrimo/core/schema";
 import { parseWorkbook } from "./excel-mobile";
 import { getToken, getFileId, downloadFile, clearToken } from "./google-drive";
-import { loadPrices, buildPriceMap, type PriceStore } from "./price-sync";
+import { syncPrices, buildPriceMap, type PriceStore } from "./price-sync";
 
 type WorkbookState = {
   workbook: Workbook | null;
+  transactionKeys: string[];
   prices: Map<string, number>;
   priceStore: PriceStore;
   loading: boolean;
@@ -18,6 +20,7 @@ type WorkbookState = {
 
 export function useWorkbook(): WorkbookState {
   const [workbook, setWorkbook] = useState<Workbook | null>(null);
+  const [transactionKeys, setTransactionKeys] = useState<string[]>([]);
   const [priceStore, setPriceStore] = useState<PriceStore>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +43,11 @@ export function useWorkbook(): WorkbookState {
       setConnected(true);
 
       const buffer = await downloadFile(token, fileId);
-      const wb = parseWorkbook(buffer);
+      const { workbook: wb, transactionKeys: keys } = parseWorkbook(buffer);
       setWorkbook(wb);
+      setTransactionKeys(keys);
 
-      const prices = await loadPrices();
+      const prices = await syncPrices(wb.assets, wb.transactions);
       setPriceStore(prices);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur inconnue");
@@ -52,12 +56,13 @@ export function useWorkbook(): WorkbookState {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const connect = useCallback(async () => {
-    // OAuth flow handled in settings screen
     setConnected(true);
     await load();
   }, [load]);
@@ -74,6 +79,7 @@ export function useWorkbook(): WorkbookState {
 
   return {
     workbook,
+    transactionKeys,
     prices,
     priceStore,
     loading,

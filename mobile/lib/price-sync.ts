@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { Asset } from "@patrimo/core/schema";
+import type { Asset, Transaction } from "@patrimo/core/schema";
 
 const PRICES_STORAGE_KEY = "patrimo:prices";
 
@@ -73,9 +73,76 @@ export async function fetchYahooPrice(symbol: string): Promise<number | null> {
   }
 }
 
-export async function syncPrices(assets: Asset[]): Promise<PriceStore> {
+export async function fetchInvestirPrice(isin: string): Promise<number | null> {
+  try {
+    const url = `https://investir.lesechos.fr/cours/opcvm/-${isin.toLowerCase()}`;
+    const res = await fetch(url, {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "accept-language": "fr-FR,fr;q=0.9",
+      },
+    });
+    if (!res.ok) {
+      console.log(`[Prices] investir ${isin}: HTTP ${res.status}`);
+      return null;
+    }
+    const html = await res.text();
+    const match = html.match(
+      /Valeur liquidative \(\d{2}\/\d{2}(?:\/\d{2,4})?\)[^>]*>(?:[^<]|<(?!div)[^>]*>)*<div[^>]*>([\d,.\s\u00a0\u202f]+)\s*€/,
+    );
+    if (!match) {
+      console.log(`[Prices] investir ${isin}: VL regex no match (page length=${html.length})`);
+      return null;
+    }
+    const cleaned = match[1]
+      .replace(/[\s\u00a0\u202f]/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".");
+    const value = Number(cleaned);
+    return Number.isFinite(value) ? value : null;
+  } catch (e) {
+    console.log(`[Prices] investir ${isin}: ${e instanceof Error ? e.message : e}`);
+    return null;
+  }
+}
+
+export async function fetchZoneboursePrice(url: string): Promise<number | null> {
+  try {
+    const res = await fetch(url + "/", {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "accept-language": "fr-FR,fr;q=0.9",
+      },
+    });
+    if (!res.ok) {
+      console.log(`[Prices] zonebourse: HTTP ${res.status}`);
+      return null;
+    }
+    const html = await res.text();
+    const match = html.match(/last">\s*([\d\s,.]+)\s*(?:EUR|€)/);
+    if (!match) {
+      console.log(`[Prices] zonebourse: regex no match (page length=${html.length})`);
+      return null;
+    }
+    const cleaned = match[1]
+      .replace(/[\s\u00a0\u202f]/g, "")
+      .replace(",", ".");
+    const value = Number(cleaned);
+    return Number.isFinite(value) ? value : null;
+  } catch (e) {
+    console.log(`[Prices] zonebourse: ${e instanceof Error ? e.message : e}`);
+    return null;
+  }
+}
+
+export async function syncPrices(assets: Asset[], transactions?: Transaction[]): Promise<PriceStore> {
   const store = await loadPrices();
   const today = new Date().toISOString().slice(0, 10);
+  let fetched = 0;
 
   for (const asset of assets) {
     let price: number | null = null;
@@ -84,14 +151,31 @@ export async function syncPrices(assets: Asset[]): Promise<PriceStore> {
       price = await fetchCryptoPrice(asset.param);
     } else if (asset.source === "yahoo" && asset.param) {
       price = await fetchYahooPrice(asset.param);
+    } else if (asset.source === "investir" && (asset.isin || asset.param)) {
+      price = await fetchInvestirPrice(asset.isin || asset.param!);
+    } else if (asset.source === "zonebourse" && asset.param) {
+      price = await fetchZoneboursePrice(asset.param);
+    }
+
+    if (price === null && transactions) {
+      const lastTx = [...transactions]
+        .filter((tx) => tx.actif === asset.id && tx.prixUnitaire && tx.prixUnitaire > 0)
+        .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+      if (lastTx?.prixUnitaire) {
+        price = lastTx.prixUnitaire;
+      }
     }
 
     if (price !== null) {
       if (!store[asset.id]) store[asset.id] = {};
       store[asset.id][today] = price;
+      fetched++;
+    } else {
+      console.log(`[Prices] MISS ${asset.id} (source=${asset.source})`);
     }
   }
 
+  console.log(`[Prices] Synced ${fetched}/${assets.length} asset prices`);
   await savePrices(store);
   return store;
 }
