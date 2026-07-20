@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, useColorScheme } from "react-native";
 import { useWorkbook } from "../lib/use-workbook";
-import { buildPortfolio } from "@patrimo/core/portfolio";
+import { buildPortfolio, computeNetWorth } from "@patrimo/core/portfolio";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
 import { useThemeColors, shared } from "../lib/theme";
 
@@ -43,6 +43,11 @@ export default function DashboardScreen() {
     );
   }
   const { totals } = portfolio;
+  const { realEstateEquity, netWorth } = computeNetWorth(
+    portfolio,
+    workbook.properties,
+  );
+  const hasRealEstate = realEstateEquity > 0;
 
   return (
     <ScrollView
@@ -51,15 +56,23 @@ export default function DashboardScreen() {
     >
       <View style={{ marginBottom: 24 }}>
         <Text style={[shared.label, { color: t.textSecondary, marginBottom: 4 }]}>
-          Patrimoine net
+          {hasRealEstate ? "Patrimoine net total" : "Patrimoine net"}
         </Text>
         <Text style={[shared.bigNumber, { color: t.text }]}>
-          {formatEuro(totals.marketValue)}
+          {formatEuro(netWorth)}
         </Text>
+        {hasRealEstate && (
+          <Text style={{ color: t.textMuted, fontSize: 12, marginTop: 4 }}>
+            {formatEuro(totals.marketValue)} placements + {formatEuro(realEstateEquity)} immobilier
+          </Text>
+        )}
       </View>
 
       <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
         <StatCard label="Investi" value={formatEuro(totals.costBasis)} theme={t} />
+        {hasRealEstate && (
+          <StatCard label="Immobilier (équité)" value={formatEuro(realEstateEquity)} theme={t} />
+        )}
         <StatCard
           label="Plus-value"
           value={formatEuro(totals.totalReturn)}
