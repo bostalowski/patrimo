@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import type { Asset, DcaConfig, Envelope } from "@/lib/schema";
 import { ExpectedReturns, RetirementProfile } from "@/lib/schema";
 import { getDcaConfigs, saveDcaConfigs } from "@/lib/excel";
+import { latestPrice } from "@patrimo/core/format";
 import { z } from "zod";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
@@ -65,13 +66,6 @@ export async function readSyncMeta(): Promise<SyncMeta> {
 
 export async function writeSyncMeta(meta: SyncMeta): Promise<void> {
   await writeJson(SYNC_META_FILE, meta);
-}
-
-function latestPrice(history: AssetPriceHistory | undefined): number | null {
-  if (!history) return null;
-  const dates = Object.keys(history).sort();
-  if (dates.length === 0) return null;
-  return history[dates[dates.length - 1]];
 }
 
 export async function readPriceMap(assets: Asset[]): Promise<Map<string, number>> {

@@ -8,9 +8,9 @@ import { useThemeColors, shared } from "../lib/theme";
 export default function ProjectionScreen() {
   const isDark = useColorScheme() === "dark";
   const t = useThemeColors(isDark);
-  const { workbook, prices, loading } = useWorkbook();
+  const { workbook, prices, loading, error } = useWorkbook();
 
-  if (loading || !workbook) {
+  if (loading) {
     return (
       <View style={[shared.emptyState, { backgroundColor: t.bg }]}>
         <Text style={[shared.emptyText, { color: t.textSecondary }]}>
@@ -20,13 +20,44 @@ export default function ProjectionScreen() {
     );
   }
 
-  const portfolio = buildPortfolio(workbook, prices);
+  if (error || !workbook) {
+    return (
+      <View style={[shared.emptyState, { backgroundColor: t.bg }]}>
+        <Text style={[shared.emptyText, { color: t.textSecondary }]}>
+          {error ?? "Connecte ton Google Drive dans les réglages pour commencer."}
+        </Text>
+      </View>
+    );
+  }
+
+  let portfolio: ReturnType<typeof buildPortfolio>;
+  try {
+    portfolio = buildPortfolio(workbook, prices);
+  } catch {
+    return (
+      <View style={[shared.emptyState, { backgroundColor: t.bg }]}>
+        <Text style={[shared.emptyText, { color: t.textSecondary }]}>
+          Erreur lors du calcul du portefeuille. Vérifie les données.
+        </Text>
+      </View>
+    );
+  }
+
   const startBalance = portfolio.totals.marketValue;
+
+  const monthlyDca = workbook.dca.reduce((sum, config) => {
+    if (config.frequency === "MENSUEL") return sum + config.amount;
+    if (config.frequency === "TRIMESTRIEL") return sum + config.amount / 3;
+    if (config.frequency === "ANNUEL") return sum + config.amount / 12;
+    return sum;
+  }, 0);
+
+  const monthlyContribution = monthlyDca > 0 ? monthlyDca : 500;
 
   const projections = SCENARIO_PRESETS.map((preset) => {
     const result = projectInvestment({
       startBalance,
-      monthlyContribution: 500,
+      monthlyContribution,
       annualRate: preset.rate,
       years: 20,
       inflationRate: 0.02,
@@ -39,9 +70,18 @@ export default function ProjectionScreen() {
       style={{ flex: 1, backgroundColor: t.bg }}
       contentContainerStyle={{ padding: 16 }}
     >
-      <Text style={{ color: t.textSecondary, fontSize: 14, marginBottom: 16 }}>
-        Projection sur 20 ans avec 500 €/mois
+      <Text style={{ color: t.textSecondary, fontSize: 14, marginBottom: 4 }}>
+        Projection sur 20 ans avec {formatEuro(monthlyContribution)}/mois
       </Text>
+      {monthlyDca > 0 ? (
+        <Text style={{ color: t.textMuted, fontSize: 12, marginBottom: 16 }}>
+          Basé sur vos plans DCA
+        </Text>
+      ) : (
+        <Text style={{ color: t.textMuted, fontSize: 12, marginBottom: 16 }}>
+          Aucun DCA configuré — valeur par défaut de 500 €/mois
+        </Text>
+      )}
 
       {projections.map(({ key, label, rate, result }) => (
         <View key={key} style={[shared.card, { backgroundColor: t.card }]}>

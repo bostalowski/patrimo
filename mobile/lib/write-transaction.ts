@@ -1,6 +1,10 @@
 import * as XLSX from "xlsx";
 import type { Transaction } from "@patrimo/core/schema";
-import { downloadFile, uploadFile } from "./google-drive";
+import {
+  getActiveSource,
+  readSourceFile,
+  writeSourceFile,
+} from "./file-source";
 
 const SHEET_TRANSACTIONS = "Transactions";
 
@@ -35,13 +39,37 @@ function transactionToRow(tx: Transaction): unknown[] {
   return TRANSACTION_HEADERS.map((header) => mapping[header] ?? null);
 }
 
+export async function appendTransaction(
+  transaction: Transaction,
+): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const wb = XLSX.read(buffer, { type: "array", cellDates: true });
+  const sheet = wb.Sheets[SHEET_TRANSACTIONS];
+  if (!sheet) throw new Error("Transactions sheet not found in workbook");
+
+  const row = transactionToRow(transaction);
+  XLSX.utils.sheet_add_aoa(sheet, [row], { origin: -1, cellDates: true });
+
+  const out = XLSX.write(wb, {
+    type: "array",
+    bookType: "xlsx",
+    cellDates: true,
+  }) as ArrayBuffer;
+
+  await writeSourceFile(source, out);
+}
+
+/** @deprecated Use appendTransaction() instead */
 export async function appendTransactionToDrive(
   token: string,
   fileId: string,
   transaction: Transaction,
 ): Promise<void> {
+  const { downloadFile, uploadFile } = await import("./google-drive");
   const buffer = await downloadFile(token, fileId);
-
   const wb = XLSX.read(buffer, { type: "array", cellDates: true });
   const sheet = wb.Sheets[SHEET_TRANSACTIONS];
   if (!sheet) throw new Error("Transactions sheet not found in workbook");

@@ -157,3 +157,56 @@ export async function uploadFile(
   }
   if (!res.ok) throw new Error(`Drive upload error: ${res.status}`);
 }
+
+export async function uploadNewFile(
+  token: string,
+  fileName: string,
+  buffer: ArrayBuffer,
+): Promise<string> {
+  const metadata = JSON.stringify({
+    name: fileName,
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+
+  const boundary = "patrimo_boundary_" + Date.now();
+  const body =
+    `--${boundary}\r\n` +
+    "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+    metadata +
+    "\r\n" +
+    `--${boundary}\r\n` +
+    "Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\r\n" +
+    "Content-Transfer-Encoding: base64\r\n\r\n" +
+    arrayBufferToBase64(buffer) +
+    "\r\n" +
+    `--${boundary}--`;
+
+  const res = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body,
+    },
+  );
+  if (res.status === 401) {
+    await clearToken();
+    throw new Error("TOKEN_EXPIRED");
+  }
+  if (!res.ok) throw new Error(`Drive create error: ${res.status}`);
+  const data = await res.json();
+  return data.id;
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}

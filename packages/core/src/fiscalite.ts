@@ -236,6 +236,35 @@ export type YearlyReport = {
   envelopes: EnvelopeYearlySummary[];
 };
 
+export function summarizeEventsByEnvelope(
+  events: RealizedEvent[],
+): Map<Envelope, EnvelopeYearlySummary> {
+  const map = new Map<Envelope, EnvelopeYearlySummary>();
+  for (const event of events) {
+    const summary =
+      map.get(event.envelope) ??
+      ({
+        envelope: event.envelope,
+        realizedPnL: 0,
+        dividends: 0,
+        interest: 0,
+        withdrawalAmount: 0,
+        withdrawalGain: 0,
+        events: [],
+      } as EnvelopeYearlySummary);
+    summary.events.push(event);
+    if (event.kind === "PV") summary.realizedPnL += event.gain;
+    else if (event.kind === "DIVIDENDE") summary.dividends += event.gain;
+    else if (event.kind === "INTERET") summary.interest += event.gain;
+    else if (event.kind === "RETRAIT") {
+      summary.withdrawalAmount += event.proceeds;
+      summary.withdrawalGain += event.gain;
+    }
+    map.set(event.envelope, summary);
+  }
+  return map;
+}
+
 const ENVELOPE_ORDER: Envelope[] = ["CTO", "PEA", "PEE", "AV", "PER"];
 
 export function buildYearlyReports(events: RealizedEvent[]): YearlyReport[] {

@@ -18,88 +18,19 @@ import {
   type Workbook,
 } from "@/lib/schema";
 import { getConfiguredExcelPath, resolveUserPath } from "@/lib/config";
-import { DCA_HEADERS, dcaConfigsToRows, parseDcaConfigs } from "@/lib/dca-excel";
-
-const SHEET_TRANSACTIONS = "Transactions";
-const SHEET_ACTIFS = "Actifs";
-const SHEET_COMPTES = "Comptes";
-const SHEET_BUDGET = "Budget";
-const SHEET_IMMOBILIER = "Immobilier";
-const SHEET_DCA = "DCA";
-
-const TRANSACTIONS_HEADERS = [
-  "Date",
-  "Type",
-  "Compte",
-  "Compte destination",
-  "Actif",
-  "Quantité",
-  "Prix unitaire",
-  "Devise",
-  "Frais",
-  "Frais devise",
-  "Notes",
-];
-
-const ACTIFS_HEADERS = [
-  "ID",
-  "Libellé",
-  "Type",
-  "ISIN",
-  "Ticker",
-  "Source prix",
-  "Param source",
-  "Devise",
-  "TER",
-];
-
-const COMPTES_HEADERS = [
-  "ID",
-  "Libellé",
-  "Type",
-  "Enveloppe",
-  "Date d'ouverture",
-  "Taux",
-  "Plafond",
-];
-
-const BUDGET_HEADERS = [
-  "ID",
-  "Libellé",
-  "Type",
-  "Montant",
-  "Fréquence",
-  "Catégorie",
-  "Notes",
-];
-
-const IMMOBILIER_HEADERS = [
-  "ID",
-  "Libellé",
-  "Détention",
-  "Régime",
-  "Part détenue",
-  "Date acquisition",
-  "Prix achat",
-  "Frais notaire",
-  "Travaux",
-  "Valeur actuelle",
-  "Revalo annuelle",
-  "Montant emprunté",
-  "Taux crédit",
-  "Durée (mois)",
-  "Date début crédit",
-  "Taux assurance",
-  "Loyer mensuel HC",
-  "Charges non récup",
-  "Taxe foncière",
-  "Vacance",
-  "Frais gestion",
-  "TMI associé",
-  "Part amortissable",
-  "Durée amortissement",
-  "Notes",
-];
+import { dcaConfigsToRows, parseDcaConfigs } from "@/lib/dca-excel";
+import {
+  SHEET_TRANSACTIONS,
+  SHEET_ACTIFS,
+  SHEET_COMPTES,
+  SHEET_BUDGET,
+  SHEET_IMMOBILIER,
+  SHEET_DCA,
+  BUDGET_HEADERS,
+  IMMOBILIER_HEADERS,
+  DCA_HEADERS,
+  ALL_SHEETS,
+} from "@patrimo/core/workbook-template";
 
 const REQUIRED_SHEETS = [SHEET_TRANSACTIONS, SHEET_ACTIFS, SHEET_COMPTES];
 
@@ -175,36 +106,13 @@ export function createEmptyWorkbook(rawPath: string): string {
   mkdirSync(dirname(absolute), { recursive: true });
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet([TRANSACTIONS_HEADERS]),
-    SHEET_TRANSACTIONS,
-  );
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet([ACTIFS_HEADERS]),
-    SHEET_ACTIFS,
-  );
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet([COMPTES_HEADERS]),
-    SHEET_COMPTES,
-  );
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet([BUDGET_HEADERS]),
-    SHEET_BUDGET,
-  );
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet([IMMOBILIER_HEADERS]),
-    SHEET_IMMOBILIER,
-  );
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet([[...DCA_HEADERS]]),
-    SHEET_DCA,
-  );
+  for (const sheet of ALL_SHEETS) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.aoa_to_sheet([sheet.headers]),
+      sheet.name,
+    );
+  }
 
   const out = XLSX.write(wb, {
     type: "buffer",

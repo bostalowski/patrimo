@@ -26,7 +26,9 @@
     "./realestate/loan": "./src/realestate/loan.ts",
     "./realestate/property": "./src/realestate/property.ts",
     "./realestate/tax": "./src/realestate/tax.ts",
-    "./realestate/projection": "./src/realestate/projection.ts"
+    "./realestate/projection": "./src/realestate/projection.ts",
+    "./workbook-template": "./src/workbook-template.ts",
+    "./prices/schedule": "./src/prices/schedule.ts"
   },
   "dependencies": {
     "zod": "^4.4.3"

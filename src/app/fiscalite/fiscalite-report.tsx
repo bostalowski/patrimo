@@ -19,10 +19,11 @@ import {
   formatPercent,
   signClass,
 } from "@/lib/utils";
-import type {
-  EnvelopeYearlySummary,
-  RealizedEvent,
-  RealizedEventKind,
+import {
+  summarizeEventsByEnvelope,
+  type EnvelopeYearlySummary,
+  type RealizedEvent,
+  type RealizedEventKind,
 } from "@/lib/fiscalite";
 import type { Envelope } from "@/lib/schema";
 import {
@@ -95,33 +96,10 @@ export function FiscaliteReport({
     [events, selectedYear],
   );
 
-  const summariesByEnvelope = useMemo(() => {
-    const map = new Map<Envelope, EnvelopeYearlySummary>();
-    for (const serialized of yearEvents) {
-      const event = deserialize(serialized);
-      const summary =
-        map.get(event.envelope) ??
-        ({
-          envelope: event.envelope,
-          realizedPnL: 0,
-          dividends: 0,
-          interest: 0,
-          withdrawalAmount: 0,
-          withdrawalGain: 0,
-          events: [],
-        } as EnvelopeYearlySummary);
-      summary.events.push(event);
-      if (event.kind === "PV") summary.realizedPnL += event.gain;
-      else if (event.kind === "DIVIDENDE") summary.dividends += event.gain;
-      else if (event.kind === "INTERET") summary.interest += event.gain;
-      else if (event.kind === "RETRAIT") {
-        summary.withdrawalAmount += event.proceeds;
-        summary.withdrawalGain += event.gain;
-      }
-      map.set(event.envelope, summary);
-    }
-    return map;
-  }, [yearEvents]);
+  const summariesByEnvelope = useMemo(
+    () => summarizeEventsByEnvelope(yearEvents.map(deserialize)),
+    [yearEvents],
+  );
 
   const taxContext = useMemo(
     () => ({

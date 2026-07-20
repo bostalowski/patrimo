@@ -1,27 +1,12 @@
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
+import { portfolioByEnvelope } from "@patrimo/core/portfolio";
 import { readPriceMap, readDcaConfigs, readRetirementProfile } from "@/lib/store";
 import type { DcaConfig } from "@/lib/schema";
 import { InvestissementsClient } from "./investissements-client";
 
 export const dynamic = "force-dynamic";
-
-function buildPortfolioByEnvelope(
-  accounts: ReturnType<typeof buildPortfolio>["accounts"],
-): Record<string, Record<string, number>> {
-  const result: Record<string, Record<string, number>> = {};
-  for (const account of accounts) {
-    const envelope = account.envelope;
-    const bucket = result[envelope] ?? {};
-    for (const position of account.positions) {
-      bucket[position.assetId] =
-        (bucket[position.assetId] ?? 0) + position.marketValue;
-    }
-    result[envelope] = bucket;
-  }
-  return result;
-}
 
 const DEFAULT_PEA_CONFIG: DcaConfig = {
   id: "pea",
@@ -45,7 +30,7 @@ export default async function InvestissementsPage() {
     readRetirementProfile(),
   ]);
   const portfolio = buildPortfolio(workbook, priceMap);
-  const portfolioByEnvelope = buildPortfolioByEnvelope(portfolio.accounts);
+  const envelopeBreakdown = portfolioByEnvelope(portfolio.accounts);
 
   const peaSeed =
     workbook.assets.some((a) => a.id === "WPEA") &&
@@ -69,7 +54,7 @@ export default async function InvestissementsPage() {
 
       <InvestissementsClient
         configs={configs}
-        portfolioByEnvelope={portfolioByEnvelope}
+        portfolioByEnvelope={envelopeBreakdown}
         assets={workbook.assets}
         seedConfig={peaSeed}
         priceMap={priceMapRecord}

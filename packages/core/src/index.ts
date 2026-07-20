@@ -31,3 +31,4 @@ export * as realestate from "./realestate/projection";
 export * as realestateProperty from "./realestate/property";
 export * as realestateLoan from "./realestate/loan";
 export * as realestateTax from "./realestate/tax";
+export * from "./workbook-template";

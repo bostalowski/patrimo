@@ -119,3 +119,10 @@ export function formatFee(amount: number, currency: string): string {
   if (currency === "EUR") return formatEuro(amount);
   return `${formatQuantity(amount)} ${currency}`;
 }
+
+export function latestPrice(history: Record<string, number> | undefined): number | null {
+  if (!history) return null;
+  const dates = Object.keys(history).sort();
+  if (dates.length === 0) return null;
+  return history[dates[dates.length - 1]];
+}

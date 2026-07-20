@@ -7,7 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { getProperties } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
-import { propertySnapshot } from "@/lib/realestate/projection";
+import { aggregatePropertySnapshots, propertySnapshot } from "@/lib/realestate/projection";
 import { loanEndDate } from "@/lib/realestate/property";
 import type { Detention, PropertyRegime } from "@/lib/schema";
 import { formatDate, formatEuro, formatPercent, signClass } from "@/lib/utils";
@@ -35,16 +35,7 @@ export default function ImmobilierPage() {
   const properties = getProperties();
   const snapshots = properties.map((p) => propertySnapshot(p));
 
-  const totals = snapshots.reduce(
-    (acc, s) => {
-      acc.value += s.property.valeurActuelle * s.property.partDetenue;
-      acc.equity += s.equity;
-      acc.debt += s.remainingLoan;
-      acc.cashFlow += s.monthlyCashFlowAfterTax;
-      return acc;
-    },
-    { value: 0, equity: 0, debt: 0, cashFlow: 0 },
-  );
+  const totals = aggregatePropertySnapshots(snapshots);
 
   return (
     <div className="space-y-6">
