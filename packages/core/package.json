@@ -1,0 +1,34 @@
+{
+  "name": "@patrimo/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./format": "./src/format.ts",
+    "./inflation": "./src/inflation.ts",
+    "./benchmarks": "./src/benchmarks.ts",
+    "./livret": "./src/livret.ts",
+    "./portfolio": "./src/portfolio.ts",
+    "./portfolio-history": "./src/portfolio-history.ts",
+    "./performance": "./src/performance.ts",
+    "./fees": "./src/fees.ts",
+    "./projection": "./src/projection.ts",
+    "./dca": "./src/dca.ts",
+    "./budget": "./src/budget.ts",
+    "./fiscalite": "./src/fiscalite.ts",
+    "./tax-rules": "./src/tax-rules.ts",
+    "./fiscal-advice": "./src/fiscal-advice.ts",
+    "./per": "./src/per.ts",
+    "./deblocage": "./src/deblocage.ts",
+    "./retraite": "./src/retraite.ts",
+    "./realestate/loan": "./src/realestate/loan.ts",
+    "./realestate/property": "./src/realestate/property.ts",
+    "./realestate/tax": "./src/realestate/tax.ts",
+    "./realestate/projection": "./src/realestate/projection.ts"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}

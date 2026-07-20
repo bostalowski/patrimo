@@ -2,6 +2,10 @@
   "name": "patrimo",
   "version": "0.8.0",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "mobile"
+  ],
   "description": "Application locale de suivi de patrimoine : lit un Excel comme source de vérité, récupère les cours en ligne et calcule positions, PRU et P&L.",
   "author": {
     "name": "Bastien Ostalowski",
