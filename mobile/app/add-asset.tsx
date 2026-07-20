@@ -11,8 +11,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Asset } from "@patrimo/core/schema";
-import { getToken, getFileId } from "../lib/google-drive";
-import { appendAssetToDrive } from "../lib/write-asset";
+import { appendAsset } from "../lib/write-asset";
 import { useThemeColors, shared } from "../lib/theme";
 
 const ASSET_TYPES = ["CRYPTO", "ETF", "ACTION", "FCPE", "CASH"] as const;
@@ -52,19 +51,17 @@ export default function AddAssetScreen() {
 
     setSubmitting(true);
     try {
-      const token = await getToken();
-      const fileId = await getFileId();
-      if (!token || !fileId) {
-        Alert.alert("Erreur", "Reconnecte-toi à Google Drive d'abord.");
-        return;
-      }
-      await appendAssetToDrive(token, fileId, parsed.data);
+      await appendAsset(parsed.data);
       Alert.alert("Succès", `Actif "${parsed.data.label}" ajouté.`, [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur inconnue";
-      Alert.alert("Erreur", msg === "TOKEN_EXPIRED" ? "Session expirée, reconnecte-toi." : msg);
+      if (msg === "No file source configured") {
+        Alert.alert("Erreur", "Configure une source de données dans les réglages.");
+      } else {
+        Alert.alert("Erreur", msg === "TOKEN_EXPIRED" ? "Session expirée, reconnecte-toi." : msg);
+      }
     } finally {
       setSubmitting(false);
     }

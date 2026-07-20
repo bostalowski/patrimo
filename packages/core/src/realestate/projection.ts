@@ -236,6 +236,28 @@ export type PropertySnapshot = {
   annualTaxFoncier: number;
 };
 
+export type PropertyTotals = {
+  value: number;
+  equity: number;
+  debt: number;
+  cashFlow: number;
+};
+
+export function aggregatePropertySnapshots(
+  snapshots: PropertySnapshot[],
+): PropertyTotals {
+  return snapshots.reduce(
+    (acc, s) => {
+      acc.value += s.property.valeurActuelle * s.property.partDetenue;
+      acc.equity += s.equity;
+      acc.debt += s.remainingLoan;
+      acc.cashFlow += s.monthlyCashFlowAfterTax;
+      return acc;
+    },
+    { value: 0, equity: 0, debt: 0, cashFlow: 0 },
+  );
+}
+
 export function propertySnapshot(
   property: Property,
   now: Date = new Date(),

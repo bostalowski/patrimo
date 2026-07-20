@@ -9,9 +9,9 @@ import { loadWorkbook } from "@/lib/excel";
 import { getInflationRate, getSyncIntervalMinutes } from "@/lib/config";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
+import { computeNetWorth } from "@patrimo/core/portfolio";
 import { aggregateHistory, buildHistorySeries } from "@/lib/portfolio-history";
 import { realCostBasis } from "@/lib/inflation";
-import { currentEquity } from "@/lib/realestate/projection";
 import {
   readBenchmarks,
   readManualPrices,
@@ -41,11 +41,7 @@ export default async function DashboardPage() {
   const portfolio = buildPortfolio(workbook, priceMap);
   const history = buildHistorySeries(workbook, priceStore, manualStore);
 
-  const realEstateEquity = workbook.properties.reduce(
-    (sum, property) => sum + currentEquity(property),
-    0,
-  );
-  const netWorth = portfolio.totals.marketValue + realEstateEquity;
+  const { realEstateEquity, netWorth } = computeNetWorth(portfolio, workbook.properties);
 
   const inflationRate = getInflationRate();
   const today = new Date().toISOString().slice(0, 10);

@@ -1,6 +1,10 @@
 import * as XLSX from "xlsx";
 import type { Asset } from "@patrimo/core/schema";
-import { downloadFile, uploadFile } from "./google-drive";
+import {
+  getActiveSource,
+  readSourceFile,
+  writeSourceFile,
+} from "./file-source";
 
 const SHEET_ACTIFS = "Actifs";
 
@@ -31,11 +35,34 @@ function assetToRow(asset: Asset): unknown[] {
   return ASSET_HEADERS.map((h) => mapping[h] ?? null);
 }
 
+export async function appendAsset(asset: Asset): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const wb = XLSX.read(buffer, { type: "array", cellDates: true });
+  const sheet = wb.Sheets[SHEET_ACTIFS];
+  if (!sheet) throw new Error("Actifs sheet not found in workbook");
+
+  const row = assetToRow(asset);
+  XLSX.utils.sheet_add_aoa(sheet, [row], { origin: -1 });
+
+  const out = XLSX.write(wb, {
+    type: "array",
+    bookType: "xlsx",
+    cellDates: true,
+  }) as ArrayBuffer;
+
+  await writeSourceFile(source, out);
+}
+
+/** @deprecated Use appendAsset() instead */
 export async function appendAssetToDrive(
   token: string,
   fileId: string,
   asset: Asset,
 ): Promise<void> {
+  const { downloadFile, uploadFile } = await import("./google-drive");
   const buffer = await downloadFile(token, fileId);
   const wb = XLSX.read(buffer, { type: "array", cellDates: true });
   const sheet = wb.Sheets[SHEET_ACTIFS];
@@ -44,6 +71,11 @@ export async function appendAssetToDrive(
   const row = assetToRow(asset);
   XLSX.utils.sheet_add_aoa(sheet, [row], { origin: -1 });
 
-  const out = XLSX.write(wb, { type: "array", bookType: "xlsx", cellDates: true }) as ArrayBuffer;
+  const out = XLSX.write(wb, {
+    type: "array",
+    bookType: "xlsx",
+    cellDates: true,
+  }) as ArrayBuffer;
+
   await uploadFile(token, fileId, out);
 }

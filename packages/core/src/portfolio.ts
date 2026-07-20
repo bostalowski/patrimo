@@ -1,10 +1,12 @@
 import type {
   Account,
   Asset,
+  Property,
   Transaction,
   TransactionType,
   Workbook,
 } from "./schema";
+import { currentEquity } from "./realestate/projection";
 import {
   computeLivretState,
   livretFlows,
@@ -400,5 +402,38 @@ export function buildPortfolio(
       totalReturnPct: netInvested > 0 ? totalReturn / netInvested : 0,
       fees: totalsFees,
     },
+  };
+}
+
+export function portfolioByEnvelope(
+  accounts: AccountSummary[],
+): Record<string, Record<string, number>> {
+  const result: Record<string, Record<string, number>> = {};
+  for (const account of accounts) {
+    const envelope = account.envelope;
+    const bucket = result[envelope] ?? {};
+    for (const position of account.positions) {
+      bucket[position.assetId] =
+        (bucket[position.assetId] ?? 0) + position.marketValue;
+    }
+    result[envelope] = bucket;
+  }
+  return result;
+}
+
+export function computeNetWorth(
+  portfolio: Portfolio,
+  properties: Property[],
+  now?: Date,
+): { financialValue: number; realEstateEquity: number; netWorth: number } {
+  const financialValue = portfolio.totals.marketValue;
+  const realEstateEquity = properties.reduce(
+    (sum, property) => sum + currentEquity(property, now),
+    0,
+  );
+  return {
+    financialValue,
+    realEstateEquity,
+    netWorth: financialValue + realEstateEquity,
   };
 }

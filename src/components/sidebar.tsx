@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import {
-  BarChart3,
   Briefcase,
   Coins,
   Landmark,
@@ -36,7 +36,7 @@ export function Sidebar() {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-zinc-200 bg-white px-4 py-6 dark:border-zinc-800 dark:bg-zinc-950 md:flex md:flex-col">
       <div className="mb-8 flex items-center gap-2 px-2">
-        <BarChart3 className="h-5 w-5 text-emerald-500" />
+        <Image src="/logo.png" alt="Patrimo" width={28} height={28} className="rounded" />
         <span className="text-base font-semibold tracking-tight">
           Patrimo
         </span>

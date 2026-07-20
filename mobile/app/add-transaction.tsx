@@ -12,8 +12,7 @@ import {
 import { router } from "expo-router";
 import { Transaction } from "@patrimo/core/schema";
 import { useWorkbook } from "../lib/use-workbook";
-import { getToken, getFileId } from "../lib/google-drive";
-import { appendTransactionToDrive } from "../lib/write-transaction";
+import { appendTransaction } from "../lib/write-transaction";
 import { useThemeColors, shared } from "../lib/theme";
 import type { Account } from "@patrimo/core/schema";
 
@@ -91,19 +90,15 @@ export default function AddTransactionScreen() {
 
     setSubmitting(true);
     try {
-      const token = await getToken();
-      const fileId = await getFileId();
-      if (!token || !fileId) {
-        Alert.alert("Erreur", "Reconnecte-toi à Google Drive d'abord.");
-        return;
-      }
-      await appendTransactionToDrive(token, fileId, parsed.data);
+      await appendTransaction(parsed.data);
       Alert.alert("Succès", "Transaction ajoutée au fichier Excel.", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur inconnue";
-      if (msg === "TOKEN_EXPIRED") {
+      if (msg === "No file source configured") {
+        Alert.alert("Erreur", "Configure une source de données dans les réglages.");
+      } else if (msg === "TOKEN_EXPIRED") {
         Alert.alert("Session expirée", "Reconnecte-toi à Google Drive dans les réglages.");
       } else {
         Alert.alert("Erreur", msg);
@@ -117,7 +112,7 @@ export default function AddTransactionScreen() {
     return (
       <View style={[shared.emptyState, { backgroundColor: t.bg }]}>
         <Text style={[shared.emptyText, { color: t.textSecondary }]}>
-          Charge les données depuis Google Drive d'abord.
+          Configure une source de données dans les réglages.
         </Text>
       </View>
     );

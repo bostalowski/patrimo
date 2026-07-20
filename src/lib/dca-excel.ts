@@ -1,17 +1,7 @@
 import type { z } from "zod";
 import { DcaConfig, DcaFrequency } from "@/lib/schema";
 
-export const DCA_HEADERS = [
-  "ID",
-  "Libellé",
-  "Enveloppe",
-  "Montant",
-  "Fréquence",
-  "Mois versement",
-  "Panier",
-  "Actifs",
-  "Cible %",
-] as const;
+export { DCA_HEADERS } from "@patrimo/core/workbook-template";
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") return value;

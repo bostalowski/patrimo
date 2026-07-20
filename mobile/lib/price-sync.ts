@@ -1,7 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Asset, Transaction } from "@patrimo/core/schema";
+import { latestPrice } from "@patrimo/core/format";
+import {
+  shouldRunSync,
+  DEFAULT_SYNC_INTERVAL_MINUTES,
+} from "@patrimo/core/prices/schedule";
 
 const PRICES_STORAGE_KEY = "patrimo:prices";
+const LAST_SYNC_KEY = "patrimo:last_sync";
+const SYNC_INTERVAL_KEY = "patrimo:sync_interval_minutes";
 
 export type PriceStore = Record<string, Record<string, number>>;
 
@@ -19,13 +26,23 @@ export async function savePrices(store: PriceStore): Promise<void> {
   await AsyncStorage.setItem(PRICES_STORAGE_KEY, JSON.stringify(store));
 }
 
-export function latestPrice(
-  history: Record<string, number> | undefined,
-): number | null {
-  if (!history) return null;
-  const dates = Object.keys(history).sort();
-  if (dates.length === 0) return null;
-  return history[dates[dates.length - 1]];
+export async function getLastSync(): Promise<string | null> {
+  return AsyncStorage.getItem(LAST_SYNC_KEY);
+}
+
+async function saveLastSync(): Promise<void> {
+  await AsyncStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+}
+
+export async function getSyncInterval(): Promise<number> {
+  const raw = await AsyncStorage.getItem(SYNC_INTERVAL_KEY);
+  if (!raw) return DEFAULT_SYNC_INTERVAL_MINUTES;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : DEFAULT_SYNC_INTERVAL_MINUTES;
+}
+
+export async function saveSyncInterval(minutes: number): Promise<void> {
+  await AsyncStorage.setItem(SYNC_INTERVAL_KEY, String(minutes));
 }
 
 export function buildPriceMap(
@@ -139,8 +156,29 @@ export async function fetchZoneboursePrice(url: string): Promise<number | null> 
   }
 }
 
-export async function syncPrices(assets: Asset[], transactions?: Transaction[]): Promise<PriceStore> {
+export async function syncPrices(
+  assets: Asset[],
+  transactions?: Transaction[],
+  force = false,
+): Promise<PriceStore> {
   const store = await loadPrices();
+
+  const lastSync = await getLastSync();
+  const intervalMinutes = await getSyncInterval();
+  const needsSync = shouldRunSync({
+    ifStale: !force,
+    lastSync,
+    now: Date.now(),
+    intervalMinutes,
+  });
+
+  if (!needsSync) {
+    console.log(
+      `[Prices] Skipped — last sync ${lastSync}, interval ${intervalMinutes}min`,
+    );
+    return store;
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   let fetched = 0;
 
@@ -177,5 +215,6 @@ export async function syncPrices(assets: Asset[], transactions?: Transaction[]):
 
   console.log(`[Prices] Synced ${fetched}/${assets.length} asset prices`);
   await savePrices(store);
+  await saveLastSync();
   return store;
 }
