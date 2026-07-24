@@ -13,6 +13,11 @@ import {
   livretInterestEvents,
   type LivretState,
 } from "./livret";
+import {
+  NO_ACCOUNT_ID,
+  UNASSIGNED_CASH_ASSET_LABEL,
+  UNASSIGNED_CASH_ASSET_ID,
+} from "./deletion";
 
 export type PriceMap = Map<string, number>;
 
@@ -74,6 +79,12 @@ type MutablePosition = {
   fees: number;
 };
 
+type MutableCash = {
+  interest: number;
+  net: number;
+  principal: number;
+};
+
 type Key = string;
 const accountAssetKey = (accountId: string, assetId: string): Key =>
   `${accountId}::${assetId}`;
@@ -102,16 +113,39 @@ function applyTransaction(
   tx: Transaction,
   perAccount: Map<Key, MutablePosition>,
   perAsset: Map<string, MutablePosition>,
-  perAccountCash: Map<string, { interest: number; net: number }>,
+  perAccountCash: Map<string, MutableCash>,
 ): void {
-  const accountKey = accountAssetKey(tx.compte, tx.actif);
-  const accountPos = ensure(perAccount, accountKey, emptyPosition);
-  const assetPos = ensure(perAsset, tx.actif, emptyPosition);
-  const cash = ensure(perAccountCash, tx.compte, () => ({ interest: 0, net: 0 }));
-
   const fees = tx.frais ?? 0;
   const price = tx.prixUnitaire ?? 0;
   const qty = tx.quantite;
+  const amount = price > 0 ? qty * price : qty;
+  const cash = ensure(perAccountCash, tx.compte, () => ({
+    interest: 0,
+    net: 0,
+    principal: 0,
+  }));
+
+  if (
+    tx.compte === NO_ACCOUNT_ID &&
+    tx.actif === UNASSIGNED_CASH_ASSET_ID
+  ) {
+    if (tx.type === "DEPOT") {
+      cash.net += amount;
+      cash.principal += amount;
+    } else if (tx.type === "RETRAIT") {
+      cash.net -= amount;
+      cash.principal -= amount;
+    } else if (tx.type === "INTERET") {
+      const income = amount - fees;
+      cash.net += income;
+      cash.interest += income;
+    }
+    return;
+  }
+
+  const accountKey = accountAssetKey(tx.compte, tx.actif);
+  const accountPos = ensure(perAccount, accountKey, emptyPosition);
+  const assetPos = ensure(perAsset, tx.actif, emptyPosition);
 
   switch (tx.type as TransactionType) {
     case "ACHAT": {
@@ -286,7 +320,7 @@ export function buildPortfolio(
   const perAsset = new Map<string, MutablePosition>();
   const perAccountCash = new Map<
     string,
-    { interest: number; net: number }
+    MutableCash
   >();
 
   const assetMap = new Map(workbook.assets.map((a) => [a.id, a]));
@@ -306,7 +340,6 @@ export function buildPortfolio(
     if (assetId === INCOME_ASSET) continue;
     assetPositions.push(materializePosition(assetId, base, assetMap, prices));
   }
-  assetPositions.sort((a, b) => b.marketValue - a.marketValue);
 
   const accountPositions = new Map<string, AccountAssetPosition[]>();
   for (const [key, base] of perAccount.entries()) {
@@ -319,6 +352,43 @@ export function buildPortfolio(
     list.push({ ...position, accountId });
     accountPositions.set(accountId, list);
   }
+
+  const unassignedCash = perAccountCash.get(NO_ACCOUNT_ID);
+  if (
+    unassignedCash &&
+    (unassignedCash.principal !== 0 || unassignedCash.interest !== 0)
+  ) {
+    const cashPosition: AssetPosition = {
+      assetId: UNASSIGNED_CASH_ASSET_ID,
+      asset: {
+        id: UNASSIGNED_CASH_ASSET_ID,
+        label: UNASSIGNED_CASH_ASSET_LABEL,
+        type: "CASH",
+        source: "manual",
+        currency: "EUR",
+      },
+      quantity: unassignedCash.net,
+      costBasis: unassignedCash.principal,
+      pru: 1,
+      realizedIncome: 0,
+      realizedPnL: 0,
+      fees: 0,
+      currentPrice: 1,
+      marketValue: unassignedCash.net,
+      unrealizedPnL: 0,
+      totalReturn: unassignedCash.interest,
+      totalReturnPct:
+        unassignedCash.principal > 0
+          ? unassignedCash.interest / unassignedCash.principal
+          : 0,
+    };
+    assetPositions.push(cashPosition);
+    const positions = accountPositions.get(NO_ACCOUNT_ID) ?? [];
+    positions.push({ ...cashPosition, accountId: NO_ACCOUNT_ID });
+    accountPositions.set(NO_ACCOUNT_ID, positions);
+  }
+
+  assetPositions.sort((a, b) => b.marketValue - a.marketValue);
 
   const now = new Date();
   const livretStateByAccount = new Map<string, LivretState>();
@@ -363,7 +433,9 @@ export function buildPortfolio(
       realizedPnL: positions.reduce((s, p) => s + p.realizedPnL, 0),
       realizedIncome: positions.reduce((s, p) => s + p.realizedIncome, 0),
       cashInterest: livretState?.recordedInterest ?? cash?.interest ?? 0,
-      cashInterestRecorded: livretState?.recordedInterest ?? 0,
+      cashInterestRecorded:
+        livretState?.recordedInterest ??
+        (accountId === NO_ACCOUNT_ID ? cash?.interest ?? 0 : 0),
       cashInterestEstimated: livretState?.estimatedInterest ?? 0,
     });
   }

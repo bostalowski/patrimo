@@ -23,6 +23,7 @@
     "./per": "./src/per.ts",
     "./deblocage": "./src/deblocage.ts",
     "./retraite": "./src/retraite.ts",
+    "./deletion": "./src/deletion.ts",
     "./realestate/loan": "./src/realestate/loan.ts",
     "./realestate/property": "./src/realestate/property.ts",
     "./realestate/tax": "./src/realestate/tax.ts",

@@ -4,6 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, Plus, X } from "lucide-react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DeletionDialog,
+  type DeletionImpact,
+} from "@/components/deletion-dialog";
 import { cn } from "@/lib/utils";
 import type { Account, Envelope } from "@/lib/schema";
 
@@ -17,9 +21,16 @@ type Props = {
   envelopes: readonly Envelope[];
   account?: Account;
   trigger?: "primary" | "icon";
+  deletionImpact?: DeletionImpact;
 };
 
-export function AccountForm({ accountTypes, envelopes, account, trigger = "primary" }: Props) {
+export function AccountForm({
+  accountTypes,
+  envelopes,
+  account,
+  trigger = "primary",
+  deletionImpact,
+}: Props) {
   const router = useRouter();
   const isEdit = Boolean(account);
   const [open, setOpen] = useState(false);
@@ -121,15 +132,25 @@ export function AccountForm({ accountTypes, envelopes, account, trigger = "prima
   if (!open) {
     if (trigger === "icon") {
       return (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1 rounded-md p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-          aria-label="Éditer le compte"
-          title="Éditer"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
+        <span className="inline-flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex items-center gap-1 rounded-md p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            aria-label="Éditer le compte"
+            title="Éditer"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          {account && deletionImpact && (
+            <DeletionDialog
+              kind="account"
+              id={account.id}
+              label={account.label}
+              impact={deletionImpact}
+            />
+          )}
+        </span>
       );
     }
     return (

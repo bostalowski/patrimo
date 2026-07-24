@@ -5,6 +5,7 @@ import { readPriceMap } from "@/lib/store";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatEuro } from "@/lib/utils";
 import { AssetType, PriceSource } from "@/lib/schema";
+import { assetDeletionImpact } from "@/lib/deletion-impact";
 import { ActifsTable, type ActifRow } from "./actifs-table";
 import { AssetForm } from "./asset-form";
 
@@ -21,21 +22,29 @@ export default async function ActifsPage() {
   const assetMap = new Map(workbook.assets.map((a) => [a.id, a]));
   const portfolioIds = new Set(portfolio.assets.map((p) => p.assetId));
 
-  const rows: ActifRow[] = portfolio.assets.map((p) => ({
-    assetId: p.assetId,
-    label: p.asset?.label ?? p.assetId,
-    type: p.asset?.type ?? "—",
-    quantity: p.quantity,
-    pru: p.pru,
-    currentPrice: p.currentPrice,
-    marketValue: p.currentPrice !== null ? p.marketValue : null,
-    unrealizedPnL: p.currentPrice !== null ? p.unrealizedPnL : null,
-    unrealizedPnLPct:
-      p.currentPrice !== null && p.costBasis > 0
-        ? p.unrealizedPnL / p.costBasis
-        : null,
-    asset: p.asset,
-  }));
+  const rows: ActifRow[] = portfolio.assets.map((position) => {
+    const asset = assetMap.get(position.assetId);
+    return {
+      assetId: position.assetId,
+      label: position.asset?.label ?? position.assetId,
+      type: position.asset?.type ?? "—",
+      quantity: position.quantity,
+      pru: position.pru,
+      currentPrice: position.currentPrice,
+      marketValue:
+        position.currentPrice !== null ? position.marketValue : null,
+      unrealizedPnL:
+        position.currentPrice !== null ? position.unrealizedPnL : null,
+      unrealizedPnLPct:
+        position.currentPrice !== null && position.costBasis > 0
+          ? position.unrealizedPnL / position.costBasis
+          : null,
+      asset,
+      deletionImpact: asset
+        ? assetDeletionImpact(workbook, position.assetId)
+        : undefined,
+    };
+  });
 
   for (const asset of workbook.assets) {
     if (asset.id === INCOME_ASSET) continue;
@@ -51,6 +60,7 @@ export default async function ActifsPage() {
       unrealizedPnL: 0,
       unrealizedPnLPct: null,
       asset,
+      deletionImpact: assetDeletionImpact(workbook, asset.id),
     });
   }
 

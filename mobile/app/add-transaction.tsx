@@ -15,6 +15,7 @@ import { useWorkbook } from "../lib/use-workbook";
 import { appendTransaction } from "../lib/write-transaction";
 import { useThemeColors, shared } from "../lib/theme";
 import type { Account } from "@patrimo/core/schema";
+import { NO_ACCOUNT_ID } from "@patrimo/core/deletion";
 
 const ALL_TYPES = [
   "ACHAT",
@@ -37,7 +38,10 @@ export default function AddTransactionScreen() {
   const t = useThemeColors(isDark);
   const { workbook } = useWorkbook();
 
-  const firstAccount = workbook?.accounts[0];
+  const accounts = (workbook?.accounts ?? []).filter(
+    (account) => account.id !== NO_ACCOUNT_ID,
+  );
+  const firstAccount = accounts[0];
 
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [type, setType] = useState<string>("ACHAT");
@@ -50,7 +54,6 @@ export default function AddTransactionScreen() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const accounts = workbook?.accounts ?? [];
   const assets = workbook?.assets ?? [];
 
   const selectedAccount = accounts.find((a) => a.id === compte);

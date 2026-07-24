@@ -2,6 +2,8 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -109,7 +111,7 @@ export function createEmptyWorkbook(rawPath: string): string {
   for (const sheet of ALL_SHEETS) {
     XLSX.utils.book_append_sheet(
       wb,
-      XLSX.utils.aoa_to_sheet([sheet.headers]),
+      XLSX.utils.aoa_to_sheet([[...sheet.headers]]),
       sheet.name,
     );
   }
@@ -565,7 +567,7 @@ function upsertRowsInWorkbook(
   sheetName: string,
   idHeader: string,
   entries: UpsertEntry[],
-  defaultHeaders?: string[],
+  defaultHeaders?: readonly string[],
 ): void {
   if (entries.length === 0) return;
   let sheet = workbook.Sheets[sheetName];
@@ -573,7 +575,7 @@ function upsertRowsInWorkbook(
     if (!defaultHeaders) {
       throw new Error(`Missing sheet "${sheetName}" in workbook.`);
     }
-    sheet = XLSX.utils.aoa_to_sheet([defaultHeaders]);
+    sheet = XLSX.utils.aoa_to_sheet([[...defaultHeaders]]);
     workbook.Sheets[sheetName] = sheet;
     workbook.SheetNames.push(sheetName);
   }
@@ -636,7 +638,14 @@ function writeWorkbook(workbook: XLSX.WorkBook, path: string): void {
     bookType: "xlsx",
     cellDates: true,
   }) as Buffer;
-  writeFileSync(path, out);
+  const temporaryPath = `${path}.tmp`;
+  try {
+    writeFileSync(temporaryPath, out);
+    renameSync(temporaryPath, path);
+  } catch (error) {
+    rmSync(temporaryPath, { force: true });
+    throw error;
+  }
   cache = null;
 }
 
@@ -645,7 +654,7 @@ function upsertRow(
   idHeader: string,
   id: string,
   valueByHeader: Record<string, unknown>,
-  defaultHeaders?: string[],
+  defaultHeaders?: readonly string[],
 ): void {
   const path = getExcelPath();
   const fileBuffer = readFileSync(path);
@@ -690,6 +699,70 @@ function accountEntry(account: Account): UpsertEntry {
       Plafond: account.plafond ?? null,
     },
   };
+}
+
+function replaceSheetRows(
+  workbook: XLSX.WorkBook,
+  sheetName: string,
+  valueByHeaderRows: Record<string, unknown>[],
+  defaultHeaders?: readonly string[],
+): void {
+  const existingSheet = workbook.Sheets[sheetName];
+  const existingRows = existingSheet
+    ? XLSX.utils.sheet_to_json<unknown[]>(existingSheet, {
+        header: 1,
+        defval: null,
+      })
+    : [];
+  const headers = ((existingRows[0] as string[] | undefined) ??
+    defaultHeaders) as readonly string[] | undefined;
+
+  if (!headers || headers.length === 0) {
+    throw new Error(`Sheet "${sheetName}" has no header row.`);
+  }
+
+  workbook.Sheets[sheetName] = XLSX.utils.aoa_to_sheet(
+    [
+      [...headers],
+      ...valueByHeaderRows.map((row) =>
+        headers.map((header) => row[header] ?? null),
+      ),
+    ],
+    { cellDates: true },
+  );
+  if (!workbook.SheetNames.includes(sheetName)) {
+    workbook.SheetNames.push(sheetName);
+  }
+}
+
+export function replaceWorkbook(nextWorkbook: Workbook): void {
+  const path = getExcelPath();
+  const fileBuffer = readFileSync(path);
+  const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+
+  replaceSheetRows(
+    workbook,
+    SHEET_TRANSACTIONS,
+    nextWorkbook.transactions.map(transactionValueByHeader),
+  );
+  replaceSheetRows(
+    workbook,
+    SHEET_ACTIFS,
+    nextWorkbook.assets.map((asset) => assetEntry(asset).valueByHeader),
+  );
+  replaceSheetRows(
+    workbook,
+    SHEET_COMPTES,
+    nextWorkbook.accounts.map((account) => accountEntry(account).valueByHeader),
+  );
+  replaceSheetRows(
+    workbook,
+    SHEET_DCA,
+    dcaConfigsToRows(nextWorkbook.dca),
+    DCA_HEADERS,
+  );
+
+  writeWorkbook(workbook, path);
 }
 
 export function upsertAsset(asset: Asset): void {

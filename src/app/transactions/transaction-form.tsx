@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { TransactionType } from "@/lib/schema";
+import { NO_ACCOUNT_ID } from "@patrimo/core/deletion";
 
 export type Option = { id: string; label: string };
 export type TxAccountOption = { id: string; label: string; envelope?: string };
@@ -60,10 +61,13 @@ export function emptyTxValue(
   accounts: Option[],
   assets: Option[],
 ): TxFormValue {
+  const firstAccount = accounts.find(
+    (account) => account.id !== NO_ACCOUNT_ID,
+  );
   return {
     date: todayIso(),
     type: "ACHAT",
-    compte: accounts[0]?.id ?? "",
+    compte: firstAccount?.id ?? "",
     compteDestination: "",
     actif: assets[0]?.id ?? "",
     quantite: "",
@@ -135,7 +139,12 @@ export function TransactionFields({
   accounts: TxAccountOption[];
   assets: Option[];
 }) {
-  const selectedAccount = accounts.find((a) => a.id === value.compte);
+  const selectableAccounts = accounts.filter(
+    (account) => account.id !== NO_ACCOUNT_ID,
+  );
+  const selectedAccount = selectableAccounts.find(
+    (account) => account.id === value.compte,
+  );
   const isLivret = selectedAccount?.envelope === "LIVRET";
   const isTransfert = value.type === "TRANSFERT";
 
@@ -186,7 +195,7 @@ export function TransactionFields({
           className={txInputClasses}
           required
         >
-          {accounts.map((a) => (
+          {selectableAccounts.map((a) => (
             <option key={a.id} value={a.id}>
               {a.label}
             </option>
@@ -203,7 +212,7 @@ export function TransactionFields({
             required
           >
             <option value="">— Choisir —</option>
-            {accounts
+            {selectableAccounts
               .filter((a) => a.id !== value.compte)
               .map((a) => (
                 <option key={a.id} value={a.id}>

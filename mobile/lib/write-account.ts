@@ -1,10 +1,16 @@
 import * as XLSX from "xlsx";
 import type { Account } from "@patrimo/core/schema";
 import {
+  deleteAccount,
+  type AccountDeletionMode,
+} from "@patrimo/core/deletion";
+import {
   getActiveSource,
   readSourceFile,
   writeSourceFile,
 } from "./file-source";
+import { parseWorkbook, serializeWorkbook } from "./excel-mobile";
+import { removeAssetsFromPriceCache } from "./price-sync";
 
 const SHEET_COMPTES = "Comptes";
 
@@ -50,6 +56,26 @@ export async function appendAccount(account: Account): Promise<void> {
   }) as ArrayBuffer;
 
   await writeSourceFile(source, out);
+}
+
+export async function deleteAccountFromSource(
+  accountId: string,
+  mode: AccountDeletionMode,
+): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  const result = deleteAccount(workbook, accountId, mode);
+  const serialized = serializeWorkbook(buffer, result.workbook);
+
+  await writeSourceFile(source, serialized);
+  try {
+    await removeAssetsFromPriceCache(result.deletedAssetIds);
+  } catch {
+    return;
+  }
 }
 
 /** @deprecated Use appendAccount() instead */
