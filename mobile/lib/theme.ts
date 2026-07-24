@@ -27,7 +27,7 @@ export const colors = {
   },
 } as const;
 
-export type Theme = (typeof colors)["dark"];
+export type Theme = (typeof colors)[keyof typeof colors];
 
 export function useThemeColors(isDark: boolean): Theme {
   return isDark ? colors.dark : colors.light;

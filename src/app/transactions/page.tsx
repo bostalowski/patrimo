@@ -14,6 +14,12 @@ import {
   type TransactionRow,
 } from "./transactions-table";
 import { NewTransactionForm } from "./new-transaction-form";
+import {
+  NO_ACCOUNT_ID,
+  NO_ACCOUNT_LABEL,
+  UNASSIGNED_CASH_ASSET_ID,
+  UNASSIGNED_CASH_ASSET_LABEL,
+} from "@patrimo/core/deletion";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +29,8 @@ export default function TransactionsPage() {
   const transactionRows = loadTransactionRows();
   const assetLabels = new Map(assets.map((a) => [a.id, a.label]));
   const accountLabels = new Map(accounts.map((a) => [a.id, a.label]));
+  assetLabels.set(UNASSIGNED_CASH_ASSET_ID, UNASSIGNED_CASH_ASSET_LABEL);
+  accountLabels.set(NO_ACCOUNT_ID, NO_ACCOUNT_LABEL);
 
   const usedAccountIds = new Set<string>();
   for (const { transaction: tx } of transactionRows) {

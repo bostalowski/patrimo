@@ -8,6 +8,16 @@ import {
   DcaConfig,
   type Workbook,
 } from "@patrimo/core/schema";
+import {
+  ACTIFS_HEADERS,
+  COMPTES_HEADERS,
+  DCA_HEADERS,
+  SHEET_ACTIFS,
+  SHEET_COMPTES,
+  SHEET_DCA,
+  SHEET_TRANSACTIONS,
+  TRANSACTIONS_HEADERS,
+} from "@patrimo/core/workbook-template";
 
 export type ParsedWorkbook = {
   workbook: Workbook;
@@ -38,6 +48,104 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
     workbook: { transactions, assets, accounts, budget, properties, dca },
     transactionKeys,
   };
+}
+
+function replaceRows(
+  workbook: XLSX.WorkBook,
+  sheetName: string,
+  headers: readonly string[],
+  rows: Record<string, unknown>[],
+): void {
+  workbook.Sheets[sheetName] = XLSX.utils.aoa_to_sheet(
+    [
+      [...headers],
+      ...rows.map((row) => headers.map((header) => row[header] ?? null)),
+    ],
+    { cellDates: true },
+  );
+  if (!workbook.SheetNames.includes(sheetName)) {
+    workbook.SheetNames.push(sheetName);
+  }
+}
+
+export function serializeWorkbook(
+  source: ArrayBuffer,
+  workbookData: Workbook,
+): ArrayBuffer {
+  const workbook = XLSX.read(source, { type: "array", cellDates: true });
+
+  replaceRows(
+    workbook,
+    SHEET_TRANSACTIONS,
+    TRANSACTIONS_HEADERS,
+    workbookData.transactions.map((transaction) => ({
+      Date: transaction.date,
+      Type: transaction.type,
+      Compte: transaction.compte,
+      "Compte destination": transaction.compteDestination ?? null,
+      Actif: transaction.actif || null,
+      "Quantité": transaction.quantite,
+      "Prix unitaire": transaction.prixUnitaire,
+      Devise: transaction.devise,
+      Frais: transaction.frais,
+      "Frais devise": transaction.fraisDevise,
+      Notes: transaction.notes ?? null,
+    })),
+  );
+  replaceRows(
+    workbook,
+    SHEET_ACTIFS,
+    ACTIFS_HEADERS,
+    workbookData.assets.map((asset) => ({
+      ID: asset.id,
+      "Libellé": asset.label,
+      Type: asset.type,
+      ISIN: asset.isin ?? null,
+      Ticker: asset.ticker ?? null,
+      "Source prix": asset.source,
+      "Param source": asset.param ?? null,
+      Devise: asset.currency,
+      TER: asset.ter ?? null,
+    })),
+  );
+  replaceRows(
+    workbook,
+    SHEET_COMPTES,
+    COMPTES_HEADERS,
+    workbookData.accounts.map((account) => ({
+      ID: account.id,
+      "Libellé": account.label,
+      Type: account.type,
+      Enveloppe: account.envelope,
+      "Date d'ouverture": account.openDate ?? null,
+      Taux: account.rate ?? null,
+      Plafond: account.plafond ?? null,
+    })),
+  );
+  replaceRows(
+    workbook,
+    SHEET_DCA,
+    DCA_HEADERS,
+    workbookData.dca.flatMap((config) =>
+      config.lines.map((line) => ({
+        ID: config.id,
+        "Libellé": config.label,
+        Enveloppe: config.envelope,
+        Montant: config.amount,
+        "Fréquence": config.frequency,
+        "Mois versement": config.paymentMonth ?? null,
+        Panier: line.label ?? null,
+        Actifs: line.assetIds.join(", "),
+        "Cible %": Math.round(line.targetPct * 1000) / 10,
+      })),
+    ),
+  );
+
+  return XLSX.write(workbook, {
+    type: "array",
+    bookType: "xlsx",
+    cellDates: true,
+  }) as ArrayBuffer;
 }
 
 function readSheet(wb: XLSX.WorkBook, name: string): Record<string, unknown>[] {

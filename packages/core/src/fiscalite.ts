@@ -1,4 +1,5 @@
 import type { AssetType, Envelope, Workbook } from "./schema";
+import { NO_ACCOUNT_ID } from "./deletion";
 
 export type RealizedEventKind = "PV" | "DIVIDENDE" | "INTERET" | "RETRAIT";
 
@@ -63,12 +64,15 @@ export function buildRealizedEvents(workbook: Workbook): RealizedEvent[] {
     assetMap.get(assetId)?.type;
 
   for (const tx of workbook.transactions) {
-    const envelope = envelopeOf(tx.compte);
-    const envState = ensure(envelopeState, envelope, () => ({
-      deposits: 0,
-      withdrawals: 0,
-      bookedGains: 0,
-    }));
+    const isUnassigned = tx.compte === NO_ACCOUNT_ID;
+    const envelope = isUnassigned ? undefined : envelopeOf(tx.compte);
+    const envState = envelope
+      ? ensure(envelopeState, envelope, () => ({
+          deposits: 0,
+          withdrawals: 0,
+          bookedGains: 0,
+        }))
+      : undefined;
 
     const positionKey = accountAssetKey(tx.compte, tx.actif);
     const position = ensure(positions, positionKey, () => ({
@@ -95,29 +99,57 @@ export function buildRealizedEvents(workbook: Workbook): RealizedEvent[] {
         const gain = proceeds - basisSold;
         position.quantity -= qty;
         position.costBasis -= basisSold;
-        envState.bookedGains += gain;
-
-        events.push({
-          date: tx.date,
-          year,
-          accountId: tx.compte,
-          accountLabel: labelFor(tx.compte),
-          envelope,
-          assetId: tx.actif,
-          assetLabel: assetLabelFor(tx.actif),
-          assetType: assetTypeFor(tx.actif),
-          kind: "PV",
-          quantity: qty,
-          proceeds,
-          costBasis: basisSold,
-          gain,
-        });
+        if (envState && envelope) {
+          envState.bookedGains += gain;
+          events.push({
+            date: tx.date,
+            year,
+            accountId: tx.compte,
+            accountLabel: labelFor(tx.compte),
+            envelope,
+            assetId: tx.actif,
+            assetLabel: assetLabelFor(tx.actif),
+            assetType: assetTypeFor(tx.actif),
+            kind: "PV",
+            quantity: qty,
+            proceeds,
+            costBasis: basisSold,
+            gain,
+          });
+        }
         break;
       }
 
       case "DIVIDENDE": {
         if (price > 0) {
           const income = qty * price - fees;
+          if (envState && envelope) {
+            envState.bookedGains += income;
+            events.push({
+              date: tx.date,
+              year,
+              accountId: tx.compte,
+              accountLabel: labelFor(tx.compte),
+              envelope,
+              assetId: tx.actif,
+              assetLabel: assetLabelFor(tx.actif),
+              assetType: assetTypeFor(tx.actif),
+              kind: "DIVIDENDE",
+              quantity: qty,
+              proceeds: income,
+              costBasis: 0,
+              gain: income,
+            });
+          }
+        } else {
+          position.quantity += qty;
+        }
+        break;
+      }
+
+      case "INTERET": {
+        const income = qty * price - fees;
+        if (envState && envelope) {
           envState.bookedGains += income;
           events.push({
             date: tx.date,
@@ -128,53 +160,30 @@ export function buildRealizedEvents(workbook: Workbook): RealizedEvent[] {
             assetId: tx.actif,
             assetLabel: assetLabelFor(tx.actif),
             assetType: assetTypeFor(tx.actif),
-            kind: "DIVIDENDE",
+            kind: "INTERET",
             quantity: qty,
             proceeds: income,
             costBasis: 0,
             gain: income,
           });
-        } else {
-          position.quantity += qty;
         }
         break;
       }
 
-      case "INTERET": {
-        const income = qty * price - fees;
-        envState.bookedGains += income;
-        events.push({
-          date: tx.date,
-          year,
-          accountId: tx.compte,
-          accountLabel: labelFor(tx.compte),
-          envelope,
-          assetId: tx.actif,
-          assetLabel: assetLabelFor(tx.actif),
-          assetType: assetTypeFor(tx.actif),
-          kind: "INTERET",
-          quantity: qty,
-          proceeds: income,
-          costBasis: 0,
-          gain: income,
-        });
-        break;
-      }
-
       case "DEPOT": {
-        envState.deposits += qty * price;
+        if (envState) envState.deposits += qty * price;
         break;
       }
 
       case "RETRAIT": {
         const amount = qty * price;
-        envState.withdrawals += amount;
+        if (envState) envState.withdrawals += amount;
 
         const pru = position.quantity > 0 ? position.costBasis / position.quantity : 0;
         position.quantity -= qty;
         position.costBasis -= pru * qty;
 
-        if (TAXABLE_ON_WITHDRAWAL.has(envelope)) {
+        if (envState && envelope && TAXABLE_ON_WITHDRAWAL.has(envelope)) {
           const total = envState.deposits + envState.bookedGains;
           const gainShare =
             total > 0 ? Math.max(0, envState.bookedGains) / total : 0;

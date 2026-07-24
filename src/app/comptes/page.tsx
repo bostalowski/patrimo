@@ -22,7 +22,13 @@ import {
   signClass,
 } from "@/lib/utils";
 import { AccountType, Envelope } from "@/lib/schema";
+import { accountDeletionImpact } from "@/lib/deletion-impact";
 import { AccountForm } from "./account-form";
+import {
+  NO_ACCOUNT_ID,
+  NO_ACCOUNT_LABEL,
+  UNASSIGNED_CASH_ASSET_ID,
+} from "@patrimo/core/deletion";
 
 export const dynamic = "force-dynamic";
 
@@ -152,7 +158,10 @@ export default async function ComptesPage() {
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-zinc-50/70 px-6 py-3 dark:bg-zinc-900/40">
                       <div className="flex items-center gap-2">
                         <h3 className="text-base font-semibold tracking-tight">
-                          {meta?.label ?? account.accountId}
+                          {meta?.label ??
+                            (account.accountId === NO_ACCOUNT_ID
+                              ? NO_ACCOUNT_LABEL
+                              : account.accountId)}
                         </h3>
                         <Badge variant="default">{meta?.type ?? "—"}</Badge>
                         {meta && (
@@ -161,6 +170,10 @@ export default async function ComptesPage() {
                             envelopes={Envelope.options}
                             account={meta}
                             trigger="icon"
+                            deletionImpact={accountDeletionImpact(
+                              workbook,
+                              meta.id,
+                            )}
                           />
                         )}
                       </div>
@@ -205,12 +218,7 @@ export default async function ComptesPage() {
                               {activePositions.map((p) => (
                                 <TR key={p.assetId}>
                                   <TD>
-                                    <Link
-                                      href={`/actifs/${encodeURIComponent(p.assetId)}`}
-                                      className="font-medium hover:underline"
-                                    >
-                                      {p.asset?.label ?? p.assetId}
-                                    </Link>
+                                    <AssetName position={p} />
                                   </TD>
                                   <TD className="text-right font-mono text-xs">
                                     {formatQuantity(p.quantity)}
@@ -292,12 +300,7 @@ function ClosedPositions({
             return (
               <TR key={p.assetId}>
                 <TD>
-                  <Link
-                    href={`/actifs/${encodeURIComponent(p.assetId)}`}
-                    className="font-medium hover:underline"
-                  >
-                    {p.asset?.label ?? p.assetId}
-                  </Link>
+                  <AssetName position={p} />
                 </TD>
                 <TD
                   className={`text-right font-mono text-xs ${signClass(p.realizedPnL)}`}
@@ -322,6 +325,22 @@ function ClosedPositions({
         </TBody>
       </Table>
     </details>
+  );
+}
+
+function AssetName({ position }: { position: AccountAssetPosition }) {
+  const label = position.asset?.label ?? position.assetId;
+  if (position.assetId === UNASSIGNED_CASH_ASSET_ID) {
+    return <span className="font-medium">{label}</span>;
+  }
+
+  return (
+    <Link
+      href={`/actifs/${encodeURIComponent(position.assetId)}`}
+      className="font-medium hover:underline"
+    >
+      {label}
+    </Link>
   );
 }
 

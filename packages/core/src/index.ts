@@ -27,6 +27,7 @@ export * from "./fiscal-advice";
 export * from "./per";
 export * from "./deblocage";
 export * from "./retraite";
+export * from "./deletion";
 export * as realestate from "./realestate/projection";
 export * as realestateProperty from "./realestate/property";
 export * as realestateLoan from "./realestate/loan";

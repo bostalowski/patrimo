@@ -4,6 +4,11 @@ import {
   livretFlows,
   livretInterestEvents,
 } from "./livret";
+import {
+  NO_ACCOUNT_ID,
+  UNASSIGNED_CASH_ASSET_LABEL,
+  UNASSIGNED_CASH_ASSET_ID,
+} from "./deletion";
 
 export type AssetPriceHistory = Record<string, number>;
 export type PriceStore = Record<string, AssetPriceHistory>;
@@ -48,6 +53,35 @@ function applyTxToQuantities(
   const price = tx.prixUnitaire ?? 0;
   const qty = tx.quantite;
   const fees = tx.frais ?? 0;
+
+  if (
+    tx.compte === NO_ACCOUNT_ID &&
+    tx.actif === UNASSIGNED_CASH_ASSET_ID
+  ) {
+    const amount = price > 0 ? qty * price : qty;
+    if (tx.type === "DEPOT") {
+      set(qtyByAsset, tx.actif, get(qtyByAsset, tx.actif) + amount);
+      set(
+        investedByAsset,
+        tx.actif,
+        get(investedByAsset, tx.actif) + amount,
+      );
+    } else if (tx.type === "RETRAIT") {
+      set(qtyByAsset, tx.actif, get(qtyByAsset, tx.actif) - amount);
+      set(
+        investedByAsset,
+        tx.actif,
+        get(investedByAsset, tx.actif) - amount,
+      );
+    } else if (tx.type === "INTERET") {
+      set(
+        qtyByAsset,
+        tx.actif,
+        get(qtyByAsset, tx.actif) + amount - fees,
+      );
+    }
+    return;
+  }
 
   switch (tx.type) {
     case "ACHAT": {
@@ -142,7 +176,10 @@ export function buildHistorySeries(
     if (existing) return existing;
     const created: AssetHistorySeries = {
       assetId,
-      label: assetById.get(assetId)?.label ?? assetId,
+      label:
+        assetId === UNASSIGNED_CASH_ASSET_ID
+          ? UNASSIGNED_CASH_ASSET_LABEL
+          : assetById.get(assetId)?.label ?? assetId,
       values: new Array(dates.length).fill(0),
       invested: new Array(dates.length).fill(0),
     };
@@ -170,7 +207,12 @@ export function buildHistorySeries(
       const invested = investedByAsset.get(assetId) ?? 0;
       const source = assetById.get(assetId)?.source;
       const history = source === "manual" ? manual[assetId] : prices[assetId];
-      const price = history ? findPriceAtOrBefore(history, cursor) : null;
+      const price =
+        assetId === UNASSIGNED_CASH_ASSET_ID
+          ? 1
+          : history
+            ? findPriceAtOrBefore(history, cursor)
+            : null;
       const value =
         price !== null && price !== undefined
           ? qty * price

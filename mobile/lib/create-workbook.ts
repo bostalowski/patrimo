@@ -8,7 +8,7 @@ function buildBlankWorkbook(): ArrayBuffer {
   for (const sheet of ALL_SHEETS) {
     XLSX.utils.book_append_sheet(
       wb,
-      XLSX.utils.aoa_to_sheet([sheet.headers]),
+      XLSX.utils.aoa_to_sheet([[...sheet.headers]]),
       sheet.name,
     );
   }

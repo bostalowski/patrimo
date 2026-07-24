@@ -20,6 +20,7 @@ import { AssetType, PriceSource } from "@/lib/schema";
 import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
 import { AssetForm } from "../asset-form";
 import { ManualPriceInput } from "./manual-price-input";
+import { assetDeletionImpact } from "@/lib/deletion-impact";
 import {
   formatDate,
   formatEuro,
@@ -112,6 +113,8 @@ export default async function AssetDetailPage({
             priceSources={PriceSource.options}
             asset={asset}
             trigger="icon"
+            deletionImpact={assetDeletionImpact(workbook, asset.id)}
+            deleteRedirectTo="/actifs"
           />
         </div>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">

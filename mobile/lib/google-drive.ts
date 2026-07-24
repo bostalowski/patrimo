@@ -1,5 +1,8 @@
 import * as Google from "expo-auth-session/providers/google";
-import { makeRedirectUri } from "expo-auth-session";
+import {
+  makeRedirectUri,
+  type AuthSessionResult,
+} from "expo-auth-session";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "";
@@ -28,7 +31,7 @@ export function useGoogleAuth() {
 }
 
 export function getAccessToken(
-  response: Google.GoogleAuthSessionResult | null,
+  response: AuthSessionResult | null,
 ): string | null {
   if (response?.type !== "success") return null;
   return response.authentication?.accessToken ?? null;

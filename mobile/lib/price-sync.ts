@@ -26,6 +26,21 @@ export async function savePrices(store: PriceStore): Promise<void> {
   await AsyncStorage.setItem(PRICES_STORAGE_KEY, JSON.stringify(store));
 }
 
+export async function removeAssetsFromPriceCache(
+  assetIds: string[],
+): Promise<void> {
+  if (assetIds.length === 0) return;
+
+  const deletedAssetIds = new Set(assetIds);
+  const prices = await loadPrices();
+  const retainedPrices = Object.fromEntries(
+    Object.entries(prices).filter(
+      ([assetId]) => !deletedAssetIds.has(assetId),
+    ),
+  );
+  await savePrices(retainedPrices);
+}
+
 export async function getLastSync(): Promise<string | null> {
   return AsyncStorage.getItem(LAST_SYNC_KEY);
 }

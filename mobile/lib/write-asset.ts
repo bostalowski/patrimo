@@ -1,10 +1,13 @@
 import * as XLSX from "xlsx";
 import type { Asset } from "@patrimo/core/schema";
+import { deleteAsset } from "@patrimo/core/deletion";
 import {
   getActiveSource,
   readSourceFile,
   writeSourceFile,
 } from "./file-source";
+import { parseWorkbook, serializeWorkbook } from "./excel-mobile";
+import { removeAssetsFromPriceCache } from "./price-sync";
 
 const SHEET_ACTIFS = "Actifs";
 
@@ -54,6 +57,23 @@ export async function appendAsset(asset: Asset): Promise<void> {
   }) as ArrayBuffer;
 
   await writeSourceFile(source, out);
+}
+
+export async function deleteAssetFromSource(assetId: string): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  const result = deleteAsset(workbook, assetId);
+  const serialized = serializeWorkbook(buffer, result.workbook);
+
+  await writeSourceFile(source, serialized);
+  try {
+    await removeAssetsFromPriceCache(result.deletedAssetIds);
+  } catch {
+    return;
+  }
 }
 
 /** @deprecated Use appendAsset() instead */

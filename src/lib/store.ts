@@ -50,6 +50,32 @@ export async function writeManualPrices(store: PriceStore): Promise<void> {
   await writeJson(MANUAL_PRICES_FILE, store);
 }
 
+function withoutAssets(
+  store: PriceStore,
+  assetIds: ReadonlySet<string>,
+): PriceStore {
+  return Object.fromEntries(
+    Object.entries(store).filter(([assetId]) => !assetIds.has(assetId)),
+  );
+}
+
+export async function removeAssetsFromPriceCaches(
+  assetIds: string[],
+): Promise<void> {
+  if (assetIds.length === 0) return;
+
+  const deletedAssetIds = new Set(assetIds);
+  const [prices, manualPrices] = await Promise.all([
+    readPrices(),
+    readManualPrices(),
+  ]);
+
+  await Promise.all([
+    writePrices(withoutAssets(prices, deletedAssetIds)),
+    writeManualPrices(withoutAssets(manualPrices, deletedAssetIds)),
+  ]);
+}
+
 export async function readBenchmarks(): Promise<PriceStore> {
   return readJson<PriceStore>(BENCHMARKS_FILE, {});
 }

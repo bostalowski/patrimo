@@ -4,6 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, Plus, X } from "lucide-react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DeletionDialog,
+  type DeletionImpact,
+} from "@/components/deletion-dialog";
 import { cn } from "@/lib/utils";
 import type { Asset, AssetType, PriceSource } from "@/lib/schema";
 
@@ -17,9 +21,18 @@ type Props = {
   priceSources: readonly PriceSource[];
   asset?: Asset;
   trigger?: "primary" | "icon";
+  deletionImpact?: DeletionImpact;
+  deleteRedirectTo?: string;
 };
 
-export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary" }: Props) {
+export function AssetForm({
+  assetTypes,
+  priceSources,
+  asset,
+  trigger = "primary",
+  deletionImpact,
+  deleteRedirectTo,
+}: Props) {
   const router = useRouter();
   const isEdit = Boolean(asset);
   const [open, setOpen] = useState(false);
@@ -110,15 +123,26 @@ export function AssetForm({ assetTypes, priceSources, asset, trigger = "primary"
   if (!open) {
     if (trigger === "icon") {
       return (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1 rounded-md p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-          aria-label="Éditer l'actif"
-          title="Éditer"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
+        <span className="inline-flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex items-center gap-1 rounded-md p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            aria-label="Éditer l'actif"
+            title="Éditer"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          {asset && deletionImpact && (
+            <DeletionDialog
+              kind="asset"
+              id={asset.id}
+              label={asset.label}
+              impact={deletionImpact}
+              redirectTo={deleteRedirectTo}
+            />
+          )}
+        </span>
       );
     }
     return (

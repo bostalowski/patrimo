@@ -13,6 +13,7 @@ import {
   signClass,
 } from "@/lib/utils";
 import type { Asset, AssetType, PriceSource } from "@/lib/schema";
+import type { DeletionImpact } from "@/components/deletion-dialog";
 import { AssetForm } from "./asset-form";
 
 export type ActifRow = {
@@ -26,6 +27,7 @@ export type ActifRow = {
   unrealizedPnL: number | null;
   unrealizedPnLPct: number | null;
   asset?: Asset;
+  deletionImpact?: DeletionImpact;
 };
 
 type SortKey =
@@ -99,12 +101,16 @@ export function ActifsTable({
         {sorted.map((p) => (
           <TR key={p.assetId}>
             <TD>
-              <Link
-                href={`/actifs/${encodeURIComponent(p.assetId)}`}
-                className="font-medium hover:underline"
-              >
-                {p.label}
-              </Link>
+              {p.asset ? (
+                <Link
+                  href={`/actifs/${encodeURIComponent(p.assetId)}`}
+                  className="font-medium hover:underline"
+                >
+                  {p.label}
+                </Link>
+              ) : (
+                <span className="font-medium">{p.label}</span>
+              )}
               <div className="text-xs text-zinc-500">{p.assetId}</div>
             </TD>
             <TD>
@@ -135,6 +141,7 @@ export function ActifsTable({
                   priceSources={priceSources}
                   asset={p.asset}
                   trigger="icon"
+                  deletionImpact={p.deletionImpact}
                 />
               )}
             </TD>

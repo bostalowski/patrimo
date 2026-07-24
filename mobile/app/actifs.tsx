@@ -1,15 +1,20 @@
+import { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, useColorScheme } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useWorkbook } from "../lib/use-workbook";
 import { buildPortfolio } from "@patrimo/core/portfolio";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
+import { assetDeletionImpact } from "@patrimo/core/deletion";
 import { useThemeColors, shared } from "../lib/theme";
+import { deleteAssetFromSource } from "../lib/write-asset";
+import { DeletionModal } from "../components/deletion-modal";
 
 export default function ActifsScreen() {
   const isDark = useColorScheme() === "dark";
   const t = useThemeColors(isDark);
-  const { workbook, prices, loading } = useWorkbook();
+  const { workbook, prices, loading, refresh } = useWorkbook();
+  const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
 
   if (loading || !workbook) {
     return (
@@ -22,7 +27,7 @@ export default function ActifsScreen() {
   let portfolio: ReturnType<typeof buildPortfolio>;
   try {
     portfolio = buildPortfolio(workbook, prices);
-  } catch (e) {
+  } catch {
     return (
       <View style={[shared.emptyState, { backgroundColor: t.bg }]}>
         <Text style={[shared.emptyText, { color: t.textSecondary }]}>
@@ -32,6 +37,15 @@ export default function ActifsScreen() {
     );
   }
   const priceMap = prices;
+  const deletingAsset = deletingAssetId
+    ? workbook.assets.find((asset) => asset.id === deletingAssetId)
+    : undefined;
+
+  async function confirmDeletion() {
+    if (!deletingAsset) return;
+    await deleteAssetFromSource(deletingAsset.id);
+    await refresh();
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -51,11 +65,21 @@ export default function ActifsScreen() {
                     {asset.id} · {asset.type}
                   </Text>
                 </View>
-                {currentPrice != null && (
-                  <Text style={{ color: t.text, fontSize: 14, fontWeight: "600" }}>
-                    {formatEuro(currentPrice)}
-                  </Text>
-                )}
+                <View style={{ alignItems: "flex-end", gap: 6 }}>
+                  {currentPrice != null && (
+                    <Text style={{ color: t.text, fontSize: 14, fontWeight: "600" }}>
+                      {formatEuro(currentPrice)}
+                    </Text>
+                  )}
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel={`Supprimer l'actif ${asset.label}`}
+                    onPress={() => setDeletingAssetId(asset.id)}
+                    style={{ padding: 4 }}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={t.danger} />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {position && position.quantity > 0 && (
@@ -123,6 +147,17 @@ export default function ActifsScreen() {
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
+
+      {deletingAsset && (
+        <DeletionModal
+          visible
+          kind="asset"
+          label={deletingAsset.label}
+          impact={assetDeletionImpact(workbook, deletingAsset.id)}
+          onClose={() => setDeletingAssetId(null)}
+          onConfirm={confirmDeletion}
+        />
+      )}
     </View>
   );
 }
