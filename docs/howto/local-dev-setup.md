@@ -40,7 +40,16 @@ cd mobile
 npm start
 ```
 
-Or `npm run android` / `npm run ios`. Google Drive needs `EXPO_PUBLIC_GOOGLE_CLIENT_ID` (see `mobile/.env.example`).
+Opens Metro and can load the app in Expo Go. For Google Drive OAuth, Expo Go is not supported (Google rejects `exp://` redirect URIs). Use a native build instead:
+
+```bash
+cd mobile
+npm run android
+# or
+npm run ios
+```
+
+`npm run android` picks a JDK 17–21 and the Android SDK automatically when possible. Google Drive also needs `EXPO_PUBLIC_GOOGLE_CLIENT_ID` / `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` (see `mobile/.env.example`).
 
 ## Test and lint
 

@@ -5,7 +5,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "adb reverse tcp:8081 tcp:8081 2>/dev/null; expo start --port 8081",
-    "android": "adb reverse tcp:8081 tcp:8081 2>/dev/null; expo run:android",
+    "android": "adb reverse tcp:8081 tcp:8081 2>/dev/null; ./scripts/run-android.sh",
     "ios": "expo run:ios",
     "prebuild": "expo prebuild"
   },
