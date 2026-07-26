@@ -11,9 +11,13 @@ import type { Workbook } from "@patrimo/core/schema";
 
 const mocks = vi.hoisted(() => ({
   workbookState: {} as Record<string, unknown>,
+  routeParams: {} as Record<string, string>,
   deleteAccount: vi.fn(),
   deleteAsset: vi.fn(),
+  updateAccount: vi.fn(),
+  updateAsset: vi.fn(),
   refresh: vi.fn(),
+  back: vi.fn(),
 }));
 
 vi.mock("react-native", () => ({
@@ -35,7 +39,8 @@ vi.mock("@expo/vector-icons", () => ({
 }));
 
 vi.mock("expo-router", () => ({
-  router: { push: vi.fn(), back: vi.fn() },
+  router: { push: vi.fn(), back: mocks.back },
+  useLocalSearchParams: () => mocks.routeParams,
 }));
 
 vi.mock("./use-workbook", () => ({
@@ -44,19 +49,23 @@ vi.mock("./use-workbook", () => ({
 
 vi.mock("./write-account", () => ({
   deleteAccountFromSource: mocks.deleteAccount,
+  updateAccountInSource: mocks.updateAccount,
 }));
 
 vi.mock("./write-asset", () => ({
   deleteAssetFromSource: mocks.deleteAsset,
+  updateAssetInSource: mocks.updateAsset,
+  upsertManualPriceInSource: vi.fn(),
+  deleteManualPriceFromSource: vi.fn(),
 }));
 
 vi.mock("./write-transaction", () => ({
   appendTransaction: vi.fn(),
 }));
 
-import ComptesScreen from "../app/comptes";
-import ActifsScreen from "../app/actifs";
 import AddTransactionScreen from "../app/add-transaction";
+import EditAccountScreen from "../app/edit-account";
+import EditAssetScreen from "../app/edit-asset";
 
 function workbook(): Workbook {
   return {
@@ -99,6 +108,7 @@ function workbook(): Workbook {
     budget: [],
     properties: [],
     dca: [],
+    manualPrices: [],
   };
 }
 
@@ -130,8 +140,11 @@ function visibleText(renderer: ReactTestRenderer): string {
 describe("mobile deletion interface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.routeParams = {};
     mocks.deleteAccount.mockResolvedValue(undefined);
     mocks.deleteAsset.mockResolvedValue(undefined);
+    mocks.updateAccount.mockResolvedValue(undefined);
+    mocks.updateAsset.mockResolvedValue(undefined);
     mocks.workbookState = {
       workbook: workbook(),
       prices: new Map([["stock", 100]]),
@@ -140,28 +153,22 @@ describe("mobile deletion interface", () => {
     };
   });
 
-  it("shows an accessible delete button on every account and asset card", () => {
-    const accounts = render(<ComptesScreen />);
-    const assets = render(<ActifsScreen />);
+  it("shows an accessible delete button on every account and asset edit screen", () => {
+    mocks.routeParams = { id: "empty" };
+    const emptyAccount = render(<EditAccountScreen />);
+    mocks.routeParams = { id: "broker" };
+    const brokerAccount = render(<EditAccountScreen />);
+    mocks.routeParams = { id: "stock" };
+    const asset = render(<EditAssetScreen />);
 
-    expect(
-      accounts.root.findAll(
-        (node) =>
-          typeof node.props.accessibilityLabel === "string" &&
-          node.props.accessibilityLabel.startsWith("Supprimer le compte"),
-      ),
-    ).toHaveLength(2);
-    expect(
-      assets.root.findAll(
-        (node) =>
-          typeof node.props.accessibilityLabel === "string" &&
-          node.props.accessibilityLabel.startsWith("Supprimer l'actif"),
-      ),
-    ).toHaveLength(1);
+    expect(button(emptyAccount, "Supprimer le compte Empty")).toBeDefined();
+    expect(button(brokerAccount, "Supprimer le compte Broker")).toBeDefined();
+    expect(button(asset, "Supprimer l'actif Stock")).toBeDefined();
   });
 
   it("shows a simple irreversible confirmation for an empty account", () => {
-    const renderer = render(<ComptesScreen />);
+    mocks.routeParams = { id: "empty" };
+    const renderer = render(<EditAccountScreen />);
 
     act(() => {
       button(renderer, "Supprimer le compte Empty").props.onPress();
@@ -172,7 +179,8 @@ describe("mobile deletion interface", () => {
   });
 
   it("offers cascade and detach modes with affected data for a non-empty account", () => {
-    const renderer = render(<ComptesScreen />);
+    mocks.routeParams = { id: "broker" };
+    const renderer = render(<EditAccountScreen />);
 
     act(() => {
       button(renderer, "Supprimer le compte Broker").props.onPress();
@@ -185,7 +193,8 @@ describe("mobile deletion interface", () => {
   });
 
   it("shows affected data and irreversibility before deleting an asset", () => {
-    const renderer = render(<ActifsScreen />);
+    mocks.routeParams = { id: "stock" };
+    const renderer = render(<EditAssetScreen />);
 
     act(() => {
       button(renderer, "Supprimer l'actif Stock").props.onPress();
@@ -196,7 +205,8 @@ describe("mobile deletion interface", () => {
   });
 
   it("persists the selected deletion and refreshes the workbook after success", async () => {
-    const renderer = render(<ComptesScreen />);
+    mocks.routeParams = { id: "broker" };
+    const renderer = render(<EditAccountScreen />);
 
     act(() => {
       button(renderer, "Supprimer le compte Broker").props.onPress();
@@ -214,7 +224,8 @@ describe("mobile deletion interface", () => {
 
   it("keeps the confirmation visible and reports an error when deletion fails", async () => {
     mocks.deleteAsset.mockRejectedValue(new Error("Workbook is locked"));
-    const renderer = render(<ActifsScreen />);
+    mocks.routeParams = { id: "stock" };
+    const renderer = render(<EditAssetScreen />);
 
     act(() => {
       button(renderer, "Supprimer l'actif Stock").props.onPress();

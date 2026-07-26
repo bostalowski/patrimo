@@ -58,6 +58,25 @@ export async function appendAccount(account: Account): Promise<void> {
   await writeSourceFile(source, out);
 }
 
+export async function updateAccountInSource(account: Account): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  if (!workbook.accounts.some((existing) => existing.id === account.id)) {
+    throw new Error(`Unknown account: ${account.id}`);
+  }
+
+  const nextWorkbook = {
+    ...workbook,
+    accounts: workbook.accounts.map((existing) =>
+      existing.id === account.id ? account : existing,
+    ),
+  };
+  await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
+}
+
 export async function deleteAccountFromSource(
   accountId: string,
   mode: AccountDeletionMode,

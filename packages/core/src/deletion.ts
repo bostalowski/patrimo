@@ -1,4 +1,5 @@
 import type { DcaConfig, Transaction, Workbook } from "./schema";
+import { removeManualPricesForAssets } from "./manual-prices";
 
 export const NO_ACCOUNT_ID = "__NO_ACCOUNT__";
 export const UNASSIGNED_CASH_ASSET_ID = "__UNASSIGNED_CASH__";
@@ -176,8 +177,8 @@ export function deleteAccount(
     .map((asset) => asset.id);
   const deletedAssetIdSet = new Set(deletedAssetIds);
 
-  return {
-    workbook: {
+  const nextWorkbook = removeManualPricesForAssets(
+    {
       ...workbook,
       accounts,
       transactions,
@@ -186,6 +187,11 @@ export function deleteAccount(
       ),
       dca: cleanInvestmentPlans(workbook.dca, deletedAssetIdSet),
     },
+    deletedAssetIdSet,
+  );
+
+  return {
+    workbook: nextWorkbook,
     deletedAssetIds,
   };
 }
@@ -199,9 +205,8 @@ export function deleteAsset(
   }
 
   const deletedAssetIds = new Set([assetId]);
-
-  return {
-    workbook: {
+  const nextWorkbook = removeManualPricesForAssets(
+    {
       ...workbook,
       assets: workbook.assets.filter((asset) => asset.id !== assetId),
       transactions: workbook.transactions.filter(
@@ -209,6 +214,11 @@ export function deleteAsset(
       ),
       dca: cleanInvestmentPlans(workbook.dca, deletedAssetIds),
     },
+    deletedAssetIds,
+  );
+
+  return {
+    workbook: nextWorkbook,
     deletedAssetIds: [assetId],
   };
 }

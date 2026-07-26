@@ -5,6 +5,8 @@ comme source de vérité et récupère les cours en ligne (BTC via CoinGecko, ET
 actions via Yahoo Finance). Les FCPE et autres actifs sans API se renseignent à
 la main.
 
+Documentation technique (Diátaxis) : [docs/README.md](docs/README.md).
+
 ## Installer Patrimo (pour mes proches)
 
 1. Aller sur la page des releases :
@@ -98,10 +100,11 @@ Le chemin retenu est persisté dans
 de toucher au `.env.local`. Tu peux changer de fichier source à n'importe quel
 moment depuis la même page.
 
-Le cache des prix synchronisés est dans
+Le cache des prix automatiques synchronisés est dans
 `~/Library/Application Support/patrimo/data/` (`prices.json` pour
-CoinGecko/Yahoo, `manual-prices.json` pour les FCPE). Le menu
-**Configuration → Ouvrir le dossier de données** y mène directement.
+CoinGecko/Yahoo, etc.). Les VL manuelles (FCPE) vivent dans la feuille Excel
+`Prix manuels`. Le menu **Configuration → Ouvrir le dossier de données**
+mène au dossier de données.
 
 Pour les options avancées (`COINGECKO_API_KEY`, ou forcer un `EXCEL_PATH` via
 env), un `.env.local` reste disponible dans
@@ -114,7 +117,7 @@ pour que l'app packagée les retrouve :
 
 ```bash
 mkdir -p "$HOME/Library/Application Support/patrimo/data"
-cp data/prices.json data/manual-prices.json \
+cp data/prices.json \
   "$HOME/Library/Application Support/patrimo/data/"
 ```
 
@@ -247,15 +250,16 @@ seule passe (un seul read/write sur l'Excel).
 > agrégateur payant (Powens, Bridge, Tink, GoCardless, Plaid). Le canal
 > fichier est donc la voie pérenne pour ce genre d'app perso.
 
-### Cache local — `data/prices.json` et `data/manual-prices.json`
+### Cache local — `data/prices.json`
 
-Stockage léger des cours historiques (un fichier par source). Format :
+Stockage léger des cours historiques automatiques. Format :
 
 ```json
 { "BTC": { "2024-11-22": 95328.74 }, "WPEA": { "2024-11-22": 24.65 } }
 ```
 
-Ces fichiers sont gitignorés.
+Ce fichier est gitignoré. Les prix manuels sont dans la feuille Excel
+`Prix manuels` (colonnes `Actif`, `Date`, `Prix`).
 
 ## Fonctionnement
 
@@ -263,10 +267,11 @@ Ces fichiers sont gitignorés.
    qui interroge CoinGecko et Yahoo et merge l'historique dans
    `data/prices.json`.
 2. **Page « Prix manuels »** → saisie des VL des FCPE (PEE Natixis,
-   etc.). Stockée dans `data/manual-prices.json` via
+   etc.). Persistée dans la feuille Excel `Prix manuels` via
    `POST /api/prices/manual`.
 3. **Pages Dashboard / Actifs / Comptes / Transactions** → consomment l'Excel +
-   les fichiers JSON, calculent positions, PRU, P&L et rendent les graphiques.
+   le cache de prix automatiques, calculent positions, PRU, P&L et rendent les
+   graphiques.
 
 ## Modélisation comptable
 

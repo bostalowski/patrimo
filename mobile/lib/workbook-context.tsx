@@ -106,7 +106,10 @@ export function WorkbookProvider({ children }: { children: React.ReactNode }) {
   }, [load]);
 
   const prices = useMemo(
-    () => (workbook ? buildPriceMap(workbook.assets, priceStore) : EMPTY_MAP),
+    () =>
+      workbook
+        ? buildPriceMap(workbook.assets, priceStore, workbook.manualPrices)
+        : EMPTY_MAP,
     [workbook, priceStore],
   );
 

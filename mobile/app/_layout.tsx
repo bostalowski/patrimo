@@ -86,8 +86,11 @@ export default function RootLayout() {
         <Tabs.Screen name="investissements" options={{ href: null, title: "Investissements" }} />
         <Tabs.Screen name="projection" options={{ href: null, title: "Projection" }} />
         <Tabs.Screen name="add-transaction" options={{ href: null, title: "Nouvelle transaction" }} />
+        <Tabs.Screen name="edit-transaction" options={{ href: null, title: "Modifier la transaction" }} />
         <Tabs.Screen name="add-asset" options={{ href: null, title: "Nouvel actif" }} />
+        <Tabs.Screen name="edit-asset" options={{ href: null, title: "Modifier l'actif" }} />
         <Tabs.Screen name="add-account" options={{ href: null, title: "Nouveau compte" }} />
+        <Tabs.Screen name="edit-account" options={{ href: null, title: "Modifier le compte" }} />
         <Tabs.Screen name="oauth2redirect" options={{ href: null }} />
       </Tabs>
     </WorkbookProvider>

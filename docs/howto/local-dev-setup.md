@@ -1,0 +1,64 @@
+# Local development setup
+
+## Prerequisites
+
+- Node.js compatible with the repo lockfile
+- npm
+- For mobile: Android/iOS toolchain as required by Expo 52
+- For Electron packaging: macOS (DMG targets are mac-only in `electron-builder.yml`)
+
+## Install
+
+From the repository root:
+
+```bash
+npm install
+```
+
+## Web (browser)
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Configure an Excel path on **Réglages** before using portfolio pages.
+
+Optional env file: copy `.env.local.example` to `.env.local`.
+
+## Electron (desktop window)
+
+```bash
+npm run electron:dev
+```
+
+Starts Next.js and opens an Electron window on `localhost:3000`.
+
+## Mobile
+
+```bash
+cd mobile
+npm start
+```
+
+Or `npm run android` / `npm run ios`. Google Drive needs `EXPO_PUBLIC_GOOGLE_CLIENT_ID` (see `mobile/.env.example`).
+
+## Test and lint
+
+```bash
+npm test
+npm run lint
+```
+
+## Build artifacts
+
+| Command | Output |
+|---|---|
+| `npm run build` | Next production build |
+| `npm run electron:pack` | Unpackaged `.app` under `release/` |
+| `npm run electron:build` | `.dmg` / `.zip` under `release/` |
+
+## See also
+
+- [Configure the Excel source](configure-excel-source.md)
+- [Monorepo layers](../architecture/monorepo-layers.md)
+- Root [README](../../README.md) for end-user install

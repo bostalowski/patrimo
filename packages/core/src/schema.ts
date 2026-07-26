@@ -214,6 +214,13 @@ export const Property = z.object({
 });
 export type Property = z.infer<typeof Property>;
 
+export const ManualPrice = z.object({
+  assetId: z.string().min(1),
+  date: z.coerce.date(),
+  price: z.number().positive(),
+});
+export type ManualPrice = z.infer<typeof ManualPrice>;
+
 export type Workbook = {
   transactions: Transaction[];
   assets: Asset[];
@@ -221,4 +228,5 @@ export type Workbook = {
   budget: BudgetLine[];
   properties: Property[];
   dca: DcaConfig[];
+  manualPrices: ManualPrice[];
 };

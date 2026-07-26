@@ -6,15 +6,19 @@ import {
   BudgetLine,
   Property,
   DcaConfig,
+  type ManualPrice,
   type Workbook,
 } from "@patrimo/core/schema";
+import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import {
   ACTIFS_HEADERS,
   COMPTES_HEADERS,
   DCA_HEADERS,
+  PRIX_MANUELS_HEADERS,
   SHEET_ACTIFS,
   SHEET_COMPTES,
   SHEET_DCA,
+  SHEET_PRIX_MANUELS,
   SHEET_TRANSACTIONS,
   TRANSACTIONS_HEADERS,
 } from "@patrimo/core/workbook-template";
@@ -34,6 +38,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
   const rawBudget = readSheet(wb, "Budget");
   const rawProperties = readSheet(wb, "Immobilier");
   const rawDca = readSheet(wb, "DCA");
+  const rawManualPrices = readSheet(wb, SHEET_PRIX_MANUELS);
 
   const { transactions, keys: transactionKeys } = parseTransactions(rawTransactions);
   const assets = parseAssets(rawAssets);
@@ -41,11 +46,20 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
   const budget = parseBudget(rawBudget);
   const properties = parseProperties(rawProperties);
   const dca = parseDca(rawDca);
+  const manualPrices = parseManualPrices(rawManualPrices, assets);
 
-  console.log("[Parser v2] Results:", { transactions: transactions.length, assets: assets.length, accounts: accounts.length, budget: budget.length, properties: properties.length, dca: dca.length });
+  console.log("[Parser v2] Results:", { transactions: transactions.length, assets: assets.length, accounts: accounts.length, budget: budget.length, properties: properties.length, dca: dca.length, manualPrices: manualPrices.length });
 
   return {
-    workbook: { transactions, assets, accounts, budget, properties, dca },
+    workbook: {
+      transactions,
+      assets,
+      accounts,
+      budget,
+      properties,
+      dca,
+      manualPrices,
+    },
     transactionKeys,
   };
 }
@@ -139,6 +153,16 @@ export function serializeWorkbook(
         "Cible %": Math.round(line.targetPct * 1000) / 10,
       })),
     ),
+  );
+  replaceRows(
+    workbook,
+    SHEET_PRIX_MANUELS,
+    PRIX_MANUELS_HEADERS,
+    workbookData.manualPrices.map((entry) => ({
+      Actif: entry.assetId,
+      Date: entry.date,
+      Prix: entry.price,
+    })),
   );
 
   return XLSX.write(workbook, {
@@ -317,6 +341,43 @@ function parseProperties(rows: Record<string, unknown>[]): Property[] {
   }
   console.log(`[Properties] ${results.length} OK / ${rows.length} total`);
   return results;
+}
+
+function parseManualPriceDate(value: unknown): Date {
+  if (value instanceof Date) {
+    return Number.isFinite(value.getTime()) ? value : new Date(Number.NaN);
+  }
+  if (typeof value === "number") {
+    if (value > 25569 && value < 100000) {
+      const msPerDay = 86400000;
+      const epoch = new Date(Date.UTC(1899, 11, 30));
+      return new Date(epoch.getTime() + value * msPerDay);
+    }
+    const parsed = new Date(value);
+    return Number.isFinite(parsed.getTime()) ? parsed : new Date(Number.NaN);
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = new Date(value);
+    return Number.isFinite(parsed.getTime()) ? parsed : new Date(Number.NaN);
+  }
+  return new Date(Number.NaN);
+}
+
+function parseManualPrices(
+  rows: Record<string, unknown>[],
+  assets: Asset[],
+): ManualPrice[] {
+  const raw: ManualPrice[] = [];
+  for (const row of rows) {
+    const assetId = emptyToUndefined(row["Actif"]);
+    if (!assetId) continue;
+    raw.push({
+      assetId,
+      date: parseManualPriceDate(row["Date"]),
+      price: toNumber(row["Prix"]) ?? Number.NaN,
+    });
+  }
+  return normalizeManualPrices(raw, assets);
 }
 
 function parseDca(rows: Record<string, unknown>[]): DcaConfig[] {

@@ -115,6 +115,7 @@ function workbook(): Workbook {
     dca: [],
     budget: [],
     properties: [],
+    manualPrices: [],
   };
 }
 

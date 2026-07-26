@@ -15,12 +15,14 @@ import {
   Asset,
   BudgetLine,
   type DcaConfig,
+  type ManualPrice,
   Property,
   Transaction,
   type Workbook,
 } from "@/lib/schema";
 import { getConfiguredExcelPath, resolveUserPath } from "@/lib/config";
 import { dcaConfigsToRows, parseDcaConfigs } from "@/lib/dca-excel";
+import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import {
   SHEET_TRANSACTIONS,
   SHEET_ACTIFS,
@@ -28,9 +30,11 @@ import {
   SHEET_BUDGET,
   SHEET_IMMOBILIER,
   SHEET_DCA,
+  SHEET_PRIX_MANUELS,
   BUDGET_HEADERS,
   IMMOBILIER_HEADERS,
   DCA_HEADERS,
+  PRIX_MANUELS_HEADERS,
   ALL_SHEETS,
 } from "@patrimo/core/workbook-template";
 
@@ -352,6 +356,37 @@ function coerceDate(value: unknown): Date | string {
   throw new Error(`Cannot coerce date from value: ${value}`);
 }
 
+function parseManualPriceDate(value: unknown): Date {
+  if (value instanceof Date) return value;
+  if (typeof value === "number") {
+    const date = XLSX.SSF.parse_date_code(value);
+    if (!date) return new Date(Number.NaN);
+    return new Date(Date.UTC(date.y, date.m - 1, date.d));
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = new Date(value);
+    return Number.isFinite(parsed.getTime()) ? parsed : new Date(Number.NaN);
+  }
+  return new Date(Number.NaN);
+}
+
+function parseManualPrices(
+  rows: Record<string, unknown>[],
+  assets: Asset[],
+): ManualPrice[] {
+  const raw: ManualPrice[] = [];
+  for (const row of rows) {
+    const assetId = emptyToUndefined(row["Actif"]);
+    if (!assetId) continue;
+    raw.push({
+      assetId,
+      date: parseManualPriceDate(row["Date"]),
+      price: toNumber(row["Prix"]) ?? Number.NaN,
+    });
+  }
+  return normalizeManualPrices(raw, assets);
+}
+
 function toNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   if (typeof value === "number") return value;
@@ -391,13 +426,25 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
   const budget = parseBudget(readSheetOptional(sheet, SHEET_BUDGET));
   const properties = parseProperties(readSheetOptional(sheet, SHEET_IMMOBILIER));
   const dca = parseDcaConfigs(readSheetOptional(sheet, SHEET_DCA));
+  const manualPrices = parseManualPrices(
+    readSheetOptional(sheet, SHEET_PRIX_MANUELS),
+    assets,
+  );
 
   const transactions = [...parsedTransactions].sort(
     (a, b) => a.date.getTime() - b.date.getTime(),
   );
 
   return {
-    workbook: { transactions, assets, accounts, budget, properties, dca },
+    workbook: {
+      transactions,
+      assets,
+      accounts,
+      budget,
+      properties,
+      dca,
+      manualPrices,
+    },
     transactionRows,
   };
 }
@@ -760,6 +807,16 @@ export function replaceWorkbook(nextWorkbook: Workbook): void {
     SHEET_DCA,
     dcaConfigsToRows(nextWorkbook.dca),
     DCA_HEADERS,
+  );
+  replaceSheetRows(
+    workbook,
+    SHEET_PRIX_MANUELS,
+    nextWorkbook.manualPrices.map((entry) => ({
+      Actif: entry.assetId,
+      Date: entry.date,
+      Prix: entry.price,
+    })),
+    PRIX_MANUELS_HEADERS,
   );
 
   writeWorkbook(workbook, path);

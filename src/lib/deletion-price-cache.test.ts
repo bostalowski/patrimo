@@ -14,7 +14,7 @@ afterEach(async () => {
 });
 
 describe("web price cache cleanup", () => {
-  it("removes deleted asset entries from automatic and manual price caches", async () => {
+  it("removes deleted asset entries from the automatic price cache", async () => {
     testDataDir = await mkdtemp(join(tmpdir(), "patrimo-price-cache-"));
     process.env.FINGRAPHS_DATA_DIR = testDataDir;
     vi.resetModules();
@@ -28,10 +28,6 @@ describe("web price cache cleanup", () => {
       deleted: { "2025-01-01": 10 },
       retained: { "2025-01-01": 20 },
     });
-    await store.writeManualPrices({
-      deleted: { "2025-01-01": 11 },
-      retained: { "2025-01-01": 21 },
-    });
 
     expect(
       api.removeAssetsFromPriceCaches,
@@ -44,10 +40,5 @@ describe("web price cache cleanup", () => {
         await readFile(join(testDataDir, "prices.json"), "utf-8"),
       ),
     ).toEqual({ retained: { "2025-01-01": 20 } });
-    expect(
-      JSON.parse(
-        await readFile(join(testDataDir, "manual-prices.json"), "utf-8"),
-      ),
-    ).toEqual({ retained: { "2025-01-01": 21 } });
   });
 });

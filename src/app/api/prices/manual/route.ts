@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { readManualPrices, writeManualPrices } from "@/lib/store";
+import {
+  deleteManualPrice,
+  upsertManualPrice,
+} from "@patrimo/core/manual-prices";
+import { loadWorkbook, replaceWorkbook } from "@/lib/excel";
+import { manualPricesToPriceStore } from "@/lib/store";
 
 const ManualPriceInput = z.object({
   assetId: z.string().min(1),
@@ -13,9 +18,13 @@ const DeleteInput = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+function toUtcDate(date: string): Date {
+  return new Date(`${date}T00:00:00.000Z`);
+}
+
 export async function GET() {
-  const store = await readManualPrices();
-  return NextResponse.json(store);
+  const workbook = loadWorkbook();
+  return NextResponse.json(manualPricesToPriceStore(workbook.manualPrices));
 }
 
 export async function POST(request: Request) {
@@ -25,9 +34,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
   const { assetId, date, price } = parsed.data;
-  const store = await readManualPrices();
-  store[assetId] = { ...(store[assetId] ?? {}), [date]: price };
-  await writeManualPrices(store);
+  const workbook = loadWorkbook();
+
+  try {
+    const nextWorkbook = upsertManualPrice(workbook, {
+      assetId,
+      date: toUtcDate(date),
+      price,
+    });
+    replaceWorkbook(nextWorkbook);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Invalid manual price" },
+      { status: 400 },
+    );
+  }
+
   return NextResponse.json({ ok: true, assetId, date, price });
 }
 
@@ -38,13 +60,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
   const { assetId, date } = parsed.data;
-  const store = await readManualPrices();
-  if (store[assetId]) {
-    delete store[assetId][date];
-    if (Object.keys(store[assetId]).length === 0) {
-      delete store[assetId];
-    }
-  }
-  await writeManualPrices(store);
+  const workbook = loadWorkbook();
+  replaceWorkbook(deleteManualPrice(workbook, assetId, toUtcDate(date)));
   return NextResponse.json({ ok: true });
 }
