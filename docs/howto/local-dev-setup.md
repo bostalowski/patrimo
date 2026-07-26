@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- Node.js compatible with the repo lockfile
+- Node.js 24+ (see `.nvmrc`; `engines.node` is `>=24`)
 - npm
-- For mobile: Android/iOS toolchain as required by Expo 52
+- For mobile: Android/iOS toolchain as required by Expo 57 (JDK 17–21 for Android builds)
 - For Electron packaging: macOS (DMG targets are mac-only in `electron-builder.yml`)
 
 ## Install

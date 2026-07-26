@@ -75,7 +75,7 @@ export function ProjectionCurve({
               fontSize: 12,
             }}
             labelFormatter={(d) =>
-              new Date(d).toLocaleDateString("fr-FR", {
+              new Date(String(d)).toLocaleDateString("fr-FR", {
                 month: "long",
                 year: "numeric",
               })
