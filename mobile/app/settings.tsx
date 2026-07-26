@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import {
   useGoogleAuth,
+  isGoogleAuthSupported,
   getAccessToken,
   saveToken,
   getToken,
@@ -124,6 +125,13 @@ export default function SettingsScreen() {
   }, [response, handleDriveAuthSuccess]);
 
   const handleConnectDrive = async () => {
+    if (!isGoogleAuthSupported()) {
+      Alert.alert(
+        "Build natif requis",
+        "Google Drive ne fonctionne pas dans Expo Go (redirect exp:// refusé par Google). Lance l’app avec `npm run android` ou `npm run ios` depuis mobile/.",
+      );
+      return;
+    }
     if (!request) {
       Alert.alert("Erreur", "OAuth non prêt. Vérifie le Google Client ID.");
       return;

@@ -96,6 +96,7 @@ function sourceWorkbook(): Workbook {
     ],
     budget: [],
     properties: [],
+    manualPrices: [],
   };
 }
 

@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { Asset, Transaction } from "@patrimo/core/schema";
+import type { Asset, ManualPrice, Transaction } from "@patrimo/core/schema";
 import { latestPrice } from "@patrimo/core/format";
+import { latestManualPrice } from "@patrimo/core/manual-prices";
 import {
   shouldRunSync,
   DEFAULT_SYNC_INTERVAL_MINUTES,
@@ -63,9 +64,15 @@ export async function saveSyncInterval(minutes: number): Promise<void> {
 export function buildPriceMap(
   assets: Asset[],
   prices: PriceStore,
+  manualPrices: ManualPrice[] = [],
 ): Map<string, number> {
   const map = new Map<string, number>();
   for (const asset of assets) {
+    if (asset.source === "manual") {
+      const value = latestManualPrice(manualPrices, asset.id);
+      if (value !== null) map.set(asset.id, value);
+      continue;
+    }
     const value = latestPrice(prices[asset.id]);
     if (value !== null) map.set(asset.id, value);
   }
@@ -198,6 +205,10 @@ export async function syncPrices(
   let fetched = 0;
 
   for (const asset of assets) {
+    if (asset.source === "manual") {
+      continue;
+    }
+
     let price: number | null = null;
 
     if (asset.source === "coingecko" && asset.param) {

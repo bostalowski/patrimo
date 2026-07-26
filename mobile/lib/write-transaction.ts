@@ -5,6 +5,7 @@ import {
   readSourceFile,
   writeSourceFile,
 } from "./file-source";
+import { parseWorkbook, serializeWorkbook } from "./excel-mobile";
 
 const SHEET_TRANSACTIONS = "Transactions";
 
@@ -60,6 +61,49 @@ export async function appendTransaction(
   }) as ArrayBuffer;
 
   await writeSourceFile(source, out);
+}
+
+export async function updateTransactionByKey(
+  transactionKey: string,
+  transaction: Transaction,
+): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook, transactionKeys } = parseWorkbook(buffer);
+  const index = transactionKeys.indexOf(transactionKey);
+  if (index < 0) {
+    throw new Error(`Transaction introuvable (${transactionKey}).`);
+  }
+
+  const nextWorkbook = {
+    ...workbook,
+    transactions: workbook.transactions.map((existing, i) =>
+      i === index ? transaction : existing,
+    ),
+  };
+  await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
+}
+
+export async function deleteTransactionByKey(
+  transactionKey: string,
+): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook, transactionKeys } = parseWorkbook(buffer);
+  const index = transactionKeys.indexOf(transactionKey);
+  if (index < 0) {
+    throw new Error(`Transaction introuvable (${transactionKey}).`);
+  }
+
+  const nextWorkbook = {
+    ...workbook,
+    transactions: workbook.transactions.filter((_, i) => i !== index),
+  };
+  await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
 }
 
 /** @deprecated Use appendTransaction() instead */

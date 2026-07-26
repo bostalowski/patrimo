@@ -36,7 +36,7 @@ function isLivret(account: Account | undefined): boolean {
 export default function AddTransactionScreen() {
   const isDark = useColorScheme() === "dark";
   const t = useThemeColors(isDark);
-  const { workbook } = useWorkbook();
+  const { workbook, refresh } = useWorkbook();
 
   const accounts = (workbook?.accounts ?? []).filter(
     (account) => account.id !== NO_ACCOUNT_ID,
@@ -94,6 +94,7 @@ export default function AddTransactionScreen() {
     setSubmitting(true);
     try {
       await appendTransaction(parsed.data);
+      await refresh();
       Alert.alert("Succès", "Transaction ajoutée au fichier Excel.", [
         { text: "OK", onPress: () => router.back() },
       ]);

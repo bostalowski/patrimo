@@ -80,6 +80,7 @@ function workbook(overrides: Partial<Workbook> = {}): Workbook {
     budget: [],
     properties: [],
     dca: [],
+    manualPrices: [],
     ...overrides,
   };
 }

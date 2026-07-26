@@ -45,8 +45,14 @@ export default function TransactionsScreen() {
               : t.textSecondary;
 
           return (
-            <View
+            <TouchableOpacity
               key={txKey}
+              onPress={() =>
+                router.push({
+                  pathname: "/edit-transaction",
+                  params: { key: txKey },
+                })
+              }
               style={[
                 shared.card,
                 { backgroundColor: t.card, flexDirection: "row", alignItems: "center" },
@@ -83,7 +89,7 @@ export default function TransactionsScreen() {
                   </Text>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
         <View style={{ height: 80 }} />

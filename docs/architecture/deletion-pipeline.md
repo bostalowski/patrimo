@@ -1,6 +1,6 @@
 # Account and asset deletion pipeline
 
-See [ADR 0001](../adr/0001-share-deletion-rules-across-platforms.md) for the decision and invariants. Canonical terms are defined in the [glossary](../reference/glossary.md).
+See [ADR 0001](../adr/0001-share-deletion-rules-across-platforms.md) for the decision and invariants. Canonical terms are defined in the [glossary](../reference/glossary.md). Related foundations: [Foundations](foundations.md). Operator steps: [Delete an account or asset](../howto/delete-account-or-asset.md).
 
 ## Scope
 

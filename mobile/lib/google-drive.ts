@@ -3,6 +3,7 @@ import {
   makeRedirectUri,
   type AuthSessionResult,
 } from "expo-auth-session";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "";
@@ -12,6 +13,10 @@ const STORAGE_KEY_TOKEN = "patrimo:google_token";
 const STORAGE_KEY_REFRESH_TOKEN = "patrimo:google_refresh_token";
 const STORAGE_KEY_TOKEN_EXPIRY = "patrimo:google_token_expiry";
 const STORAGE_KEY_FILE_ID = "patrimo:drive_file_id";
+
+export function isGoogleAuthSupported(): boolean {
+  return Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+}
 
 export function useGoogleAuth() {
   const redirectUri = makeRedirectUri({

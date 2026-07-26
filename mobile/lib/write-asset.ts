@@ -1,6 +1,10 @@
 import * as XLSX from "xlsx";
-import type { Asset } from "@patrimo/core/schema";
+import type { Asset, ManualPrice } from "@patrimo/core/schema";
 import { deleteAsset } from "@patrimo/core/deletion";
+import {
+  deleteManualPrice,
+  upsertManualPrice,
+} from "@patrimo/core/manual-prices";
 import {
   getActiveSource,
   readSourceFile,
@@ -57,6 +61,50 @@ export async function appendAsset(asset: Asset): Promise<void> {
   }) as ArrayBuffer;
 
   await writeSourceFile(source, out);
+}
+
+export async function updateAssetInSource(asset: Asset): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  if (!workbook.assets.some((existing) => existing.id === asset.id)) {
+    throw new Error(`Unknown asset: ${asset.id}`);
+  }
+
+  const nextWorkbook = {
+    ...workbook,
+    assets: workbook.assets.map((existing) =>
+      existing.id === asset.id ? asset : existing,
+    ),
+  };
+  await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
+}
+
+export async function upsertManualPriceInSource(
+  manualPrice: ManualPrice,
+): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  const nextWorkbook = upsertManualPrice(workbook, manualPrice);
+  await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
+}
+
+export async function deleteManualPriceFromSource(
+  assetId: string,
+  date: Date,
+): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  const nextWorkbook = deleteManualPrice(workbook, assetId, date);
+  await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
 }
 
 export async function deleteAssetFromSource(assetId: string): Promise<void> {

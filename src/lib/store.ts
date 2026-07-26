@@ -1,16 +1,16 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { Asset, DcaConfig, Envelope } from "@/lib/schema";
+import type { Asset, DcaConfig, Envelope, ManualPrice } from "@/lib/schema";
 import { ExpectedReturns, RetirementProfile } from "@/lib/schema";
-import { getDcaConfigs, saveDcaConfigs } from "@/lib/excel";
+import { getDcaConfigs, loadWorkbook, saveDcaConfigs } from "@/lib/excel";
 import { latestPrice } from "@patrimo/core/format";
+import { latestManualPrice } from "@patrimo/core/manual-prices";
 import { z } from "zod";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
   ? resolve(process.env.FINGRAPHS_DATA_DIR)
   : resolve(process.cwd(), "data");
 const PRICES_FILE = resolve(DATA_DIR, "prices.json");
-const MANUAL_PRICES_FILE = resolve(DATA_DIR, "manual-prices.json");
 const BENCHMARKS_FILE = resolve(DATA_DIR, "benchmarks.json");
 const EXPECTED_RETURNS_FILE = resolve(DATA_DIR, "expected-returns.json");
 const RETIREMENT_PROFILE_FILE = resolve(DATA_DIR, "retirement-profile.json");
@@ -42,12 +42,22 @@ export async function writePrices(store: PriceStore): Promise<void> {
   await writeJson(PRICES_FILE, store);
 }
 
-export async function readManualPrices(): Promise<PriceStore> {
-  return readJson<PriceStore>(MANUAL_PRICES_FILE, {});
+export function manualPricesToPriceStore(
+  manualPrices: ManualPrice[],
+): PriceStore {
+  const store: PriceStore = {};
+  for (const entry of manualPrices) {
+    const dateKey = entry.date.toISOString().slice(0, 10);
+    store[entry.assetId] = {
+      ...(store[entry.assetId] ?? {}),
+      [dateKey]: entry.price,
+    };
+  }
+  return store;
 }
 
-export async function writeManualPrices(store: PriceStore): Promise<void> {
-  await writeJson(MANUAL_PRICES_FILE, store);
+export async function readManualPrices(): Promise<PriceStore> {
+  return manualPricesToPriceStore(loadWorkbook().manualPrices);
 }
 
 function withoutAssets(
@@ -65,15 +75,8 @@ export async function removeAssetsFromPriceCaches(
   if (assetIds.length === 0) return;
 
   const deletedAssetIds = new Set(assetIds);
-  const [prices, manualPrices] = await Promise.all([
-    readPrices(),
-    readManualPrices(),
-  ]);
-
-  await Promise.all([
-    writePrices(withoutAssets(prices, deletedAssetIds)),
-    writeManualPrices(withoutAssets(manualPrices, deletedAssetIds)),
-  ]);
+  const prices = await readPrices();
+  await writePrices(withoutAssets(prices, deletedAssetIds));
 }
 
 export async function readBenchmarks(): Promise<PriceStore> {
@@ -94,12 +97,21 @@ export async function writeSyncMeta(meta: SyncMeta): Promise<void> {
   await writeJson(SYNC_META_FILE, meta);
 }
 
-export async function readPriceMap(assets: Asset[]): Promise<Map<string, number>> {
-  const [prices, manual] = await Promise.all([readPrices(), readManualPrices()]);
+export async function readPriceMap(
+  assets: Asset[],
+  manualPrices?: ManualPrice[],
+): Promise<Map<string, number>> {
+  const prices = await readPrices();
+  const workbookManualPrices =
+    manualPrices ?? loadWorkbook().manualPrices;
   const map = new Map<string, number>();
   for (const asset of assets) {
-    const source = asset.source === "manual" ? manual : prices;
-    const value = latestPrice(source[asset.id]);
+    if (asset.source === "manual") {
+      const value = latestManualPrice(workbookManualPrices, asset.id);
+      if (value !== null) map.set(asset.id, value);
+      continue;
+    }
+    const value = latestPrice(prices[asset.id]);
     if (value !== null) map.set(asset.id, value);
   }
   return map;
