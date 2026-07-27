@@ -10,6 +10,7 @@
     "prebuild": "expo prebuild"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
     "@patrimo/core": "*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@shopify/react-native-skia": "2.6.2",
@@ -47,7 +48,9 @@
   },
   "expo": {
     "install": {
-      "exclude": ["react-native-worklets"]
+      "exclude": [
+        "react-native-worklets"
+      ]
     }
   }
 }
