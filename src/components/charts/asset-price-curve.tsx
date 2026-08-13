@@ -60,7 +60,7 @@ export function AssetPriceCurve({
               fontSize: 12,
             }}
             labelFormatter={(d) =>
-              new Date(d).toLocaleDateString("fr-FR", {
+              new Date(String(d)).toLocaleDateString("fr-FR", {
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
