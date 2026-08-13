@@ -24,6 +24,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Manual price persistence](architecture/manual-price-persistence.md)
 - [Deletion pipeline](architecture/deletion-pipeline.md)
 - [Asset invested display](architecture/asset-invested-display.md)
+- [Mobile projection extra contributions](architecture/mobile-projection-extra-contributions.md)
 
 ## Reference
 
@@ -39,6 +40,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Import a Trade Republic CSV](howto/import-trade-republic-csv.md)
 - [Delete an account or asset](howto/delete-account-or-asset.md)
 - [Implement asset invested display](howto/implement-asset-invested-display.md)
+- [Implement mobile projection extra contributions](howto/implement-mobile-projection-extra-contributions.md)
 
 ## Decisions
 

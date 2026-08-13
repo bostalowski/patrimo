@@ -19,3 +19,4 @@ Read [DOC_STRUCTURE_MODEL.md](../DOC_STRUCTURE_MODEL.md) before adding or editin
 ## Existing decision records
 
 - [ADR 0001](adr/0001-share-deletion-rules-across-platforms.md) — shared deletion rules across platforms.
+- [ADR 0004](adr/0004-show-non-monthly-streams-on-mobile-projection.md) — non-monthly DCA badges on mobile Projection (`proposed`).

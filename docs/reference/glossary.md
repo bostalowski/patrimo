@@ -62,6 +62,10 @@ Delete an entity and every dependent record required to prevent invalid referenc
 
 A DCA configuration containing baskets of asset identifiers and target allocations. Persisted in the `DCA` sheet.
 
+## Extra contribution
+
+A non-monthly investment-plan stream (`TRIMESTRIEL` or `ANNUEL`) used by Projection alongside the monthly contribution field. Kept as a separate calendar stream (not divided into the monthly input). Web and mobile Projection may show it as a badge (`extraContributions` / `extraStreams`).
+
 ## Price cache
 
 Derived price history stored locally by each application instance. Price caches are not the source of truth and may be removed lazily after the corresponding asset is deleted on another device.
@@ -84,4 +88,5 @@ Simplified French-tax heuristic produced by `@patrimo/core` fiscal modules. Indi
 - [Foundations](../architecture/foundations.md)
 - [ADR 0001](../adr/0001-share-deletion-rules-across-platforms.md)
 - [ADR 0002](../adr/0002-store-manual-prices-in-workbook.md)
+- [ADR 0004](../adr/0004-show-non-monthly-streams-on-mobile-projection.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
