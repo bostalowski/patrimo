@@ -39,6 +39,16 @@ export default function ActifsScreen() {
         {workbook.assets.map((asset) => {
           const position = portfolio.assets.find((p) => p.assetId === asset.id);
           const currentPrice = priceMap.get(asset.id);
+          const openPosition = position != null && position.quantity > 0;
+          const investedText = `Investi ${formatEuro(position?.costBasis ?? 0)}`;
+          const summaryRowStyle = [
+            shared.row,
+            {
+              paddingTop: 8,
+              borderTopWidth: 1,
+              borderTopColor: t.cardBorder,
+            },
+          ];
 
           return (
             <TouchableOpacity
@@ -71,49 +81,49 @@ export default function ActifsScreen() {
                 </View>
               </View>
 
-              {position && position.quantity > 0 ? (
-                <View
-                  style={[
-                    shared.row,
-                    { paddingTop: 8, borderTopWidth: 1, borderTopColor: t.cardBorder },
-                  ]}
-                >
-                  <Text style={{ color: t.textSecondary, fontSize: 13 }}>
-                    {position.quantity % 1 === 0
-                      ? `${position.quantity} parts`
-                      : `${position.quantity.toFixed(6)}`}
-                    {" · "}PRU {formatEuro(position.pru)}
-                    {" · "}Investi {formatEuro(position.costBasis)}
-                  </Text>
-                  <View style={{ alignItems: "flex-end" }}>
-                    <Text style={{ color: t.text, fontSize: 13, fontWeight: "600" }}>
-                      {formatEuro(position.marketValue)}
+              <View style={summaryRowStyle}>
+                {openPosition ? (
+                  <>
+                    <Text style={{ color: t.textSecondary, fontSize: 13 }}>
+                      {position.quantity % 1 === 0
+                        ? `${position.quantity} parts`
+                        : `${position.quantity.toFixed(6)}`}
+                      {" · "}PRU {formatEuro(position.pru)}
+                      {" · "}
+                      {investedText}
                     </Text>
-                    {position.totalReturnPct !== 0 && (
+                    <View style={{ alignItems: "flex-end" }}>
                       <Text
                         style={{
-                          fontSize: 12,
-                          color: position.unrealizedPnL >= 0 ? t.success : t.danger,
+                          color: t.text,
+                          fontSize: 13,
+                          fontWeight: "600",
                         }}
                       >
-                        {position.unrealizedPnL >= 0 ? "+" : ""}
-                        {formatPercent(position.totalReturnPct)}
+                        {formatEuro(position.marketValue)}
                       </Text>
-                    )}
-                  </View>
-                </View>
-              ) : (
-                <View
-                  style={[
-                    shared.row,
-                    { paddingTop: 8, borderTopWidth: 1, borderTopColor: t.cardBorder },
-                  ]}
-                >
+                      {position.totalReturnPct !== 0 && (
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color:
+                              position.unrealizedPnL >= 0
+                                ? t.success
+                                : t.danger,
+                          }}
+                        >
+                          {position.unrealizedPnL >= 0 ? "+" : ""}
+                          {formatPercent(position.totalReturnPct)}
+                        </Text>
+                      )}
+                    </View>
+                  </>
+                ) : (
                   <Text style={{ color: t.textSecondary, fontSize: 13 }}>
-                    Investi {formatEuro(position?.costBasis ?? 0)}
+                    {investedText}
                   </Text>
-                </View>
-              )}
+                )}
+              </View>
 
               <View style={{ flexDirection: "row", marginTop: 6, gap: 8 }}>
                 <Text style={{ color: t.textMuted, fontSize: 11 }}>

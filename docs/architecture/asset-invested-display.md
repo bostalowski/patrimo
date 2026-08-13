@@ -1,7 +1,5 @@
 # Asset invested display
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0003](../adr/0003-display-invested-on-asset-surfaces.md).
-
 How asset list and detail surfaces expose remaining position cost basis as **Investi**.
 
 ## Intent
@@ -28,9 +26,9 @@ Workbook + prices
 
 | Surface | Placement | Source field | Empty position |
 |---|---|---|---|
-| Web asset list | Column after PRU, before current price | `costBasis` | `0 €` |
-| Web asset detail | KPI card after PRU, before market value | `costBasis` | `0 €` |
-| Mobile asset list | Summary next to quantity / PRU | `costBasis` | `0 €` |
+| Web asset list | Column after PRU, before current price (`actifs-table.tsx`) | `costBasis` | `0 €` |
+| Web asset detail | KPI card after PRU (`asset-position-kpis.tsx`) | `costBasis` | `0 €` |
+| Mobile asset list | Summary line next to quantity / PRU (`mobile/app/actifs.tsx`) | `costBasis` | `0 €` |
 
 ## Invariants
 

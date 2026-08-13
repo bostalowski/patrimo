@@ -1,6 +1,6 @@
 # ADR 0003: Display invested amount on asset surfaces
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-13
 
 ## Context
@@ -80,7 +80,6 @@ The displayed value is the remaining position cost basis from `buildPortfolio` â
 
 ## Follow-up
 
-- Confirm architecture / howto drafts after implementation (Phase 5).
 - Optional later: show invested on account-embedded asset tables for full UI consistency (out of this increment).
 
 ## See also
