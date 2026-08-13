@@ -22,13 +22,45 @@ import {
 } from "@patrimo/core/fiscal-advice";
 import { formatEuro } from "@patrimo/core/format";
 import type { Envelope } from "@patrimo/core/schema";
-import { useThemeColors, shared, type Theme } from "../lib/theme";
+import { useThemeColors, shared, colors, type Theme } from "../lib/theme";
 
 const HORIZON_OPTIONS = [5, 10, 15, 20, 25, 30];
+
+const FREQUENCY_SUFFIX: Record<ContributionStream["frequency"], string> = {
+  MENSUEL: "/mois",
+  TRIMESTRIEL: "/trim.",
+  ANNUEL: "/an",
+};
+
+const MONTH_SHORT = [
+  "janv.",
+  "févr.",
+  "mars",
+  "avr.",
+  "mai",
+  "juin",
+  "juil.",
+  "août",
+  "sept.",
+  "oct.",
+  "nov.",
+  "déc.",
+];
+
+const EXTRA_STREAM_BADGE = {
+  light: { backgroundColor: "#f0f9ff", color: "#0369a1" },
+  dark: { backgroundColor: "#082f49", color: "#7dd3fc" },
+} as const;
 
 function parseNum(value: string): number {
   const n = Number(value.replace(",", ".").replace(/\s/g, ""));
   return Number.isFinite(n) ? n : 0;
+}
+
+function formatStream(stream: ContributionStream): string {
+  const base = `${formatEuro(stream.amount)}${FREQUENCY_SUFFIX[stream.frequency]}`;
+  if (stream.frequency === "MENSUEL" || !stream.paymentMonth) return base;
+  return `${base} · ${MONTH_SHORT[stream.paymentMonth - 1]}`;
 }
 
 type Tab = "envelopes" | "immobilier";
@@ -572,6 +604,7 @@ function EnvelopeCard({
     envelope: Envelope;
     currentValue: number;
     monthly: number;
+    extraStreams: ContributionStream[];
     rate: number;
     plafond?: number;
     result: ReturnType<typeof projectInvestment>;
@@ -584,7 +617,7 @@ function EnvelopeCard({
   onMonthlyChange: (value: string) => void;
   theme: Theme;
 }) {
-  const { envelope, currentValue, plafond, result } = projection;
+  const { envelope, currentValue, plafond, result, extraStreams } = projection;
   const label = ENVELOPE_LABELS[envelope] ?? envelope;
   const gain = result.finalValue - currentValue;
 
@@ -607,7 +640,7 @@ function EnvelopeCard({
         style={{
           flexDirection: "row",
           gap: 10,
-          marginBottom: 12,
+          marginBottom: extraStreams.length > 0 ? 8 : 12,
         }}
       >
         <View style={{ flex: 1 }}>
@@ -629,6 +662,45 @@ function EnvelopeCard({
           />
         </View>
       </View>
+
+      {extraStreams.length > 0 && (
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 6,
+            marginBottom: 12,
+          }}
+        >
+          {extraStreams.map((stream, index) => {
+            const badge =
+              t.bg === colors.dark.bg
+                ? EXTRA_STREAM_BADGE.dark
+                : EXTRA_STREAM_BADGE.light;
+            return (
+              <View
+                key={`${envelope}-extra-${index}`}
+                style={{
+                  borderRadius: 999,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  backgroundColor: badge.backgroundColor,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "500",
+                    color: badge.color,
+                  }}
+                >
+                  {`+ ${formatStream(stream)}`}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       <View style={{ flexDirection: "row", marginBottom: 10 }}>
         <View style={{ flex: 1 }}>
