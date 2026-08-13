@@ -12,10 +12,12 @@ files:
   - "!**/.DS_Store"
   - "!node_modules/**"
 extraResources:
+  # Dedicated node_modules entry: electron-builder drops top-level node_modules in FileSets.
   - from: .next/standalone
     to: standalone
     filter:
       - "**/*"
+      - "!**/node_modules/**"
       - "!**/.env*"
       - "!**/data/**"
       - "!**/src/**"
@@ -29,6 +31,10 @@ extraResources:
       - "!**/electron/**"
       - "!**/release/**"
       - "!**/.next/cache/**"
+  - from: .next/standalone/node_modules
+    to: standalone/node_modules
+    filter:
+      - "**/*"
   - from: .next/static
     to: standalone/.next/static
     filter:
