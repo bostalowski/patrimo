@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useWorkbook } from "../lib/use-workbook";
 import { buildPortfolio } from "@patrimo/core/portfolio";
-import { formatEuro } from "@patrimo/core/format";
+import { formatEuro, formatQuantity } from "@patrimo/core/format";
 import {
   NO_ACCOUNT_ID,
   NO_ACCOUNT_LABEL,
@@ -47,6 +47,7 @@ export default function ComptesScreen() {
         marketValue: 0,
         costBasis: 0,
         unrealizedPnL: 0,
+        positions: [],
       },
   );
   for (const account of portfolio.accounts) {
@@ -60,6 +61,9 @@ export default function ComptesScreen() {
         {displayAccounts.map((account) => {
           const meta = accountMap.get(account.accountId);
           const canEdit = Boolean(meta && account.accountId !== NO_ACCOUNT_ID);
+          const activePositions = (account.positions ?? []).filter(
+            (position) => position.quantity > 0,
+          );
           return (
             <TouchableOpacity
               key={account.accountId}
@@ -115,6 +119,35 @@ export default function ComptesScreen() {
                   {formatEuro(account.unrealizedPnL)}
                 </Text>
               </View>
+              {activePositions.map((position) => (
+                <View
+                  key={position.assetId}
+                  style={[
+                    shared.row,
+                    {
+                      marginTop: 8,
+                      paddingTop: 8,
+                      borderTopWidth: 1,
+                      borderTopColor: t.cardBorder,
+                    },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: t.text, fontSize: 13, fontWeight: "500" }}>
+                      {position.asset?.label ?? position.assetId}
+                    </Text>
+                    <Text style={{ color: t.textSecondary, fontSize: 12, marginTop: 2 }}>
+                      {formatQuantity(position.quantity)}
+                      {" · "}Investi {formatEuro(position.costBasis)}
+                    </Text>
+                  </View>
+                  <Text style={{ color: t.text, fontSize: 13, fontWeight: "600" }}>
+                    {position.currentPrice !== null
+                      ? formatEuro(position.marketValue)
+                      : "—"}
+                  </Text>
+                </View>
+              ))}
             </TouchableOpacity>
           );
         })}
