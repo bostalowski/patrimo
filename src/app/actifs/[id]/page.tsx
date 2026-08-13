@@ -23,6 +23,7 @@ import { ManualPriceInput } from "./manual-price-input";
 import { assetDeletionImpact } from "@/lib/deletion-impact";
 import {
   formatDate,
+  formatEuro,
   formatFee,
   formatQuantity,
 } from "@/lib/utils";
