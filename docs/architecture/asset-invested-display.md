@@ -1,10 +1,12 @@
 # Asset invested display
 
-How asset list and detail surfaces expose remaining position cost basis as **Investi**.
+> 🚧 Anticipated mechanics for account surfaces (Phase 1.5 draft) — asset surfaces below are already implemented on the feature branch; account rows pending. See [ADR 0003](../adr/0003-display-invested-on-asset-surfaces.md).
+
+How asset and account UIs expose remaining position cost basis as **Investi**.
 
 ## Intent
 
-Users see how much capital remains engaged in each asset position without inferring it from quantity × PRU.
+Users see how much capital remains engaged in each open asset position — globally and under each account — without inferring it from quantity × PRU.
 
 ## Flow
 
@@ -15,20 +17,23 @@ Workbook + prices
  buildPortfolio (@patrimo/core)
        |
        +--> AssetPosition.costBasis
+       +--> AccountAssetPosition.costBasis
        |
-       +------------------+------------------+
-       v                  v                  v
-  Web /actifs list   Web /actifs/[id]   Mobile actifs list
-  column Investi     KPI card Investi   summary Investi
+       +--------+--------+--------+--------+
+       v        v        v        v        v
+  Web actifs  Web détail  Mobile actifs  Web comptes  Mobile comptes
+  list col    KPI card    summary        active table  active lines
 ```
 
 ## Surfaces
 
-| Surface | Placement | Source field | Empty position |
+| Surface | Placement | Source field | Notes |
 |---|---|---|---|
-| Web asset list | Column after PRU, before current price (`actifs-table.tsx`) | `costBasis` | `0 €` |
-| Web asset detail | KPI card after PRU (`asset-position-kpis.tsx`) | `costBasis` | `0 €` |
-| Mobile asset list | Summary line next to quantity / PRU (`mobile/app/actifs.tsx`) | `costBasis` | `0 €` |
+| Web asset list | Column after PRU (`actifs-table.tsx`) | `costBasis` | `0 €` if quantity 0 |
+| Web asset detail | KPI after PRU (`asset-position-kpis.tsx`) | `costBasis` | `0 €` if quantity 0 |
+| Mobile asset list | Summary next to PRU (`mobile/app/actifs.tsx`) | `costBasis` | `0 €` if quantity 0 |
+| Web comptes | Active-positions table after PRU (`comptes`) | `AccountAssetPosition.costBasis` | Active only (`quantity > 0`) |
+| Mobile comptes | Under account card: label · qty · Investi · value | `AccountAssetPosition.costBasis` | Active only |
 
 ## Invariants
 
@@ -37,8 +42,8 @@ Governed by [ADR 0003](../adr/0003-display-invested-on-asset-surfaces.md). Portf
 ## Out of scope
 
 - New portfolio metrics
-- Dashboard / accounts invested widgets (already present)
-- Account-embedded asset sub-tables
+- **Investi** on closed account positions
+- Changing account-header / dashboard invested totals (already present)
 
 ## See also
 
