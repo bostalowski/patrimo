@@ -71,7 +71,7 @@ export default function ActifsScreen() {
                 </View>
               </View>
 
-              {position && position.quantity > 0 && (
+              {position && position.quantity > 0 ? (
                 <View
                   style={[
                     shared.row,
@@ -83,6 +83,7 @@ export default function ActifsScreen() {
                       ? `${position.quantity} parts`
                       : `${position.quantity.toFixed(6)}`}
                     {" · "}PRU {formatEuro(position.pru)}
+                    {" · "}Investi {formatEuro(position.costBasis)}
                   </Text>
                   <View style={{ alignItems: "flex-end" }}>
                     <Text style={{ color: t.text, fontSize: 13, fontWeight: "600" }}>
@@ -100,6 +101,17 @@ export default function ActifsScreen() {
                       </Text>
                     )}
                   </View>
+                </View>
+              ) : (
+                <View
+                  style={[
+                    shared.row,
+                    { paddingTop: 8, borderTopWidth: 1, borderTopColor: t.cardBorder },
+                  ]}
+                >
+                  <Text style={{ color: t.textSecondary, fontSize: 13 }}>
+                    Investi {formatEuro(position?.costBasis ?? 0)}
+                  </Text>
                 </View>
               )}
 
