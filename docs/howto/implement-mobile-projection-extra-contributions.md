@@ -1,21 +1,19 @@
 # Implement mobile projection extra contributions
 
-> 🚧 Anticipated plan (Phase 1.5 draft) — confirm after implementation. See [ADR 0004](../adr/0004-show-non-monthly-streams-on-mobile-projection.md).
-
-Ordered vertical scope and test strategy for showing non-monthly DCA streams on mobile Projection.
+Ordered vertical scope and test strategy for showing non-monthly DCA streams on mobile Projection. Confirmed against shipped code on `fix/mobile-projection-extra-streams`.
 
 ## Prerequisites
 
-- Spec: [ADR 0004](../adr/0004-show-non-monthly-streams-on-mobile-projection.md) (`proposed` until delivery)
+- Spec: [ADR 0004](../adr/0004-show-non-monthly-streams-on-mobile-projection.md) (accepted)
 - Branch: `fix/mobile-projection-extra-streams`
 
 ## Increment plan
 
-### Scope 1 — Mobile Projection extra-stream badges
+### Scope 1 — Mobile Projection extra-stream badges (done)
 
 Pass `extraStreams` into the envelope card; render badges under the monthly field; format like web. Covers Phase 0 cases 1–5.
 
-Tests: `mobile/lib/projection-extra-streams-ui.test.tsx` (name may adjust; keep UI-test pattern).
+Tests: `mobile/lib/projection-extra-streams-ui.test.tsx`.
 
 ## Test strategy
 

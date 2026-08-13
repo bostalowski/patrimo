@@ -1,6 +1,6 @@
 # ADR 0004: Show non-monthly DCA streams on mobile projection
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-13
 - implementation_ready: yes
 

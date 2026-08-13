@@ -47,6 +47,11 @@ const MONTH_SHORT = [
   "déc.",
 ];
 
+const EXTRA_STREAM_BADGE = {
+  light: { backgroundColor: "#f0f9ff", color: "#0369a1" },
+  dark: { backgroundColor: "#082f49", color: "#7dd3fc" },
+} as const;
+
 function parseNum(value: string): number {
   const n = Number(value.replace(",", ".").replace(/\s/g, ""));
   return Number.isFinite(n) ? n : 0;
@@ -667,28 +672,33 @@ function EnvelopeCard({
             marginBottom: 12,
           }}
         >
-          {extraStreams.map((stream, index) => (
-            <View
-              key={`${envelope}-extra-${index}`}
-              style={{
-                borderRadius: 999,
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                backgroundColor:
-                  t.bg === colors.dark.bg ? "#082f49" : "#f0f9ff",
-              }}
-            >
-              <Text
+          {extraStreams.map((stream, index) => {
+            const badge =
+              t.bg === colors.dark.bg
+                ? EXTRA_STREAM_BADGE.dark
+                : EXTRA_STREAM_BADGE.light;
+            return (
+              <View
+                key={`${envelope}-extra-${index}`}
                 style={{
-                  fontSize: 12,
-                  fontWeight: "500",
-                  color: t.bg === colors.dark.bg ? "#7dd3fc" : "#0369a1",
+                  borderRadius: 999,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  backgroundColor: badge.backgroundColor,
                 }}
               >
-                {`+ ${formatStream(stream)}`}
-              </Text>
-            </View>
-          ))}
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "500",
+                    color: badge.color,
+                  }}
+                >
+                  {`+ ${formatStream(stream)}`}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       )}
 

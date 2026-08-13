@@ -1,7 +1,5 @@
 # Mobile projection extra contributions
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0004](../adr/0004-show-non-monthly-streams-on-mobile-projection.md).
-
 How mobile Projection surfaces non-monthly investment-plan streams next to the monthly contribution field.
 
 ## Intent
@@ -20,19 +18,19 @@ Workbook DCA configs
        +--> other    --> extraStreams
        |
        +--> projectInvestment(monthly + extraStreams)
-       +--> EnvelopeCard badges for extraStreams (this change)
+       +--> EnvelopeCard badges for extraStreams
 ```
 
 ## Surfaces
 
 | Surface | Placement | Source | Notes |
 |---|---|---|---|
-| Mobile Projection envelope card | Under « Versement (€ / mois) » | `extraStreams` already derived from workbook DCA | One badge per stream; none if empty |
+| Mobile Projection envelope card (`mobile/app/projection.tsx`) | Under « Versement (€ / mois) » | `extraStreams` derived from workbook DCA | One badge per stream; none if empty |
 | Web Projection | Already present | `extraContributions` | Reference format only — not changed |
 
 ## Format
 
-Mirror web:
+Mirror web (`formatStream` local to the mobile screen):
 
 - `MENSUEL` → `/mois` (not shown as extra badge)
 - `TRIMESTRIEL` → `/trim.`

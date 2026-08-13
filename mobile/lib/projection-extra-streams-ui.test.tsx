@@ -129,7 +129,6 @@ function normalize(text: string): string {
 
 function peeMonthlyInputValue(renderer: ReactTestRenderer): string {
   const inputs = renderer.root.findAll((node) => node.type === "TextInput");
-  // inflation + rate + monthly for the first envelope card
   expect(inputs.length).toBeGreaterThanOrEqual(3);
   return String(inputs[2].props.value ?? "");
 }
