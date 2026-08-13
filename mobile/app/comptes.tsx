@@ -64,6 +64,15 @@ export default function ComptesScreen() {
           const activePositions = (account.positions ?? []).filter(
             (position) => position.quantity > 0,
           );
+          const dividerRow = [
+            shared.row,
+            {
+              marginTop: 8,
+              paddingTop: 8,
+              borderTopWidth: 1,
+              borderTopColor: t.cardBorder,
+            },
+          ];
           return (
             <TouchableOpacity
               key={account.accountId}
@@ -102,7 +111,12 @@ export default function ComptesScreen() {
               <View
                 style={[
                   shared.row,
-                  { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.cardBorder },
+                  {
+                    marginTop: 10,
+                    paddingTop: 10,
+                    borderTopWidth: 1,
+                    borderTopColor: t.cardBorder,
+                  },
                 ]}
               >
                 <Text style={{ color: t.textSecondary, fontSize: 13 }}>
@@ -120,18 +134,7 @@ export default function ComptesScreen() {
                 </Text>
               </View>
               {activePositions.map((position) => (
-                <View
-                  key={position.assetId}
-                  style={[
-                    shared.row,
-                    {
-                      marginTop: 8,
-                      paddingTop: 8,
-                      borderTopWidth: 1,
-                      borderTopColor: t.cardBorder,
-                    },
-                  ]}
-                >
+                <View key={position.assetId} style={dividerRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: t.text, fontSize: 13, fontWeight: "500" }}>
                       {position.asset?.label ?? position.assetId}

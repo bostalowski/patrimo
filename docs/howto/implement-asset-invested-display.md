@@ -1,12 +1,10 @@
 # Implement asset invested display
 
-> 🚧 Anticipated mechanics for account scopes (Phase 1.5 draft) — scopes 1–2 already green on the branch; scopes 3–4 pending. See [ADR 0003](../adr/0003-display-invested-on-asset-surfaces.md).
-
-Ordered vertical scopes and test strategy for surfacing **Investi** (`costBasis`).
+Ordered vertical scopes and test strategy for surfacing **Investi** (`costBasis`). Confirmed against shipped code on `feat/asset-invested-display`.
 
 ## Prerequisites
 
-- Spec: [ADR 0003](../adr/0003-display-invested-on-asset-surfaces.md) (proposed on branch until merge)
+- Spec: [ADR 0003](../adr/0003-display-invested-on-asset-surfaces.md) (accepted)
 - Branch: `feat/asset-invested-display`
 
 ## Increment plan
@@ -19,42 +17,32 @@ List column + detail KPI. Tests: `src/app/actifs/actifs-invested.test.tsx`.
 
 Summary **Investi**. Tests: `mobile/lib/actifs-invested-ui.test.tsx`.
 
-### Scope 3 — Web comptes active positions
+### Scope 3 — Web comptes active positions (done)
 
-1. Extract or render an active-positions table with **Investi** after **PRU**.
-2. Prove a row with known `costBasis` shows the euro amount.
-3. Do not add **Investi** to closed-positions table.
+**Investi** after **PRU** in `ActiveAccountPositionsTable`. Closed table unchanged. Tests: `src/app/comptes/comptes-invested.test.tsx`.
 
-**Exit:** web comptes active table shows Investi; targeted test green.
+### Scope 4 — Mobile comptes active positions (done)
 
-### Scope 4 — Mobile comptes active positions
-
-1. Under each account card, list positions with `quantity > 0`.
-2. Each line: asset label, quantity, **Investi**, market value when priced.
-3. Account with no active positions: no position list (header Investi unchanged).
-
-**Exit:** mobile comptes shows active lines with Investi; targeted test green.
+Under each account card: label, quantity, **Investi**, market value. Tests: `mobile/lib/comptes-invested-ui.test.tsx`.
 
 ## Test strategy
 
 | Level | What it proves |
 |---|---|
-| Web actifs (existing) | List + detail Investi |
-| Mobile actifs (existing) | List Investi |
-| Web comptes component | Active table column Investi; closed table unchanged |
-| Mobile comptes UI | Active position lines under account; Investi visible |
+| Web actifs | List + detail Investi |
+| Mobile actifs | List Investi |
+| Web comptes | Active table column Investi; closed table without Investi |
+| Mobile comptes | Active position lines under account |
 | Core portfolio | Not required |
 
 ## Commands
 
 ```bash
 npm test -- src/app/actifs/actifs-invested.test.tsx
-npm test -- mobile/lib/actifs-invested-ui.test.tsx
-npm test -- src/app/comptes
-npm test -- mobile/lib/comptes-invested-ui.test.tsx
+npm test -- mobile/lib/actifs-invested-ui
+npm test -- src/app/comptes/comptes-invested.test.tsx
+npm test -- mobile/lib/comptes-invested-ui
 ```
-
-(Exact comptes file paths follow RED.)
 
 ## See also
 

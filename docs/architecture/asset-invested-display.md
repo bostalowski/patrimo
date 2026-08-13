@@ -1,7 +1,5 @@
 # Asset invested display
 
-> 🚧 Anticipated mechanics for account surfaces (Phase 1.5 draft) — asset surfaces below are already implemented on the feature branch; account rows pending. See [ADR 0003](../adr/0003-display-invested-on-asset-surfaces.md).
-
 How asset and account UIs expose remaining position cost basis as **Investi**.
 
 ## Intent
@@ -32,8 +30,8 @@ Workbook + prices
 | Web asset list | Column after PRU (`actifs-table.tsx`) | `costBasis` | `0 €` if quantity 0 |
 | Web asset detail | KPI after PRU (`asset-position-kpis.tsx`) | `costBasis` | `0 €` if quantity 0 |
 | Mobile asset list | Summary next to PRU (`mobile/app/actifs.tsx`) | `costBasis` | `0 €` if quantity 0 |
-| Web comptes | Active-positions table after PRU (`comptes`) | `AccountAssetPosition.costBasis` | Active only (`quantity > 0`) |
-| Mobile comptes | Under account card: label · qty · Investi · value | `AccountAssetPosition.costBasis` | Active only |
+| Web comptes | Active-positions table after PRU (`account-positions-tables.tsx`) | `AccountAssetPosition.costBasis` | Active only (`quantity > 0`) |
+| Mobile comptes | Under account card: label · qty · Investi · value (`mobile/app/comptes.tsx`) | `AccountAssetPosition.costBasis` | Active only |
 
 ## Invariants
 

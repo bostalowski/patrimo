@@ -1,6 +1,6 @@
 # ADR 0003: Display invested amount on asset surfaces
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-13
 
 ## Context
