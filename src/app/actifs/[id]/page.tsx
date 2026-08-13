@@ -6,7 +6,6 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
-  CardValue,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -19,15 +18,13 @@ import { getAssetSourceUrl, getSourceLabel } from "@/lib/prices/source-url";
 import { AssetType, PriceSource } from "@/lib/schema";
 import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
 import { AssetForm } from "../asset-form";
+import { AssetPositionKpis } from "../asset-position-kpis";
 import { ManualPriceInput } from "./manual-price-input";
 import { assetDeletionImpact } from "@/lib/deletion-impact";
 import {
   formatDate,
-  formatEuro,
   formatFee,
-  formatPercent,
   formatQuantity,
-  signClass,
 } from "@/lib/utils";
 
 const typeVariants = {
@@ -124,64 +121,15 @@ export default async function AssetDetailPage({
         </p>
       </header>
 
-      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${asset.ter ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Quantité</CardTitle>
-            <CardValue>{formatQuantity(position?.quantity ?? 0)}</CardValue>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>PRU</CardTitle>
-            <CardValue>{formatEuro(position?.pru ?? 0, true)}</CardValue>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Valeur actuelle</CardTitle>
-            <CardValue>
-              {position?.currentPrice !== null && position
-                ? formatEuro(position.marketValue)
-                : "—"}
-            </CardValue>
-            {position?.currentPrice !== null && (
-              <p className="text-xs text-zinc-500">
-                Cours {formatEuro(position?.currentPrice ?? 0, true)}
-              </p>
-            )}
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>P&amp;L latente</CardTitle>
-            <CardValue className={signClass(position?.unrealizedPnL ?? 0)}>
-              {position?.currentPrice !== null && position
-                ? formatEuro(position.unrealizedPnL)
-                : "—"}
-            </CardValue>
-            {position && position.costBasis > 0 && position.currentPrice !== null && (
-              <p className={`text-xs ${signClass(position.unrealizedPnL)}`}>
-                {formatPercent(position.unrealizedPnL / position.costBasis)}
-              </p>
-            )}
-          </CardHeader>
-        </Card>
-        {asset.ter != null && asset.ter > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Frais de gestion (TER)</CardTitle>
-              <CardValue>{formatPercent(asset.ter)}</CardValue>
-              {position && position.marketValue > 0 && (
-                <p className="text-xs text-zinc-500">
-                  ≈ {formatEuro(position.marketValue * asset.ter)}/an sur{" "}
-                  {formatEuro(position.marketValue)}
-                </p>
-              )}
-            </CardHeader>
-          </Card>
-        )}
-      </div>
+      <AssetPositionKpis
+        quantity={position?.quantity ?? 0}
+        pru={position?.pru ?? 0}
+        costBasis={position?.costBasis ?? 0}
+        currentPrice={position?.currentPrice ?? null}
+        marketValue={position?.marketValue ?? 0}
+        unrealizedPnL={position?.unrealizedPnL ?? 0}
+        ter={asset.ter ?? null}
+      />
 
       <Card>
         <CardHeader>
