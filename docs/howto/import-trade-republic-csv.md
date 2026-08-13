@@ -64,4 +64,4 @@ Details: [API routes](../reference/api-routes.md).
 
 - [Excel workbook schema](../reference/excel-workbook.md)
 - [Workbook persistence](../architecture/workbook-persistence.md)
-- Root README section « Importer des transactions depuis un broker »
+- Root [README](../../README.md) (entry point; this page is the import howto)

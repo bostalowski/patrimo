@@ -17,7 +17,7 @@ Persistence:
 
 ### Google Drive on desktop
 
-Patrimo web/Electron does not call the Drive API. Mount the file with Google Drive Desktop, mark it available offline, then select that local path in **Réglages**. Details: root README.
+Patrimo web/Electron does not call the Drive API. Mount the file with Google Drive Desktop, mark it available offline, then select that local path in **Réglages**. End-user steps: root [README](../../README.md).
 
 ## Mobile
 
