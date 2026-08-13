@@ -1,23 +1,20 @@
-import Link from "next/link";
-import { ChevronRight, Lock, LockOpen } from "lucide-react";
+import { Lock, LockOpen } from "lucide-react";
 import {
   Card,
   CardBody,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
-import { buildPortfolio, type AccountAssetPosition } from "@/lib/portfolio";
+import { buildPortfolio } from "@/lib/portfolio";
 import { buildAccountUnlocks, type AccountUnlock } from "@/lib/deblocage";
 import { readPriceMap } from "@/lib/store";
 import {
   formatDate,
   formatEuro,
   formatPercent,
-  formatQuantity,
   formatRelativeDuration,
   signClass,
 } from "@/lib/utils";
@@ -25,9 +22,12 @@ import { AccountType, Envelope } from "@/lib/schema";
 import { accountDeletionImpact } from "@/lib/deletion-impact";
 import { AccountForm } from "./account-form";
 import {
+  ActiveAccountPositionsTable,
+  ClosedAccountPositions,
+} from "./account-positions-tables";
+import {
   NO_ACCOUNT_ID,
   NO_ACCOUNT_LABEL,
-  UNASSIGNED_CASH_ASSET_ID,
 } from "@patrimo/core/deletion";
 
 export const dynamic = "force-dynamic";
@@ -204,47 +204,14 @@ export default async function ComptesPage() {
                     ) : (
                       <>
                         {activePositions.length > 0 && (
-                          <Table>
-                            <THead>
-                              <TR>
-                                <TH>Actif</TH>
-                                <TH className="text-right">Quantité</TH>
-                                <TH className="text-right">PRU</TH>
-                                <TH className="text-right">Valeur</TH>
-                                <TH className="text-right">P&amp;L</TH>
-                              </TR>
-                            </THead>
-                            <TBody>
-                              {activePositions.map((p) => (
-                                <TR key={p.assetId}>
-                                  <TD>
-                                    <AssetName position={p} />
-                                  </TD>
-                                  <TD className="text-right font-mono text-xs">
-                                    {formatQuantity(p.quantity)}
-                                  </TD>
-                                  <TD className="text-right font-mono text-xs">
-                                    {formatEuro(p.pru, true)}
-                                  </TD>
-                                  <TD className="text-right font-mono text-xs">
-                                    {p.currentPrice !== null
-                                      ? formatEuro(p.marketValue)
-                                      : "—"}
-                                  </TD>
-                                  <TD
-                                    className={`text-right font-mono text-xs ${signClass(p.unrealizedPnL)}`}
-                                  >
-                                    {p.currentPrice !== null
-                                      ? formatEuro(p.unrealizedPnL)
-                                      : "—"}
-                                  </TD>
-                                </TR>
-                              ))}
-                            </TBody>
-                          </Table>
+                          <ActiveAccountPositionsTable
+                            positions={activePositions}
+                          />
                         )}
                         {closedPositions.length > 0 && (
-                          <ClosedPositions positions={closedPositions} />
+                          <ClosedAccountPositions
+                            positions={closedPositions}
+                          />
                         )}
                       </>
                     )}
@@ -256,91 +223,6 @@ export default async function ComptesPage() {
         );
       })}
     </div>
-  );
-}
-
-function ClosedPositions({
-  positions,
-}: {
-  positions: AccountAssetPosition[];
-}) {
-  const total = positions.reduce(
-    (s, p) => s + p.realizedPnL + p.realizedIncome,
-    0,
-  );
-  const count = positions.length;
-  return (
-    <details className="group border-t border-zinc-200 dark:border-zinc-800">
-      <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-3 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200">
-        <span className="inline-flex items-center gap-1.5">
-          <ChevronRight
-            className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90"
-            aria-hidden
-          />
-          {count} position{count > 1 ? "s" : ""} clôturée
-          {count > 1 ? "s" : ""}
-        </span>
-        <span className={`font-mono text-xs ${signClass(total)}`}>
-          {total >= 0 ? "+" : ""}
-          {formatEuro(total)}
-        </span>
-      </summary>
-      <Table>
-        <THead>
-          <TR>
-            <TH>Actif</TH>
-            <TH className="text-right">Plus-value</TH>
-            <TH className="text-right">Revenus</TH>
-            <TH className="text-right">Total réalisé</TH>
-          </TR>
-        </THead>
-        <TBody>
-          {positions.map((p) => {
-            const totalReturn = p.realizedPnL + p.realizedIncome;
-            return (
-              <TR key={p.assetId}>
-                <TD>
-                  <AssetName position={p} />
-                </TD>
-                <TD
-                  className={`text-right font-mono text-xs ${signClass(p.realizedPnL)}`}
-                >
-                  {p.realizedPnL >= 0 ? "+" : ""}
-                  {formatEuro(p.realizedPnL)}
-                </TD>
-                <TD className="text-right font-mono text-xs text-zinc-500 dark:text-zinc-400">
-                  {p.realizedIncome > 0
-                    ? `+ ${formatEuro(p.realizedIncome)}`
-                    : "—"}
-                </TD>
-                <TD
-                  className={`text-right font-mono text-xs ${signClass(totalReturn)}`}
-                >
-                  {totalReturn >= 0 ? "+" : ""}
-                  {formatEuro(totalReturn)}
-                </TD>
-              </TR>
-            );
-          })}
-        </TBody>
-      </Table>
-    </details>
-  );
-}
-
-function AssetName({ position }: { position: AccountAssetPosition }) {
-  const label = position.asset?.label ?? position.assetId;
-  if (position.assetId === UNASSIGNED_CASH_ASSET_ID) {
-    return <span className="font-medium">{label}</span>;
-  }
-
-  return (
-    <Link
-      href={`/actifs/${encodeURIComponent(position.assetId)}`}
-      className="font-medium hover:underline"
-    >
-      {label}
-    </Link>
   );
 }
 

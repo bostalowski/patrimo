@@ -26,6 +26,10 @@ A dated movement in the `Transactions` sheet. Types: `ACHAT`, `VENTE`, `DIVIDEND
 
 Unit cost basis of a position (`costBasis / quantity`) as computed by `@patrimo/core` portfolio logic.
 
+## Invested
+
+Remaining position cost basis (`costBasis`) as computed by `@patrimo/core` portfolio logic. UI label **Investi**. Equals quantity × PRU for an open position. Not historical net cash deployed after closed quantity.
+
 ## Unrealized P&L
 
 Mark-to-market gain or loss versus PRU for remaining quantity.

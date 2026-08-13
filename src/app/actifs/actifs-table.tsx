@@ -22,6 +22,7 @@ export type ActifRow = {
   type: string;
   quantity: number;
   pru: number;
+  costBasis: number;
   currentPrice: number | null;
   marketValue: number | null;
   unrealizedPnL: number | null;
@@ -35,6 +36,7 @@ type SortKey =
   | "type"
   | "quantity"
   | "pru"
+  | "costBasis"
   | "currentPrice"
   | "marketValue"
   | "unrealizedPnL"
@@ -45,6 +47,7 @@ const defaultDirections: Record<SortKey, SortDirection> = {
   type: "asc",
   quantity: "desc",
   pru: "desc",
+  costBasis: "desc",
   currentPrice: "desc",
   marketValue: "desc",
   unrealizedPnL: "desc",
@@ -66,6 +69,7 @@ export function ActifsTable({
       type: (r: ActifRow) => r.type,
       quantity: (r: ActifRow) => r.quantity,
       pru: (r: ActifRow) => (r.quantity > 0 ? r.pru : null),
+      costBasis: (r: ActifRow) => r.costBasis,
       currentPrice: (r: ActifRow) => r.currentPrice,
       marketValue: (r: ActifRow) => r.marketValue,
       unrealizedPnL: (r: ActifRow) => r.unrealizedPnL,
@@ -90,6 +94,7 @@ export function ActifsTable({
           <SortableTH label="Type" columnKey="type" activeKey={sort.key} direction={sort.direction} onSort={handleSort} />
           <SortableTH label="Quantité" columnKey="quantity" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
           <SortableTH label="PRU" columnKey="pru" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
+          <SortableTH label="Investi" columnKey="costBasis" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
           <SortableTH label="Cours actuel" columnKey="currentPrice" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
           <SortableTH label="Valeur" columnKey="marketValue" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
           <SortableTH label="P&L latente" columnKey="unrealizedPnL" activeKey={sort.key} direction={sort.direction} onSort={handleSort} align="right" />
@@ -121,6 +126,9 @@ export function ActifsTable({
             </TD>
             <TD className="text-right font-mono text-xs">
               {p.quantity > 0 ? formatEuro(p.pru, true) : "—"}
+            </TD>
+            <TD className="text-right font-mono text-xs">
+              {formatEuro(p.costBasis)}
             </TD>
             <TD className="text-right font-mono text-xs">
               {p.currentPrice !== null ? formatEuro(p.currentPrice, true) : "—"}

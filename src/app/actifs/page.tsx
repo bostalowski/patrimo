@@ -30,6 +30,7 @@ export default async function ActifsPage() {
       type: position.asset?.type ?? "—",
       quantity: position.quantity,
       pru: position.pru,
+      costBasis: position.costBasis,
       currentPrice: position.currentPrice,
       marketValue:
         position.currentPrice !== null ? position.marketValue : null,
@@ -55,6 +56,7 @@ export default async function ActifsPage() {
       type: asset.type,
       quantity: 0,
       pru: 0,
+      costBasis: 0,
       currentPrice: prices.get(asset.id) ?? null,
       marketValue: 0,
       unrealizedPnL: 0,
