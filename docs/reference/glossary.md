@@ -50,6 +50,10 @@ Months of monthly expenses covered by total livret market value: `livretBalance 
 
 Status band derived from **Emergency fund coverage**: `insufficient` (&lt; 3 months), `acceptable` ([3, 6)), `healthy` ([6, 12)), `over_allocated` (≥ 12). Shown on web and mobile Dashboards when coverage is defined.
 
+## Risk status band
+
+Qualitative judgement attached to a performance risk metric (annualized volatility, Sharpe ratio, or max drawdown) using fixed product thresholds in `@patrimo/core`. Used so Dashboards can show a human label and color without redefining cutoffs in the UI. When the underlying metric is null (insufficient history), no band is produced.
+
 ## No account
 
 A system-owned portfolio group for transactions preserved after account deletion. It is included in portfolio totals and performance, excluded from tax estimates, and cannot be selected when creating a transaction. The reserved identifier is `__NO_ACCOUNT__`.
@@ -98,4 +102,5 @@ Simplified French-tax heuristic produced by `@patrimo/core` fiscal modules. Indi
 - [ADR 0002](../adr/0002-store-manual-prices-in-workbook.md)
 - [ADR 0004](../adr/0004-show-non-monthly-streams-on-mobile-projection.md)
 - [ADR 0005](../adr/0005-emergency-fund-health-indicator.md)
+- [ADR 0006](../adr/0006-portfolio-risk-readability.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)

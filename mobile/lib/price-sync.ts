@@ -80,101 +80,182 @@ export function buildPriceMap(
 }
 
 const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
+const YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
 
-export async function fetchCryptoPrice(coinId: string): Promise<number | null> {
-  try {
-    const response = await fetch(
-      `${COINGECKO_BASE}/simple/price?ids=${coinId}&vs_currencies=eur`,
-    );
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data[coinId]?.eur ?? null;
-  } catch {
-    return null;
-  }
+const BROWSER_HEADERS: HeadersInit = {
+  "user-agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "accept-language": "fr-FR,fr;q=0.9",
+};
+
+const INVESTIR_VL_REGEX =
+  /Valeur liquidative \((\d{2}\/\d{2})(?:\/\d{2,4})?\)[^>]*>(?:[^<]|<(?!div)[^>]*>)*<div[^>]*>([\d,.\s\u00a0\u202f]+)\s*€/;
+const ZONEBOURSE_DATE_REGEX = /March[eé].*?(\d{2})\/(\d{2})\/(\d{4})/s;
+const ZONEBOURSE_PRICE_REGEX =
+  /class="last\s+txt-bold\s+js-last[^"]*"[^>]*>([\d,.\s\u00a0\u202f]+)<\/span>/;
+
+function toIsoDateFromMs(timestampMs: number): string {
+  return new Date(timestampMs).toISOString().slice(0, 10);
 }
 
-export async function fetchYahooPrice(symbol: string): Promise<number | null> {
-  try {
-    const response = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`,
-    );
-    if (!response.ok) return null;
-    const data = await response.json();
-    const closes = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
-    if (!Array.isArray(closes) || closes.length === 0) return null;
-    for (let i = closes.length - 1; i >= 0; i--) {
-      if (typeof closes[i] === "number") return closes[i];
-    }
-    return null;
-  } catch {
-    return null;
-  }
+function toIsoDateFromSec(timestampSec: number): string {
+  return new Date(timestampSec * 1000).toISOString().slice(0, 10);
 }
 
-export async function fetchInvestirPrice(isin: string): Promise<number | null> {
+function parseFrenchNumber(raw: string): number | null {
+  const cleaned = raw
+    .replace(/[\s\u00a0\u202f]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const value = Number(cleaned);
+  return Number.isFinite(value) ? value : null;
+}
+
+function toIsoFromFrenchDayMonth(dayMonth: string): string {
+  const [day, month] = dayMonth.split("/").map((s) => parseInt(s, 10));
+  const now = new Date();
+  let year = now.getUTCFullYear();
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (candidate.getTime() > now.getTime() + 86_400_000) {
+    year -= 1;
+  }
+  return new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10);
+}
+
+export async function fetchYahooHistory(
+  symbol: string,
+  range = "5y",
+): Promise<Record<string, number> | null> {
   try {
-    const url = `https://investir.lesechos.fr/cours/opcvm/-${isin.toLowerCase()}`;
-    const res = await fetch(url, {
+    const url = `${YAHOO_BASE}/${encodeURIComponent(symbol)}?range=${range}&interval=1d`;
+    const response = await fetch(url, {
       headers: {
-        "user-agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "accept-language": "fr-FR,fr;q=0.9",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) patrimo/0.1",
+        accept: "application/json",
       },
     });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const result = data?.chart?.result?.[0];
+    const closes = result?.indicators?.quote?.[0]?.close;
+    const timestamps = result?.timestamp;
+    if (!Array.isArray(closes) || !Array.isArray(timestamps)) return null;
+    const history: Record<string, number> = {};
+    timestamps.forEach((ts: number, i: number) => {
+      const price = closes[i];
+      if (typeof price === "number") {
+        history[toIsoDateFromSec(ts)] = price;
+      }
+    });
+    return Object.keys(history).length > 0 ? history : null;
+  } catch (e) {
+    console.log(`[Prices] yahoo history: ${e instanceof Error ? e.message : e}`);
+    return null;
+  }
+}
+
+export async function fetchCoingeckoHistory(
+  coinId: string,
+  days = 365,
+): Promise<Record<string, number> | null> {
+  try {
+    const url = `${COINGECKO_BASE}/coins/${coinId}/market_chart?vs_currency=eur&days=${days}&interval=daily`;
+    const response = await fetch(url, { headers: { accept: "application/json" } });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!Array.isArray(data?.prices)) return null;
+    const history: Record<string, number> = {};
+    for (const [ts, price] of data.prices) {
+      if (typeof price === "number") {
+        history[toIsoDateFromMs(ts)] = price;
+      }
+    }
+    return Object.keys(history).length > 0 ? history : null;
+  } catch (e) {
+    console.log(
+      `[Prices] coingecko history: ${e instanceof Error ? e.message : e}`,
+    );
+    return null;
+  }
+}
+
+export async function fetchInvestirHistory(
+  isin: string,
+): Promise<Record<string, number> | null> {
+  try {
+    const url = `https://investir.lesechos.fr/cours/opcvm/-${isin.toLowerCase()}`;
+    const res = await fetch(url, { headers: BROWSER_HEADERS });
     if (!res.ok) {
       console.log(`[Prices] investir ${isin}: HTTP ${res.status}`);
       return null;
     }
     const html = await res.text();
-    const match = html.match(
-      /Valeur liquidative \(\d{2}\/\d{2}(?:\/\d{2,4})?\)[^>]*>(?:[^<]|<(?!div)[^>]*>)*<div[^>]*>([\d,.\s\u00a0\u202f]+)\s*€/,
-    );
+    const match = html.match(INVESTIR_VL_REGEX);
     if (!match) {
-      console.log(`[Prices] investir ${isin}: VL regex no match (page length=${html.length})`);
+      console.log(
+        `[Prices] investir ${isin}: VL regex no match (page length=${html.length})`,
+      );
       return null;
     }
-    const cleaned = match[1]
-      .replace(/[\s\u00a0\u202f]/g, "")
-      .replace(/\./g, "")
-      .replace(",", ".");
-    const value = Number(cleaned);
-    return Number.isFinite(value) ? value : null;
+    const price = parseFrenchNumber(match[2]);
+    if (price === null) return null;
+    return { [toIsoFromFrenchDayMonth(match[1])]: price };
   } catch (e) {
-    console.log(`[Prices] investir ${isin}: ${e instanceof Error ? e.message : e}`);
+    console.log(
+      `[Prices] investir ${isin}: ${e instanceof Error ? e.message : e}`,
+    );
     return null;
   }
 }
 
-export async function fetchZoneboursePrice(url: string): Promise<number | null> {
+export async function fetchZonebourseHistory(
+  pageUrl: string,
+): Promise<Record<string, number> | null> {
   try {
-    const res = await fetch(url + "/", {
-      headers: {
-        "user-agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "accept-language": "fr-FR,fr;q=0.9",
-      },
+    const res = await fetch(pageUrl.endsWith("/") ? pageUrl : `${pageUrl}/`, {
+      headers: BROWSER_HEADERS,
     });
     if (!res.ok) {
       console.log(`[Prices] zonebourse: HTTP ${res.status}`);
       return null;
     }
     const html = await res.text();
-    const match = html.match(/last">\s*([\d\s,.]+)\s*(?:EUR|€)/);
-    if (!match) {
-      console.log(`[Prices] zonebourse: regex no match (page length=${html.length})`);
+    const dateMatch = html.match(ZONEBOURSE_DATE_REGEX);
+    const priceMatch = html.match(ZONEBOURSE_PRICE_REGEX);
+    if (!dateMatch || !priceMatch) {
+      console.log(
+        `[Prices] zonebourse: regex no match (page length=${html.length})`,
+      );
       return null;
     }
-    const cleaned = match[1]
-      .replace(/[\s\u00a0\u202f]/g, "")
-      .replace(",", ".");
-    const value = Number(cleaned);
-    return Number.isFinite(value) ? value : null;
+    const [, day, month, year] = dateMatch;
+    const price = parseFrenchNumber(priceMatch[1]);
+    if (price === null) return null;
+    return { [`${year}-${month}-${day}`]: price };
   } catch (e) {
     console.log(`[Prices] zonebourse: ${e instanceof Error ? e.message : e}`);
     return null;
+  }
+}
+
+async function fetchHistoryForAsset(
+  asset: Asset,
+): Promise<Record<string, number> | null> {
+  switch (asset.source) {
+    case "yahoo":
+      return asset.param ? fetchYahooHistory(asset.param) : null;
+    case "coingecko":
+      return asset.param ? fetchCoingeckoHistory(asset.param) : null;
+    case "investir": {
+      const isin = asset.isin || asset.param;
+      return isin ? fetchInvestirHistory(isin) : null;
+    }
+    case "zonebourse":
+      return asset.param ? fetchZonebourseHistory(asset.param) : null;
+    default:
+      return null;
   }
 }
 
@@ -209,30 +290,29 @@ export async function syncPrices(
       continue;
     }
 
-    let price: number | null = null;
-
-    if (asset.source === "coingecko" && asset.param) {
-      price = await fetchCryptoPrice(asset.param);
-    } else if (asset.source === "yahoo" && asset.param) {
-      price = await fetchYahooPrice(asset.param);
-    } else if (asset.source === "investir" && (asset.isin || asset.param)) {
-      price = await fetchInvestirPrice(asset.isin || asset.param!);
-    } else if (asset.source === "zonebourse" && asset.param) {
-      price = await fetchZoneboursePrice(asset.param);
+    const history = await fetchHistoryForAsset(asset);
+    if (history) {
+      store[asset.id] = { ...(store[asset.id] ?? {}), ...history };
+      fetched++;
+      continue;
     }
 
-    if (price === null && transactions) {
+    let fallback: number | null = null;
+    if (transactions) {
       const lastTx = [...transactions]
-        .filter((tx) => tx.actif === asset.id && tx.prixUnitaire && tx.prixUnitaire > 0)
+        .filter(
+          (tx) =>
+            tx.actif === asset.id && tx.prixUnitaire && tx.prixUnitaire > 0,
+        )
         .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
       if (lastTx?.prixUnitaire) {
-        price = lastTx.prixUnitaire;
+        fallback = lastTx.prixUnitaire;
       }
     }
 
-    if (price !== null) {
+    if (fallback !== null) {
       if (!store[asset.id]) store[asset.id] = {};
-      store[asset.id][today] = price;
+      store[asset.id][today] = fallback;
       fetched++;
     } else {
       console.log(`[Prices] MISS ${asset.id} (source=${asset.source})`);

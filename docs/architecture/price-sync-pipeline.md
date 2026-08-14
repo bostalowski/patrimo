@@ -8,10 +8,10 @@ Asset `source` values from `@patrimo/core` schema:
 
 | Source | Typical use | Web sync | Mobile sync |
 |---|---|---|---|
-| `coingecko` | Crypto | Historical merge | Spot |
-| `yahoo` | ETF / stock | Historical merge | Spot |
-| `investir` | OPCVM / FCPE HTML scrape | Historical merge | Spot |
-| `zonebourse` | HTML scrape via URL `param` | Historical merge | Spot |
+| `coingecko` | Crypto | Historical merge | Historical merge |
+| `yahoo` | ETF / stock | Historical merge | Historical merge |
+| `investir` | OPCVM / FCPE HTML scrape | Historical merge | Historical merge |
+| `zonebourse` | HTML scrape via URL `param` | Historical merge | Historical merge |
 | `manual` | User-entered VL | Skipped by API sync; stored in workbook `Prix manuels` | Not synced; latest workbook entry; no transaction fallback |
 
 ## Web / Electron flow
@@ -44,8 +44,9 @@ mobile/lib/price-sync.ts syncPrices
 AsyncStorage key patrimo:prices
 ```
 
-- Fetches a latest price per asset and stores it under today's date.
-- Does not download full historical series and does not sync benchmarks.
+- Fetches and merges historical series for automatic sources (`coingecko`, `yahoo`, `investir`, `zonebourse`), same sources as web.
+- Does not sync benchmarks.
+- Manual assets are skipped; workbook `Prix manuels` remain the source for those valuations.
 - Respects the same `shouldRunSync` interval helper as web when `force` is false.
 
 ## Portfolio consumption
@@ -58,7 +59,7 @@ After account/asset deletion, platforms remove deleted asset ids from their loca
 
 ## Known platform gap
 
-Historical series and benchmark sync exist on web only today. Manual VL entry is shared through the workbook on web and mobile. Remaining gaps are listed in [Platforms](../overview/platforms.md).
+Benchmark sync exists on web only today. Manual VL entry is shared through the workbook on web and mobile. Remaining gaps are listed in [Platforms](../overview/platforms.md).
 
 ## See also
 

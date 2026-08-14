@@ -1,5 +1,11 @@
 import type { AnnualReturn, MonthlyReturn } from "@/lib/performance";
 import { cn, formatPercent, formatPercentCompact } from "@/lib/utils";
+import {
+  assessRiskMetricStatus,
+  type DrawdownStatus,
+  type SharpeStatus,
+  type VolatilityStatus,
+} from "@patrimo/core/portfolio-risk";
 
 const MONTH_LABELS = [
   "Jan",
@@ -102,6 +108,53 @@ export function ReturnsHeatmap({
   );
 }
 
+const TONE_CLASS = {
+  green:
+    "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
+  yellow:
+    "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300",
+  red: "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300",
+  muted: "bg-zinc-100 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200",
+} as const;
+
+type Tone = keyof typeof TONE_CLASS;
+
+const VOL_LABEL: Record<VolatilityStatus, string> = {
+  low: "faibles",
+  moderate: "normales",
+  high: "élevées",
+};
+
+const VOL_TONE: Record<VolatilityStatus, Tone> = {
+  low: "green",
+  moderate: "yellow",
+  high: "red",
+};
+
+const SHARPE_LABEL: Record<SharpeStatus, string> = {
+  strong: "bon",
+  acceptable: "correct",
+  weak: "faible",
+};
+
+const SHARPE_TONE: Record<SharpeStatus, Tone> = {
+  strong: "green",
+  acceptable: "yellow",
+  weak: "red",
+};
+
+const DRAWDOWN_LABEL: Record<DrawdownStatus, string> = {
+  mild: "légère",
+  marked: "marquée",
+  severe: "sévère",
+};
+
+const DRAWDOWN_TONE: Record<DrawdownStatus, Tone> = {
+  mild: "green",
+  marked: "yellow",
+  severe: "red",
+};
+
 export function DrawdownBadge({
   value,
   className,
@@ -109,30 +162,44 @@ export function DrawdownBadge({
   value: number;
   className?: string;
 }) {
+  const status = assessRiskMetricStatus("drawdown", value);
   return (
-    <span
-      className={cn(
-        "inline-flex items-baseline gap-1.5 rounded-md bg-rose-50 px-3 py-1.5 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300",
-        className,
-      )}
-    >
-      <span className="text-xs font-medium">Max drawdown</span>
-      <span className="text-sm font-semibold tabular-nums">
-        {formatPercentCompact(value)}
-      </span>
-    </span>
+    <StatusBadge
+      title="Pire chute"
+      value={formatPercentCompact(value)}
+      statusWord={DRAWDOWN_LABEL[status]}
+      tone={DRAWDOWN_TONE[status]}
+      className={className}
+    />
   );
 }
 
-function MetricBadge({ label, value }: { label: string; value: string }) {
+function StatusBadge({
+  title,
+  value,
+  statusWord,
+  tone,
+  className,
+}: {
+  title: string;
+  value: string;
+  statusWord: string | null;
+  tone: Tone;
+  className?: string;
+}) {
   return (
-    <span className="inline-flex items-baseline gap-1.5 rounded-md bg-zinc-100 px-3 py-1.5 dark:bg-zinc-900">
-      <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-        {label}
-      </span>
-      <span className="text-sm font-semibold tabular-nums text-zinc-800 dark:text-zinc-200">
-        {value}
-      </span>
+    <span
+      className={cn(
+        "inline-flex flex-wrap items-baseline gap-1.5 rounded-md px-3 py-1.5",
+        TONE_CLASS[tone],
+        className,
+      )}
+    >
+      <span className="text-xs font-medium opacity-80">{title}</span>
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
+      {statusWord !== null && (
+        <span className="text-xs font-medium">· {statusWord}</span>
+      )}
     </span>
   );
 }
@@ -146,17 +213,31 @@ export function RiskBadges({
   sharpe: number | null;
   drawdown: number;
 }) {
+  const volStatus = assessRiskMetricStatus("volatility", volatility);
+  const sharpeStatus = assessRiskMetricStatus("sharpe", sharpe);
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <MetricBadge
-        label="Volatilité"
-        value={volatility === null ? "—" : formatPercent(volatility)}
-      />
-      <MetricBadge
-        label="Sharpe"
-        value={sharpe === null ? "—" : sharpe.toFixed(2)}
-      />
-      <DrawdownBadge value={drawdown} />
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <StatusBadge
+          title="Oscillations"
+          value={volatility === null ? "—" : formatPercent(volatility)}
+          statusWord={volStatus === null ? null : VOL_LABEL[volStatus]}
+          tone={volStatus === null ? "muted" : VOL_TONE[volStatus]}
+        />
+        <StatusBadge
+          title="Rendement / risque"
+          value={sharpe === null ? "—" : sharpe.toFixed(2)}
+          statusWord={
+            sharpeStatus === null ? null : SHARPE_LABEL[sharpeStatus]
+          }
+          tone={sharpeStatus === null ? "muted" : SHARPE_TONE[sharpeStatus]}
+        />
+        <DrawdownBadge value={drawdown} />
+      </div>
+      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+        vert = confortable · jaune = à surveiller · rouge = élevé
+      </p>
     </div>
   );
 }

@@ -1,16 +1,27 @@
 import { View, Text, ScrollView, useColorScheme } from "react-native";
 import { useWorkbook } from "../lib/use-workbook";
 import { buildPortfolio, computeNetWorth } from "@patrimo/core/portfolio";
+import {
+  aggregateHistory,
+  buildHistorySeries,
+} from "@patrimo/core/portfolio-history";
+import {
+  annualizedVolatility,
+  maxDrawdown,
+  sharpeRatio,
+} from "@patrimo/core/performance";
 import { summarizeBudget } from "@patrimo/core/budget";
 import { computeEmergencyFundHealth, sumLivretMarketValue } from "@patrimo/core/emergency-fund";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
+import { manualPricesToPriceStore } from "@patrimo/core/manual-prices";
 import { EmergencyFundCard } from "../lib/emergency-fund-card";
+import { RiskBadges } from "../lib/risk-badges";
 import { useThemeColors, shared } from "../lib/theme";
 
 export default function DashboardScreen() {
   const isDark = useColorScheme() === "dark";
   const t = useThemeColors(isDark);
-  const { workbook, prices, loading, error } = useWorkbook();
+  const { workbook, prices, priceStore, loading, error } = useWorkbook();
 
   if (loading) {
     return (
@@ -58,6 +69,16 @@ export default function DashboardScreen() {
     depensesMensuelles,
   );
 
+  const history = buildHistorySeries(
+    workbook,
+    priceStore,
+    manualPricesToPriceStore(workbook.manualPrices),
+  );
+  const points = aggregateHistory(history);
+  const volatility = annualizedVolatility(points);
+  const sharpe = sharpeRatio(points);
+  const drawdown = maxDrawdown(points);
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: t.bg }}
@@ -101,6 +122,13 @@ export default function DashboardScreen() {
       </View>
 
       <EmergencyFundCard health={emergencyFund} theme={t} />
+
+      <RiskBadges
+        volatility={volatility}
+        sharpe={sharpe}
+        drawdown={drawdown.value}
+        theme={t}
+      />
 
       <View style={[shared.card, { backgroundColor: t.card }]}>
         <Text style={[shared.cardTitle, { color: t.text, marginBottom: 12 }]}>

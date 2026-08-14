@@ -4,7 +4,7 @@ import type { Asset, DcaConfig, Envelope, ManualPrice } from "@/lib/schema";
 import { ExpectedReturns, RetirementProfile } from "@/lib/schema";
 import { getDcaConfigs, loadWorkbook, saveDcaConfigs } from "@/lib/excel";
 import { latestPrice } from "@patrimo/core/format";
-import { latestManualPrice } from "@patrimo/core/manual-prices";
+import { latestManualPrice, manualPricesToPriceStore as toManualPriceStore } from "@patrimo/core/manual-prices";
 import { z } from "zod";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
@@ -45,15 +45,7 @@ export async function writePrices(store: PriceStore): Promise<void> {
 export function manualPricesToPriceStore(
   manualPrices: ManualPrice[],
 ): PriceStore {
-  const store: PriceStore = {};
-  for (const entry of manualPrices) {
-    const dateKey = entry.date.toISOString().slice(0, 10);
-    store[entry.assetId] = {
-      ...(store[entry.assetId] ?? {}),
-      [dateKey]: entry.price,
-    };
-  }
-  return store;
+  return toManualPriceStore(manualPrices);
 }
 
 export async function readManualPrices(): Promise<PriceStore> {

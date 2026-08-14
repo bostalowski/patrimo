@@ -22,7 +22,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | Assets create / update / delete | Present | Present |
 | Transactions create / update / delete | Present | Present |
 | Account/asset deletion rules | Present — shared `@patrimo/core` | Present — same core |
-| Historical price sync | Present | Absent — spot / latest only |
+| Historical price sync | Present | Present — automatic sources merge history into AsyncStorage |
 | Manual price entry | Present — workbook sheet | Present — workbook sheet |
 | CSV import | Present | Absent |
 | Budget | Present | Present |
@@ -34,6 +34,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | Retirement profile | Present | Partial |
 | Benchmarks | Present | Absent |
 | Emergency fund health | Present | Present |
+| Portfolio readable risk badges | Present | Present |
 
 ## Shared versus platform-owned
 

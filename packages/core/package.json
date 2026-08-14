@@ -18,6 +18,7 @@
     "./dca": "./src/dca.ts",
     "./budget": "./src/budget.ts",
     "./emergency-fund": "./src/emergency-fund.ts",
+    "./portfolio-risk": "./src/portfolio-risk.ts",
     "./fiscalite": "./src/fiscalite.ts",
     "./tax-rules": "./src/tax-rules.ts",
     "./fiscal-advice": "./src/fiscal-advice.ts",
