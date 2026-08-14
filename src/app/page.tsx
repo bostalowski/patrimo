@@ -26,7 +26,7 @@ import { PerformanceSection } from "@/components/performance-section";
 import { SyncButton } from "@/components/sync-button";
 import { summarizeBudget } from "@/lib/budget";
 import { formatEuro, formatPercent, signClass } from "@/lib/utils";
-import { computeEmergencyFundHealth } from "@patrimo/core/emergency-fund";
+import { computeEmergencyFundHealth, sumLivretMarketValue } from "@patrimo/core/emergency-fund";
 
 export const dynamic = "force-dynamic";
 
@@ -65,9 +65,7 @@ export default async function DashboardPage() {
     .filter((p) => p.marketValue > 0)
     .map((p) => ({ name: p.asset?.label ?? p.assetId, value: p.marketValue }));
 
-  const livretBalance = portfolio.accounts
-    .filter((account) => account.envelope === "LIVRET")
-    .reduce((sum, account) => sum + account.marketValue, 0);
+  const livretBalance = sumLivretMarketValue(portfolio.accounts);
   const { depensesMensuelles } = summarizeBudget(workbook.budget);
   const emergencyFund = computeEmergencyFundHealth(
     livretBalance,

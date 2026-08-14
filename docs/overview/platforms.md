@@ -33,6 +33,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | Projection | Present | Partial |
 | Retirement profile | Present | Partial |
 | Benchmarks | Present | Absent |
+| Emergency fund health | Present | Present |
 
 ## Shared versus platform-owned
 

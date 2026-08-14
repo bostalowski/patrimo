@@ -1,7 +1,5 @@
 # Emergency fund health
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0005](../adr/0005-emergency-fund-health-indicator.md).
-
 How Dashboards surface months of expense coverage from livret balances and budget expenses.
 
 ## Intent
@@ -13,7 +11,7 @@ Users see whether their livret reserve covers enough months of spending, without
 ```text
 Workbook
    |
-   +--> buildPortfolio → LIVRET AccountSummary.marketValue (sum)
+   +--> buildPortfolio → sumLivretMarketValue(accounts)
    +--> summarizeBudget → depensesMensuelles
    |
    v
@@ -27,8 +25,8 @@ computeEmergencyFundHealth(livretBalance, monthlyExpenses)
 
 | Surface | Placement | Notes |
 |---|---|---|
-| Web Dashboard (`src/app/page.tsx`) | Card under net-worth KPI grid | Badge + one-decimal months |
-| Mobile Dashboard (`mobile/app/index.tsx`) | Card under StatCard rows, before envelope breakdown | Same numbers and status |
+| Web Dashboard (`src/app/page.tsx`) | Card under net-worth KPI grid | `src/components/emergency-fund-card.tsx` |
+| Mobile Dashboard (`mobile/app/index.tsx`) | Card under StatCard rows, before envelope breakdown | `mobile/lib/emergency-fund-card.tsx` |
 
 ## Status bands
 

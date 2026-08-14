@@ -1,6 +1,6 @@
 # ADR 0005: Emergency fund health indicator
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-14
 - implementation_ready: yes
 
@@ -16,7 +16,7 @@ Contract (do not invent):
 - THEN return null (no indicator; UI must hide the card)
 - WHEN livret balance is 0 and monthly expenses > 0
 - THEN coverageMonths = 0 and status = insufficient
-- ELSE livret balance is the sum of AccountSummary.marketValue for envelope === "LIVRET" (available balance already used by buildPortfolio)
+- ELSE livret balance is sumLivretMarketValue(accounts) — AccountSummary.marketValue for envelope === "LIVRET" (available balance already used by buildPortfolio)
 - FORBIDDEN inventing Livret A vs LDDS split; editable month targets; dedicated page; push alerts; history; duplicating the ratio outside @patrimo/core
 - OPEN (do not implement): none
 ```
@@ -29,7 +29,7 @@ Canonical terms: [glossary](../reference/glossary.md) (**Emergency fund coverage
 
 ## Decision
 
-- Add `computeEmergencyFundHealth` in `@patrimo/core` (`emergency-fund.ts`).
+- Add `computeEmergencyFundHealth` and `sumLivretMarketValue` in `@patrimo/core` (`emergency-fund.ts`).
 - Show a Dashboard card on **web and mobile** when the function returns non-null.
 - Display coverage months (one decimal), status label/color, and the two inputs used (livret total and monthly expenses).
 - Over-allocated (≥ 12 months) includes a short hint that capital may be idle.
@@ -37,7 +37,7 @@ Canonical terms: [glossary](../reference/glossary.md) (**Emergency fund coverage
 ## Invariants
 
 - Ratio math and status thresholds live only in `@patrimo/core`.
-- Livret total uses portfolio market values for `LIVRET` accounts (same available-balance basis as today).
+- Livret total uses `sumLivretMarketValue` on portfolio accounts (same available-balance basis as today).
 - Monthly expenses are `summarizeBudget(...).depensesMensuelles` (DEPENSE lines only; not EPARGNE).
 - Platforms may only format and render; they must not redefine thresholds.
 

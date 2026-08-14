@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeEmergencyFundHealth } from "@patrimo/core/emergency-fund";
+import { computeEmergencyFundHealth, sumLivretMarketValue } from "@patrimo/core/emergency-fund";
 
 describe("computeEmergencyFundHealth", () => {
   it("returns null when monthly expenses are zero", () => {
@@ -44,5 +44,17 @@ describe("computeEmergencyFundHealth", () => {
       livretBalance: 9_000,
       monthlyExpenses: 3_000,
     });
+  });
+});
+
+describe("sumLivretMarketValue", () => {
+  it("sums market value of LIVRET accounts only", () => {
+    expect(
+      sumLivretMarketValue([
+        { envelope: "LIVRET", marketValue: 4_000 },
+        { envelope: "CTO", marketValue: 99_000 },
+        { envelope: "LIVRET", marketValue: 1_500 },
+      ]),
+    ).toBe(5_500);
   });
 });
