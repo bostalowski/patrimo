@@ -26,6 +26,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Asset invested display](architecture/asset-invested-display.md)
 - [Mobile projection extra contributions](architecture/mobile-projection-extra-contributions.md)
 - [Emergency fund health](architecture/emergency-fund-health.md)
+- [Portfolio risk readability](architecture/portfolio-risk-readability.md)
 
 ## Reference
 
@@ -43,6 +44,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Implement asset invested display](howto/implement-asset-invested-display.md)
 - [Implement mobile projection extra contributions](howto/implement-mobile-projection-extra-contributions.md)
 - [Implement emergency fund health](howto/implement-emergency-fund-health.md)
+- [Implement portfolio risk readability](howto/implement-portfolio-risk-readability.md)
 
 ## Decisions
 

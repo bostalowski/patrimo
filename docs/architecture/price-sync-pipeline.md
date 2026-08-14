@@ -60,6 +60,8 @@ After account/asset deletion, platforms remove deleted asset ids from their loca
 
 Historical series and benchmark sync exist on web only today. Manual VL entry is shared through the workbook on web and mobile. Remaining gaps are listed in [Platforms](../overview/platforms.md).
 
+> 🚧 Planned by [ADR 0006](../adr/0006-portfolio-risk-readability.md) (proposed): mobile automatic sources move from spot-only to historical merge (same four sources as web). Benchmarks stay web-only this increment. Confirm this section after implementation.
+
 ## See also
 
 - [Sync prices](../howto/sync-prices.md)
