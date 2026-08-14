@@ -21,9 +21,12 @@ import {
 } from "@/lib/store";
 import { BENCHMARKS } from "@/lib/benchmarks";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
+import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { PerformanceSection } from "@/components/performance-section";
 import { SyncButton } from "@/components/sync-button";
+import { summarizeBudget } from "@/lib/budget";
 import { formatEuro, formatPercent, signClass } from "@/lib/utils";
+import { computeEmergencyFundHealth } from "@patrimo/core/emergency-fund";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +64,15 @@ export default async function DashboardPage() {
   const donut = portfolio.assets
     .filter((p) => p.marketValue > 0)
     .map((p) => ({ name: p.asset?.label ?? p.assetId, value: p.marketValue }));
+
+  const livretBalance = portfolio.accounts
+    .filter((account) => account.envelope === "LIVRET")
+    .reduce((sum, account) => sum + account.marketValue, 0);
+  const { depensesMensuelles } = summarizeBudget(workbook.budget);
+  const emergencyFund = computeEmergencyFundHealth(
+    livretBalance,
+    depensesMensuelles,
+  );
 
   return (
     <div className="space-y-8">
@@ -130,6 +142,8 @@ export default async function DashboardPage() {
           </CardHeader>
         </Card>
       </div>
+
+      <EmergencyFundCard health={emergencyFund} />
 
       <PerformanceSection history={history} benchmarks={benchmarks} />
 
