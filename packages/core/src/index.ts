@@ -21,6 +21,7 @@ export * from "./fees";
 export * from "./projection";
 export * from "./dca";
 export * from "./budget";
+export * from "./emergency-fund";
 export * from "./fiscalite";
 export * from "./tax-rules";
 export * from "./fiscal-advice";

@@ -4,5 +4,6 @@
 - [ADR 0002: Store manual prices in the workbook](0002-store-manual-prices-in-workbook.md) — accepted
 - [ADR 0003: Display invested amount on asset surfaces](0003-display-invested-on-asset-surfaces.md) — accepted
 - [ADR 0004: Show non-monthly DCA streams on mobile projection](0004-show-non-monthly-streams-on-mobile-projection.md) — accepted
+- [ADR 0005: Emergency fund health indicator](0005-emergency-fund-health-indicator.md) — accepted
 
 Template: [_template.md](_template.md)

@@ -25,6 +25,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Deletion pipeline](architecture/deletion-pipeline.md)
 - [Asset invested display](architecture/asset-invested-display.md)
 - [Mobile projection extra contributions](architecture/mobile-projection-extra-contributions.md)
+- [Emergency fund health](architecture/emergency-fund-health.md)
 
 ## Reference
 
@@ -41,6 +42,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Delete an account or asset](howto/delete-account-or-asset.md)
 - [Implement asset invested display](howto/implement-asset-invested-display.md)
 - [Implement mobile projection extra contributions](howto/implement-mobile-projection-extra-contributions.md)
+- [Implement emergency fund health](howto/implement-emergency-fund-health.md)
 
 ## Decisions
 
