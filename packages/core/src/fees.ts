@@ -109,13 +109,10 @@ export function enrichAssetFeeRows(
 
   return assetFees.map((row) => {
     const position = byId.get(row.assetId);
-    const costBasis = position?.costBasis ?? 0;
-    const totalReturn = position?.totalReturn ?? 0;
-
     return {
       ...row,
-      feesToCapitalRatio: costBasis > 0 ? row.fees / costBasis : null,
-      feesToGainRatio: totalReturn > 0 ? row.fees / totalReturn : null,
+      feesToCapitalRatio: ratioOrNull(row.fees, position?.costBasis ?? 0),
+      feesToGainRatio: ratioOrNull(row.fees, position?.totalReturn ?? 0),
     };
   });
 }
@@ -229,12 +226,16 @@ export function feeRatio(totalFees: number, netInvested: number): number {
   return totalFees / netInvested;
 }
 
+function ratioOrNull(numerator: number, denominator: number): number | null {
+  if (denominator <= 0) return null;
+  return numerator / denominator;
+}
+
 export function annualFeeDrag(
   ytdFees: number,
   netInvested: number,
 ): number | null {
-  if (netInvested <= 0) return null;
-  return ytdFees / netInvested;
+  return ratioOrNull(ytdFees, netInvested);
 }
 
 export function allInAnnualCost(
@@ -242,14 +243,12 @@ export function allInAnnualCost(
   terAnnual: number,
   netInvested: number,
 ): number | null {
-  if (netInvested <= 0) return null;
-  return (ytdFees + terAnnual) / netInvested;
+  return ratioOrNull(ytdFees + terAnnual, netInvested);
 }
 
 export function feesToGainRatio(
   totalFees: number,
   totalReturn: number,
 ): number | null {
-  if (totalReturn <= 0) return null;
-  return totalFees / totalReturn;
+  return ratioOrNull(totalFees, totalReturn);
 }

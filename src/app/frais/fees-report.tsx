@@ -23,6 +23,10 @@ import type {
 
 type BreakdownView = "asset" | "account" | "type";
 
+function formatNullablePercent(value: number | null): string {
+  return value !== null ? formatPercent(value) : "—";
+}
+
 export function FeesReport({
   totalFees,
   ytdFees,
@@ -111,9 +115,7 @@ export function FeesReport({
         <Card>
           <CardHeader>
             <CardTitle>Coût annuel explicite</CardTitle>
-            <CardValue>
-              {annualDrag !== null ? formatPercent(annualDrag) : "—"}
-            </CardValue>
+            <CardValue>{formatNullablePercent(annualDrag)}</CardValue>
             <p className="text-xs text-zinc-500">
               Frais de l&apos;année / capital actuel
             </p>
@@ -122,9 +124,7 @@ export function FeesReport({
         <Card>
           <CardHeader>
             <CardTitle>Coût all-in annuel</CardTitle>
-            <CardValue>
-              {allInCost !== null ? formatPercent(allInCost) : "—"}
-            </CardValue>
+            <CardValue>{formatNullablePercent(allInCost)}</CardValue>
             <p className="text-xs text-zinc-500">
               Frais YTD + TER estimé / capital
             </p>
@@ -133,9 +133,7 @@ export function FeesReport({
         <Card>
           <CardHeader>
             <CardTitle>Frais / gains</CardTitle>
-            <CardValue>
-              {feesToGain !== null ? formatPercent(feesToGain) : "—"}
-            </CardValue>
+            <CardValue>{formatNullablePercent(feesToGain)}</CardValue>
             <p className="text-xs text-zinc-500">
               {feesToGain !== null
                 ? "Frais all-time / retour total"
@@ -273,14 +271,10 @@ export function FeesReport({
                     {totalFees > 0 ? formatPercent(row.fees / totalFees) : "—"}
                   </TD>
                   <TD className="text-right font-mono text-xs tabular-nums text-zinc-500">
-                    {row.feesToCapitalRatio !== null
-                      ? formatPercent(row.feesToCapitalRatio)
-                      : "—"}
+                    {formatNullablePercent(row.feesToCapitalRatio)}
                   </TD>
                   <TD className="text-right font-mono text-xs tabular-nums text-zinc-500">
-                    {row.feesToGainRatio !== null
-                      ? formatPercent(row.feesToGainRatio)
-                      : "—"}
+                    {formatNullablePercent(row.feesToGainRatio)}
                   </TD>
                 </TR>
               ))}
