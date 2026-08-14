@@ -1,31 +1,23 @@
 # Portfolio risk readability
 
-How Dashboards surface portfolio concentration and human-readable performance risk status.
+How Dashboards surface human-readable performance risk status.
 
 ## Intent
 
-Users see whether the portfolio is concentrated and whether volatility / Sharpe / drawdown are comfortable, without reading jargon-only figures. Web and mobile share the same judgements.
+Users see whether volatility / Sharpe / drawdown are comfortable, without reading jargon-only figures. Web and mobile share the same judgements.
 
 ## Flow
 
 ```text
-Portfolio positions (marketValue > 0)
-        |
-        v
-computeConcentration(...)  --> null | { top1Label, top1Weight, top3Weight, status }
-        |  (@patrimo/core/portfolio-risk)
-        +--> Web: under AllocationDonut
-        +--> Mobile: Dashboard text block
-
 DailyPoint history (TWR)
         |
         +--> annualizedVolatility / sharpeRatio / maxDrawdown  (existing @patrimo/core)
         |
         v
-assessRiskMetricStatus(kind, value) --> null | { status, ... }
-        |
+assessRiskMetricStatus(kind, value) --> null | status
+        |  (@patrimo/core/portfolio-risk)
         +--> Web RiskBadges + legend
-        +--> Mobile risk strip (when history sufficient)
+        +--> Mobile risk card (when history sufficient)
 ```
 
 Mobile history prerequisite:
@@ -42,20 +34,12 @@ merge into AsyncStorage PriceStore  --> buildHistorySeries --> risk metrics
 
 ## Surfaces
 
-| Surface | Concentration | Risk badges |
-|---|---|---|
-| Web Dashboard | Under allocation donut (`src/components/concentration-summary.tsx`) | Performance `RiskBadges` in `returns-heatmap.tsx` |
-| Mobile Dashboard | Text card (`mobile/lib/concentration-summary.tsx`) | Risk card (`mobile/lib/risk-badges.tsx`) |
+| Surface | Risk badges |
+|---|---|
+| Web Dashboard | Performance `RiskBadges` in `returns-heatmap.tsx` |
+| Mobile Dashboard | Risk card (`mobile/lib/risk-badges.tsx`) |
 
 ## Status bands
-
-### Concentration (from Top 1 weight)
-
-| Top 1 weight | Status id | UI label (FR) |
-|---|---|---|
-| &lt; 30 % | `diversified` | Diversifié |
-| [30 %, 50 %) | `balanced` | Équilibré |
-| ≥ 50 % | `concentrated` | Concentré |
 
 ### Volatility (annualized)
 
@@ -91,10 +75,9 @@ Governed by [ADR 0006](../adr/0006-portfolio-risk-readability.md).
 
 ## Out of scope
 
-- HHI in the UI
+- Portfolio concentration / Top 1–Top 3 / HHI
 - User-editable thresholds / non-zero risk-free rate
 - Mobile heatmap, benchmarks, asset performance filters
-- Graphical highlight of the largest donut slice
 
 ## See also
 

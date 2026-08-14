@@ -1,6 +1,6 @@
 # Implement portfolio risk readability
 
-Ordered vertical scopes and test strategy for concentration and readable risk badges (web + mobile), including mobile historical price sync. Confirmed against shipped code on `feat/risk-readability-concentration`.
+Ordered vertical scopes and test strategy for readable risk badges (web + mobile), including mobile historical price sync. Confirmed on `feat/risk-readability-concentration` (concentration UI later removed).
 
 ## Prerequisites
 
@@ -9,15 +9,15 @@ Ordered vertical scopes and test strategy for concentration and readable risk ba
 
 ## Increment plan
 
-### Scope 1 — Core metrics (done)
+### Scope 1 — Core risk bands (done)
 
-Add `computeConcentration` and `assessRiskMetricStatus` in `@patrimo/core` (`portfolio-risk.ts`).
+`assessRiskMetricStatus` in `@patrimo/core` (`portfolio-risk.ts`).
 
 Tests: `src/lib/portfolio-risk.test.ts`.
 
 ### Scope 2 — Web Dashboard UX (done)
 
-Concentration under the allocation donut; readable `RiskBadges` + color legend.
+Readable `RiskBadges` + color legend.
 
 Tests: `src/components/portfolio-risk-ui.test.tsx`.
 
@@ -29,7 +29,7 @@ Tests: `mobile/lib/price-sync-history.test.ts`.
 
 ### Scope 4 — Mobile Dashboard UX (done)
 
-Dashboard concentration card + risk card via `buildHistorySeries` + performance helpers + core bands.
+Dashboard risk card via `buildHistorySeries` + performance helpers + core bands.
 
 Tests: `mobile/lib/portfolio-risk-ui.test.tsx`.
 
@@ -37,10 +37,10 @@ Tests: `mobile/lib/portfolio-risk-ui.test.tsx`.
 
 | Level | What it proves |
 |---|---|
-| Core unit | Weight aggregation, Top 1/Top 3, status thresholds, null empty portfolio, null metric → no band |
-| Web UI | Donut concentration block + badge labels/status/legend; hide when null |
+| Core unit | Status thresholds; null metric → no band |
+| Web UI | Badge labels/status/legend; "—" when null |
 | Mobile sync | Historical merge for automatic sources; manual skipped |
-| Mobile UI | Concentration text + risk strip; "—" when metrics null |
+| Mobile UI | Risk strip; "—" when metrics null |
 
 ## Commands
 

@@ -34,7 +34,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | Retirement profile | Present | Partial |
 | Benchmarks | Present | Absent |
 | Emergency fund health | Present | Present |
-| Portfolio concentration / readable risk badges | Present | Present |
+| Portfolio readable risk badges | Present | Present |
 
 ## Shared versus platform-owned
 

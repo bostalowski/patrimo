@@ -1,4 +1,4 @@
-# ADR 0006: Portfolio risk readability and concentration
+# ADR 0006: Portfolio risk readability
 
 - Status: accepted
 - Date: 2026-08-14
@@ -6,13 +6,6 @@
 
 ```text
 Contract (do not invent):
-- WHEN portfolio asset positions have marketValue > 0
-    THEN compute concentration from weights aggregated by assetId (same basis as the allocation donut):
-      top1Weight = max weight, top1Label = that asset's display label,
-      top3Weight = sum of the three largest weights (or fewer if < 3 assets),
-      status from top1Weight: < 0.30 → diversified; [0.30, 0.50) → balanced; ≥ 0.50 → concentrated
-- WHEN no position has marketValue > 0
-    THEN concentration is null (UI hides the concentration block; no fake Concentrated)
 - WHEN annualizedVolatility / sharpeRatio / maxDrawdown are available (non-null)
     THEN map each to a risk status band with fixed product thresholds:
       volatility: < 0.10 → low; [0.10, 0.20] → moderate; > 0.20 → high
@@ -22,31 +15,31 @@ Contract (do not invent):
     THEN UI shows "—" for that metric and must not invent a status band
 - WHEN displaying risk badges
     THEN use human FR labels (Oscillations / Rendement / risque / Pire chute) + numeric value + status word + shared green/yellow/red legend once
-- WHEN displaying concentration
-    THEN show largest line as "label — top1%" + status word; Top 3% may appear as secondary detail
-    Web: under the allocation donut. Mobile: text block on Dashboard (no donut required this increment)
+    Web: performance RiskBadges. Mobile: Dashboard risk card
 - WHEN mobile price sync runs for non-manual assets
     THEN fetch and merge full historical series for coingecko, yahoo, investir, zonebourse (same sources as web), not spot-only
-- FORBIDDEN showing HHI to the user; user-editable thresholds; risk-free rate ≠ 0 for Sharpe; mobile heatmap / benchmarks / asset filter as part of this increment; duplicating threshold logic outside @patrimo/core
+- FORBIDDEN portfolio concentration / Top 1–Top 3 / HHI UI; user-editable thresholds; risk-free rate ≠ 0 for Sharpe; mobile heatmap / benchmarks / asset filter as part of this increment; duplicating threshold logic outside @patrimo/core
 - OPEN (do not implement): none
 ```
 
 ## Context
 
-Dashboards expose allocation (web donut) and performance risk figures (volatility, Sharpe, max drawdown) as opaque numbers. Users cannot tell whether the portfolio is concentrated or whether a risk figure is comfortable. Mobile lacks historical price sync, so performance risk metrics cannot be computed reliably there. Root cause is missing shared status bands and a missing concentration metric, plus a mobile history gap — not bad workbook data.
+Performance risk figures (volatility, Sharpe, max drawdown) were shown as opaque numbers. Users could not tell whether a figure was comfortable. Mobile lacked historical price sync, so those metrics could not be computed reliably there. Root cause is missing shared status bands plus a mobile history gap — not bad workbook data.
 
-Canonical terms: [glossary](../reference/glossary.md) (**Portfolio concentration**, **Risk status band**).
+Canonical term: [glossary](../reference/glossary.md) (**Risk status band**).
+
+**Amendment (2026-08-14):** portfolio concentration (Top 1 / Top 3 / diversification status) was removed from product scope after review — allocation is already visible on the donut; the concentration badges were judged not useful.
 
 ## Decision
 
-- Add shared pure functions in `@patrimo/core` (dedicated module, e.g. `portfolio-risk.ts`) for concentration and risk status bands.
-- Web: readable `RiskBadges` + one-line color legend; concentration under the allocation donut (largest asset name + Top 1% + status; Top 3 secondary).
-- Mobile: upgrade price sync to historical merge for the four automatic sources; Dashboard shows concentration text block + the same readable risk badges when metrics resolve.
+- Add shared pure functions in `@patrimo/core` (`portfolio-risk.ts`) for risk status bands only.
+- Web: readable `RiskBadges` + one-line color legend.
+- Mobile: upgrade price sync to historical merge for the four automatic sources; Dashboard shows the same readable risk badges when metrics resolve.
 - Platforms only format and render; they must not redefine thresholds.
+- Do not ship a concentration indicator.
 
 ## Invariants
 
-- Weight basis = asset-level `marketValue` share of total positive market value (donut-aligned).
 - Threshold constants and status ids live only in `@patrimo/core`.
 - Insufficient history → null metrics → "—" UI, no invented band.
 - Sharpe keeps `riskFreeRate = 0` for this increment.
@@ -55,16 +48,16 @@ Canonical terms: [glossary](../reference/glossary.md) (**Portfolio concentration
 
 | Option | Status | Why |
 |---|---|---|
-| A — Shared core bands + web/mobile UI + mobile history sync | Retained | Fixes readability and parity; matches Phase 0 checklist |
-| B — Add Top 1/Top 3 badges next to existing jargon RiskBadges only | Rejected | Leaves vol/Sharpe/drawdown opaque; weak mobile story |
-| C — Web-only UI; keep mobile spot sync | Rejected | Contradicts chosen parity (Phase 0 Q5C + Q6A) |
+| A — Shared core bands + web/mobile UI + mobile history sync (no concentration) | Retained | Fixes readability and parity without a redundant allocation badge |
+| B — Also show Top 1 / Top 3 concentration under the donut | Rejected (post-ship review) | Duplicates what the donut already shows; judged not meaningful |
+| C — Web-only UI; keep mobile spot sync | Rejected | Contradicts chosen parity |
 | D — Put thresholds only in UI components | Rejected | Diverges platforms; violates shared-core principle |
 
 ## Consequences
 
 **Positives**
 
-- One testable contract for concentration and risk judgement.
+- One testable contract for risk judgement.
 - Mobile can compute the same performance risk metrics as web once history is synced.
 
 **Negatives**
@@ -79,14 +72,13 @@ Canonical terms: [glossary](../reference/glossary.md) (**Portfolio concentration
 
 ## Uncovered cases
 
-- HHI display
 - Configurable thresholds / risk-free rate
 - Mobile performance heatmap, benchmarks, asset filters
-- Highlighting the largest donut slice graphically (text under donut is enough)
+- Portfolio concentration indicators (explicitly out of scope)
 
 ## Follow-up
 
-None required to implement this ADR. Optional later: visual highlight on the largest donut slice.
+None.
 
 ## See also
 

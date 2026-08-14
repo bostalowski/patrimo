@@ -21,14 +21,12 @@ import {
 } from "@/lib/store";
 import { BENCHMARKS } from "@/lib/benchmarks";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
-import { ConcentrationSummary } from "@/components/concentration-summary";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { PerformanceSection } from "@/components/performance-section";
 import { SyncButton } from "@/components/sync-button";
 import { summarizeBudget } from "@/lib/budget";
 import { formatEuro, formatPercent, signClass } from "@/lib/utils";
 import { computeEmergencyFundHealth, sumLivretMarketValue } from "@patrimo/core/emergency-fund";
-import { computeConcentration } from "@patrimo/core/portfolio-risk";
 
 export const dynamic = "force-dynamic";
 
@@ -66,14 +64,6 @@ export default async function DashboardPage() {
   const donut = portfolio.assets
     .filter((p) => p.marketValue > 0)
     .map((p) => ({ name: p.asset?.label ?? p.assetId, value: p.marketValue }));
-
-  const concentration = computeConcentration(
-    portfolio.assets.map((p) => ({
-      assetId: p.assetId,
-      label: p.asset?.label ?? p.assetId,
-      marketValue: p.marketValue,
-    })),
-  );
 
   const livretBalance = sumLivretMarketValue(portfolio.accounts);
   const { depensesMensuelles } = summarizeBudget(workbook.budget);
@@ -161,7 +151,6 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardBody>
           <AllocationDonut data={donut} />
-          <ConcentrationSummary concentration={concentration} />
         </CardBody>
       </Card>
     </div>

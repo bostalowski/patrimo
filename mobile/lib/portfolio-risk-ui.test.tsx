@@ -1,7 +1,6 @@
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import type { PortfolioConcentration } from "@patrimo/core/portfolio-risk";
 import { colors } from "./theme";
 
 vi.mock("react-native", () => ({
@@ -10,20 +9,7 @@ vi.mock("react-native", () => ({
   StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 },
 }));
 
-import { ConcentrationSummary } from "./concentration-summary";
 import { RiskBadges } from "./risk-badges";
-
-function concentration(
-  overrides: Partial<PortfolioConcentration> = {},
-): PortfolioConcentration {
-  return {
-    top1Label: "CW8",
-    top1Weight: 0.42,
-    top3Weight: 0.71,
-    status: "balanced",
-    ...overrides,
-  };
-}
 
 function render(component: React.ReactElement): ReactTestRenderer {
   let renderer: ReactTestRenderer | undefined;
@@ -41,30 +27,6 @@ function visibleText(renderer: ReactTestRenderer): string {
     .filter((child): child is string => typeof child === "string")
     .join(" ");
 }
-
-describe("mobile ConcentrationSummary", () => {
-  it("shows concentration text block with largest line and status on the Dashboard", () => {
-    const text = visibleText(
-      render(
-        <ConcentrationSummary
-          concentration={concentration()}
-          theme={colors.light}
-        />,
-      ),
-    );
-
-    expect(text).toContain("CW8");
-    expect(text).toMatch(/42/);
-    expect(text).toContain("Équilibré");
-  });
-
-  it("hides concentration when concentration is null", () => {
-    const renderer = render(
-      <ConcentrationSummary concentration={null} theme={colors.light} />,
-    );
-    expect(renderer.toJSON()).toBeNull();
-  });
-});
 
 describe("mobile RiskBadges", () => {
   it("shows readable risk strip when history metrics resolve", () => {

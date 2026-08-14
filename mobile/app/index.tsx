@@ -12,10 +12,8 @@ import {
 } from "@patrimo/core/performance";
 import { summarizeBudget } from "@patrimo/core/budget";
 import { computeEmergencyFundHealth, sumLivretMarketValue } from "@patrimo/core/emergency-fund";
-import { computeConcentration } from "@patrimo/core/portfolio-risk";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
 import { manualPricesToPriceStore } from "@patrimo/core/manual-prices";
-import { ConcentrationSummary } from "../lib/concentration-summary";
 import { EmergencyFundCard } from "../lib/emergency-fund-card";
 import { RiskBadges } from "../lib/risk-badges";
 import { useThemeColors, shared } from "../lib/theme";
@@ -71,14 +69,6 @@ export default function DashboardScreen() {
     depensesMensuelles,
   );
 
-  const concentration = computeConcentration(
-    portfolio.assets.map((p) => ({
-      assetId: p.assetId,
-      label: p.asset?.label ?? p.assetId,
-      marketValue: p.marketValue,
-    })),
-  );
-
   const history = buildHistorySeries(
     workbook,
     priceStore,
@@ -132,8 +122,6 @@ export default function DashboardScreen() {
       </View>
 
       <EmergencyFundCard health={emergencyFund} theme={t} />
-
-      <ConcentrationSummary concentration={concentration} theme={t} />
 
       <RiskBadges
         volatility={volatility}

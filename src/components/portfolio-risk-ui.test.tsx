@@ -2,38 +2,9 @@
 
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import type { PortfolioConcentration } from "@patrimo/core/portfolio-risk";
-import { ConcentrationSummary } from "@/components/concentration-summary";
 import { RiskBadges } from "@/components/charts/returns-heatmap";
 
 afterEach(cleanup);
-
-function concentration(
-  overrides: Partial<PortfolioConcentration> = {},
-): PortfolioConcentration {
-  return {
-    top1Label: "CW8",
-    top1Weight: 0.42,
-    top3Weight: 0.71,
-    status: "balanced",
-    ...overrides,
-  };
-}
-
-describe("ConcentrationSummary", () => {
-  it("shows largest line label, top1 percent, and concentration status under the allocation donut", () => {
-    render(<ConcentrationSummary concentration={concentration()} />);
-
-    expect(screen.getByText(/CW8/)).toBeTruthy();
-    expect(screen.getByText(/42/)).toBeTruthy();
-    expect(screen.getByText("Équilibré")).toBeTruthy();
-  });
-
-  it("hides concentration block when concentration is null", () => {
-    const { container } = render(<ConcentrationSummary concentration={null} />);
-    expect(container.firstChild).toBeNull();
-  });
-});
 
 describe("RiskBadges", () => {
   it("renders risk badges with human FR titles, numeric values, status words, and a shared color legend", () => {

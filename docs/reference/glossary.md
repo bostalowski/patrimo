@@ -50,10 +50,6 @@ Months of monthly expenses covered by total livret market value: `livretBalance 
 
 Status band derived from **Emergency fund coverage**: `insufficient` (&lt; 3 months), `acceptable` ([3, 6)), `healthy` ([6, 12)), `over_allocated` (≥ 12). Shown on web and mobile Dashboards when coverage is defined.
 
-## Portfolio concentration
-
-Structural allocation risk derived from asset-level market-value weights (same basis as the allocation donut). Includes Top 1 weight (largest position share), Top 3 weight (sum of the three largest shares), and a status band: `diversified` (&lt; 30 % Top 1), `balanced` ([30 %, 50 %)), `concentrated` (≥ 50 %). Computed in `@patrimo/core`; null when no position has positive market value.
-
 ## Risk status band
 
 Qualitative judgement attached to a performance risk metric (annualized volatility, Sharpe ratio, or max drawdown) using fixed product thresholds in `@patrimo/core`. Used so Dashboards can show a human label and color without redefining cutoffs in the UI. When the underlying metric is null (insufficient history), no band is produced.
