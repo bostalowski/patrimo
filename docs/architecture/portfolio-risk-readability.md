@@ -1,7 +1,5 @@
 # Portfolio risk readability
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0006](../adr/0006-portfolio-risk-readability.md).
-
 How Dashboards surface portfolio concentration and human-readable performance risk status.
 
 ## Intent
@@ -15,7 +13,7 @@ Portfolio positions (marketValue > 0)
         |
         v
 computeConcentration(...)  --> null | { top1Label, top1Weight, top3Weight, status }
-        |
+        |  (@patrimo/core/portfolio-risk)
         +--> Web: under AllocationDonut
         +--> Mobile: Dashboard text block
 
@@ -46,8 +44,8 @@ merge into AsyncStorage PriceStore  --> buildHistorySeries --> risk metrics
 
 | Surface | Concentration | Risk badges |
 |---|---|---|
-| Web Dashboard | Under allocation donut | Existing performance `RiskBadges`, human labels + status + legend |
-| Mobile Dashboard | Text block (no donut this increment) | Compact strip when metrics resolve |
+| Web Dashboard | Under allocation donut (`src/components/concentration-summary.tsx`) | Performance `RiskBadges` in `returns-heatmap.tsx` |
+| Mobile Dashboard | Text card (`mobile/lib/concentration-summary.tsx`) | Risk card (`mobile/lib/risk-badges.tsx`) |
 
 ## Status bands
 

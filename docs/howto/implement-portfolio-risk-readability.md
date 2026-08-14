@@ -1,33 +1,37 @@
 # Implement portfolio risk readability
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0006](../adr/0006-portfolio-risk-readability.md).
-
-Ordered vertical scopes and test strategy for concentration and readable risk badges (web + mobile), including mobile historical price sync.
+Ordered vertical scopes and test strategy for concentration and readable risk badges (web + mobile), including mobile historical price sync. Confirmed against shipped code on `feat/risk-readability-concentration`.
 
 ## Prerequisites
 
-- Spec: [ADR 0006](../adr/0006-portfolio-risk-readability.md) (`proposed` until Phase 5)
+- Spec: [ADR 0006](../adr/0006-portfolio-risk-readability.md) (accepted)
 - Branch: `feat/risk-readability-concentration`
 
 ## Increment plan
 
-### Scope 1 — Core metrics
+### Scope 1 — Core metrics (done)
 
-Add `@patrimo/core` helpers for concentration and risk status bands (thresholds + status ids). Covers Phase 0 cases 5, 6, 8 (computation) and the shared rules for case 7 (null metrics).
+Add `computeConcentration` and `assessRiskMetricStatus` in `@patrimo/core` (`portfolio-risk.ts`).
 
-Tests: unit file under `packages/core` or `src/lib/` mirroring emergency-fund pattern.
+Tests: `src/lib/portfolio-risk.test.ts`.
 
-### Scope 2 — Web Dashboard UX
+### Scope 2 — Web Dashboard UX (done)
 
-Wire concentration under the allocation donut; rewrite `RiskBadges` with human labels, status colors, and a one-line legend. Covers Phase 0 cases 1, 2, 6, 7, 8 on web.
+Concentration under the allocation donut; readable `RiskBadges` + color legend.
 
-### Scope 3 — Mobile historical price sync
+Tests: `src/components/portfolio-risk-ui.test.tsx`.
 
-Upgrade `mobile/lib/price-sync.ts` to fetch and merge full history for `coingecko`, `yahoo`, `investir`, `zonebourse` (same sources as web). Prerequisite for Phase 0 case 4.
+### Scope 3 — Mobile historical price sync (done)
 
-### Scope 4 — Mobile Dashboard UX
+`mobile/lib/price-sync.ts` merges full history for `coingecko`, `yahoo`, `investir`, `zonebourse`.
 
-Dashboard concentration text block + readable risk strip using `buildHistorySeries` + existing performance helpers + Scope 1 bands. Covers Phase 0 cases 3, 4, 6, 7, 8 on mobile.
+Tests: `mobile/lib/price-sync-history.test.ts`.
+
+### Scope 4 — Mobile Dashboard UX (done)
+
+Dashboard concentration card + risk card via `buildHistorySeries` + performance helpers + core bands.
+
+Tests: `mobile/lib/portfolio-risk-ui.test.tsx`.
 
 ## Test strategy
 
@@ -35,20 +39,17 @@ Dashboard concentration text block + readable risk strip using `buildHistorySeri
 |---|---|
 | Core unit | Weight aggregation, Top 1/Top 3, status thresholds, null empty portfolio, null metric → no band |
 | Web UI | Donut concentration block + badge labels/status/legend; hide when null |
-| Mobile sync | Historical merge for automatic sources (not spot-only); manual skipped |
+| Mobile sync | Historical merge for automatic sources; manual skipped |
 | Mobile UI | Concentration text + risk strip; "—" when metrics null |
 
-## Commands (expected)
+## Commands
 
 ```bash
-npm test -- portfolio-risk
-npm test -- returns-heatmap
-npm test -- allocation
-npm test -- price-sync
-npm test -- mobile
+npm test -- src/lib/portfolio-risk.test.ts
+npm test -- src/components/portfolio-risk-ui.test.tsx
+npm test -- mobile/lib/price-sync-history.test.ts
+npm test -- mobile/lib/portfolio-risk-ui.test.tsx
 ```
-
-Exact paths are set when tests are written in Phase 2.
 
 ## See also
 

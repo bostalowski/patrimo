@@ -5,6 +5,6 @@
 - [ADR 0003: Display invested amount on asset surfaces](0003-display-invested-on-asset-surfaces.md) — accepted
 - [ADR 0004: Show non-monthly DCA streams on mobile projection](0004-show-non-monthly-streams-on-mobile-projection.md) — accepted
 - [ADR 0005: Emergency fund health indicator](0005-emergency-fund-health-indicator.md) — accepted
-- [ADR 0006: Portfolio risk readability and concentration](0006-portfolio-risk-readability.md) — proposed
+- [ADR 0006: Portfolio risk readability and concentration](0006-portfolio-risk-readability.md) — accepted
 
 Template: [_template.md](_template.md)

@@ -1,6 +1,6 @@
 # ADR 0006: Portfolio risk readability and concentration
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-14
 - implementation_ready: yes
 
