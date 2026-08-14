@@ -1,7 +1,5 @@
 # Fee monitoring ratios
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0007](../adr/0007-fee-monitoring-ratios.md).
-
 How the web Fees page derives annual cost, all-in cost, and fees-to-gain ratios from existing fee and portfolio totals.
 
 ## Intent

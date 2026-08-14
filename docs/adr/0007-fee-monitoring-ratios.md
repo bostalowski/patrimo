@@ -1,6 +1,6 @@
 # ADR 0007: Fee monitoring ratios on the Fees page
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-14
 - implementation_ready: yes
 
