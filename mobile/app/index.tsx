@@ -1,7 +1,10 @@
 import { View, Text, ScrollView, useColorScheme } from "react-native";
 import { useWorkbook } from "../lib/use-workbook";
 import { buildPortfolio, computeNetWorth } from "@patrimo/core/portfolio";
+import { summarizeBudget } from "@patrimo/core/budget";
+import { computeEmergencyFundHealth } from "@patrimo/core/emergency-fund";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
+import { EmergencyFundCard } from "../lib/emergency-fund-card";
 import { useThemeColors, shared } from "../lib/theme";
 
 export default function DashboardScreen() {
@@ -48,6 +51,14 @@ export default function DashboardScreen() {
     workbook.properties,
   );
   const hasRealEstate = realEstateEquity > 0;
+  const livretBalance = portfolio.accounts
+    .filter((account) => account.envelope === "LIVRET")
+    .reduce((sum, account) => sum + account.marketValue, 0);
+  const { depensesMensuelles } = summarizeBudget(workbook.budget);
+  const emergencyFund = computeEmergencyFundHealth(
+    livretBalance,
+    depensesMensuelles,
+  );
 
   return (
     <ScrollView
@@ -90,6 +101,8 @@ export default function DashboardScreen() {
         />
         <StatCard label="Frais payés" value={formatEuro(totals.fees)} theme={t} />
       </View>
+
+      <EmergencyFundCard health={emergencyFund} theme={t} />
 
       <View style={[shared.card, { backgroundColor: t.card }]}>
         <Text style={[shared.cardTitle, { color: t.text, marginBottom: 12 }]}>
