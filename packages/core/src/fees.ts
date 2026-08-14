@@ -69,6 +69,17 @@ export type AssetFees = {
   fees: number;
 };
 
+export type AssetFeePositionInput = {
+  assetId: string;
+  costBasis: number;
+  totalReturn: number;
+};
+
+export type EnrichedAssetFees = AssetFees & {
+  feesToCapitalRatio: number | null;
+  feesToGainRatio: number | null;
+};
+
 export function feesByAsset(
   transactions: Transaction[],
   assets: Asset[],
@@ -88,6 +99,25 @@ export function feesByAsset(
       fees,
     }))
     .sort((a, b) => b.fees - a.fees);
+}
+
+export function enrichAssetFeeRows(
+  assetFees: AssetFees[],
+  positions: AssetFeePositionInput[],
+): EnrichedAssetFees[] {
+  const byId = new Map(positions.map((p) => [p.assetId, p]));
+
+  return assetFees.map((row) => {
+    const position = byId.get(row.assetId);
+    const costBasis = position?.costBasis ?? 0;
+    const totalReturn = position?.totalReturn ?? 0;
+
+    return {
+      ...row,
+      feesToCapitalRatio: costBasis > 0 ? row.fees / costBasis : null,
+      feesToGainRatio: totalReturn > 0 ? row.fees / totalReturn : null,
+    };
+  });
 }
 
 export type AccountFees = {

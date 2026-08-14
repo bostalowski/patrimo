@@ -5,6 +5,7 @@ import { readPriceMap } from "@/lib/store";
 import {
   allInAnnualCost,
   annualFeeDrag,
+  enrichAssetFeeRows,
   estimatedAnnualTer,
   feeRatio,
   feesByAccount,
@@ -28,7 +29,10 @@ export default async function FraisPage() {
   );
 
   const yearlyFees = feesByYear(workbook.transactions);
-  const assetFees = feesByAsset(workbook.transactions, workbook.assets);
+  const assetFees = enrichAssetFeeRows(
+    feesByAsset(workbook.transactions, workbook.assets),
+    portfolio.assets,
+  );
   const accountFees = feesByAccount(workbook.transactions, workbook.accounts);
   const typeFees = feesByType(workbook.transactions);
   const terEstimates = estimatedAnnualTer(

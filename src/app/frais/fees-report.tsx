@@ -15,7 +15,7 @@ import { FeesBars } from "@/components/charts/fees-bars";
 import { formatEuro, formatPercent } from "@/lib/utils";
 import type {
   AccountFees,
-  AssetFees,
+  EnrichedAssetFees,
   FeeTypeBreakdown,
   TerEstimate,
   YearlyFees,
@@ -47,7 +47,7 @@ export function FeesReport({
   terTotal: number;
   terPerAsset: TerEstimate[];
   yearlyFees: YearlyFees[];
-  assetFees: AssetFees[];
+  assetFees: EnrichedAssetFees[];
   accountFees: AccountFees[];
   typeFees: FeeTypeBreakdown[];
   netInvested: number;
@@ -251,6 +251,8 @@ export function FeesReport({
                 <TH>Actif</TH>
                 <TH className="text-right">Frais payés</TH>
                 <TH className="text-right">% du total</TH>
+                <TH className="text-right">% capital</TH>
+                <TH className="text-right">% gains</TH>
               </tr>
             </THead>
             <TBody>
@@ -270,11 +272,21 @@ export function FeesReport({
                   <TD className="text-right font-mono text-xs tabular-nums text-zinc-500">
                     {totalFees > 0 ? formatPercent(row.fees / totalFees) : "—"}
                   </TD>
+                  <TD className="text-right font-mono text-xs tabular-nums text-zinc-500">
+                    {row.feesToCapitalRatio !== null
+                      ? formatPercent(row.feesToCapitalRatio)
+                      : "—"}
+                  </TD>
+                  <TD className="text-right font-mono text-xs tabular-nums text-zinc-500">
+                    {row.feesToGainRatio !== null
+                      ? formatPercent(row.feesToGainRatio)
+                      : "—"}
+                  </TD>
                 </TR>
               ))}
               {assetFees.length === 0 && (
                 <TR>
-                  <TD colSpan={3} className="text-center text-zinc-500">
+                  <TD colSpan={5} className="text-center text-zinc-500">
                     Aucun frais enregistré.
                   </TD>
                 </TR>
@@ -291,7 +303,7 @@ const MAX_DONUT_SLICES = 7;
 
 function donutSlices(
   view: BreakdownView,
-  assetFees: AssetFees[],
+  assetFees: EnrichedAssetFees[],
   accountFees: AccountFees[],
   typeFees: FeeTypeBreakdown[],
 ): Array<{ name: string; value: number }> {

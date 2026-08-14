@@ -3,6 +3,7 @@ import type { Account, Asset, Transaction } from "@/lib/schema";
 import {
   allInAnnualCost,
   annualFeeDrag,
+  enrichAssetFeeRows,
   estimatedAnnualTer,
   feeRatio,
   feesByAccount,
@@ -333,5 +334,63 @@ describe("feesToGainRatio", () => {
   it("returns null when totalReturn is zero or negative", () => {
     expect(feesToGainRatio(200, 0)).toBeNull();
     expect(feesToGainRatio(200, -50)).toBeNull();
+  });
+});
+
+describe("enrichAssetFeeRows", () => {
+  const feeRows = [
+    { assetId: "CW8", label: "MSCI World", fees: 30 },
+    { assetId: "BTC", label: "Bitcoin", fees: 12 },
+  ];
+
+  it("adds fees-to-capital ratio when costBasis is positive", () => {
+    const enriched = enrichAssetFeeRows(feeRows, [
+      { assetId: "CW8", costBasis: 3_000, totalReturn: 300 },
+      { assetId: "BTC", costBasis: 1_000, totalReturn: 50 },
+    ]);
+
+    expect(enriched.find((r) => r.assetId === "CW8")?.feesToCapitalRatio).toBeCloseTo(
+      0.01,
+    );
+  });
+
+  it("adds fees-to-gain ratio when asset totalReturn is positive", () => {
+    const enriched = enrichAssetFeeRows(feeRows, [
+      { assetId: "CW8", costBasis: 3_000, totalReturn: 300 },
+      { assetId: "BTC", costBasis: 1_000, totalReturn: 50 },
+    ]);
+
+    expect(enriched.find((r) => r.assetId === "CW8")?.feesToGainRatio).toBeCloseTo(0.1);
+  });
+
+  it("sets fees-to-capital ratio to null when costBasis is zero or negative", () => {
+    const enriched = enrichAssetFeeRows(
+      [{ assetId: "CW8", label: "MSCI World", fees: 30 }],
+      [{ assetId: "CW8", costBasis: 0, totalReturn: 100 }],
+    );
+
+    expect(enriched[0].feesToCapitalRatio).toBeNull();
+  });
+
+  it("sets fees-to-gain ratio to null when asset totalReturn is zero or negative", () => {
+    const enriched = enrichAssetFeeRows(
+      [{ assetId: "CW8", label: "MSCI World", fees: 30 }],
+      [{ assetId: "CW8", costBasis: 3_000, totalReturn: -20 }],
+    );
+
+    expect(enriched[0].feesToGainRatio).toBeNull();
+  });
+
+  it("leaves an asset without a matching position with both ratios null", () => {
+    const enriched = enrichAssetFeeRows(
+      [{ assetId: "GONE", label: "Closed", fees: 5 }],
+      [],
+    );
+
+    expect(enriched[0]).toMatchObject({
+      assetId: "GONE",
+      feesToCapitalRatio: null,
+      feesToGainRatio: null,
+    });
   });
 });
