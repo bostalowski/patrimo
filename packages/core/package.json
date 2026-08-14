@@ -17,6 +17,7 @@
     "./projection": "./src/projection.ts",
     "./dca": "./src/dca.ts",
     "./budget": "./src/budget.ts",
+    "./emergency-fund": "./src/emergency-fund.ts",
     "./fiscalite": "./src/fiscalite.ts",
     "./tax-rules": "./src/tax-rules.ts",
     "./fiscal-advice": "./src/fiscal-advice.ts",

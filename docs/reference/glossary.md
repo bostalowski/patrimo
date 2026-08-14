@@ -42,6 +42,14 @@ Gain or loss locked by disposals and related realized events (sales, and other r
 
 Portfolio valuation plus real-estate equity contributions used on the dashboard (`computeNetWorth`).
 
+## Emergency fund coverage
+
+Months of monthly expenses covered by total livret market value: `livretBalance / depensesMensuelles`. Computed by `computeEmergencyFundHealth` in `@patrimo/core`. Undefined when monthly expenses are zero or negative (indicator hidden).
+
+## Emergency fund health
+
+Status band derived from **Emergency fund coverage**: `insufficient` (&lt; 3 months), `acceptable` ([3, 6)), `healthy` ([6, 12)), `over_allocated` (≥ 12). Shown on web and mobile Dashboards when coverage is defined.
+
 ## No account
 
 A system-owned portfolio group for transactions preserved after account deletion. It is included in portfolio totals and performance, excluded from tax estimates, and cannot be selected when creating a transaction. The reserved identifier is `__NO_ACCOUNT__`.
@@ -89,4 +97,5 @@ Simplified French-tax heuristic produced by `@patrimo/core` fiscal modules. Indi
 - [ADR 0001](../adr/0001-share-deletion-rules-across-platforms.md)
 - [ADR 0002](../adr/0002-store-manual-prices-in-workbook.md)
 - [ADR 0004](../adr/0004-show-non-monthly-streams-on-mobile-projection.md)
+- [ADR 0005](../adr/0005-emergency-fund-health-indicator.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
