@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Account, Asset, Transaction } from "@/lib/schema";
 import {
+  allInAnnualCost,
+  annualFeeDrag,
   estimatedAnnualTer,
   feeRatio,
   feesByAccount,
@@ -8,6 +10,7 @@ import {
   feesByCurrency,
   feesByType,
   feesByYear,
+  feesToGainRatio,
 } from "@/lib/fees";
 
 function tx(overrides: Partial<Transaction>): Transaction {
@@ -293,5 +296,42 @@ describe("feeRatio", () => {
   it("returns 0 when net invested is zero or negative", () => {
     expect(feeRatio(50, 0)).toBe(0);
     expect(feeRatio(50, -100)).toBe(0);
+  });
+});
+
+describe("annualFeeDrag", () => {
+  it("returns ytdFees / netInvested when capital is positive", () => {
+    expect(annualFeeDrag(100, 10_000)).toBeCloseTo(0.01);
+  });
+
+  it("returns null when netInvested is zero or negative", () => {
+    expect(annualFeeDrag(100, 0)).toBeNull();
+    expect(annualFeeDrag(100, -1)).toBeNull();
+  });
+});
+
+describe("allInAnnualCost", () => {
+  it("returns (ytdFees + terAnnual) / netInvested when capital is positive", () => {
+    expect(allInAnnualCost(50, 150, 10_000)).toBeCloseTo(0.02);
+  });
+
+  it("treats missing TER as zero and still divides YTD by capital", () => {
+    expect(allInAnnualCost(100, 0, 10_000)).toBeCloseTo(0.01);
+  });
+
+  it("returns null when netInvested is zero or negative", () => {
+    expect(allInAnnualCost(50, 150, 0)).toBeNull();
+    expect(allInAnnualCost(50, 150, -100)).toBeNull();
+  });
+});
+
+describe("feesToGainRatio", () => {
+  it("returns totalFees / totalReturn when return is positive", () => {
+    expect(feesToGainRatio(200, 2_000)).toBeCloseTo(0.1);
+  });
+
+  it("returns null when totalReturn is zero or negative", () => {
+    expect(feesToGainRatio(200, 0)).toBeNull();
+    expect(feesToGainRatio(200, -50)).toBeNull();
   });
 });

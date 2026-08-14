@@ -94,6 +94,18 @@ A user-entered dated valuation (typically FCPE VL) stored in the optional workbo
 
 Simplified French-tax heuristic produced by `@patrimo/core` fiscal modules. Indicative only; not a tax filing output.
 
+## Annual fee drag
+
+Calendar-year explicit transaction fees divided by current portfolio **Invested** (`netInvested`). Computed in `@patrimo/core`. Undefined (`null`) when invested capital is zero or negative.
+
+## All-in annual cost
+
+Sum of calendar-year explicit fees and the estimated annual TER euro cost, divided by current **Invested**. Mixes fees already paid this year with a forward TER estimate. Undefined when invested capital is zero or negative.
+
+## Fees-to-gain ratio
+
+All-time explicit fees divided by portfolio (or asset) **total return** (unrealized + realized + income as produced by the portfolio engine). Undefined when total return is zero or negative — not a fee-health score in down markets.
+
 ## See also
 
 - [Key principles](../overview/key-principles.md)
@@ -103,4 +115,5 @@ Simplified French-tax heuristic produced by `@patrimo/core` fiscal modules. Indi
 - [ADR 0004](../adr/0004-show-non-monthly-streams-on-mobile-projection.md)
 - [ADR 0005](../adr/0005-emergency-fund-health-indicator.md)
 - [ADR 0006](../adr/0006-portfolio-risk-readability.md)
+- [ADR 0007](../adr/0007-fee-monitoring-ratios.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)

@@ -27,6 +27,9 @@ export function FeesReport({
   totalFees,
   ytdFees,
   ratio,
+  annualDrag,
+  allInCost,
+  feesToGain,
   terTotal,
   terPerAsset,
   yearlyFees,
@@ -38,6 +41,9 @@ export function FeesReport({
   totalFees: number;
   ytdFees: number;
   ratio: number;
+  annualDrag: number | null;
+  allInCost: number | null;
+  feesToGain: number | null;
   terTotal: number;
   terPerAsset: TerEstimate[];
   yearlyFees: YearlyFees[];
@@ -100,6 +106,41 @@ export function FeesReport({
                 l&apos;estimation
               </p>
             )}
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Coût annuel explicite</CardTitle>
+            <CardValue>
+              {annualDrag !== null ? formatPercent(annualDrag) : "—"}
+            </CardValue>
+            <p className="text-xs text-zinc-500">
+              Frais de l&apos;année / capital actuel
+            </p>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Coût all-in annuel</CardTitle>
+            <CardValue>
+              {allInCost !== null ? formatPercent(allInCost) : "—"}
+            </CardValue>
+            <p className="text-xs text-zinc-500">
+              Frais YTD + TER estimé / capital
+            </p>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Frais / gains</CardTitle>
+            <CardValue>
+              {feesToGain !== null ? formatPercent(feesToGain) : "—"}
+            </CardValue>
+            <p className="text-xs text-zinc-500">
+              {feesToGain !== null
+                ? "Frais all-time / retour total"
+                : "Non pertinent (perf ≤ 0)"}
+            </p>
           </CardHeader>
         </Card>
       </div>

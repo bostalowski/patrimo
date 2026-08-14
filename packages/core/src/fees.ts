@@ -198,3 +198,28 @@ export function feeRatio(totalFees: number, netInvested: number): number {
   if (netInvested <= 0) return 0;
   return totalFees / netInvested;
 }
+
+export function annualFeeDrag(
+  ytdFees: number,
+  netInvested: number,
+): number | null {
+  if (netInvested <= 0) return null;
+  return ytdFees / netInvested;
+}
+
+export function allInAnnualCost(
+  ytdFees: number,
+  terAnnual: number,
+  netInvested: number,
+): number | null {
+  if (netInvested <= 0) return null;
+  return (ytdFees + terAnnual) / netInvested;
+}
+
+export function feesToGainRatio(
+  totalFees: number,
+  totalReturn: number,
+): number | null {
+  if (totalReturn <= 0) return null;
+  return totalFees / totalReturn;
+}
