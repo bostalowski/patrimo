@@ -40,7 +40,7 @@ Web Fees page KPI grid + asset table columns
 |---|---|
 | Annual fee drag / all-in annual cost | `netInvested ≤ 0` |
 | Fees-to-gain (portfolio or asset) | `totalReturn ≤ 0` |
-| Fees / asset capital | `costBasis ≤ 0` |
+| Fees / asset capital | `costBasis ≤ 1e-6` (closed / float dust) |
 
 ## Invariants
 

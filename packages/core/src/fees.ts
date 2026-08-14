@@ -80,6 +80,9 @@ export type EnrichedAssetFees = AssetFees & {
   feesToGainRatio: number | null;
 };
 
+/** Ignore floating-point residue left on closed positions (e.g. 1e-15 EUR). */
+const MIN_MEANINGFUL_COST_BASIS = 1e-6;
+
 export function feesByAsset(
   transactions: Transaction[],
   assets: Asset[],
@@ -109,9 +112,13 @@ export function enrichAssetFeeRows(
 
   return assetFees.map((row) => {
     const position = byId.get(row.assetId);
+    const costBasis = position?.costBasis ?? 0;
     return {
       ...row,
-      feesToCapitalRatio: ratioOrNull(row.fees, position?.costBasis ?? 0),
+      feesToCapitalRatio:
+        costBasis > MIN_MEANINGFUL_COST_BASIS
+          ? ratioOrNull(row.fees, costBasis)
+          : null,
       feesToGainRatio: ratioOrNull(row.fees, position?.totalReturn ?? 0),
     };
   });

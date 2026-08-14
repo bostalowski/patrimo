@@ -381,6 +381,15 @@ describe("enrichAssetFeeRows", () => {
     expect(enriched[0].feesToGainRatio).toBeNull();
   });
 
+  it("sets fees-to-capital ratio to null when costBasis is floating-point dust", () => {
+    const enriched = enrichAssetFeeRows(
+      [{ assetId: "CW8", label: "MSCI World", fees: 0.14 }],
+      [{ assetId: "CW8", costBasis: 7.105427357601002e-15, totalReturn: 15 }],
+    );
+
+    expect(enriched[0].feesToCapitalRatio).toBeNull();
+  });
+
   it("leaves an asset without a matching position with both ratios null", () => {
     const enriched = enrichAssetFeeRows(
       [{ assetId: "GONE", label: "Closed", fees: 5 }],

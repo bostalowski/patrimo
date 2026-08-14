@@ -20,9 +20,9 @@ Contract (do not invent):
 - THEN feesToGainRatio = totalFees / totalReturn
 - WHEN totalReturn ≤ 0
 - THEN feesToGainRatio = null
-- WHEN an asset has paidFees and costBasis > 0
+- WHEN an asset has paidFees and costBasis > 1e-6 (meaningful invested capital)
 - THEN feesToCapitalRatio = paidFees / costBasis
-- WHEN costBasis ≤ 0
+- WHEN costBasis ≤ 1e-6 (including closed positions with floating-point residue)
 - THEN feesToCapitalRatio = null
 - WHEN an asset has paidFees and asset.totalReturn > 0
 - THEN feesToAssetGainRatio = paidFees / asset.totalReturn
