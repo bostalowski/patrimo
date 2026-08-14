@@ -3,12 +3,16 @@ import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
 import { readPriceMap } from "@/lib/store";
 import {
+  allInAnnualCost,
+  annualFeeDrag,
+  enrichAssetFeeRows,
   estimatedAnnualTer,
   feeRatio,
   feesByAccount,
   feesByAsset,
   feesByType,
   feesByYear,
+  feesToGainRatio,
 } from "@/lib/fees";
 import { FeesReport } from "./fees-report";
 
@@ -25,7 +29,10 @@ export default async function FraisPage() {
   );
 
   const yearlyFees = feesByYear(workbook.transactions);
-  const assetFees = feesByAsset(workbook.transactions, workbook.assets);
+  const assetFees = enrichAssetFeeRows(
+    feesByAsset(workbook.transactions, workbook.assets),
+    portfolio.assets,
+  );
   const accountFees = feesByAccount(workbook.transactions, workbook.accounts);
   const typeFees = feesByType(workbook.transactions);
   const terEstimates = estimatedAnnualTer(
@@ -39,18 +46,29 @@ export default async function FraisPage() {
   const ytdFees =
     yearlyFees.find((y) => y.year === currentYear)?.total ?? 0;
 
+  const netInvested = portfolio.totals.netInvested;
+  const annualDrag = annualFeeDrag(ytdFees, netInvested);
+  const allInCost = allInAnnualCost(ytdFees, terEstimates.total, netInvested);
+  const feesToGain = feesToGainRatio(
+    portfolio.totals.fees,
+    portfolio.totals.totalReturn,
+  );
+
   return (
     <FeesReport
       totalFees={portfolio.totals.fees}
       ytdFees={ytdFees}
       ratio={ratio}
+      annualDrag={annualDrag}
+      allInCost={allInCost}
+      feesToGain={feesToGain}
       terTotal={terEstimates.total}
       terPerAsset={terEstimates.perAsset}
       yearlyFees={yearlyFees}
       assetFees={assetFees}
       accountFees={accountFees}
       typeFees={typeFees}
-      netInvested={portfolio.totals.netInvested}
+      netInvested={netInvested}
     />
   );
 }

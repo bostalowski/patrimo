@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Account, Asset, Transaction } from "@/lib/schema";
 import {
+  allInAnnualCost,
+  annualFeeDrag,
+  enrichAssetFeeRows,
   estimatedAnnualTer,
   feeRatio,
   feesByAccount,
@@ -8,6 +11,7 @@ import {
   feesByCurrency,
   feesByType,
   feesByYear,
+  feesToGainRatio,
 } from "@/lib/fees";
 
 function tx(overrides: Partial<Transaction>): Transaction {
@@ -293,5 +297,109 @@ describe("feeRatio", () => {
   it("returns 0 when net invested is zero or negative", () => {
     expect(feeRatio(50, 0)).toBe(0);
     expect(feeRatio(50, -100)).toBe(0);
+  });
+});
+
+describe("annualFeeDrag", () => {
+  it("returns ytdFees / netInvested when capital is positive", () => {
+    expect(annualFeeDrag(100, 10_000)).toBeCloseTo(0.01);
+  });
+
+  it("returns null when netInvested is zero or negative", () => {
+    expect(annualFeeDrag(100, 0)).toBeNull();
+    expect(annualFeeDrag(100, -1)).toBeNull();
+  });
+});
+
+describe("allInAnnualCost", () => {
+  it("returns (ytdFees + terAnnual) / netInvested when capital is positive", () => {
+    expect(allInAnnualCost(50, 150, 10_000)).toBeCloseTo(0.02);
+  });
+
+  it("treats missing TER as zero and still divides YTD by capital", () => {
+    expect(allInAnnualCost(100, 0, 10_000)).toBeCloseTo(0.01);
+  });
+
+  it("returns null when netInvested is zero or negative", () => {
+    expect(allInAnnualCost(50, 150, 0)).toBeNull();
+    expect(allInAnnualCost(50, 150, -100)).toBeNull();
+  });
+});
+
+describe("feesToGainRatio", () => {
+  it("returns totalFees / totalReturn when return is positive", () => {
+    expect(feesToGainRatio(200, 2_000)).toBeCloseTo(0.1);
+  });
+
+  it("returns null when totalReturn is zero or negative", () => {
+    expect(feesToGainRatio(200, 0)).toBeNull();
+    expect(feesToGainRatio(200, -50)).toBeNull();
+  });
+});
+
+describe("enrichAssetFeeRows", () => {
+  const feeRows = [
+    { assetId: "CW8", label: "MSCI World", fees: 30 },
+    { assetId: "BTC", label: "Bitcoin", fees: 12 },
+  ];
+
+  it("adds fees-to-capital ratio when costBasis is positive", () => {
+    const enriched = enrichAssetFeeRows(feeRows, [
+      { assetId: "CW8", costBasis: 3_000, totalReturn: 300 },
+      { assetId: "BTC", costBasis: 1_000, totalReturn: 50 },
+    ]);
+
+    expect(enriched.find((r) => r.assetId === "CW8")?.feesToCapitalRatio).toBeCloseTo(
+      0.01,
+    );
+  });
+
+  it("adds fees-to-gain ratio when asset totalReturn is positive", () => {
+    const enriched = enrichAssetFeeRows(feeRows, [
+      { assetId: "CW8", costBasis: 3_000, totalReturn: 300 },
+      { assetId: "BTC", costBasis: 1_000, totalReturn: 50 },
+    ]);
+
+    expect(enriched.find((r) => r.assetId === "CW8")?.feesToGainRatio).toBeCloseTo(0.1);
+  });
+
+  it("sets fees-to-capital ratio to null when costBasis is zero or negative", () => {
+    const enriched = enrichAssetFeeRows(
+      [{ assetId: "CW8", label: "MSCI World", fees: 30 }],
+      [{ assetId: "CW8", costBasis: 0, totalReturn: 100 }],
+    );
+
+    expect(enriched[0].feesToCapitalRatio).toBeNull();
+  });
+
+  it("sets fees-to-gain ratio to null when asset totalReturn is zero or negative", () => {
+    const enriched = enrichAssetFeeRows(
+      [{ assetId: "CW8", label: "MSCI World", fees: 30 }],
+      [{ assetId: "CW8", costBasis: 3_000, totalReturn: -20 }],
+    );
+
+    expect(enriched[0].feesToGainRatio).toBeNull();
+  });
+
+  it("sets fees-to-capital ratio to null when costBasis is floating-point dust", () => {
+    const enriched = enrichAssetFeeRows(
+      [{ assetId: "CW8", label: "MSCI World", fees: 0.14 }],
+      [{ assetId: "CW8", costBasis: 7.105427357601002e-15, totalReturn: 15 }],
+    );
+
+    expect(enriched[0].feesToCapitalRatio).toBeNull();
+  });
+
+  it("leaves an asset without a matching position with both ratios null", () => {
+    const enriched = enrichAssetFeeRows(
+      [{ assetId: "GONE", label: "Closed", fees: 5 }],
+      [],
+    );
+
+    expect(enriched[0]).toMatchObject({
+      assetId: "GONE",
+      feesToCapitalRatio: null,
+      feesToGainRatio: null,
+    });
   });
 });

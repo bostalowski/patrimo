@@ -15,7 +15,7 @@ import { FeesBars } from "@/components/charts/fees-bars";
 import { formatEuro, formatPercent } from "@/lib/utils";
 import type {
   AccountFees,
-  AssetFees,
+  EnrichedAssetFees,
   FeeTypeBreakdown,
   TerEstimate,
   YearlyFees,
@@ -23,10 +23,17 @@ import type {
 
 type BreakdownView = "asset" | "account" | "type";
 
+function formatNullablePercent(value: number | null): string {
+  return value !== null ? formatPercent(value) : "—";
+}
+
 export function FeesReport({
   totalFees,
   ytdFees,
   ratio,
+  annualDrag,
+  allInCost,
+  feesToGain,
   terTotal,
   terPerAsset,
   yearlyFees,
@@ -38,10 +45,13 @@ export function FeesReport({
   totalFees: number;
   ytdFees: number;
   ratio: number;
+  annualDrag: number | null;
+  allInCost: number | null;
+  feesToGain: number | null;
   terTotal: number;
   terPerAsset: TerEstimate[];
   yearlyFees: YearlyFees[];
-  assetFees: AssetFees[];
+  assetFees: EnrichedAssetFees[];
   accountFees: AccountFees[];
   typeFees: FeeTypeBreakdown[];
   netInvested: number;
@@ -100,6 +110,35 @@ export function FeesReport({
                 l&apos;estimation
               </p>
             )}
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Coût annuel explicite</CardTitle>
+            <CardValue>{formatNullablePercent(annualDrag)}</CardValue>
+            <p className="text-xs text-zinc-500">
+              Frais de l&apos;année / capital actuel
+            </p>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Coût all-in annuel</CardTitle>
+            <CardValue>{formatNullablePercent(allInCost)}</CardValue>
+            <p className="text-xs text-zinc-500">
+              Frais YTD + TER estimé / capital
+            </p>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Frais / gains</CardTitle>
+            <CardValue>{formatNullablePercent(feesToGain)}</CardValue>
+            <p className="text-xs text-zinc-500">
+              {feesToGain !== null
+                ? "Frais all-time / retour total"
+                : "Non pertinent (perf ≤ 0)"}
+            </p>
           </CardHeader>
         </Card>
       </div>
@@ -210,6 +249,8 @@ export function FeesReport({
                 <TH>Actif</TH>
                 <TH className="text-right">Frais payés</TH>
                 <TH className="text-right">% du total</TH>
+                <TH className="text-right">% capital</TH>
+                <TH className="text-right">% gains</TH>
               </tr>
             </THead>
             <TBody>
@@ -229,11 +270,17 @@ export function FeesReport({
                   <TD className="text-right font-mono text-xs tabular-nums text-zinc-500">
                     {totalFees > 0 ? formatPercent(row.fees / totalFees) : "—"}
                   </TD>
+                  <TD className="text-right font-mono text-xs tabular-nums text-zinc-500">
+                    {formatNullablePercent(row.feesToCapitalRatio)}
+                  </TD>
+                  <TD className="text-right font-mono text-xs tabular-nums text-zinc-500">
+                    {formatNullablePercent(row.feesToGainRatio)}
+                  </TD>
                 </TR>
               ))}
               {assetFees.length === 0 && (
                 <TR>
-                  <TD colSpan={3} className="text-center text-zinc-500">
+                  <TD colSpan={5} className="text-center text-zinc-500">
                     Aucun frais enregistré.
                   </TD>
                 </TR>
@@ -250,7 +297,7 @@ const MAX_DONUT_SLICES = 7;
 
 function donutSlices(
   view: BreakdownView,
-  assetFees: AssetFees[],
+  assetFees: EnrichedAssetFees[],
   accountFees: AccountFees[],
   typeFees: FeeTypeBreakdown[],
 ): Array<{ name: string; value: number }> {

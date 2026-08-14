@@ -69,6 +69,20 @@ export type AssetFees = {
   fees: number;
 };
 
+export type AssetFeePositionInput = {
+  assetId: string;
+  costBasis: number;
+  totalReturn: number;
+};
+
+export type EnrichedAssetFees = AssetFees & {
+  feesToCapitalRatio: number | null;
+  feesToGainRatio: number | null;
+};
+
+/** Ignore floating-point residue left on closed positions (e.g. 1e-15 EUR). */
+const MIN_MEANINGFUL_COST_BASIS = 1e-6;
+
 export function feesByAsset(
   transactions: Transaction[],
   assets: Asset[],
@@ -88,6 +102,26 @@ export function feesByAsset(
       fees,
     }))
     .sort((a, b) => b.fees - a.fees);
+}
+
+export function enrichAssetFeeRows(
+  assetFees: AssetFees[],
+  positions: AssetFeePositionInput[],
+): EnrichedAssetFees[] {
+  const byId = new Map(positions.map((p) => [p.assetId, p]));
+
+  return assetFees.map((row) => {
+    const position = byId.get(row.assetId);
+    const costBasis = position?.costBasis ?? 0;
+    return {
+      ...row,
+      feesToCapitalRatio:
+        costBasis > MIN_MEANINGFUL_COST_BASIS
+          ? ratioOrNull(row.fees, costBasis)
+          : null,
+      feesToGainRatio: ratioOrNull(row.fees, position?.totalReturn ?? 0),
+    };
+  });
 }
 
 export type AccountFees = {
@@ -197,4 +231,31 @@ export function estimatedAnnualTer(
 export function feeRatio(totalFees: number, netInvested: number): number {
   if (netInvested <= 0) return 0;
   return totalFees / netInvested;
+}
+
+function ratioOrNull(numerator: number, denominator: number): number | null {
+  if (denominator <= 0) return null;
+  return numerator / denominator;
+}
+
+export function annualFeeDrag(
+  ytdFees: number,
+  netInvested: number,
+): number | null {
+  return ratioOrNull(ytdFees, netInvested);
+}
+
+export function allInAnnualCost(
+  ytdFees: number,
+  terAnnual: number,
+  netInvested: number,
+): number | null {
+  return ratioOrNull(ytdFees + terAnnual, netInvested);
+}
+
+export function feesToGainRatio(
+  totalFees: number,
+  totalReturn: number,
+): number | null {
+  return ratioOrNull(totalFees, totalReturn);
 }
