@@ -162,7 +162,7 @@ export function DrawdownBadge({
   value: number;
   className?: string;
 }) {
-  const status = assessRiskMetricStatus("drawdown", value) as DrawdownStatus;
+  const status = assessRiskMetricStatus("drawdown", value);
   return (
     <StatusBadge
       title="Pire chute"
@@ -222,30 +222,16 @@ export function RiskBadges({
         <StatusBadge
           title="Oscillations"
           value={volatility === null ? "—" : formatPercent(volatility)}
-          statusWord={
-            volStatus === null
-              ? null
-              : VOL_LABEL[volStatus as VolatilityStatus]
-          }
-          tone={
-            volStatus === null
-              ? "muted"
-              : VOL_TONE[volStatus as VolatilityStatus]
-          }
+          statusWord={volStatus === null ? null : VOL_LABEL[volStatus]}
+          tone={volStatus === null ? "muted" : VOL_TONE[volStatus]}
         />
         <StatusBadge
           title="Rendement / risque"
           value={sharpe === null ? "—" : sharpe.toFixed(2)}
           statusWord={
-            sharpeStatus === null
-              ? null
-              : SHARPE_LABEL[sharpeStatus as SharpeStatus]
+            sharpeStatus === null ? null : SHARPE_LABEL[sharpeStatus]
           }
-          tone={
-            sharpeStatus === null
-              ? "muted"
-              : SHARPE_TONE[sharpeStatus as SharpeStatus]
-          }
+          tone={sharpeStatus === null ? "muted" : SHARPE_TONE[sharpeStatus]}
         />
         <DrawdownBadge value={drawdown} />
       </div>

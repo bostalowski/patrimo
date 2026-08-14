@@ -136,3 +136,17 @@ export function latestManualPrice(
   }
   return latest?.price ?? null;
 }
+
+export function manualPricesToPriceStore(
+  manualPrices: ManualPrice[],
+): Record<string, Record<string, number>> {
+  const store: Record<string, Record<string, number>> = {};
+  for (const entry of manualPrices) {
+    const dateKey = entry.date.toISOString().slice(0, 10);
+    store[entry.assetId] = {
+      ...(store[entry.assetId] ?? {}),
+      [dateKey]: entry.price,
+    };
+  }
+  return store;
+}

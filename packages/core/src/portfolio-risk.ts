@@ -83,6 +83,18 @@ function statusForTop1(top1Weight: number): ConcentrationStatus {
 }
 
 export function assessRiskMetricStatus(
+  kind: "volatility",
+  value: number | null,
+): VolatilityStatus | null;
+export function assessRiskMetricStatus(
+  kind: "sharpe",
+  value: number | null,
+): SharpeStatus | null;
+export function assessRiskMetricStatus(
+  kind: "drawdown",
+  value: number | null,
+): DrawdownStatus | null;
+export function assessRiskMetricStatus(
   kind: RiskMetricKind,
   value: number | null,
 ): RiskMetricStatus | null {

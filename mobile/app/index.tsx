@@ -4,7 +4,6 @@ import { buildPortfolio, computeNetWorth } from "@patrimo/core/portfolio";
 import {
   aggregateHistory,
   buildHistorySeries,
-  type PriceStore,
 } from "@patrimo/core/portfolio-history";
 import {
   annualizedVolatility,
@@ -15,23 +14,11 @@ import { summarizeBudget } from "@patrimo/core/budget";
 import { computeEmergencyFundHealth, sumLivretMarketValue } from "@patrimo/core/emergency-fund";
 import { computeConcentration } from "@patrimo/core/portfolio-risk";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
-import type { ManualPrice } from "@patrimo/core/schema";
+import { manualPricesToPriceStore } from "@patrimo/core/manual-prices";
 import { ConcentrationSummary } from "../lib/concentration-summary";
 import { EmergencyFundCard } from "../lib/emergency-fund-card";
 import { RiskBadges } from "../lib/risk-badges";
 import { useThemeColors, shared } from "../lib/theme";
-
-function manualPricesToPriceStore(manualPrices: ManualPrice[]): PriceStore {
-  const store: PriceStore = {};
-  for (const entry of manualPrices) {
-    const dateKey = entry.date.toISOString().slice(0, 10);
-    store[entry.assetId] = {
-      ...(store[entry.assetId] ?? {}),
-      [dateKey]: entry.price,
-    };
-  }
-  return store;
-}
 
 export default function DashboardScreen() {
   const isDark = useColorScheme() === "dark";

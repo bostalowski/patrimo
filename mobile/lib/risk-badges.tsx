@@ -8,10 +8,18 @@ import {
 import { formatPercent, formatPercentCompact } from "@patrimo/core/format";
 import { shared, type Theme } from "./theme";
 
+type Tone = "green" | "yellow" | "red" | "muted";
+
 const VOL_LABEL: Record<VolatilityStatus, string> = {
   low: "faibles",
   moderate: "normales",
   high: "élevées",
+};
+
+const VOL_TONE: Record<VolatilityStatus, Tone> = {
+  low: "green",
+  moderate: "yellow",
+  high: "red",
 };
 
 const SHARPE_LABEL: Record<SharpeStatus, string> = {
@@ -20,16 +28,25 @@ const SHARPE_LABEL: Record<SharpeStatus, string> = {
   weak: "faible",
 };
 
+const SHARPE_TONE: Record<SharpeStatus, Tone> = {
+  strong: "green",
+  acceptable: "yellow",
+  weak: "red",
+};
+
 const DRAWDOWN_LABEL: Record<DrawdownStatus, string> = {
   mild: "légère",
   marked: "marquée",
   severe: "sévère",
 };
 
-function toneColor(
-  tone: "green" | "yellow" | "red" | "muted",
-  theme: Theme,
-): string {
+const DRAWDOWN_TONE: Record<DrawdownStatus, Tone> = {
+  mild: "green",
+  marked: "yellow",
+  severe: "red",
+};
+
+function toneColor(tone: Tone, theme: Theme): string {
   switch (tone) {
     case "green":
       return theme.success;
@@ -52,7 +69,7 @@ function MetricLine({
   title: string;
   value: string;
   statusWord: string | null;
-  tone: "green" | "yellow" | "red" | "muted";
+  tone: Tone;
   theme: Theme;
 }) {
   const color = toneColor(tone, t);
@@ -82,10 +99,7 @@ export function RiskBadges({
 }) {
   const volStatus = assessRiskMetricStatus("volatility", volatility);
   const sharpeStatus = assessRiskMetricStatus("sharpe", sharpe);
-  const drawdownStatus = assessRiskMetricStatus(
-    "drawdown",
-    drawdown,
-  ) as DrawdownStatus;
+  const drawdownStatus = assessRiskMetricStatus("drawdown", drawdown);
 
   return (
     <View style={[shared.card, { backgroundColor: t.card, marginBottom: 24 }]}>
@@ -95,50 +109,22 @@ export function RiskBadges({
       <MetricLine
         title="Oscillations"
         value={volatility === null ? "—" : formatPercent(volatility)}
-        statusWord={
-          volStatus === null ? null : VOL_LABEL[volStatus as VolatilityStatus]
-        }
-        tone={
-          volStatus === null
-            ? "muted"
-            : volStatus === "low"
-              ? "green"
-              : volStatus === "moderate"
-                ? "yellow"
-                : "red"
-        }
+        statusWord={volStatus === null ? null : VOL_LABEL[volStatus]}
+        tone={volStatus === null ? "muted" : VOL_TONE[volStatus]}
         theme={t}
       />
       <MetricLine
         title="Rendement / risque"
         value={sharpe === null ? "—" : sharpe.toFixed(2)}
-        statusWord={
-          sharpeStatus === null
-            ? null
-            : SHARPE_LABEL[sharpeStatus as SharpeStatus]
-        }
-        tone={
-          sharpeStatus === null
-            ? "muted"
-            : sharpeStatus === "strong"
-              ? "green"
-              : sharpeStatus === "acceptable"
-                ? "yellow"
-                : "red"
-        }
+        statusWord={sharpeStatus === null ? null : SHARPE_LABEL[sharpeStatus]}
+        tone={sharpeStatus === null ? "muted" : SHARPE_TONE[sharpeStatus]}
         theme={t}
       />
       <MetricLine
         title="Pire chute"
         value={formatPercentCompact(drawdown)}
         statusWord={DRAWDOWN_LABEL[drawdownStatus]}
-        tone={
-          drawdownStatus === "mild"
-            ? "green"
-            : drawdownStatus === "marked"
-              ? "yellow"
-              : "red"
-        }
+        tone={DRAWDOWN_TONE[drawdownStatus]}
         theme={t}
       />
       <Text style={{ color: t.textMuted, fontSize: 11, marginTop: 4 }}>
