@@ -179,6 +179,7 @@ describe("/api/prices/manual", () => {
     expect(excel.replaceWorkbook).toHaveBeenCalledWith({
       ...workbook(),
       manualPrices: [],
+    geographicAllocations: [],
     });
   });
 

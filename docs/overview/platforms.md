@@ -35,6 +35,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | Benchmarks | Present | Absent |
 | Emergency fund health | Present | Present |
 | Portfolio readable risk badges | Present | Present |
+| Geographic allocation | Absent — planned (`feat/geographic-allocation`) | Absent — planned (same) |
 
 ## Shared versus platform-owned
 

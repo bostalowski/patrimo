@@ -27,6 +27,7 @@
     "./retraite": "./src/retraite.ts",
     "./deletion": "./src/deletion.ts",
     "./manual-prices": "./src/manual-prices.ts",
+    "./geographic-allocation": "./src/geographic-allocation.ts",
     "./realestate/loan": "./src/realestate/loan.ts",
     "./realestate/property": "./src/realestate/property.ts",
     "./realestate/tax": "./src/realestate/tax.ts",

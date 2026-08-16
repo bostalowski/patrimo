@@ -221,6 +221,19 @@ export const ManualPrice = z.object({
 });
 export type ManualPrice = z.infer<typeof ManualPrice>;
 
+export const GeographicAllocationSource = z.enum(["justetf", "manual"]);
+export type GeographicAllocationSource = z.infer<
+  typeof GeographicAllocationSource
+>;
+
+export const GeographicAllocation = z.object({
+  assetId: z.string().min(1),
+  country: z.string().min(1),
+  weight: z.number().min(0).max(1),
+  source: GeographicAllocationSource,
+});
+export type GeographicAllocation = z.infer<typeof GeographicAllocation>;
+
 export type Workbook = {
   transactions: Transaction[];
   assets: Asset[];
@@ -229,4 +242,5 @@ export type Workbook = {
   properties: Property[];
   dca: DcaConfig[];
   manualPrices: ManualPrice[];
+  geographicAllocations: GeographicAllocation[];
 };

@@ -49,6 +49,7 @@ function workbook(overrides: Partial<ManualPriceWorkbook> = {}): ManualPriceWork
     properties: [],
     dca: [],
     manualPrices: [],
+    geographicAllocations: [],
     ...overrides,
   };
 }
