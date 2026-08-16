@@ -2,13 +2,10 @@
 
 Ordered vertical scopes and test strategy for geographic allocation (web + mobile).
 
-> 🚧 Increment scopes 7–9 are Phase 1.5 drafts — confirm after implementation. See [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md).
-
 ## Prerequisites
 
-- Spec: [ADR 0008](../adr/0008-geographic-allocation.md) (accepted), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md) (proposed)
+- Spec: [ADR 0008](../adr/0008-geographic-allocation.md) (accepted), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md) (accepted)
 - Branch: `feat/account-detail-and-mobile-justetf`
-- Phase 0 checklist (ADR 0009): account detail + mobile JustETF cases
 
 ## Increment plan
 
@@ -48,23 +45,23 @@ Replace finance-region donuts on web geo surfaces with choropleth + country list
 
 Tests: `src/components/geographic-exposure-panel.test.tsx`.
 
-### Scope 7 — Account detail surface (planned)
+### Scope 7 — Account detail surface (done)
 
 Web `/comptes/[id]` and mobile account-detail: positions + account geo (dual country/region views); strip full geo from accounts lists; list navigates to detail (mobile: detail → edit-account for metadata).
 
-Tests: web comptes list/detail UI tests; `mobile/lib/geographic-ui.test.tsx` (accounts list + detail).
+Tests: `src/app/comptes/comptes-account-detail.test.tsx`; `mobile/lib/geographic-ui.test.tsx`.
 
-### Scope 8 — Shared JustETF parse + mobile sync (planned)
+### Scope 8 — Shared JustETF parse + mobile sync (done)
 
-Move parse + `applyJustEtfGeographicSync` into `@patrimo/core`; web API route keeps fetch only; mobile edit-asset gains JustETF / restore actions when ISIN present; soft-fail on fetch/parse failure.
+Parse + `applyJustEtfGeographicSync` in `@patrimo/core`; web API route keeps fetch only; mobile edit-asset gains JustETF / restore actions when ISIN present; soft-fail on fetch/parse failure.
 
-Tests: core JustETF geography tests (moved); mobile geographic UI sync cases.
+Tests: `packages/core/src/justetf-geography.test.ts`; `src/app/api/geography/sync/route.test.ts`; mobile geographic UI sync cases.
 
-### Scope 9 — Region-level allocations + dual views + guided pickers (planned)
+### Scope 9 — Region-level allocations + dual views + guided pickers (done)
 
-Core: accept homogeneous region keys in `Pays`; country vs region aggregation rules; reject mixed rows. UI (web + mobile): mode countries|regions; closed region list; searchable country picker with French labels; show country and region breakdowns on geo surfaces.
+Core: homogeneous region keys; country vs region aggregation. UI: mode countries|regions; closed region list; searchable/selectable country picker; dual breakdowns on geo surfaces.
 
-Tests: core allocation/aggregation for region rows; web + mobile guided entry and dual-view UI tests.
+Tests: `src/lib/geographic-region-allocation.test.ts`; web + mobile geographic UI picker/dual-view cases.
 
 ## Test strategy
 

@@ -10,6 +10,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { geographicCountryLabel } from "@/lib/geographic-country-label";
+import {
+  geographicCountryOptions,
+  geographicRegionOptions,
+} from "@/lib/geographic-key-options";
 import { formatEuro, formatPercent } from "@/lib/utils";
 import type { GeographicAllocation } from "@patrimo/core/schema";
 import {
@@ -107,6 +111,7 @@ export function AssetGeographicSection({
   assetLabel,
   hasIsin,
   allocations,
+  regions = [],
   countries,
 }: {
   assetId: string;
@@ -117,6 +122,21 @@ export function AssetGeographicSection({
   countries: GeographicSlice[];
 }) {
   const router = useRouter();
+  const initialMode =
+    allocations.length > 0 &&
+    allocations.every(
+      (row) =>
+        row.country === "OTHER" ||
+        [
+          "NORTH_AMERICA",
+          "EUROPE",
+          "ASIA_PACIFIC",
+          "EMERGING",
+        ].includes(row.country),
+    )
+      ? "regions"
+      : "countries";
+  const [mode, setMode] = useState<"countries" | "regions">(initialMode);
   const [draft, setDraft] = useState(
     allocations.length > 0
       ? allocations.map((row) => ({
@@ -195,7 +215,7 @@ export function AssetGeographicSection({
             Aucune répartition géographique renseignée pour {assetLabel}.
           </p>
         ) : (
-          <ExposureBody countries={countries} />
+          <ExposureBody countries={countries} regions={regions} />
         )}
         {hasIsin && (
           <div className="flex flex-wrap gap-2">
@@ -222,6 +242,11 @@ export function AssetGeographicSection({
           </div>
         )}
         <ManualWeightEditor
+          mode={mode}
+          onModeChange={(nextMode) => {
+            setMode(nextMode);
+            setDraft([{ country: "", weightPercent: "" }]);
+          }}
           draft={draft}
           onChange={setDraft}
           onSave={() => void saveManual()}
@@ -234,33 +259,67 @@ export function AssetGeographicSection({
 }
 
 function ManualWeightEditor({
+  mode,
+  onModeChange,
   draft,
   onChange,
   onSave,
   pending,
   error,
 }: {
+  mode: "countries" | "regions";
+  onModeChange: (mode: "countries" | "regions") => void;
   draft: Array<{ country: string; weightPercent: string }>;
   onChange: (next: Array<{ country: string; weightPercent: string }>) => void;
   onSave: () => void;
   pending: boolean;
   error: string | null;
 }) {
+  const keyOptions =
+    mode === "regions"
+      ? geographicRegionOptions()
+      : geographicCountryOptions();
+
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium">Saisie manuelle (pays ISO + %)</p>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className={mode === "countries" ? primaryButton : secondaryButton}
+          onClick={() => onModeChange("countries")}
+        >
+          Pays
+        </button>
+        <button
+          type="button"
+          className={mode === "regions" ? primaryButton : secondaryButton}
+          onClick={() => onModeChange("regions")}
+        >
+          Régions
+        </button>
+      </div>
+      <p className="text-sm font-medium">
+        Saisie manuelle ({mode === "regions" ? "régions" : "pays"} + %)
+      </p>
       {draft.map((row, index) => (
         <div key={index} className="flex gap-2">
-          <input
-            className="w-24 rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="US"
+          <select
+            aria-label={`Clé géographique ${index + 1}`}
+            className="min-w-0 flex-1 rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             value={row.country}
             onChange={(event) => {
               const next = [...draft];
               next[index] = { ...row, country: event.target.value };
               onChange(next);
             }}
-          />
+          >
+            <option value="">Choisir…</option>
+            {keyOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <input
             className="w-24 rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             placeholder="70"

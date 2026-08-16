@@ -8,6 +8,14 @@ export type GeographicRegion =
   | "EMERGING"
   | "OTHER";
 
+export const PRODUCT_GEOGRAPHIC_REGIONS: GeographicRegion[] = [
+  "NORTH_AMERICA",
+  "EUROPE",
+  "ASIA_PACIFIC",
+  "EMERGING",
+  "OTHER",
+];
+
 export const GEOGRAPHIC_REGION_LABELS: Record<GeographicRegion, string> = {
   NORTH_AMERICA: "Amérique du Nord",
   EUROPE: "Europe",
@@ -15,6 +23,56 @@ export const GEOGRAPHIC_REGION_LABELS: Record<GeographicRegion, string> = {
   EMERGING: "Marchés émergents",
   OTHER: "Autre",
 };
+
+export function isGeographicRegionKey(key: string): boolean {
+  const normalized = key.trim().toUpperCase();
+  return (PRODUCT_GEOGRAPHIC_REGIONS as string[]).includes(normalized);
+}
+
+export function isIsoCountryKey(key: string): boolean {
+  const normalized = key.trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(normalized);
+}
+
+export type GeographicAllocationGranularity = "country" | "region";
+
+export function geographicAllocationGranularity(
+  keys: string[],
+): GeographicAllocationGranularity {
+  let hasCountry = false;
+  let hasNamedRegion = false;
+  let hasOther = false;
+
+  for (const raw of keys) {
+    const key = raw.trim().toUpperCase();
+    if (!key) {
+      throw new Error("Geographic allocation country is required");
+    }
+    if (key === "OTHER") {
+      hasOther = true;
+      continue;
+    }
+    if (isGeographicRegionKey(key)) {
+      hasNamedRegion = true;
+      continue;
+    }
+    if (isIsoCountryKey(key)) {
+      hasCountry = true;
+      continue;
+    }
+    throw new Error(`Invalid geographic allocation key: ${raw}`);
+  }
+
+  if (hasCountry && hasNamedRegion) {
+    throw new Error(
+      "Geographic allocation cannot mix country and region keys",
+    );
+  }
+  if (hasNamedRegion) return "region";
+  if (hasCountry) return "country";
+  if (hasOther) return "region";
+  throw new Error("Geographic allocation country is required");
+}
 
 export function regionLabel(key: string): string {
   return GEOGRAPHIC_REGION_LABELS[key as GeographicRegion] ?? key;
@@ -171,36 +229,68 @@ export function aggregateGeographicExposure(
 ): GeographicExposure {
   const byAsset = allocationsByAsset(allocations);
   const countryTotals = new Map<string, number>();
-  let coveredMarketValue = 0;
+  const regionTotals = new Map<string, number>();
+  let countryCoveredMarketValue = 0;
+  let regionCoveredMarketValue = 0;
 
   for (const position of positions) {
     if (!(position.marketValue > 0)) continue;
     const rows = byAsset.get(position.assetId);
     if (!rows || !isValidAllocation(rows)) continue;
 
+    let granularity: GeographicAllocationGranularity;
+    try {
+      granularity = geographicAllocationGranularity(
+        rows.map((row) => row.country),
+      );
+    } catch {
+      continue;
+    }
+
+    if (granularity === "region") {
+      const regionWeights = rows
+        .map((row) => ({
+          country: row.country.trim().toUpperCase(),
+          weight: row.weight,
+        }))
+        .filter((row) => row.weight > 0);
+      const sum = regionWeights.reduce((total, row) => total + row.weight, 0);
+      if (sum <= 0) continue;
+
+      regionCoveredMarketValue += position.marketValue;
+      for (const row of regionWeights) {
+        const contribution = position.marketValue * (row.weight / sum);
+        regionTotals.set(
+          row.country,
+          (regionTotals.get(row.country) ?? 0) + contribution,
+        );
+      }
+      continue;
+    }
+
     const lookThrough = lookThroughRows(rows);
     if (lookThrough.length === 0) continue;
 
-    coveredMarketValue += position.marketValue;
+    countryCoveredMarketValue += position.marketValue;
+    regionCoveredMarketValue += position.marketValue;
     for (const row of lookThrough) {
       const contribution = position.marketValue * row.weight;
       countryTotals.set(
         row.country,
         (countryTotals.get(row.country) ?? 0) + contribution,
       );
+      const region = regionForCountry(row.country);
+      regionTotals.set(region, (regionTotals.get(region) ?? 0) + contribution);
     }
   }
 
-  const regionTotals = new Map<string, number>();
-  for (const [country, marketValue] of countryTotals) {
-    const region = regionForCountry(country);
-    regionTotals.set(region, (regionTotals.get(region) ?? 0) + marketValue);
-  }
-
   return {
-    coveredMarketValue,
-    countries: toSortedSlices(countryTotals, coveredMarketValue),
-    regions: toSortedSlices(regionTotals, coveredMarketValue),
+    coveredMarketValue: Math.max(
+      countryCoveredMarketValue,
+      regionCoveredMarketValue,
+    ),
+    countries: toSortedSlices(countryTotals, countryCoveredMarketValue),
+    regions: toSortedSlices(regionTotals, regionCoveredMarketValue),
   };
 }
 

@@ -4,6 +4,7 @@ import type {
   GeographicAllocationSource,
   Workbook,
 } from "./schema";
+import { geographicAllocationGranularity } from "./geographic-exposure";
 
 export const GEOGRAPHIC_WEIGHT_SUM_TOLERANCE = 1e-3;
 
@@ -21,6 +22,8 @@ function assertValidWeightRows(
   if (weights.length === 0) {
     throw new Error("Geographic allocation weights cannot be empty");
   }
+
+  geographicAllocationGranularity(weights.map((row) => row.country));
 
   let sum = 0;
   for (const row of weights) {

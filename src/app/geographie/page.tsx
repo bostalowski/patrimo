@@ -37,6 +37,7 @@ export default async function GeographyPage() {
       <GeographicExposurePanel
         title="Répartition géographique"
         countries={exposure.countries}
+        regions={exposure.regions}
       />
     </div>
   );

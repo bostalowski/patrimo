@@ -1,6 +1,6 @@
 # ADR 0009: Account detail, region allocations, and mobile JustETF
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-16
 - implementation_ready: yes
 - Amends: [ADR 0008](0008-geographic-allocation.md) (account geo placement; JustETF platform scope; shared JustETF parse; region-level manual allocations; dual country/region views)

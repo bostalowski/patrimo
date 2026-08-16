@@ -15,7 +15,6 @@ import {
 } from "@patrimo/core/deletion";
 import {
   aggregateGeographicExposureForAccount,
-  regionLabel,
 } from "@patrimo/core/geographic-exposure";
 import { useThemeColors, shared } from "../lib/theme";
 import { GeographicExposureList } from "../components/geographic-exposure-list";
@@ -136,39 +135,6 @@ export default function AccountDetailScreen() {
             regions={accountGeo.regions}
             colors={t}
           />
-          {accountGeo.regions.length > 0 && (
-            <View style={{ marginTop: 12 }}>
-              <Text
-                style={{
-                  color: t.text,
-                  fontSize: 14,
-                  fontWeight: "600",
-                  marginBottom: 8,
-                }}
-              >
-                Régions
-              </Text>
-              {accountGeo.regions.map((slice, index) => (
-                <View
-                  key={slice.key}
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    paddingVertical: 8,
-                    borderTopWidth: index > 0 ? 1 : 0,
-                    borderTopColor: t.cardBorder,
-                  }}
-                >
-                  <Text style={{ color: t.text, fontSize: 13 }}>
-                    {regionLabel(slice.key)}
-                  </Text>
-                  <Text style={{ color: t.textSecondary, fontSize: 13 }}>
-                    {formatEuro(slice.marketValue)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
         </View>
 
         <View style={[shared.card, { backgroundColor: t.card }]}>

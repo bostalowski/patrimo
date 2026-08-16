@@ -1,8 +1,6 @@
 # Geographic allocation
 
-> 🚧 Mechanics draft (Phase 1.5) for account detail, dual country/region views, guided manual entry, and mobile JustETF — confirm after implementation. Governing decisions: [ADR 0008](../adr/0008-geographic-allocation.md), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md).
-
-How Patrimo stores look-through geographic weights and aggregates them into portfolio, account, and asset views.
+How Patrimo stores look-through geographic weights and aggregates them into portfolio, account, and asset views. Decisions: [ADR 0008](../adr/0008-geographic-allocation.md), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md).
 
 ## Intent
 

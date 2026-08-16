@@ -174,6 +174,7 @@ export default async function AssetDetailPage({
         assetLabel={asset.label}
         hasIsin={Boolean(asset.isin)}
         allocations={assetAllocations}
+        regions={assetGeo.regions}
         countries={assetGeo.countries}
       />
 

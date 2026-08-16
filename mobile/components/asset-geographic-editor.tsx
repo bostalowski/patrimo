@@ -9,6 +9,10 @@ import {
 import type { GeographicAllocation } from "@patrimo/core/schema";
 import type { GeographicSlice } from "@patrimo/core/geographic-exposure";
 import { GeographicExposureList } from "./geographic-exposure-list";
+import {
+  geographicCountryOptions,
+  geographicRegionOptions,
+} from "../lib/geographic-key-options";
 
 export function AssetGeographicEditor({
   assetLabel,
@@ -40,6 +44,22 @@ export function AssetGeographicEditor({
   onSyncJustEtf?: (options: { restore: boolean }) => Promise<{ ok: boolean }>;
   pending: boolean;
 }) {
+  const initialMode =
+    allocations.length > 0 &&
+    allocations.every(
+      (row) =>
+        row.country === "OTHER" ||
+        [
+          "NORTH_AMERICA",
+          "EUROPE",
+          "ASIA_PACIFIC",
+          "EMERGING",
+        ].includes(row.country),
+    )
+      ? "regions"
+      : "countries";
+  const [mode, setMode] = useState<"countries" | "regions">(initialMode);
+  const [countryQuery, setCountryQuery] = useState("");
   const [draft, setDraft] = useState(
     allocations.length > 0
       ? allocations.map((row) => ({
@@ -56,6 +76,16 @@ export function AssetGeographicEditor({
     draftRef.current = next;
     setDraft(next);
   };
+
+  const regionOptions = geographicRegionOptions();
+  const countryOptions = geographicCountryOptions().filter((option) => {
+    if (!countryQuery.trim()) return option.value === "US" || option.value === "FR" || option.value === "OTHER";
+    const query = countryQuery.trim().toLowerCase();
+    return (
+      option.value.toLowerCase().includes(query) ||
+      option.label.toLowerCase().includes(query)
+    );
+  }).slice(0, 30);
 
   const save = async () => {
     const weights = draftRef.current
@@ -158,32 +188,122 @@ export function AssetGeographicEditor({
         </View>
       )}
 
-      <Text style={{ color: colors.text, fontSize: 14, fontWeight: "600" }}>
-        Saisie manuelle (pays ISO + %)
-      </Text>
-      {draft.map((row, index) => (
-        <View key={index} style={{ flexDirection: "row", gap: 8 }}>
-          <TextInput
-            accessibilityLabel={`Pays géographique ${index + 1}`}
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <TouchableOpacity
+          accessibilityLabel="Mode saisie pays"
+          onPress={() => {
+            setMode("countries");
+            updateDraft([{ country: "", weightPercent: "" }]);
+          }}
+          style={{
+            backgroundColor:
+              mode === "countries" ? colors.accentBg : "transparent",
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            borderRadius: 8,
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+          }}
+        >
+          <Text
             style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: colors.cardBorder,
-              borderRadius: 8,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              color: colors.text,
+              color: mode === "countries" ? "#fff" : colors.text,
+              fontWeight: "600",
+              fontSize: 13,
             }}
-            value={row.country}
-            onChangeText={(value) => {
-              const next = [...draftRef.current];
-              next[index] = { ...next[index], country: value };
-              updateDraft(next);
+          >
+            Pays
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityLabel="Mode saisie régions"
+          onPress={() => {
+            setMode("regions");
+            updateDraft([{ country: "", weightPercent: "" }]);
+          }}
+          style={{
+            backgroundColor:
+              mode === "regions" ? colors.accentBg : "transparent",
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            borderRadius: 8,
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+          }}
+        >
+          <Text
+            style={{
+              color: mode === "regions" ? "#fff" : colors.text,
+              fontWeight: "600",
+              fontSize: 13,
             }}
-            placeholder="US"
-            placeholderTextColor={colors.textMuted}
-            autoCapitalize="characters"
-          />
+          >
+            Régions
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={{ color: colors.text, fontSize: 14, fontWeight: "600" }}>
+        Saisie manuelle ({mode === "regions" ? "régions" : "pays"} + %)
+      </Text>
+      {mode === "countries" && (
+        <TextInput
+          accessibilityLabel="Rechercher un pays"
+          style={{
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            borderRadius: 8,
+            paddingHorizontal: 10,
+            paddingVertical: 8,
+            color: colors.text,
+          }}
+          value={countryQuery}
+          onChangeText={setCountryQuery}
+          placeholder="Rechercher un pays…"
+          placeholderTextColor={colors.textMuted}
+        />
+      )}
+      {draft.map((row, index) => (
+        <View key={index} style={{ gap: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {(mode === "regions" ? regionOptions : countryOptions).map(
+              (option) => {
+                const selected = row.country === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    accessibilityLabel={`Clé géographique ${index + 1} ${option.label}`}
+                    onPress={() => {
+                      const next = [...draftRef.current];
+                      next[index] = { ...next[index], country: option.value };
+                      updateDraft(next);
+                    }}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: selected
+                        ? colors.accentBg
+                        : colors.cardBorder,
+                      backgroundColor: selected
+                        ? colors.accentBg
+                        : "transparent",
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      paddingVertical: 6,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: selected ? "#fff" : colors.text,
+                        fontSize: 12,
+                      }}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              },
+            )}
+          </View>
           <TextInput
             accessibilityLabel={`Poids géographique ${index + 1}`}
             style={{

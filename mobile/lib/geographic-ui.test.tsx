@@ -169,6 +169,8 @@ describe("mobile geographic UI", () => {
     );
     expect(findByText(renderer, /États-Unis/i).length).toBeGreaterThan(0);
     expect(findByText(renderer, /Japon/i).length).toBeGreaterThan(0);
+    expect(findByText(renderer, /Amérique du Nord/i).length).toBeGreaterThan(0);
+    expect(findByText(renderer, /Asie-Pacifique/i).length).toBeGreaterThan(0);
   });
 
   it("mobile asset screen shows empty state without allocation and can save manual weights", async () => {
@@ -200,16 +202,18 @@ describe("mobile geographic UI", () => {
       findByText(renderer, /Aucune répartition géographique/i).length,
     ).toBeGreaterThan(0);
 
-    const countryInput = renderer.root.find(
+    const countryChoice = renderer.root.find(
       (node) =>
-        node.props.accessibilityLabel === "Pays géographique 1",
+        typeof node.props.accessibilityLabel === "string" &&
+        node.props.accessibilityLabel.startsWith("Clé géographique 1") &&
+        node.props.accessibilityLabel.includes("États-Unis"),
     );
     const weightInput = renderer.root.find(
       (node) =>
         node.props.accessibilityLabel === "Poids géographique 1",
     );
     act(() => {
-      countryInput.props.onChangeText("US");
+      countryChoice.props.onPress();
       weightInput.props.onChangeText("100");
     });
 
@@ -441,6 +445,56 @@ describe("mobile geographic UI", () => {
     expect(mocks.syncJustEtf).toHaveBeenCalledWith({ restore: false });
     expect(Alert.alert).toHaveBeenCalled();
     expect(mocks.replaceGeographic).not.toHaveBeenCalled();
+  });
+
+  it("mobile manual entry offers the same guided countries|regions pickers", () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        <AssetGeographicEditor
+          assetId="btc"
+          assetLabel="Bitcoin"
+          hasIsin={false}
+          allocations={[]}
+          regions={[]}
+          countries={[]}
+          colors={{
+            text: "#000",
+            textSecondary: "#666",
+            textMuted: "#999",
+            cardBorder: "#ddd",
+            accentBg: "#111",
+          }}
+          onSave={mocks.replaceGeographic}
+          pending={false}
+        />,
+      );
+    });
+
+    expect(
+      renderer.root.findAll(
+        (node) => node.props.accessibilityLabel === "Mode saisie pays",
+      ).length,
+    ).toBe(1);
+    expect(
+      renderer.root.findAll(
+        (node) => node.props.accessibilityLabel === "Mode saisie régions",
+      ).length,
+    ).toBe(1);
+
+    act(() => {
+      renderer.root.find(
+        (node) => node.props.accessibilityLabel === "Mode saisie régions",
+      ).props.onPress();
+    });
+
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          typeof node.props.accessibilityLabel === "string" &&
+          node.props.accessibilityLabel.includes("Amérique du Nord"),
+      ).length,
+    ).toBeGreaterThan(0);
   });
 
   it("mobile accounts list does not render per-account geographic exposure lists", () => {
