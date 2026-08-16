@@ -1,6 +1,7 @@
 import {
   applyFetchedGeographicAllocation,
 } from "@patrimo/core/geographic-allocation";
+import { lookThroughCountryWeights } from "@patrimo/core/geographic-exposure";
 import type { Workbook } from "@patrimo/core/schema";
 
 export type JustEtfCountryWeight = {
@@ -142,7 +143,7 @@ export async function applyJustEtfGeographicSync(
 
   try {
     const html = await options.fetchHtml(asset.isin);
-    const weights = parseJustEtfCountryWeights(html);
+    const weights = lookThroughCountryWeights(parseJustEtfCountryWeights(html));
     if (weights.length === 0) {
       return { workbook, ok: false };
     }

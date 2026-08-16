@@ -123,6 +123,31 @@ function isValidAllocation(rows: GeographicAllocation[]): boolean {
   return Math.abs(sum - 1) <= GEOGRAPHIC_WEIGHT_SUM_TOLERANCE;
 }
 
+function lookThroughRows(
+  rows: GeographicAllocation[],
+): Array<{ country: string; weight: number }> {
+  return lookThroughCountryWeights(rows);
+}
+
+export function lookThroughCountryWeights(
+  weights: Array<{ country: string; weight: number }>,
+): Array<{ country: string; weight: number }> {
+  const known = weights
+    .map((row) => ({
+      country: row.country.trim().toUpperCase(),
+      weight: row.weight,
+    }))
+    .filter((row) => row.country && row.country !== "OTHER" && row.weight > 0);
+
+  const sum = known.reduce((total, row) => total + row.weight, 0);
+  if (sum <= 0) return [];
+
+  return known.map((row) => ({
+    country: row.country,
+    weight: Math.round((row.weight / sum) * 1e6) / 1e6,
+  }));
+}
+
 function toSortedSlices(
   totals: Map<string, number>,
   coveredMarketValue: number,
@@ -153,13 +178,15 @@ export function aggregateGeographicExposure(
     const rows = byAsset.get(position.assetId);
     if (!rows || !isValidAllocation(rows)) continue;
 
+    const lookThrough = lookThroughRows(rows);
+    if (lookThrough.length === 0) continue;
+
     coveredMarketValue += position.marketValue;
-    for (const row of rows) {
-      const country = row.country.trim().toUpperCase();
+    for (const row of lookThrough) {
       const contribution = position.marketValue * row.weight;
       countryTotals.set(
-        country,
-        (countryTotals.get(country) ?? 0) + contribution,
+        row.country,
+        (countryTotals.get(row.country) ?? 0) + contribution,
       );
     }
   }

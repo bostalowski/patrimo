@@ -116,9 +116,9 @@ function requireApply(): NonNullable<GeoApi["applyFetchedGeographicAllocation"]>
 }
 
 describe("JustETF geographic sync", () => {
-  it("maps a JustETF fixture to ISO country weights and writes source=justetf", () => {
-    const weights = parseJustEtfCountryWeights(JUSTETF_COUNTRIES_FIXTURE);
-    expect(weights).toEqual([
+  it("maps a JustETF fixture to ISO country weights and writes source=justetf", async () => {
+    const parsed = parseJustEtfCountryWeights(JUSTETF_COUNTRIES_FIXTURE);
+    expect(parsed).toEqual([
       { country: "US", weight: 0.7032 },
       { country: "JP", weight: 0.0571 },
       { country: "GB", weight: 0.0359 },
@@ -126,17 +126,22 @@ describe("JustETF geographic sync", () => {
       { country: "OTHER", weight: 0.1708 },
     ]);
 
-    const apply = requireApply();
-    const result = apply(workbook(), "world", weights);
+    const result = await applyJustEtfGeographicSync(workbook(), "world", {
+      fetchHtml: async () => JUSTETF_COUNTRIES_FIXTURE,
+    });
 
-    expect(result.geographicAllocations).toEqual(
-      weights.map((row) => ({
-        assetId: "world",
-        country: row.country,
-        weight: row.weight,
-        source: "justetf",
-      })),
-    );
+    expect(result.ok).toBe(true);
+    expect(result.workbook.geographicAllocations.map((row) => row.country)).toEqual([
+      "US",
+      "JP",
+      "GB",
+      "CA",
+    ]);
+    expect(
+      result.workbook.geographicAllocations.every((row) => row.source === "justetf"),
+    ).toBe(true);
+    const us = result.workbook.geographicAllocations.find((row) => row.country === "US");
+    expect(us?.weight).toBeCloseTo(0.7032 / (1 - 0.1708), 5);
   });
 
   it("parses nested JustETF country percentage markup", () => {

@@ -105,12 +105,43 @@ describe("core geographic exposure aggregation", () => {
       ],
     );
 
-    expect(result.regions).toEqual([
-      { key: "NORTH_AMERICA", marketValue: 600, weight: 0.6 },
-      { key: "ASIA_PACIFIC", marketValue: 200, weight: 0.2 },
-      { key: "EUROPE", marketValue: 100, weight: 0.1 },
-      { key: "EMERGING", marketValue: 50, weight: 0.05 },
-      { key: "OTHER", marketValue: 50, weight: 0.05 },
+    // OTHER is dropped and remaining weights are renormalized over 0.95
+    expect(result.coveredMarketValue).toBe(1000);
+    expect(result.countries.map((slice) => slice.key)).toEqual([
+      "US",
+      "JP",
+      "FR",
+      "BR",
+    ]);
+    expect(result.countries.find((slice) => slice.key === "US")?.weight).toBeCloseTo(
+      0.6 / 0.95,
+      6,
+    );
+    expect(result.regions.map((slice) => slice.key)).toEqual([
+      "NORTH_AMERICA",
+      "ASIA_PACIFIC",
+      "EUROPE",
+      "EMERGING",
+    ]);
+    expect(result.regions.find((slice) => slice.key === "OTHER")).toBeUndefined();
+  });
+
+  it("drops OTHER and renormalizes known countries by asset market value", () => {
+    const aggregate = requireAggregate();
+
+    const result = aggregate(
+      [{ assetId: "world", marketValue: 1000 }],
+      [
+        allocation("world", "US", 0.7),
+        allocation("world", "JP", 0.1),
+        allocation("world", "OTHER", 0.2),
+      ],
+    );
+
+    expect(result.coveredMarketValue).toBe(1000);
+    expect(result.countries).toEqual([
+      { key: "US", marketValue: 875, weight: 0.875 },
+      { key: "JP", marketValue: 125, weight: 0.125 },
     ]);
   });
 

@@ -44,9 +44,10 @@ Logical replace key: all rows for one `assetId` are replaced together. Missing s
 
 1. Take positions with `marketValue > 0`.
 2. Skip assets with no allocation rows (or invalid sum).
-3. For each country: add `marketValue * weight`.
-4. Convert euro totals to percentages over the **covered** total only.
-5. Optional region rollup helpers may still exist in core; **web UI does not use them as the primary chart**.
+3. Drop `OTHER` residual rows; renormalize remaining country weights to 1 for that asset.
+4. For each known country: add `marketValue * renormalizedWeight`.
+5. Convert euro totals to percentages over the **covered** total only.
+6. Optional region rollup helpers may still exist in core; **web UI does not use them as the primary chart**.
 
 ## Web visualization (country map)
 

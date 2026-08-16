@@ -18,6 +18,8 @@ Contract (do not invent):
 - WHEN building portfolio / account / global geo slices
 - THEN weight each country by position.marketValue * country.weight;
   include only positions with marketValue > 0 and a valid allocation;
+  drop country code OTHER (JustETF residual bucket) and renormalize remaining
+  country weights to sum to 1 per asset before applying market value;
   slice percentages are over that covered market-value total (sum to ~100%)
 - WHEN an asset has no allocation (crypto, cash, missing ETF data, …)
 - THEN exclude it from geo charts; asset detail must show that allocation is absent
