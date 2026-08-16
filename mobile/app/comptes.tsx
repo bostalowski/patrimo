@@ -8,7 +8,9 @@ import {
   NO_ACCOUNT_ID,
   NO_ACCOUNT_LABEL,
 } from "@patrimo/core/deletion";
+import { aggregateGeographicExposureForAccount } from "@patrimo/core/geographic-exposure";
 import { useThemeColors, shared } from "../lib/theme";
+import { GeographicExposureList } from "../components/geographic-exposure-list";
 
 export default function ComptesScreen() {
   const isDark = useColorScheme() === "dark";
@@ -63,6 +65,15 @@ export default function ComptesScreen() {
           const canEdit = Boolean(meta && account.accountId !== NO_ACCOUNT_ID);
           const activePositions = (account.positions ?? []).filter(
             (position) => position.quantity > 0,
+          );
+          const accountGeo = aggregateGeographicExposureForAccount(
+            (account.positions ?? []).map((position) => ({
+              assetId: position.assetId,
+              accountId: account.accountId,
+              marketValue: position.marketValue,
+            })),
+            workbook.geographicAllocations ?? [],
+            account.accountId,
           );
           const dividerRow = [
             shared.row,
@@ -151,6 +162,18 @@ export default function ComptesScreen() {
                   </Text>
                 </View>
               ))}
+              {accountGeo.coveredMarketValue > 0 && (
+                <View style={dividerRow}>
+                  <View style={{ flex: 1 }}>
+                    <GeographicExposureList
+                      title="Géographie du compte"
+                      regions={accountGeo.regions}
+                      countries={accountGeo.countries}
+                      colors={t}
+                    />
+                  </View>
+                </View>
+              )}
             </TouchableOpacity>
           );
         })}

@@ -28,6 +28,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Emergency fund health](architecture/emergency-fund-health.md)
 - [Portfolio risk readability](architecture/portfolio-risk-readability.md)
 - [Fee monitoring ratios](architecture/fee-monitoring-ratios.md)
+- [Geographic allocation](architecture/geographic-allocation.md)
 
 ## Reference
 
@@ -47,6 +48,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Implement emergency fund health](howto/implement-emergency-fund-health.md)
 - [Implement portfolio risk readability](howto/implement-portfolio-risk-readability.md)
 - [Implement fee monitoring ratios](howto/implement-fee-monitoring-ratios.md)
+- [Implement geographic allocation](howto/implement-geographic-allocation.md)
 
 ## Decisions
 

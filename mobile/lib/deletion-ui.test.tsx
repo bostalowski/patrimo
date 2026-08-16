@@ -109,6 +109,7 @@ function workbook(): Workbook {
     properties: [],
     dca: [],
     manualPrices: [],
+    geographicAllocations: [],
   };
 }
 

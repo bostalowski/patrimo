@@ -90,6 +90,18 @@ How an asset obtains quotes: `coingecko`, `yahoo`, `investir`, `zonebourse`, or 
 
 A user-entered dated valuation (typically FCPE VL) stored in the optional workbook sheet `Prix manuels`. Only assets whose price source is `manual` use these entries. Automatic market prices remain in local derived caches (`prices.json` / AsyncStorage), not in this sheet.
 
+## Geographic allocation
+
+Look-through country weights for an asset (fractions summing to ~1), persisted in the optional workbook sheet `Exposition geo`. Used to build portfolio, account, and asset geographic breakdowns. Assets without an allocation are excluded from geo charts. On web, breakdowns are shown as an interactive country map plus a country list.
+
+## Geographic region
+
+Optional finance-style rollup of countries (`NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER`) kept only as a non-primary helper. Web UI does not present these buckets as the main visualization; countries on a map do. Unknown or non-geographic codes use `OTHER` in stored data and appear in the list only.
+
+## Allocation source
+
+How a geographic allocation was last written: `justetf` (fetched) or `manual` (user-entered). Manual allocations are not overwritten by ordinary JustETF sync.
+
 ## Tax estimate
 
 Simplified French-tax heuristic produced by `@patrimo/core` fiscal modules. Indicative only; not a tax filing output.
@@ -116,4 +128,6 @@ All-time explicit fees divided by portfolio (or asset) **total return** (unreali
 - [ADR 0005](../adr/0005-emergency-fund-health-indicator.md)
 - [ADR 0006](../adr/0006-portfolio-risk-readability.md)
 - [ADR 0007](../adr/0007-fee-monitoring-ratios.md)
+- [ADR 0008](../adr/0008-geographic-allocation.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
+- [Geographic allocation](../architecture/geographic-allocation.md)

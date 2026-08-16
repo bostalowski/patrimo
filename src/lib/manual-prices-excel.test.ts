@@ -198,6 +198,7 @@ function workbook(manualPrices: ManualPrice[]): ManualPriceWorkbook {
     properties: [],
     dca: [],
     manualPrices,
+    geographicAllocations: [],
   };
 }
 

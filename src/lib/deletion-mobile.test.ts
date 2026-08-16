@@ -116,6 +116,7 @@ function workbook(): Workbook {
     budget: [],
     properties: [],
     manualPrices: [],
+    geographicAllocations: [],
   };
 }
 

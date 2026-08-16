@@ -5,6 +5,7 @@ export const SHEET_BUDGET = "Budget";
 export const SHEET_IMMOBILIER = "Immobilier";
 export const SHEET_DCA = "DCA";
 export const SHEET_PRIX_MANUELS = "Prix manuels";
+export const SHEET_EXPOSITION_GEO = "Exposition geo";
 
 export const TRANSACTIONS_HEADERS = [
   "Date",
@@ -94,6 +95,13 @@ export const DCA_HEADERS = [
 
 export const PRIX_MANUELS_HEADERS = ["Actif", "Date", "Prix"] as const;
 
+export const EXPOSITION_GEO_HEADERS = [
+  "Actif",
+  "Pays",
+  "Poids %",
+  "Source",
+] as const;
+
 export const ALL_SHEETS = [
   { name: SHEET_TRANSACTIONS, headers: [...TRANSACTIONS_HEADERS] },
   { name: SHEET_ACTIFS, headers: [...ACTIFS_HEADERS] },
@@ -102,4 +110,5 @@ export const ALL_SHEETS = [
   { name: SHEET_IMMOBILIER, headers: [...IMMOBILIER_HEADERS] },
   { name: SHEET_DCA, headers: [...DCA_HEADERS] },
   { name: SHEET_PRIX_MANUELS, headers: [...PRIX_MANUELS_HEADERS] },
+  { name: SHEET_EXPOSITION_GEO, headers: [...EXPOSITION_GEO_HEADERS] },
 ] as const;

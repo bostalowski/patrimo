@@ -1,4 +1,21 @@
 import * as XLSX from "xlsx";
+import { normalizeManualPrices } from "@patrimo/core/manual-prices";
+import { normalizeGeographicAllocations } from "@patrimo/core/geographic-allocation";
+import {
+  ACTIFS_HEADERS,
+  COMPTES_HEADERS,
+  DCA_HEADERS,
+  EXPOSITION_GEO_HEADERS,
+  PRIX_MANUELS_HEADERS,
+  SHEET_ACTIFS,
+  SHEET_COMPTES,
+  SHEET_DCA,
+  SHEET_EXPOSITION_GEO,
+  SHEET_PRIX_MANUELS,
+  SHEET_TRANSACTIONS,
+  TRANSACTIONS_HEADERS,
+} from "@patrimo/core/workbook-template";
+import type { GeographicAllocation } from "@patrimo/core/schema";
 import {
   Transaction,
   Asset,
@@ -9,19 +26,6 @@ import {
   type ManualPrice,
   type Workbook,
 } from "@patrimo/core/schema";
-import { normalizeManualPrices } from "@patrimo/core/manual-prices";
-import {
-  ACTIFS_HEADERS,
-  COMPTES_HEADERS,
-  DCA_HEADERS,
-  PRIX_MANUELS_HEADERS,
-  SHEET_ACTIFS,
-  SHEET_COMPTES,
-  SHEET_DCA,
-  SHEET_PRIX_MANUELS,
-  SHEET_TRANSACTIONS,
-  TRANSACTIONS_HEADERS,
-} from "@patrimo/core/workbook-template";
 
 export type ParsedWorkbook = {
   workbook: Workbook;
@@ -39,6 +43,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
   const rawProperties = readSheet(wb, "Immobilier");
   const rawDca = readSheet(wb, "DCA");
   const rawManualPrices = readSheet(wb, SHEET_PRIX_MANUELS);
+  const rawGeographicAllocations = readSheet(wb, SHEET_EXPOSITION_GEO);
 
   const { transactions, keys: transactionKeys } = parseTransactions(rawTransactions);
   const assets = parseAssets(rawAssets);
@@ -47,8 +52,12 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
   const properties = parseProperties(rawProperties);
   const dca = parseDca(rawDca);
   const manualPrices = parseManualPrices(rawManualPrices, assets);
+  const geographicAllocations = parseGeographicAllocations(
+    rawGeographicAllocations,
+    assets,
+  );
 
-  console.log("[Parser v2] Results:", { transactions: transactions.length, assets: assets.length, accounts: accounts.length, budget: budget.length, properties: properties.length, dca: dca.length, manualPrices: manualPrices.length });
+  console.log("[Parser v2] Results:", { transactions: transactions.length, assets: assets.length, accounts: accounts.length, budget: budget.length, properties: properties.length, dca: dca.length, manualPrices: manualPrices.length, geographicAllocations: geographicAllocations.length });
 
   return {
     workbook: {
@@ -59,6 +68,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
       properties,
       dca,
       manualPrices,
+      geographicAllocations,
     },
     transactionKeys,
   };
@@ -162,6 +172,17 @@ export function serializeWorkbook(
       Actif: entry.assetId,
       Date: entry.date,
       Prix: entry.price,
+    })),
+  );
+  replaceRows(
+    workbook,
+    SHEET_EXPOSITION_GEO,
+    EXPOSITION_GEO_HEADERS,
+    (workbookData.geographicAllocations ?? []).map((entry) => ({
+      Actif: entry.assetId,
+      Pays: entry.country,
+      "Poids %": Math.round(entry.weight * 1000) / 10,
+      Source: entry.source,
     })),
   );
 
@@ -378,6 +399,29 @@ function parseManualPrices(
     });
   }
   return normalizeManualPrices(raw, assets);
+}
+
+function parseGeographicAllocations(
+  rows: Record<string, unknown>[],
+  assets: Asset[],
+): GeographicAllocation[] {
+  const raw: GeographicAllocation[] = [];
+  for (const row of rows) {
+    const assetId = emptyToUndefined(row["Actif"]);
+    const country = emptyToUndefined(row["Pays"]);
+    const sourceRaw = emptyToUndefined(row["Source"]);
+    if (!assetId || !country || !sourceRaw) continue;
+    if (sourceRaw !== "justetf" && sourceRaw !== "manual") continue;
+    const percent = toNumber(row["Poids %"]);
+    if (percent === null) continue;
+    raw.push({
+      assetId,
+      country,
+      weight: percent / 100,
+      source: sourceRaw,
+    });
+  }
+  return normalizeGeographicAllocations(raw, assets);
 }
 
 function parseDca(rows: Record<string, unknown>[]): DcaConfig[] {

@@ -23,6 +23,7 @@ import {
 import { getConfiguredExcelPath, resolveUserPath } from "@/lib/config";
 import { dcaConfigsToRows, parseDcaConfigs } from "@/lib/dca-excel";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
+import { normalizeGeographicAllocations } from "@patrimo/core/geographic-allocation";
 import {
   SHEET_TRANSACTIONS,
   SHEET_ACTIFS,
@@ -31,12 +32,15 @@ import {
   SHEET_IMMOBILIER,
   SHEET_DCA,
   SHEET_PRIX_MANUELS,
+  SHEET_EXPOSITION_GEO,
   BUDGET_HEADERS,
   IMMOBILIER_HEADERS,
   DCA_HEADERS,
   PRIX_MANUELS_HEADERS,
+  EXPOSITION_GEO_HEADERS,
   ALL_SHEETS,
 } from "@patrimo/core/workbook-template";
+import type { GeographicAllocation } from "@patrimo/core/schema";
 
 const REQUIRED_SHEETS = [SHEET_TRANSACTIONS, SHEET_ACTIFS, SHEET_COMPTES];
 
@@ -387,6 +391,29 @@ function parseManualPrices(
   return normalizeManualPrices(raw, assets);
 }
 
+function parseGeographicAllocations(
+  rows: Record<string, unknown>[],
+  assets: Asset[],
+): GeographicAllocation[] {
+  const raw: GeographicAllocation[] = [];
+  for (const row of rows) {
+    const assetId = emptyToUndefined(row["Actif"]);
+    const country = emptyToUndefined(row["Pays"]);
+    const sourceRaw = emptyToUndefined(row["Source"]);
+    if (!assetId || !country || !sourceRaw) continue;
+    if (sourceRaw !== "justetf" && sourceRaw !== "manual") continue;
+    const percent = toNumber(row["Poids %"]);
+    if (percent === null) continue;
+    raw.push({
+      assetId,
+      country,
+      weight: percent / 100,
+      source: sourceRaw,
+    });
+  }
+  return normalizeGeographicAllocations(raw, assets);
+}
+
 function toNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   if (typeof value === "number") return value;
@@ -430,6 +457,10 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
     readSheetOptional(sheet, SHEET_PRIX_MANUELS),
     assets,
   );
+  const geographicAllocations = parseGeographicAllocations(
+    readSheetOptional(sheet, SHEET_EXPOSITION_GEO),
+    assets,
+  );
 
   const transactions = [...parsedTransactions].sort(
     (a, b) => a.date.getTime() - b.date.getTime(),
@@ -444,6 +475,7 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
       properties,
       dca,
       manualPrices,
+      geographicAllocations,
     },
     transactionRows,
   };
@@ -817,6 +849,17 @@ export function replaceWorkbook(nextWorkbook: Workbook): void {
       Prix: entry.price,
     })),
     PRIX_MANUELS_HEADERS,
+  );
+  replaceSheetRows(
+    workbook,
+    SHEET_EXPOSITION_GEO,
+    (nextWorkbook.geographicAllocations ?? []).map((entry) => ({
+      Actif: entry.assetId,
+      Pays: entry.country,
+      "Poids %": Math.round(entry.weight * 1000) / 10,
+      Source: entry.source,
+    })),
+    EXPOSITION_GEO_HEADERS,
   );
 
   writeWorkbook(workbook, path);

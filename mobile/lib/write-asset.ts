@@ -5,6 +5,7 @@ import {
   deleteManualPrice,
   upsertManualPrice,
 } from "@patrimo/core/manual-prices";
+import { replaceGeographicAllocation } from "@patrimo/core/geographic-allocation";
 import {
   getActiveSource,
   readSourceFile,
@@ -104,6 +105,24 @@ export async function deleteManualPriceFromSource(
   const buffer = await readSourceFile(source);
   const { workbook } = parseWorkbook(buffer);
   const nextWorkbook = deleteManualPrice(workbook, assetId, date);
+  await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
+}
+
+export async function replaceGeographicAllocationInSource(
+  assetId: string,
+  weights: Array<{ country: string; weight: number }>,
+): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  const nextWorkbook = replaceGeographicAllocation(
+    workbook,
+    assetId,
+    weights,
+    "manual",
+  );
   await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
 }
 

@@ -17,11 +17,15 @@ import { useWorkbook } from "../lib/use-workbook";
 import {
   deleteAssetFromSource,
   deleteManualPriceFromSource,
+  replaceGeographicAllocationInSource,
   updateAssetInSource,
   upsertManualPriceInSource,
 } from "../lib/write-asset";
 import { useThemeColors, shared } from "../lib/theme";
 import { DeletionModal } from "../components/deletion-modal";
+import { AssetGeographicEditor } from "../components/asset-geographic-editor";
+import { aggregateGeographicExposure } from "@patrimo/core/geographic-exposure";
+import { buildPortfolio } from "@patrimo/core/portfolio";
 
 const ASSET_TYPES = ["CRYPTO", "ETF", "ACTION", "FCPE", "CASH"] as const;
 const PRICE_SOURCES = ["yahoo", "coingecko", "investir", "zonebourse", "manual"] as const;
@@ -29,7 +33,7 @@ const PRICE_SOURCES = ["yahoo", "coingecko", "investir", "zonebourse", "manual"]
 export default function EditAssetScreen() {
   const isDark = useColorScheme() === "dark";
   const t = useThemeColors(isDark);
-  const { workbook, loading, refresh } = useWorkbook();
+  const { workbook, prices, loading, refresh } = useWorkbook();
   const params = useLocalSearchParams<{ id?: string }>();
   const assetId = typeof params.id === "string" ? params.id : "";
 
@@ -65,17 +69,24 @@ export default function EditAssetScreen() {
   }
 
   return (
-    <EditAssetForm initial={existing} workbook={workbook} refresh={refresh} />
+    <EditAssetForm
+      initial={existing}
+      workbook={workbook}
+      prices={prices}
+      refresh={refresh}
+    />
   );
 }
 
 function EditAssetForm({
   initial,
   workbook,
+  prices,
   refresh,
 }: {
   initial: Asset;
   workbook: NonNullable<ReturnType<typeof useWorkbook>["workbook"]>;
+  prices: NonNullable<ReturnType<typeof useWorkbook>["prices"]>;
   refresh: () => Promise<void>;
 }) {
   const isDark = useColorScheme() === "dark";
@@ -102,6 +113,47 @@ function EditAssetForm({
         .sort((left, right) => right.date.getTime() - left.date.getTime()),
     [workbook.manualPrices, initial.id],
   );
+
+  const assetAllocations = useMemo(
+    () =>
+      (workbook.geographicAllocations ?? []).filter(
+        (entry) => entry.assetId === initial.id,
+      ),
+    [workbook.geographicAllocations, initial.id],
+  );
+
+  const assetGeo = useMemo(() => {
+    try {
+      const portfolio = buildPortfolio(workbook, prices);
+      const position = portfolio.assets.find(
+        (entry) => entry.assetId === initial.id,
+      );
+      return aggregateGeographicExposure(
+        [
+          {
+            assetId: initial.id,
+            marketValue: position?.marketValue ?? 0,
+          },
+        ],
+        assetAllocations,
+      );
+    } catch {
+      return { regions: [], countries: [], coveredMarketValue: 0 };
+    }
+  }, [workbook, prices, initial.id, assetAllocations]);
+
+  const handleSaveGeographicAllocation = async (
+    weights: Array<{ country: string; weight: number }>,
+  ) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await replaceGeographicAllocationInSource(initial.id, weights);
+      await refresh();
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError(null);
@@ -266,6 +318,24 @@ function EditAssetForm({
           />
         </Field>
       )}
+
+      <View
+        style={[
+          shared.card,
+          { backgroundColor: t.card, marginBottom: 16, gap: 12 },
+        ]}
+      >
+        <AssetGeographicEditor
+          assetId={initial.id}
+          assetLabel={initial.label}
+          allocations={assetAllocations}
+          regions={assetGeo.regions}
+          countries={assetGeo.countries}
+          colors={t}
+          onSave={handleSaveGeographicAllocation}
+          pending={submitting}
+        />
+      </View>
 
       {source === "manual" && (
         <View

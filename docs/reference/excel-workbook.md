@@ -13,8 +13,9 @@ Canonical sheet names and headers come from `packages/core/src/workbook-template
 | `Immobilier` | No | Real-estate properties |
 | `DCA` | No | Investment plans (baskets + target %) |
 | `Prix manuels` | No | Dated user-entered valuations for `manual` assets |
+| `Exposition geo` | No | Look-through country weights per asset |
 
-A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels` remain valid; the sheet is created on the first manual-price write.
+A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels` or `Exposition geo` remain valid; each sheet is created on the first write that needs it.
 
 ## `Transactions`
 
@@ -117,6 +118,19 @@ Optional sheet for dated valuations of assets whose `Source prix` is `manual`.
 | `Prix` | `price` | Finite number greater than zero |
 
 Logical key: `Actif + Date`. Last valid row wins when duplicates exist. Invalid and orphan rows are ignored for valuation. See [Manual price persistence](../architecture/manual-price-persistence.md).
+
+## `Exposition geo`
+
+Optional sheet for look-through geographic weights. See [Geographic allocation](../architecture/geographic-allocation.md) and [ADR 0008](../adr/0008-geographic-allocation.md).
+
+| Column | Schema field | Rules |
+|---|---|---|
+| `Actif` | `assetId` | Existing asset id |
+| `Pays` | `country` | ISO 3166-1 alpha-2 or `OTHER` |
+| `Poids %` | `weight` | Percent in Excel (0–100); fraction in `[0, 1]` in the model; rows for one asset must sum to ~1 |
+| `Source` | `source` | `justetf` or `manual` |
+
+All rows for one `Actif` are replaced together on write. Missing sheet ⇒ empty collection.
 
 ## Validation ownership
 

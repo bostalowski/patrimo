@@ -20,6 +20,7 @@ import { readManualPrices, readPriceMap, readPrices } from "@/lib/store";
 import { AssetForm } from "../asset-form";
 import { AssetPositionKpis } from "../asset-position-kpis";
 import { ManualPriceInput } from "./manual-price-input";
+import { AssetGeographicSection } from "@/components/geographic-exposure-panel";
 import { assetDeletionImpact } from "@/lib/deletion-impact";
 import {
   formatDate,
@@ -27,6 +28,7 @@ import {
   formatFee,
   formatQuantity,
 } from "@/lib/utils";
+import { aggregateGeographicExposure } from "@patrimo/core/geographic-exposure";
 
 const typeVariants = {
   ACHAT: "success",
@@ -77,6 +79,19 @@ export default async function AssetDetailPage({
     feeTotals.length > 0
       ? feeTotals.map((f) => formatFee(f.total, f.currency)).join(" + ")
       : "—";
+
+  const assetAllocations = (workbook.geographicAllocations ?? []).filter(
+    (row) => row.assetId === decodedId,
+  );
+  const assetGeo = aggregateGeographicExposure(
+    [
+      {
+        assetId: decodedId,
+        marketValue: position?.marketValue ?? 0,
+      },
+    ],
+    assetAllocations,
+  );
 
   const sourceUrl = getAssetSourceUrl(asset);
 
@@ -153,6 +168,14 @@ export default async function AssetDetailPage({
           }
         />
       )}
+
+      <AssetGeographicSection
+        assetId={asset.id}
+        assetLabel={asset.label}
+        hasIsin={Boolean(asset.isin)}
+        allocations={assetAllocations}
+        countries={assetGeo.countries}
+      />
 
       <Card>
         <CardHeader>

@@ -6,6 +6,7 @@ import Image from "next/image";
 import {
   Briefcase,
   Coins,
+  Globe,
   Landmark,
   LayoutDashboard,
   ListOrdered,
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/actifs", label: "Actifs", icon: Coins },
   { href: "/comptes", label: "Comptes", icon: Wallet },
+  { href: "/geographie", label: "Géographie", icon: Globe },
   { href: "/transactions", label: "Transactions", icon: ListOrdered },
   { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/investissements", label: "Investissements", icon: Briefcase },
