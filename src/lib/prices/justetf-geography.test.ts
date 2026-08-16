@@ -34,6 +34,48 @@ const JUSTETF_COUNTRIES_FIXTURE = `
 </section>
 `;
 
+const JUSTETF_LIVE_MARKUP_FIXTURE = `
+<div data-testid="etf-holdings_countries_container">
+  <h3 data-testid="hl_etf-holdings_countries_header"> Pays </h3>
+  <table data-testid="etf-holdings_countries_table">
+    <tbody>
+      <tr data-testid="etf-holdings_countries_row">
+        <td data-testid="tl_etf-holdings_countries_value_name">États-Unis</td>
+        <td>
+          <div class="right ws">
+            <span data-testid="tl_etf-holdings_countries_value_percentage">69,70%</span>
+          </div>
+        </td>
+      </tr>
+      <tr data-testid="etf-holdings_countries_row">
+        <td data-testid="tl_etf-holdings_countries_value_name">Japon</td>
+        <td>
+          <span data-testid="tl_etf-holdings_countries_value_percentage">5,62%</span>
+        </td>
+      </tr>
+      <tr data-testid="etf-holdings_countries_row">
+        <td data-testid="tl_etf-holdings_countries_value_name">Grande-Bretagne</td>
+        <td>
+          <span data-testid="tl_etf-holdings_countries_value_percentage">3,56%</span>
+        </td>
+      </tr>
+      <tr data-testid="etf-holdings_countries_row">
+        <td data-testid="tl_etf-holdings_countries_value_name">Canada</td>
+        <td>
+          <span data-testid="tl_etf-holdings_countries_value_percentage">3,28%</span>
+        </td>
+      </tr>
+      <tr data-testid="etf-holdings_countries_row">
+        <td data-testid="tl_etf-holdings_countries_value_name">Autre</td>
+        <td>
+          <span data-testid="tl_etf-holdings_countries_value_percentage">17,84%</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+`;
+
 function asset(id: string, isin = "IE00B4L5Y983"): Asset {
   return {
     id,
@@ -95,6 +137,24 @@ describe("JustETF geographic sync", () => {
         source: "justetf",
       })),
     );
+  });
+
+  it("parses nested JustETF country percentage markup", () => {
+    expect(parseJustEtfCountryWeights(JUSTETF_LIVE_MARKUP_FIXTURE)).toEqual([
+      { country: "US", weight: 0.697 },
+      { country: "JP", weight: 0.0562 },
+      { country: "GB", weight: 0.0356 },
+      { country: "CA", weight: 0.0328 },
+      { country: "OTHER", weight: 0.1784 },
+    ]);
+  });
+
+  it("returns no weights when the profile has no countries table", () => {
+    expect(
+      parseJustEtfCountryWeights(
+        `<html><title>ETF</title><td>Volatilité</td><td>14,37%</td></html>`,
+      ),
+    ).toEqual([]);
   });
 
   it("does not overwrite an existing manual allocation on ordinary sync", () => {

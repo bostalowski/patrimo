@@ -47,8 +47,11 @@ const COUNTRY_NAME_TO_ISO: Record<string, string> = {
   Sonstige: "OTHER",
 };
 
-const ROW_REGEX =
+const SIMPLE_ROW_REGEX =
   /<t[dh][^>]*>\s*([^<]+?)\s*<\/t[dh]>\s*<t[dh][^>]*>\s*([\d\s\u00a0\u202f]+(?:[.,]\d+)?)\s*%\s*<\/t[dh]>/gi;
+
+const JUSTETF_COUNTRY_ROW_REGEX =
+  /data-testid="etf-holdings_countries_row"[^>]*>[\s\S]*?data-testid="tl_etf-holdings_countries_value_name"[^>]*>([^<]+)<[\s\S]*?data-testid="tl_etf-holdings_countries_value_percentage"[^>]*>\s*([\d\s\u00a0\u202f]+(?:[.,]\d+)?)\s*%/gi;
 
 function parseFrenchPercent(raw: string): number | null {
   const cleaned = raw.replace(/[\s\u00a0\u202f]/g, "").replace(",", ".");
@@ -64,12 +67,11 @@ function toCountryCode(name: string): string {
   return "OTHER";
 }
 
-export function parseJustEtfCountryWeights(html: string): JustEtfCountryWeight[] {
-  const paysIndex = html.search(/Pays|Countries|Länder/i);
-  const section = paysIndex >= 0 ? html.slice(paysIndex, paysIndex + 8000) : html;
-
+function collectWeights(
+  matches: IterableIterator<RegExpMatchArray>,
+): JustEtfCountryWeight[] {
   const totals = new Map<string, number>();
-  for (const match of section.matchAll(ROW_REGEX)) {
+  for (const match of matches) {
     const label = match[1].replace(/<[^>]+>/g, "").trim();
     if (!label || /secteur|sector|technologie|finance/i.test(label)) continue;
     const weight = parseFrenchPercent(match[2]);
@@ -82,6 +84,29 @@ export function parseJustEtfCountryWeights(html: string): JustEtfCountryWeight[]
     country,
     weight: Math.round(weight * 10000) / 10000,
   }));
+}
+
+export function parseJustEtfCountryWeights(html: string): JustEtfCountryWeight[] {
+  const fromTestIds = collectWeights(html.matchAll(JUSTETF_COUNTRY_ROW_REGEX));
+  if (fromTestIds.length > 0) return fromTestIds;
+
+  const countriesTableIndex = html.search(
+    /etf-holdings_countries_(?:table|container)|data-testid="hl_etf-holdings_countries_header"/i,
+  );
+  const paysHeadingIndex = html.search(
+    /<(?:h[1-6]|div|section)[^>]*>\s*(?:Pays|Countries|Länder)\s*</i,
+  );
+  const sectionStart =
+    countriesTableIndex >= 0
+      ? countriesTableIndex
+      : paysHeadingIndex >= 0
+        ? paysHeadingIndex
+        : -1;
+  if (sectionStart < 0) return [];
+
+  return collectWeights(
+    html.slice(sectionStart, sectionStart + 12000).matchAll(SIMPLE_ROW_REGEX),
+  );
 }
 
 export async function fetchJustEtfProfileHtml(isin: string): Promise<string> {
