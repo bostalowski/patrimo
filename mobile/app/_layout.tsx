@@ -92,8 +92,8 @@ export default function RootLayout() {
         <Tabs.Screen name="edit-asset" options={{ href: null, title: "Modifier l'actif" }} />
         <Tabs.Screen name="add-account" options={{ href: null, title: "Nouveau compte" }} />
         <Tabs.Screen name="edit-account" options={{ href: null, title: "Modifier le compte" }} />
-        <Tabs.Screen name="oauth2redirect" options={{ href: null }} />
-      </Tabs>
+        <Tabs.Screen name="account-detail" options={{ href: null, title: "Compte" }} />
+        <Tabs.Screen name="oauth2redirect" options={{ href: null }} />      </Tabs>
     </WorkbookProvider>
   );
 }

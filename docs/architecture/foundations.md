@@ -52,5 +52,6 @@ Mechanical invariants that remain true across Patrimo platforms. Canonical terms
 - [ADR 0001](../adr/0001-share-deletion-rules-across-platforms.md)
 - [ADR 0002](../adr/0002-store-manual-prices-in-workbook.md)
 - [ADR 0008](../adr/0008-geographic-allocation.md)
+- [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md)
 - [Manual price persistence](manual-price-persistence.md)
 - [Geographic allocation](geographic-allocation.md)

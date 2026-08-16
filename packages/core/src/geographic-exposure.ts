@@ -3,21 +3,92 @@ import { GEOGRAPHIC_WEIGHT_SUM_TOLERANCE } from "./geographic-allocation";
 
 export type GeographicRegion =
   | "NORTH_AMERICA"
+  | "LATIN_AMERICA"
   | "EUROPE"
   | "ASIA_PACIFIC"
-  | "EMERGING"
+  | "AFRICA_MIDDLE_EAST"
   | "OTHER";
+
+export const PRODUCT_GEOGRAPHIC_REGIONS: GeographicRegion[] = [
+  "NORTH_AMERICA",
+  "LATIN_AMERICA",
+  "EUROPE",
+  "ASIA_PACIFIC",
+  "AFRICA_MIDDLE_EAST",
+  "OTHER",
+];
 
 export const GEOGRAPHIC_REGION_LABELS: Record<GeographicRegion, string> = {
   NORTH_AMERICA: "Amérique du Nord",
+  LATIN_AMERICA: "Amérique latine",
   EUROPE: "Europe",
   ASIA_PACIFIC: "Asie-Pacifique",
-  EMERGING: "Marchés émergents",
+  AFRICA_MIDDLE_EAST: "Afrique & Moyen-Orient",
   OTHER: "Autre",
 };
 
+const LEGACY_REGION_ALIASES: Record<string, GeographicRegion> = {
+  EMERGING: "OTHER",
+};
+
+export function normalizeGeographicRegionKey(key: string): string {
+  const normalized = key.trim().toUpperCase();
+  return LEGACY_REGION_ALIASES[normalized] ?? normalized;
+}
+
+export function isGeographicRegionKey(key: string): boolean {
+  const normalized = normalizeGeographicRegionKey(key);
+  return (PRODUCT_GEOGRAPHIC_REGIONS as string[]).includes(normalized);
+}
+
+export function isIsoCountryKey(key: string): boolean {
+  const normalized = key.trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(normalized);
+}
+
+export type GeographicAllocationGranularity = "country" | "region";
+
+export function geographicAllocationGranularity(
+  keys: string[],
+): GeographicAllocationGranularity {
+  let hasCountry = false;
+  let hasNamedRegion = false;
+  let hasOther = false;
+
+  for (const raw of keys) {
+    const key = raw.trim().toUpperCase();
+    if (!key) {
+      throw new Error("Geographic allocation country is required");
+    }
+    if (key === "OTHER") {
+      hasOther = true;
+      continue;
+    }
+    if (isGeographicRegionKey(key)) {
+      hasNamedRegion = true;
+      continue;
+    }
+    if (isIsoCountryKey(key)) {
+      hasCountry = true;
+      continue;
+    }
+    throw new Error(`Invalid geographic allocation key: ${raw}`);
+  }
+
+  if (hasCountry && hasNamedRegion) {
+    throw new Error(
+      "Geographic allocation cannot mix country and region keys",
+    );
+  }
+  if (hasNamedRegion) return "region";
+  if (hasCountry) return "country";
+  if (hasOther) return "region";
+  throw new Error("Geographic allocation country is required");
+}
+
 export function regionLabel(key: string): string {
-  return GEOGRAPHIC_REGION_LABELS[key as GeographicRegion] ?? key;
+  const normalized = normalizeGeographicRegionKey(key);
+  return GEOGRAPHIC_REGION_LABELS[normalized as GeographicRegion] ?? key;
 }
 
 export function geographicCountryLabel(countryCode: string): string {
@@ -58,6 +129,11 @@ const REGION_BY_COUNTRY: Record<string, GeographicRegion> = {
   US: "NORTH_AMERICA",
   CA: "NORTH_AMERICA",
   MX: "NORTH_AMERICA",
+  BR: "LATIN_AMERICA",
+  AR: "LATIN_AMERICA",
+  CL: "LATIN_AMERICA",
+  CO: "LATIN_AMERICA",
+  PE: "LATIN_AMERICA",
   GB: "EUROPE",
   FR: "EUROPE",
   DE: "EUROPE",
@@ -73,6 +149,10 @@ const REGION_BY_COUNTRY: Record<string, GeographicRegion> = {
   BE: "EUROPE",
   AT: "EUROPE",
   PT: "EUROPE",
+  PL: "EUROPE",
+  GR: "EUROPE",
+  HU: "EUROPE",
+  CZ: "EUROPE",
   JP: "ASIA_PACIFIC",
   AU: "ASIA_PACIFIC",
   NZ: "ASIA_PACIFIC",
@@ -80,19 +160,16 @@ const REGION_BY_COUNTRY: Record<string, GeographicRegion> = {
   SG: "ASIA_PACIFIC",
   KR: "ASIA_PACIFIC",
   TW: "ASIA_PACIFIC",
-  CN: "EMERGING",
-  IN: "EMERGING",
-  BR: "EMERGING",
-  ZA: "EMERGING",
-  SA: "EMERGING",
-  AE: "EMERGING",
-  KW: "EMERGING",
-  QA: "EMERGING",
-  TR: "EMERGING",
-  PL: "EMERGING",
-  GR: "EMERGING",
-  HU: "EMERGING",
-  CZ: "EMERGING",
+  CN: "ASIA_PACIFIC",
+  IN: "ASIA_PACIFIC",
+  ZA: "AFRICA_MIDDLE_EAST",
+  SA: "AFRICA_MIDDLE_EAST",
+  AE: "AFRICA_MIDDLE_EAST",
+  KW: "AFRICA_MIDDLE_EAST",
+  QA: "AFRICA_MIDDLE_EAST",
+  TR: "AFRICA_MIDDLE_EAST",
+  EG: "AFRICA_MIDDLE_EAST",
+  NG: "AFRICA_MIDDLE_EAST",
   OTHER: "OTHER",
 };
 
@@ -171,36 +248,68 @@ export function aggregateGeographicExposure(
 ): GeographicExposure {
   const byAsset = allocationsByAsset(allocations);
   const countryTotals = new Map<string, number>();
-  let coveredMarketValue = 0;
+  const regionTotals = new Map<string, number>();
+  let countryCoveredMarketValue = 0;
+  let regionCoveredMarketValue = 0;
 
   for (const position of positions) {
     if (!(position.marketValue > 0)) continue;
     const rows = byAsset.get(position.assetId);
     if (!rows || !isValidAllocation(rows)) continue;
 
+    let granularity: GeographicAllocationGranularity;
+    try {
+      granularity = geographicAllocationGranularity(
+        rows.map((row) => row.country),
+      );
+    } catch {
+      continue;
+    }
+
+    if (granularity === "region") {
+      const regionWeights = rows
+        .map((row) => ({
+          country: normalizeGeographicRegionKey(row.country),
+          weight: row.weight,
+        }))
+        .filter((row) => row.weight > 0);
+      const sum = regionWeights.reduce((total, row) => total + row.weight, 0);
+      if (sum <= 0) continue;
+
+      regionCoveredMarketValue += position.marketValue;
+      for (const row of regionWeights) {
+        const contribution = position.marketValue * (row.weight / sum);
+        regionTotals.set(
+          row.country,
+          (regionTotals.get(row.country) ?? 0) + contribution,
+        );
+      }
+      continue;
+    }
+
     const lookThrough = lookThroughRows(rows);
     if (lookThrough.length === 0) continue;
 
-    coveredMarketValue += position.marketValue;
+    countryCoveredMarketValue += position.marketValue;
+    regionCoveredMarketValue += position.marketValue;
     for (const row of lookThrough) {
       const contribution = position.marketValue * row.weight;
       countryTotals.set(
         row.country,
         (countryTotals.get(row.country) ?? 0) + contribution,
       );
+      const region = regionForCountry(row.country);
+      regionTotals.set(region, (regionTotals.get(region) ?? 0) + contribution);
     }
   }
 
-  const regionTotals = new Map<string, number>();
-  for (const [country, marketValue] of countryTotals) {
-    const region = regionForCountry(country);
-    regionTotals.set(region, (regionTotals.get(region) ?? 0) + marketValue);
-  }
-
   return {
-    coveredMarketValue,
-    countries: toSortedSlices(countryTotals, coveredMarketValue),
-    regions: toSortedSlices(regionTotals, coveredMarketValue),
+    coveredMarketValue: Math.max(
+      countryCoveredMarketValue,
+      regionCoveredMarketValue,
+    ),
+    countries: toSortedSlices(countryTotals, countryCoveredMarketValue),
+    regions: toSortedSlices(regionTotals, regionCoveredMarketValue),
   };
 }
 

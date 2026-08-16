@@ -172,8 +172,8 @@ export default async function AssetDetailPage({
       <AssetGeographicSection
         assetId={asset.id}
         assetLabel={asset.label}
-        hasIsin={Boolean(asset.isin)}
         allocations={assetAllocations}
+        regions={assetGeo.regions}
         countries={assetGeo.countries}
       />
 

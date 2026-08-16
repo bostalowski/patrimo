@@ -8,9 +8,7 @@ import {
   NO_ACCOUNT_ID,
   NO_ACCOUNT_LABEL,
 } from "@patrimo/core/deletion";
-import { aggregateGeographicExposureForAccount } from "@patrimo/core/geographic-exposure";
 import { useThemeColors, shared } from "../lib/theme";
-import { GeographicExposureList } from "../components/geographic-exposure-list";
 
 export default function ComptesScreen() {
   const isDark = useColorScheme() === "dark";
@@ -62,18 +60,9 @@ export default function ComptesScreen() {
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {displayAccounts.map((account) => {
           const meta = accountMap.get(account.accountId);
-          const canEdit = Boolean(meta && account.accountId !== NO_ACCOUNT_ID);
+          const canOpen = Boolean(meta && account.accountId !== NO_ACCOUNT_ID);
           const activePositions = (account.positions ?? []).filter(
             (position) => position.quantity > 0,
-          );
-          const accountGeo = aggregateGeographicExposureForAccount(
-            (account.positions ?? []).map((position) => ({
-              assetId: position.assetId,
-              accountId: account.accountId,
-              marketValue: position.marketValue,
-            })),
-            workbook.geographicAllocations ?? [],
-            account.accountId,
           );
           const dividerRow = [
             shared.row,
@@ -84,18 +73,23 @@ export default function ComptesScreen() {
               borderTopColor: t.cardBorder,
             },
           ];
+          const label =
+            meta?.label ??
+            (account.accountId === NO_ACCOUNT_ID
+              ? NO_ACCOUNT_LABEL
+              : account.accountId);
           return (
             <TouchableOpacity
               key={account.accountId}
-              disabled={!canEdit}
-              accessibilityRole={canEdit ? "button" : undefined}
+              disabled={!canOpen}
+              accessibilityRole={canOpen ? "button" : undefined}
               accessibilityLabel={
-                canEdit ? `Modifier le compte ${meta!.label}` : undefined
+                canOpen ? `Ouvrir le compte ${meta!.label}` : undefined
               }
               onPress={() =>
-                canEdit &&
+                canOpen &&
                 router.push({
-                  pathname: "/edit-account",
+                  pathname: "/account-detail",
                   params: { id: meta!.id },
                 })
               }
@@ -104,10 +98,7 @@ export default function ComptesScreen() {
               <View style={[shared.row, { marginBottom: 4 }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: t.text, fontSize: 15, fontWeight: "500" }}>
-                    {meta?.label ??
-                      (account.accountId === NO_ACCOUNT_ID
-                        ? NO_ACCOUNT_LABEL
-                        : account.accountId)}
+                    {label}
                   </Text>
                   <Text style={{ color: t.textMuted, fontSize: 12, marginTop: 2 }}>
                     {account.envelope} · {meta?.type ?? ""}
@@ -162,18 +153,6 @@ export default function ComptesScreen() {
                   </Text>
                 </View>
               ))}
-              {accountGeo.coveredMarketValue > 0 && (
-                <View style={dividerRow}>
-                  <View style={{ flex: 1 }}>
-                    <GeographicExposureList
-                      title="Géographie du compte"
-                      regions={accountGeo.regions}
-                      countries={accountGeo.countries}
-                      colors={t}
-                    />
-                  </View>
-                </View>
-              )}
             </TouchableOpacity>
           );
         })}

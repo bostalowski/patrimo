@@ -4,6 +4,10 @@ import type {
   GeographicAllocationSource,
   Workbook,
 } from "./schema";
+import {
+  geographicAllocationGranularity,
+  normalizeGeographicRegionKey,
+} from "./geographic-exposure";
 
 export const GEOGRAPHIC_WEIGHT_SUM_TOLERANCE = 1e-3;
 
@@ -21,6 +25,8 @@ function assertValidWeightRows(
   if (weights.length === 0) {
     throw new Error("Geographic allocation weights cannot be empty");
   }
+
+  geographicAllocationGranularity(weights.map((row) => row.country));
 
   let sum = 0;
   for (const row of weights) {
@@ -68,7 +74,7 @@ export function normalizeGeographicAllocations(
     const rows = byAsset.get(entry.assetId) ?? [];
     rows.push({
       assetId: entry.assetId,
-      country,
+      country: normalizeGeographicRegionKey(country),
       weight: entry.weight,
       source: entry.source,
     });
@@ -98,7 +104,7 @@ export function replaceGeographicAllocation(
   );
   const nextRows: GeographicAllocation[] = weights.map((row) => ({
     assetId,
-    country: row.country.trim(),
+    country: normalizeGeographicRegionKey(row.country.trim()),
     weight: row.weight,
     source,
   }));
@@ -131,20 +137,4 @@ export function allocationSourceForAsset(
 ): GeographicAllocationSource | null {
   const row = allocations.find((entry) => entry.assetId === assetId);
   return row?.source ?? null;
-}
-
-export function applyFetchedGeographicAllocation(
-  workbook: Workbook,
-  assetId: string,
-  weights: Array<{ country: string; weight: number }>,
-  options: { restore?: boolean } = {},
-): Workbook {
-  const currentSource = allocationSourceForAsset(
-    workbook.geographicAllocations ?? [],
-    assetId,
-  );
-  if (currentSource === "manual" && !options.restore) {
-    return workbook;
-  }
-  return replaceGeographicAllocation(workbook, assetId, weights, "justetf");
 }

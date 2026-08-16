@@ -35,8 +35,8 @@ describe("web geographic UI", () => {
     expect(screen.getByTestId("geographic-world-map")).toBeTruthy();
     expect(screen.getByText(/États-Unis/i)).toBeTruthy();
     expect(screen.getByText(/France/i)).toBeTruthy();
-    expect(screen.queryByText(/Amérique du Nord/i)).toBeNull();
-    expect(screen.queryByText(/^Europe$/i)).toBeNull();
+    expect(screen.getByText(/Amérique du Nord/i)).toBeTruthy();
+    expect(screen.getByText(/^Europe$/i)).toBeTruthy();
   });
 
   it("shows OTHER (and non-mappable codes) in the list only, not as a painted map country", () => {
@@ -81,10 +81,11 @@ describe("web geographic UI", () => {
       />,
     );
 
-    expect(
-      screen.getByText(/Aucune répartition géographique pour les positions couvertes/i),
-    ).toBeTruthy();
     expect(screen.queryByTestId("geographic-world-map")).toBeNull();
+    expect(screen.getByText(/^Europe$/i)).toBeTruthy();
+    expect(
+      screen.queryByText(/Aucune répartition géographique pour les positions couvertes/i),
+    ).toBeNull();
   });
 
   it("asset detail shows empty state when the asset has no allocation", () => {
@@ -92,7 +93,6 @@ describe("web geographic UI", () => {
       <AssetGeographicSection
         assetId="btc"
         assetLabel="Bitcoin"
-        hasIsin={false}
         allocations={[]}
         regions={[]}
         countries={[]}
@@ -104,18 +104,114 @@ describe("web geographic UI", () => {
     ).toBeTruthy();
   });
 
-  it("accounts page shows per-account country map for covered positions", () => {
+  it("web geo surfaces render both country and region breakdowns", () => {
     render(
       <GeographicExposurePanel
-        title="Géographie du compte"
-        regions={[{ key: "ASIA_PACIFIC", marketValue: 200, weight: 1 }]}
-        countries={[{ key: "JP", marketValue: 200, weight: 1 }]}
+        title="Répartition géographique"
+        regions={[
+          { key: "NORTH_AMERICA", marketValue: 700, weight: 0.7 },
+          { key: "EUROPE", marketValue: 300, weight: 0.3 },
+        ]}
+        countries={[
+          { key: "US", marketValue: 700, weight: 0.7 },
+          { key: "FR", marketValue: 300, weight: 0.3 },
+        ]}
       />,
     );
 
-    expect(screen.getByText("Géographie du compte")).toBeTruthy();
     expect(screen.getByTestId("geographic-world-map")).toBeTruthy();
-    expect(screen.getByText(/Japon/i)).toBeTruthy();
-    expect(screen.queryByText(/Asie-Pacifique/i)).toBeNull();
+    expect(screen.getByText(/États-Unis/i)).toBeTruthy();
+    expect(screen.getByText(/Amérique du Nord/i)).toBeTruthy();
+    expect(screen.getByText(/^Europe$/i)).toBeTruthy();
+  });
+
+  it("web manual entry offers countries|regions mode with closed region list and searchable country picker (no free-typed keys)", () => {
+    render(
+      <AssetGeographicSection
+        assetId="world"
+        assetLabel="World"
+        allocations={[]}
+        regions={[]}
+        countries={[]}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /Pays/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Régions/i })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /Régions/i }));
+    expect(screen.getByLabelText(/Clé géographique 1/i)).toBeTruthy();
+    const regionSelect = screen.getByLabelText(/Clé géographique 1/i);
+    expect(regionSelect.tagName).toBe("SELECT");
+    expect(
+      Array.from((regionSelect as HTMLSelectElement).options).map(
+        (option) => option.value,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        "NORTH_AMERICA",
+        "LATIN_AMERICA",
+        "EUROPE",
+        "ASIA_PACIFIC",
+        "AFRICA_MIDDLE_EAST",
+        "OTHER",
+      ]),
+    );
+    expect(
+      Array.from((regionSelect as HTMLSelectElement).options).map(
+        (option) => option.value,
+      ),
+    ).not.toContain("EMERGING");
+
+    fireEvent.click(screen.getByRole("button", { name: /Pays/i }));
+    const countrySelect = screen.getByLabelText(/Clé géographique 1/i);
+    expect(countrySelect.tagName).toBe("SELECT");
+    expect(screen.queryByPlaceholderText("US")).toBeNull();
+  });
+
+  it("web manual entry keeps country draft percentages when toggling to regions and back", () => {
+    render(
+      <AssetGeographicSection
+        assetId="world"
+        assetLabel="World"
+        allocations={[
+          {
+            assetId: "world",
+            country: "US",
+            weight: 0.7,
+            source: "manual",
+          },
+          {
+            assetId: "world",
+            country: "JP",
+            weight: 0.3,
+            source: "manual",
+          },
+        ]}
+        regions={[]}
+        countries={[]}
+      />,
+    );
+
+    const weightInputs = screen.getAllByPlaceholderText(
+      "70",
+    ) as HTMLInputElement[];
+    expect(weightInputs[0].value).toBe("70");
+    expect(weightInputs[1].value).toBe("30");
+
+    fireEvent.click(screen.getByRole("button", { name: /Régions/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Pays/i }));
+
+    const restoredInputs = screen.getAllByPlaceholderText(
+      "70",
+    ) as HTMLInputElement[];
+    expect(restoredInputs[0].value).toBe("70");
+    expect(restoredInputs[1].value).toBe("30");
+    expect(
+      (screen.getByLabelText(/Clé géographique 1/i) as HTMLSelectElement).value,
+    ).toBe("US");
+    expect(
+      (screen.getByLabelText(/Clé géographique 2/i) as HTMLSelectElement).value,
+    ).toBe("JP");
   });
 });

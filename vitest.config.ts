@@ -15,6 +15,7 @@ export default defineConfig({
     include: [
       "src/**/*.{test,spec}.{ts,tsx}",
       "mobile/**/*.{test,spec}.{ts,tsx}",
+      "packages/core/src/**/*.{test,spec}.{ts,tsx}",
     ],
   },
 });

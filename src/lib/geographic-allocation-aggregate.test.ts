@@ -121,7 +121,7 @@ describe("core geographic exposure aggregation", () => {
       "NORTH_AMERICA",
       "ASIA_PACIFIC",
       "EUROPE",
-      "EMERGING",
+      "LATIN_AMERICA",
     ]);
     expect(result.regions.find((slice) => slice.key === "OTHER")).toBeUndefined();
   });

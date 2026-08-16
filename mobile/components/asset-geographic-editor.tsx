@@ -7,8 +7,52 @@ import {
   Alert,
 } from "react-native";
 import type { GeographicAllocation } from "@patrimo/core/schema";
-import type { GeographicSlice } from "@patrimo/core/geographic-exposure";
+import {
+  geographicAllocationGranularity,
+  type GeographicSlice,
+} from "@patrimo/core/geographic-exposure";
 import { GeographicExposureList } from "./geographic-exposure-list";
+import {
+  geographicCountryOptions,
+  geographicRegionOptions,
+} from "../lib/geographic-key-options";
+
+type DraftRow = { country: string; weightPercent: string };
+type EntryMode = "countries" | "regions";
+
+function emptyDraft(): DraftRow[] {
+  return [{ country: "", weightPercent: "" }];
+}
+
+function draftFromAllocations(allocations: GeographicAllocation[]): DraftRow[] {
+  if (allocations.length === 0) return emptyDraft();
+  return allocations.map((row) => ({
+    country: row.country,
+    weightPercent: String(Math.round(row.weight * 1000) / 10),
+  }));
+}
+
+function entryModeFromAllocations(
+  allocations: GeographicAllocation[],
+): EntryMode {
+  if (allocations.length === 0) return "countries";
+  return geographicAllocationGranularity(allocations.map((row) => row.country)) ===
+    "region"
+    ? "regions"
+    : "countries";
+}
+
+function initialDraftsByMode(allocations: GeographicAllocation[]): Record<
+  EntryMode,
+  DraftRow[]
+> {
+  const mode = entryModeFromAllocations(allocations);
+  const filled = draftFromAllocations(allocations);
+  return {
+    countries: mode === "countries" ? filled : emptyDraft(),
+    regions: mode === "regions" ? filled : emptyDraft(),
+  };
+}
 
 export function AssetGeographicEditor({
   assetLabel,
@@ -36,25 +80,43 @@ export function AssetGeographicEditor({
   ) => Promise<void>;
   pending: boolean;
 }) {
-  const [draft, setDraft] = useState(
-    allocations.length > 0
-      ? allocations.map((row) => ({
-          country: row.country,
-          weightPercent: String(Math.round(row.weight * 1000) / 10),
-        }))
-      : [{ country: "", weightPercent: "" }],
+  const [mode, setMode] = useState<EntryMode>(() =>
+    entryModeFromAllocations(allocations),
   );
-  const draftRef = useRef(draft);
+  const [countryQuery, setCountryQuery] = useState("");
+  const [draftByMode, setDraftByMode] = useState(() =>
+    initialDraftsByMode(allocations),
+  );
+  const modeRef = useRef(mode);
+  const draftByModeRef = useRef(draftByMode);
+  const draft = draftByMode[mode];
 
-  const updateDraft = (
-    next: Array<{ country: string; weightPercent: string }>,
-  ) => {
-    draftRef.current = next;
-    setDraft(next);
+  const updateDraft = (next: DraftRow[]) => {
+    const updated = {
+      ...draftByModeRef.current,
+      [modeRef.current]: next,
+    };
+    draftByModeRef.current = updated;
+    setDraftByMode(updated);
   };
 
+  const switchMode = (nextMode: EntryMode) => {
+    modeRef.current = nextMode;
+    setMode(nextMode);
+  };
+
+  const regionOptions = geographicRegionOptions();
+  const countryOptions = geographicCountryOptions().filter((option) => {
+    if (!countryQuery.trim()) return option.value === "US" || option.value === "FR" || option.value === "OTHER";
+    const query = countryQuery.trim().toLowerCase();
+    return (
+      option.value.toLowerCase().includes(query) ||
+      option.label.toLowerCase().includes(query)
+    );
+  }).slice(0, 30);
+
   const save = async () => {
-    const weights = draftRef.current
+    const weights = draftByModeRef.current[modeRef.current]
       .filter((row) => row.country.trim() && row.weightPercent.trim())
       .map((row) => ({
         country: row.country.trim().toUpperCase(),
@@ -88,32 +150,116 @@ export function AssetGeographicEditor({
         />
       )}
 
-      <Text style={{ color: colors.text, fontSize: 14, fontWeight: "600" }}>
-        Saisie manuelle (pays ISO + %)
-      </Text>
-      {draft.map((row, index) => (
-        <View key={index} style={{ flexDirection: "row", gap: 8 }}>
-          <TextInput
-            accessibilityLabel={`Pays géographique ${index + 1}`}
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <TouchableOpacity
+          accessibilityLabel="Mode saisie pays"
+          onPress={() => switchMode("countries")}
+          style={{
+            backgroundColor:
+              mode === "countries" ? colors.accentBg : "transparent",
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            borderRadius: 8,
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+          }}
+        >
+          <Text
             style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: colors.cardBorder,
-              borderRadius: 8,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              color: colors.text,
+              color: mode === "countries" ? "#fff" : colors.text,
+              fontWeight: "600",
+              fontSize: 13,
             }}
-            value={row.country}
-            onChangeText={(value) => {
-              const next = [...draftRef.current];
-              next[index] = { ...next[index], country: value };
-              updateDraft(next);
+          >
+            Pays
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityLabel="Mode saisie régions"
+          onPress={() => switchMode("regions")}
+          style={{
+            backgroundColor:
+              mode === "regions" ? colors.accentBg : "transparent",
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            borderRadius: 8,
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+          }}
+        >
+          <Text
+            style={{
+              color: mode === "regions" ? "#fff" : colors.text,
+              fontWeight: "600",
+              fontSize: 13,
             }}
-            placeholder="US"
-            placeholderTextColor={colors.textMuted}
-            autoCapitalize="characters"
-          />
+          >
+            Régions
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={{ color: colors.text, fontSize: 14, fontWeight: "600" }}>
+        Saisie manuelle ({mode === "regions" ? "régions" : "pays"} + %)
+      </Text>
+      {mode === "countries" && (
+        <TextInput
+          accessibilityLabel="Rechercher un pays"
+          style={{
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            borderRadius: 8,
+            paddingHorizontal: 10,
+            paddingVertical: 8,
+            color: colors.text,
+          }}
+          value={countryQuery}
+          onChangeText={setCountryQuery}
+          placeholder="Rechercher un pays…"
+          placeholderTextColor={colors.textMuted}
+        />
+      )}
+      {draft.map((row, index) => (
+        <View key={index} style={{ gap: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {(mode === "regions" ? regionOptions : countryOptions).map(
+              (option) => {
+                const selected = row.country === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    accessibilityLabel={`Clé géographique ${index + 1} ${option.label}`}
+                    onPress={() => {
+                      const next = [...draftByModeRef.current[modeRef.current]];
+                      next[index] = { ...next[index], country: option.value };
+                      updateDraft(next);
+                    }}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: selected
+                        ? colors.accentBg
+                        : colors.cardBorder,
+                      backgroundColor: selected
+                        ? colors.accentBg
+                        : "transparent",
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      paddingVertical: 6,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: selected ? "#fff" : colors.text,
+                        fontSize: 12,
+                      }}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              },
+            )}
+          </View>
           <TextInput
             accessibilityLabel={`Poids géographique ${index + 1}`}
             style={{
@@ -127,7 +273,7 @@ export function AssetGeographicEditor({
             }}
             value={row.weightPercent}
             onChangeText={(value) => {
-              const next = [...draftRef.current];
+              const next = [...draftByModeRef.current[modeRef.current]];
               next[index] = { ...next[index], weightPercent: value };
               updateDraft(next);
             }}
@@ -141,7 +287,7 @@ export function AssetGeographicEditor({
         accessibilityLabel="Ajouter une ligne géographique"
         onPress={() =>
           updateDraft([
-            ...draftRef.current,
+            ...draftByModeRef.current[modeRef.current],
             { country: "", weightPercent: "" },
           ])
         }
