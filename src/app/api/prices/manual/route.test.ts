@@ -66,6 +66,7 @@ function workbook(
     budget: [],
     properties: [],
     dca: [],
+    geographicAllocations: [],
     manualPrices,
   };
 }

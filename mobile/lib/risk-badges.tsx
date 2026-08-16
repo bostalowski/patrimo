@@ -123,8 +123,12 @@ export function RiskBadges({
       <MetricLine
         title="Pire chute"
         value={formatPercentCompact(drawdown)}
-        statusWord={DRAWDOWN_LABEL[drawdownStatus]}
-        tone={DRAWDOWN_TONE[drawdownStatus]}
+        statusWord={
+          drawdownStatus === null ? null : DRAWDOWN_LABEL[drawdownStatus]
+        }
+        tone={
+          drawdownStatus === null ? "muted" : DRAWDOWN_TONE[drawdownStatus]
+        }
         theme={t}
       />
       <Text style={{ color: t.textMuted, fontSize: 11, marginTop: 4 }}>

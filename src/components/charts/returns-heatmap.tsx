@@ -167,8 +167,8 @@ export function DrawdownBadge({
     <StatusBadge
       title="Pire chute"
       value={formatPercentCompact(value)}
-      statusWord={DRAWDOWN_LABEL[status]}
-      tone={DRAWDOWN_TONE[status]}
+      statusWord={status === null ? null : DRAWDOWN_LABEL[status]}
+      tone={status === null ? "muted" : DRAWDOWN_TONE[status]}
       className={className}
     />
   );
