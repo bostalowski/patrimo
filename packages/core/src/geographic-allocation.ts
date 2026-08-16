@@ -132,3 +132,19 @@ export function allocationSourceForAsset(
   const row = allocations.find((entry) => entry.assetId === assetId);
   return row?.source ?? null;
 }
+
+export function applyFetchedGeographicAllocation(
+  workbook: Workbook,
+  assetId: string,
+  weights: Array<{ country: string; weight: number }>,
+  options: { restore?: boolean } = {},
+): Workbook {
+  const currentSource = allocationSourceForAsset(
+    workbook.geographicAllocations ?? [],
+    assetId,
+  );
+  if (currentSource === "manual" && !options.restore) {
+    return workbook;
+  }
+  return replaceGeographicAllocation(workbook, assetId, weights, "justetf");
+}
