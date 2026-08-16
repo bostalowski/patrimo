@@ -148,6 +148,20 @@ Persists through the workbook (`upsertManualPrice` + `replaceWorkbook`). Rejects
 Body: `{ assetId, date }`.
 Removes that dated entry from the workbook.
 
+## Geography
+
+### `POST /api/geography`
+
+Body: `{ assetId, source: "manual", weights: [{ country, weight }] }` with `weight` in `[0, 1]` summing to ~1.
+
+Persists via `replaceGeographicAllocation` + `replaceWorkbook`.
+
+### `POST /api/geography/sync`
+
+Body: `{ assetId, restore?: boolean }`.
+
+Fetches JustETF profile for the asset ISIN and applies country weights (`source=justetf`). Skips overwrite when the asset already has a `manual` allocation unless `restore` is true. Soft-fails with `502` when fetch/parse fails.
+
 ## Retirement profile
 
 ### `GET /api/retirement-profile`

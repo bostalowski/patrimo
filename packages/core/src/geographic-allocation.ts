@@ -5,7 +5,7 @@ import type {
   Workbook,
 } from "./schema";
 
-const WEIGHT_SUM_TOLERANCE = 1e-3;
+export const GEOGRAPHIC_WEIGHT_SUM_TOLERANCE = 1e-3;
 
 function findAsset(assets: Asset[], assetId: string): Asset {
   const asset = assets.find((candidate) => candidate.id === assetId);
@@ -38,7 +38,7 @@ function assertValidWeightRows(
     sum += row.weight;
   }
 
-  if (Math.abs(sum - 1) > WEIGHT_SUM_TOLERANCE) {
+  if (Math.abs(sum - 1) > GEOGRAPHIC_WEIGHT_SUM_TOLERANCE) {
     throw new Error(
       `Geographic allocation weights must sum to 1 (got ${sum})`,
     );
@@ -78,7 +78,7 @@ export function normalizeGeographicAllocations(
   const normalized: GeographicAllocation[] = [];
   for (const rows of byAsset.values()) {
     const sum = rows.reduce((total, row) => total + row.weight, 0);
-    if (Math.abs(sum - 1) > WEIGHT_SUM_TOLERANCE) continue;
+    if (Math.abs(sum - 1) > GEOGRAPHIC_WEIGHT_SUM_TOLERANCE) continue;
     normalized.push(...rows);
   }
   return normalized;

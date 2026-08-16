@@ -1,4 +1,5 @@
 import type { GeographicAllocation } from "./schema";
+import { GEOGRAPHIC_WEIGHT_SUM_TOLERANCE } from "./geographic-allocation";
 
 export type GeographicRegion =
   | "NORTH_AMERICA"
@@ -88,7 +89,7 @@ function allocationsByAsset(
 function isValidAllocation(rows: GeographicAllocation[]): boolean {
   if (rows.length === 0) return false;
   const sum = rows.reduce((total, row) => total + row.weight, 0);
-  return Math.abs(sum - 1) <= 1e-3;
+  return Math.abs(sum - 1) <= GEOGRAPHIC_WEIGHT_SUM_TOLERANCE;
 }
 
 function toSortedSlices(

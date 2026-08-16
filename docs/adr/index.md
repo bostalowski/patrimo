@@ -7,6 +7,6 @@
 - [ADR 0005: Emergency fund health indicator](0005-emergency-fund-health-indicator.md) — accepted
 - [ADR 0006: Portfolio risk readability](0006-portfolio-risk-readability.md) — accepted
 - [ADR 0007: Fee monitoring ratios on the Fees page](0007-fee-monitoring-ratios.md) — accepted
-- [ADR 0008: Geographic allocation in the workbook](0008-geographic-allocation.md) — proposed
+- [ADR 0008: Geographic allocation in the workbook](0008-geographic-allocation.md) — accepted
 
 Template: [_template.md](_template.md)

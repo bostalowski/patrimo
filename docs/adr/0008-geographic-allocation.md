@@ -1,6 +1,6 @@
 # ADR 0008: Geographic allocation in the workbook
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-16
 - implementation_ready: yes
 
@@ -75,11 +75,13 @@ Canonical terms: [glossary](../reference/glossary.md) (**Geographic allocation**
 
 - JustETF scraping is unofficial and can break.
 - Covered-only donuts can look “fully diversified” while a large crypto/cash sleeve is invisible on the chart.
+- JustETF sync is web-only in the shipped increment; mobile supports display + manual entry.
 
 **To monitor**
 
 - JustETF markup / AJAX changes.
 - Country→region map completeness for exotic holdings.
+- Optional later: JustETF sync on mobile.
 
 ## Uncovered cases
 
