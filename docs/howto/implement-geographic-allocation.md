@@ -21,15 +21,13 @@ Tests: `src/lib/geographic-allocation-core.test.ts`, `geographic-allocation-exce
 
 Tests: `src/lib/geographic-allocation-aggregate.test.ts`.
 
-### Scope 3 — JustETF sync (done, web path)
+### Scope 3 — JustETF sync (removed)
 
-Parse JustETF country tables, `applyFetchedGeographicAllocation` with manual lock, soft-fail sync helper.
-
-Tests: `src/lib/prices/justetf-geography.test.ts` (move with parser into core under Scope 8).
+Earlier scrape/sync path deleted. Geography writes are manual-only (`source=manual`). Legacy `source=justetf` rows remain readable.
 
 ### Scope 4 — Web UI (done; account panel location superseded by Scope 7)
 
-`/geographie`, asset detail, `/api/geography` (+ sync). Per-account geo on the accounts **list** is removed in Scope 7.
+`/geographie`, asset detail, `/api/geography` (manual POST only). Per-account geo on the accounts **list** is removed in Scope 7.
 
 Tests: `src/components/geographic-exposure-panel.test.tsx`, `src/app/api/geography/route.test.ts`.
 
@@ -51,11 +49,9 @@ Web `/comptes/[id]` and mobile account-detail: positions + account geo (dual cou
 
 Tests: `src/app/comptes/comptes-account-detail.test.tsx`; `mobile/lib/geographic-ui.test.tsx`.
 
-### Scope 8 — Shared JustETF parse + mobile sync (done)
+### Scope 8 — Shared JustETF parse + mobile sync (removed)
 
-Parse + `applyJustEtfGeographicSync` in `@patrimo/core`; web API route keeps fetch only; mobile edit-asset gains JustETF / restore actions when ISIN present; soft-fail on fetch/parse failure.
-
-Tests: `packages/core/src/justetf-geography.test.ts`; `src/app/api/geography/sync/route.test.ts`; mobile geographic UI sync cases.
+JustETF parse, `/api/geography/sync`, and mobile sync actions removed. Manual entry only.
 
 ### Scope 9 — Region-level allocations + dual views + guided pickers (done)
 
@@ -67,15 +63,14 @@ Tests: `src/lib/geographic-region-allocation.test.ts`; web + mobile geographic U
 
 | Level | What it proves |
 |---|---|
-| Core unit | Validation sum; replace; manual lock; deletion; aggregation; JustETF parse; soft-fail apply |
+| Core unit | Validation sum; replace; deletion; aggregation |
 | Excel adapters | Round-trip sheet; missing sheet = empty; percent ↔ fraction |
-| Web / mobile UI | Account list has no full geo; detail shows account geo; mobile JustETF sync / restore / no-ISIN |
+| Web / mobile UI | Account list has no full geo; detail shows account geo; guided manual pickers; no JustETF actions |
 
 ## Commands
 
 ```bash
 npm test -- src/lib/geographic-allocation
-npm test -- src/lib/prices/justetf-geography.test.ts
 npm test -- src/components/geographic-exposure-panel.test.tsx src/app/api/geography/route.test.ts
 npm test -- mobile/lib/geographic-ui.test.tsx
 ```

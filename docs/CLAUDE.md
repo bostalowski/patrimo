@@ -23,4 +23,4 @@ Read [DOC_STRUCTURE_MODEL.md](../DOC_STRUCTURE_MODEL.md) before adding or editin
 - [ADR 0005](adr/0005-emergency-fund-health-indicator.md) — emergency fund health indicator on Dashboards.
 - [ADR 0006](adr/0006-portfolio-risk-readability.md) — readable risk badges on Dashboards.
 - [ADR 0008](adr/0008-geographic-allocation.md) — geographic allocation in the workbook.
-- [ADR 0009](adr/0009-account-detail-and-mobile-justetf.md) — account detail, region allocations, and mobile JustETF sync.
+- [ADR 0009](adr/0009-account-detail-and-mobile-justetf.md) — account detail and region allocations (manual geography).

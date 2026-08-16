@@ -1,9 +1,9 @@
-# ADR 0009: Account detail, region allocations, and mobile JustETF
+# ADR 0009: Account detail and region allocations
 
 - Status: accepted
 - Date: 2026-08-16
 - implementation_ready: yes
-- Amends: [ADR 0008](0008-geographic-allocation.md) (account geo placement; JustETF platform scope; shared JustETF parse; region-level manual allocations; dual country/region views)
+- Amends: [ADR 0008](0008-geographic-allocation.md) (account geo placement; manual-only geography writes; region-level manual allocations; dual country/region views; JustETF sync removed)
 
 ```text
 Contract (do not invent):
@@ -16,7 +16,7 @@ Contract (do not invent):
   empty geo → empty-state message, no error
 - WHEN viewing geographic exposure (global, account, or asset) on web or mobile
 - THEN show two complementary breakdowns: (1) countries — interactive map+list on
-  web, list on mobile; (2) regions — list (or equivalent non-map) using the five
+  web, list on mobile; (2) regions — list (or equivalent non-map) using the six
   product regions NORTH_AMERICA, LATIN_AMERICA, EUROPE, ASIA_PACIFIC,
   AFRICA_MIDDLE_EAST, OTHER
 - WHEN aggregating the country breakdown
@@ -25,64 +25,58 @@ Contract (do not invent):
 - WHEN aggregating the region breakdown
 - THEN include country-level assets by rolling countries via regionForCountry,
   and include region-level assets by using their region keys as-is
-- WHEN the user saves a manual geographic allocation for an asset
-- THEN all rows for that asset are either country-level or region-level
-  (homogeneous); mixing country codes and region keys on one asset is rejected
-- WHEN entering manual geography
+- WHEN the user saves a geographic allocation for an asset
+- THEN write source=manual only; all rows for that asset are either country-level
+  or region-level (homogeneous); mixing country codes and region keys on one
+  asset is rejected
+- WHEN entering geography
 - THEN the UI offers a mode switch (countries | regions) and guided pickers:
-  regions = closed list of the five product regions with French labels;
+  regions = closed list of the six product regions with French labels;
   countries = searchable/selectable list of ISO alpha-2 with French labels
   (plus OTHER); free-typed codes outside the picker are not accepted
-- WHEN JustETF sync succeeds
-- THEN write country-level rows (source=justetf), replacing any previous manual
-  rows only under ADR 0008 lock/restore rules; asset becomes country-mode
-- WHEN JustETF sync is triggered for an asset with ISIN (web or mobile)
-- THEN fetch profile HTML, parse with shared core parser, apply via
-  applyFetchedGeographicAllocation
-- WHEN JustETF sync is triggered on mobile for an asset without ISIN
-- THEN do not show JustETF actions; manual entry only
-- WHEN JustETF fetch/parse yields no usable weights or throws
-- THEN soft-fail: error to the user; do not write geographic rows
-- WHEN ordinary sync runs and current allocation source is manual
-- THEN do not overwrite; only explicit restore replaces with source=justetf
+- WHEN reading workbook rows with source=justetf
+- THEN treat them as valid legacy allocations for aggregation/display; do not
+  offer JustETF fetch, sync, or restore actions
 - ELSE workbook sheet Exposition geo column Pays stores either an ISO alpha-2,
-  OTHER, or a GeographicRegion key; weight/source rules remain ADR 0008;
+  OTHER, or a GeographicRegion key; weight rules remain ADR 0008;
   mobile account detail and mobile geo lists stay without interactive map
-- FORBIDDEN full geo panels on the accounts list; redefining coverage/sum/manual
-  lock outside @patrimo/core; duplicating JustETF parse per platform; inventing
-  default weights; mixing country and region keys on one asset; free-text geo
-  keys outside the guided pickers; interactive map on mobile; bulk JustETF sync
+- FORBIDDEN full geo panels on the accounts list; redefining coverage/sum rules
+  outside @patrimo/core; inventing default weights; mixing country and region
+  keys on one asset; free-text geo keys outside the guided pickers; interactive
+  map on mobile; JustETF scrape/sync UI or API
 - OPEN (do not implement): interactive map on mobile; PDF factsheet import;
-  coverage % KPI; custom user-defined regions beyond the five product regions
+  coverage % KPI; custom user-defined regions beyond the six product regions;
+  reintroducing automated JustETF sync
 ```
 
 ## Context
 
-ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) and left JustETF sync web-only. Users also often have only **region** factsheet splits (e.g. North America / Europe), while JustETF provides **countries**. Free-typed ISO codes invite typos.
+ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) and originally filled weights via JustETF scrape. Users often have only **region** factsheet splits (e.g. North America / Europe). Free-typed ISO codes invite typos. JustETF sync proved unreliable in practice, so geography writes are **manual-only**.
 
 ## Decision
 
 - Dedicated **account detail** on web and mobile; accounts list opens it (mobile: list → detail → edit metadata).
 - **Two exposure views** everywhere geo is shown: countries and regions.
 - Manual entry chooses **countries or regions** per asset (homogeneous rows); guided pickers only (no free-typed keys).
-- JustETF sync on **mobile** as on web; HTML **parse + sync orchestration** in `@patrimo/core`.
+- **No JustETF sync** (web or mobile). Legacy `source=justetf` rows remain readable.
 
 ## Invariants
 
-- ADR 0008 workbook authority, sum validation, manual lock, and deletion cascade remain.
+- ADR 0008 workbook authority, sum validation, and deletion cascade remain.
 - The six product regions are the only region keys (`NORTH_AMERICA`, `LATIN_AMERICA`,
   `EUROPE`, `ASIA_PACIFIC`, `AFRICA_MIDDLE_EAST`, `OTHER`). Legacy `EMERGING` maps to `OTHER`.
-- Platforms must not fork parse, region mapping, or aggregation rules.
+- Platforms must not fork region mapping or aggregation rules.
 - Country map remains web-only; region view is list-based on both platforms.
+- New geographic writes always use `source=manual`.
 
 ## Options considered
 
 | Option | Status | Why |
 |---|---|---|
-| A — Account detail + dual country/region views + guided entry + core JustETF parse + mobile sync | Retained | Keeps JustETF detail; allows coarse factsheets; prevents typos; list stays readable |
+| A — Account detail + dual country/region views + guided entry + manual-only writes | Retained | List stays readable; coarse factsheets work; typos reduced; no fragile scrape |
 | B — Region-only storage and UI | Rejected | Discards country look-through and the country map |
 | C — Free-typed ISO / region strings | Rejected | User-requested guide; typos break aggregation |
-| D — Duplicate JustETF parser under `mobile/` | Rejected | Two breakages when markup changes |
+| D — Keep / extend JustETF sync (including mobile) | Rejected | Sync unreliable; user chose manual-only |
 | E — Compact geo teaser on accounts list only | Rejected | Still clutters; no clear account home |
 
 ## Consequences
@@ -93,27 +87,26 @@ ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) an
 - Region-only factsheets can be entered without inventing fake countries.
 - Dual views: map stays useful; region view covers all geo-backed assets.
 - Guided pickers reduce invalid keys.
-- Mobile JustETF parity for ISIN assets.
+- No dependency on unofficial JustETF markup.
 
 **Negatives**
 
 - Extra mobile navigation hop before account edit.
 - Country and region covered totals can differ (region-only assets absent from country view).
-- JustETF scraping remains unofficial.
+- Users must enter or maintain weights manually (no auto-fill from ISIN).
 - Longer manual entry UI (mode + pickers).
 
 **To monitor**
 
-- JustETF markup changes.
 - User confusion when country coverage &lt; region coverage.
 - ISO list UX on mobile (search performance).
 
 ## Uncovered cases
 
 - Interactive map on mobile.
-- Bulk “sync all ETF ISIN assets”.
 - PDF issuer factsheet import.
 - User-defined region taxonomies.
+- Automated geo import from any external provider.
 
 ## Follow-up
 

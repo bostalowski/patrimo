@@ -7,27 +7,64 @@ import {
   Alert,
 } from "react-native";
 import type { GeographicAllocation } from "@patrimo/core/schema";
-import type { GeographicSlice } from "@patrimo/core/geographic-exposure";
+import {
+  geographicAllocationGranularity,
+  type GeographicSlice,
+} from "@patrimo/core/geographic-exposure";
 import { GeographicExposureList } from "./geographic-exposure-list";
 import {
   geographicCountryOptions,
   geographicRegionOptions,
 } from "../lib/geographic-key-options";
 
+type DraftRow = { country: string; weightPercent: string };
+type EntryMode = "countries" | "regions";
+
+function emptyDraft(): DraftRow[] {
+  return [{ country: "", weightPercent: "" }];
+}
+
+function draftFromAllocations(allocations: GeographicAllocation[]): DraftRow[] {
+  if (allocations.length === 0) return emptyDraft();
+  return allocations.map((row) => ({
+    country: row.country,
+    weightPercent: String(Math.round(row.weight * 1000) / 10),
+  }));
+}
+
+function entryModeFromAllocations(
+  allocations: GeographicAllocation[],
+): EntryMode {
+  if (allocations.length === 0) return "countries";
+  return geographicAllocationGranularity(allocations.map((row) => row.country)) ===
+    "region"
+    ? "regions"
+    : "countries";
+}
+
+function initialDraftsByMode(allocations: GeographicAllocation[]): Record<
+  EntryMode,
+  DraftRow[]
+> {
+  const mode = entryModeFromAllocations(allocations);
+  const filled = draftFromAllocations(allocations);
+  return {
+    countries: mode === "countries" ? filled : emptyDraft(),
+    regions: mode === "regions" ? filled : emptyDraft(),
+  };
+}
+
 export function AssetGeographicEditor({
   assetLabel,
-  hasIsin = false,
   allocations,
   regions,
   countries,
   colors,
   onSave,
-  onSyncJustEtf,
   pending,
 }: {
   assetId: string;
   assetLabel: string;
-  hasIsin?: boolean;
   allocations: GeographicAllocation[];
   regions: GeographicSlice[];
   countries: GeographicSlice[];
@@ -41,41 +78,31 @@ export function AssetGeographicEditor({
   onSave: (
     weights: Array<{ country: string; weight: number }>,
   ) => Promise<void>;
-  onSyncJustEtf?: (options: { restore: boolean }) => Promise<{ ok: boolean }>;
   pending: boolean;
 }) {
-  const initialMode =
-    allocations.length > 0 &&
-    allocations.every((row) =>
-      [
-        "NORTH_AMERICA",
-        "LATIN_AMERICA",
-        "EUROPE",
-        "ASIA_PACIFIC",
-        "AFRICA_MIDDLE_EAST",
-        "OTHER",
-        "EMERGING",
-      ].includes(row.country),
-    )
-      ? "regions"
-      : "countries";
-  const [mode, setMode] = useState<"countries" | "regions">(initialMode);
-  const [countryQuery, setCountryQuery] = useState("");
-  const [draft, setDraft] = useState(
-    allocations.length > 0
-      ? allocations.map((row) => ({
-          country: row.country,
-          weightPercent: String(Math.round(row.weight * 1000) / 10),
-        }))
-      : [{ country: "", weightPercent: "" }],
+  const [mode, setMode] = useState<EntryMode>(() =>
+    entryModeFromAllocations(allocations),
   );
-  const draftRef = useRef(draft);
+  const [countryQuery, setCountryQuery] = useState("");
+  const [draftByMode, setDraftByMode] = useState(() =>
+    initialDraftsByMode(allocations),
+  );
+  const modeRef = useRef(mode);
+  const draftByModeRef = useRef(draftByMode);
+  const draft = draftByMode[mode];
 
-  const updateDraft = (
-    next: Array<{ country: string; weightPercent: string }>,
-  ) => {
-    draftRef.current = next;
-    setDraft(next);
+  const updateDraft = (next: DraftRow[]) => {
+    const updated = {
+      ...draftByModeRef.current,
+      [modeRef.current]: next,
+    };
+    draftByModeRef.current = updated;
+    setDraftByMode(updated);
+  };
+
+  const switchMode = (nextMode: EntryMode) => {
+    modeRef.current = nextMode;
+    setMode(nextMode);
   };
 
   const regionOptions = geographicRegionOptions();
@@ -89,7 +116,7 @@ export function AssetGeographicEditor({
   }).slice(0, 30);
 
   const save = async () => {
-    const weights = draftRef.current
+    const weights = draftByModeRef.current[modeRef.current]
       .filter((row) => row.country.trim() && row.weightPercent.trim())
       .map((row) => ({
         country: row.country.trim().toUpperCase(),
@@ -100,24 +127,6 @@ export function AssetGeographicEditor({
     } catch (error) {
       Alert.alert(
         "Répartition invalide",
-        error instanceof Error ? error.message : "Erreur inconnue",
-      );
-    }
-  };
-
-  const syncJustEtf = async (restore: boolean) => {
-    if (!onSyncJustEtf) return;
-    try {
-      const result = await onSyncJustEtf({ restore });
-      if (!result.ok) {
-        Alert.alert(
-          "Sync JustETF impossible",
-          "La récupération depuis JustETF a échoué. Le classeur n'a pas été modifié.",
-        );
-      }
-    } catch (error) {
-      Alert.alert(
-        "Sync JustETF impossible",
         error instanceof Error ? error.message : "Erreur inconnue",
       );
     }
@@ -141,61 +150,10 @@ export function AssetGeographicEditor({
         />
       )}
 
-      {hasIsin && onSyncJustEtf && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          <TouchableOpacity
-            accessibilityLabel={
-              allocations.length === 0
-                ? "Récupérer depuis JustETF"
-                : "Sync JustETF"
-            }
-            disabled={pending}
-            onPress={() => void syncJustEtf(false)}
-            style={{
-              backgroundColor: colors.accentBg,
-              borderRadius: 10,
-              paddingVertical: 10,
-              paddingHorizontal: 12,
-              opacity: pending ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
-              {allocations.length === 0
-                ? "Récupérer depuis JustETF"
-                : "Sync JustETF"}
-            </Text>
-          </TouchableOpacity>
-          {allocations.length > 0 && (
-            <TouchableOpacity
-              accessibilityLabel="Rétablir depuis JustETF"
-              disabled={pending}
-              onPress={() => void syncJustEtf(true)}
-              style={{
-                borderWidth: 1,
-                borderColor: colors.cardBorder,
-                borderRadius: 10,
-                paddingVertical: 10,
-                paddingHorizontal: 12,
-                opacity: pending ? 0.6 : 1,
-              }}
-            >
-              <Text
-                style={{ color: colors.text, fontWeight: "600", fontSize: 13 }}
-              >
-                Rétablir depuis JustETF
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
       <View style={{ flexDirection: "row", gap: 8 }}>
         <TouchableOpacity
           accessibilityLabel="Mode saisie pays"
-          onPress={() => {
-            setMode("countries");
-            updateDraft([{ country: "", weightPercent: "" }]);
-          }}
+          onPress={() => switchMode("countries")}
           style={{
             backgroundColor:
               mode === "countries" ? colors.accentBg : "transparent",
@@ -218,10 +176,7 @@ export function AssetGeographicEditor({
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityLabel="Mode saisie régions"
-          onPress={() => {
-            setMode("regions");
-            updateDraft([{ country: "", weightPercent: "" }]);
-          }}
+          onPress={() => switchMode("regions")}
           style={{
             backgroundColor:
               mode === "regions" ? colors.accentBg : "transparent",
@@ -275,7 +230,7 @@ export function AssetGeographicEditor({
                     key={option.value}
                     accessibilityLabel={`Clé géographique ${index + 1} ${option.label}`}
                     onPress={() => {
-                      const next = [...draftRef.current];
+                      const next = [...draftByModeRef.current[modeRef.current]];
                       next[index] = { ...next[index], country: option.value };
                       updateDraft(next);
                     }}
@@ -318,7 +273,7 @@ export function AssetGeographicEditor({
             }}
             value={row.weightPercent}
             onChangeText={(value) => {
-              const next = [...draftRef.current];
+              const next = [...draftByModeRef.current[modeRef.current]];
               next[index] = { ...next[index], weightPercent: value };
               updateDraft(next);
             }}
@@ -332,7 +287,7 @@ export function AssetGeographicEditor({
         accessibilityLabel="Ajouter une ligne géographique"
         onPress={() =>
           updateDraft([
-            ...draftRef.current,
+            ...draftByModeRef.current[modeRef.current],
             { country: "", weightPercent: "" },
           ])
         }

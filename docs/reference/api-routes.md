@@ -156,12 +156,6 @@ Body: `{ assetId, source: "manual", weights: [{ country, weight }] }` with `weig
 
 Persists via `replaceGeographicAllocation` + `replaceWorkbook`.
 
-### `POST /api/geography/sync`
-
-Body: `{ assetId, restore?: boolean }`.
-
-Fetches JustETF profile for the asset ISIN and applies country weights (`source=justetf`) via shared `@patrimo/core` parse/apply. Skips overwrite when the asset already has a `manual` allocation unless `restore` is true. Soft-fails with `502` when fetch/parse fails. Mobile performs the same apply path locally (no this route).
-
 ## Retirement profile
 
 ### `GET /api/retirement-profile`

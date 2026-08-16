@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   workbookState: {} as Record<string, unknown>,
   routeParams: {} as Record<string, string>,
   replaceGeographic: vi.fn(),
-  syncJustEtf: vi.fn(),
   refresh: vi.fn(),
 }));
 
@@ -48,7 +47,6 @@ vi.mock("./write-asset", () => ({
   upsertManualPriceInSource: vi.fn(),
   deleteManualPriceFromSource: vi.fn(),
   replaceGeographicAllocationInSource: mocks.replaceGeographic,
-  syncJustEtfGeographicAllocationInSource: mocks.syncJustEtf,
 }));
 
 vi.mock("./write-account", () => ({
@@ -57,7 +55,6 @@ vi.mock("./write-account", () => ({
 }));
 
 import { router } from "expo-router";
-import { Alert } from "react-native";
 import GeographieScreen from "../app/geographie";
 import ComptesScreen from "../app/comptes";
 import AccountDetailScreen from "../app/account-detail";
@@ -148,7 +145,6 @@ describe("mobile geographic UI", () => {
     vi.clearAllMocks();
     mocks.refresh.mockResolvedValue(undefined);
     mocks.replaceGeographic.mockResolvedValue(undefined);
-    mocks.syncJustEtf.mockResolvedValue({ ok: true });
     mocks.workbookState = {
       workbook: workbook(),
       prices: new Map([["world", 100]]),
@@ -180,7 +176,6 @@ describe("mobile geographic UI", () => {
         <AssetGeographicEditor
           assetId="btc"
           assetLabel="Bitcoin"
-          hasIsin={false}
           allocations={[]}
           regions={[]}
           countries={[]}
@@ -192,7 +187,6 @@ describe("mobile geographic UI", () => {
             accentBg: "#111",
           }}
           onSave={mocks.replaceGeographic}
-          onSyncJustEtf={mocks.syncJustEtf}
           pending={false}
         />,
       );
@@ -232,221 +226,6 @@ describe("mobile geographic UI", () => {
     ]);
   });
 
-  it("mobile asset editor shows JustETF sync and restore when the asset has an ISIN", () => {
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <AssetGeographicEditor
-          assetId="world"
-          assetLabel="World ETF"
-          hasIsin
-          allocations={[
-            {
-              assetId: "world",
-              country: "US",
-              weight: 0.7,
-              source: "manual",
-            },
-            {
-              assetId: "world",
-              country: "JP",
-              weight: 0.3,
-              source: "manual",
-            },
-          ]}
-          regions={[]}
-          countries={[
-            { key: "US", marketValue: 700, weight: 0.7 },
-            { key: "JP", marketValue: 300, weight: 0.3 },
-          ]}
-          colors={{
-            text: "#000",
-            textSecondary: "#666",
-            textMuted: "#999",
-            cardBorder: "#ddd",
-            accentBg: "#111",
-          }}
-          onSave={mocks.replaceGeographic}
-          onSyncJustEtf={mocks.syncJustEtf}
-          pending={false}
-        />,
-      );
-    });
-
-    expect(
-      renderer.root.findAll(
-        (node) => node.props.accessibilityLabel === "Sync JustETF",
-      ).length,
-    ).toBe(1);
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.props.accessibilityLabel === "Rétablir depuis JustETF",
-      ).length,
-    ).toBe(1);
-  });
-
-  it("mobile asset editor hides JustETF actions when the asset has no ISIN", () => {
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <AssetGeographicEditor
-          assetId="btc"
-          assetLabel="Bitcoin"
-          hasIsin={false}
-          allocations={[]}
-          regions={[]}
-          countries={[]}
-          colors={{
-            text: "#000",
-            textSecondary: "#666",
-            textMuted: "#999",
-            cardBorder: "#ddd",
-            accentBg: "#111",
-          }}
-          onSave={mocks.replaceGeographic}
-          onSyncJustEtf={mocks.syncJustEtf}
-          pending={false}
-        />,
-      );
-    });
-
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.props.accessibilityLabel === "Sync JustETF" ||
-          node.props.accessibilityLabel === "Récupérer depuis JustETF" ||
-          node.props.accessibilityLabel === "Rétablir depuis JustETF",
-      ),
-    ).toHaveLength(0);
-  });
-
-  it("mobile ordinary JustETF sync does not overwrite a manual allocation", async () => {
-    mocks.syncJustEtf.mockResolvedValue({ ok: true, skippedManual: true });
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <AssetGeographicEditor
-          assetId="world"
-          assetLabel="World ETF"
-          hasIsin
-          allocations={[
-            {
-              assetId: "world",
-              country: "FR",
-              weight: 1,
-              source: "manual",
-            },
-          ]}
-          regions={[]}
-          countries={[{ key: "FR", marketValue: 100, weight: 1 }]}
-          colors={{
-            text: "#000",
-            textSecondary: "#666",
-            textMuted: "#999",
-            cardBorder: "#ddd",
-            accentBg: "#111",
-          }}
-          onSave={mocks.replaceGeographic}
-          onSyncJustEtf={mocks.syncJustEtf}
-          pending={false}
-        />,
-      );
-    });
-
-    const syncButton = renderer.root.find(
-      (node) => node.props.accessibilityLabel === "Sync JustETF",
-    );
-    await act(async () => {
-      await syncButton.props.onPress();
-    });
-
-    expect(mocks.syncJustEtf).toHaveBeenCalledWith({ restore: false });
-  });
-
-  it("mobile restore from JustETF replaces a manual allocation with source=justetf", async () => {
-    mocks.syncJustEtf.mockResolvedValue({ ok: true });
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <AssetGeographicEditor
-          assetId="world"
-          assetLabel="World ETF"
-          hasIsin
-          allocations={[
-            {
-              assetId: "world",
-              country: "FR",
-              weight: 1,
-              source: "manual",
-            },
-          ]}
-          regions={[]}
-          countries={[{ key: "FR", marketValue: 100, weight: 1 }]}
-          colors={{
-            text: "#000",
-            textSecondary: "#666",
-            textMuted: "#999",
-            cardBorder: "#ddd",
-            accentBg: "#111",
-          }}
-          onSave={mocks.replaceGeographic}
-          onSyncJustEtf={mocks.syncJustEtf}
-          pending={false}
-        />,
-      );
-    });
-
-    const restoreButton = renderer.root.find(
-      (node) =>
-        node.props.accessibilityLabel === "Rétablir depuis JustETF",
-    );
-    await act(async () => {
-      await restoreButton.props.onPress();
-    });
-
-    expect(mocks.syncJustEtf).toHaveBeenCalledWith({ restore: true });
-  });
-
-  it("mobile JustETF fetch/parse failure shows an error and leaves workbook geographic rows unchanged", async () => {
-    mocks.syncJustEtf.mockResolvedValue({ ok: false });
-    let renderer!: ReactTestRenderer;
-    act(() => {
-      renderer = create(
-        <AssetGeographicEditor
-          assetId="world"
-          assetLabel="World ETF"
-          hasIsin
-          allocations={[]}
-          regions={[]}
-          countries={[]}
-          colors={{
-            text: "#000",
-            textSecondary: "#666",
-            textMuted: "#999",
-            cardBorder: "#ddd",
-            accentBg: "#111",
-          }}
-          onSave={mocks.replaceGeographic}
-          onSyncJustEtf={mocks.syncJustEtf}
-          pending={false}
-        />,
-      );
-    });
-
-    const syncButton = renderer.root.find(
-      (node) =>
-        node.props.accessibilityLabel === "Récupérer depuis JustETF",
-    );
-    await act(async () => {
-      await syncButton.props.onPress();
-    });
-
-    expect(mocks.syncJustEtf).toHaveBeenCalledWith({ restore: false });
-    expect(Alert.alert).toHaveBeenCalled();
-    expect(mocks.replaceGeographic).not.toHaveBeenCalled();
-  });
-
   it("mobile manual entry offers the same guided countries|regions pickers", () => {
     let renderer!: ReactTestRenderer;
     act(() => {
@@ -454,7 +233,6 @@ describe("mobile geographic UI", () => {
         <AssetGeographicEditor
           assetId="btc"
           assetLabel="Bitcoin"
-          hasIsin={false}
           allocations={[]}
           regions={[]}
           countries={[]}
@@ -495,6 +273,76 @@ describe("mobile geographic UI", () => {
           node.props.accessibilityLabel.includes("Amérique du Nord"),
       ).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("mobile manual entry keeps country draft percentages when toggling to regions and back", () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        <AssetGeographicEditor
+          assetId="world"
+          assetLabel="World ETF"
+          allocations={[
+            {
+              assetId: "world",
+              country: "US",
+              weight: 0.7,
+              source: "manual",
+            },
+            {
+              assetId: "world",
+              country: "JP",
+              weight: 0.3,
+              source: "manual",
+            },
+          ]}
+          regions={[]}
+          countries={[]}
+          colors={{
+            text: "#000",
+            textSecondary: "#666",
+            textMuted: "#999",
+            cardBorder: "#ddd",
+            accentBg: "#111",
+          }}
+          onSave={mocks.replaceGeographic}
+          pending={false}
+        />,
+      );
+    });
+
+    expect(
+      renderer.root.find(
+        (node) => node.props.accessibilityLabel === "Poids géographique 1",
+      ).props.value,
+    ).toBe("70");
+    expect(
+      renderer.root.find(
+        (node) => node.props.accessibilityLabel === "Poids géographique 2",
+      ).props.value,
+    ).toBe("30");
+
+    act(() => {
+      renderer.root.find(
+        (node) => node.props.accessibilityLabel === "Mode saisie régions",
+      ).props.onPress();
+    });
+    act(() => {
+      renderer.root.find(
+        (node) => node.props.accessibilityLabel === "Mode saisie pays",
+      ).props.onPress();
+    });
+
+    expect(
+      renderer.root.find(
+        (node) => node.props.accessibilityLabel === "Poids géographique 1",
+      ).props.value,
+    ).toBe("70");
+    expect(
+      renderer.root.find(
+        (node) => node.props.accessibilityLabel === "Poids géographique 2",
+      ).props.value,
+    ).toBe("30");
   });
 
   it("mobile accounts list does not render per-account geographic exposure lists", () => {

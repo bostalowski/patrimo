@@ -17,6 +17,7 @@ import {
 import { formatEuro, formatPercent } from "@/lib/utils";
 import type { GeographicAllocation } from "@patrimo/core/schema";
 import {
+  geographicAllocationGranularity,
   regionLabel,
   type GeographicSlice,
 } from "@patrimo/core/geographic-exposure";
@@ -25,6 +26,43 @@ const primaryButton =
   "rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900";
 const secondaryButton =
   "rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200";
+
+type DraftRow = { country: string; weightPercent: string };
+type EntryMode = "countries" | "regions";
+
+function emptyDraft(): DraftRow[] {
+  return [{ country: "", weightPercent: "" }];
+}
+
+function draftFromAllocations(allocations: GeographicAllocation[]): DraftRow[] {
+  if (allocations.length === 0) return emptyDraft();
+  return allocations.map((row) => ({
+    country: row.country,
+    weightPercent: String(Math.round(row.weight * 1000) / 10),
+  }));
+}
+
+function entryModeFromAllocations(
+  allocations: GeographicAllocation[],
+): EntryMode {
+  if (allocations.length === 0) return "countries";
+  return geographicAllocationGranularity(allocations.map((row) => row.country)) ===
+    "region"
+    ? "regions"
+    : "countries";
+}
+
+function initialDraftsByMode(allocations: GeographicAllocation[]): Record<
+  EntryMode,
+  DraftRow[]
+> {
+  const mode = entryModeFromAllocations(allocations);
+  const filled = draftFromAllocations(allocations);
+  return {
+    countries: mode === "countries" ? filled : emptyDraft(),
+    regions: mode === "regions" ? filled : emptyDraft(),
+  };
+}
 
 function SliceList({
   slices,
@@ -109,45 +147,26 @@ export function GeographicExposurePanel({
 export function AssetGeographicSection({
   assetId,
   assetLabel,
-  hasIsin,
   allocations,
   regions = [],
   countries,
 }: {
   assetId: string;
   assetLabel: string;
-  hasIsin: boolean;
   allocations: GeographicAllocation[];
   regions?: GeographicSlice[];
   countries: GeographicSlice[];
 }) {
   const router = useRouter();
-  const initialMode =
-    allocations.length > 0 &&
-    allocations.every((row) =>
-      [
-        "NORTH_AMERICA",
-        "LATIN_AMERICA",
-        "EUROPE",
-        "ASIA_PACIFIC",
-        "AFRICA_MIDDLE_EAST",
-        "OTHER",
-        "EMERGING",
-      ].includes(row.country),
-    )
-      ? "regions"
-      : "countries";
-  const [mode, setMode] = useState<"countries" | "regions">(initialMode);
-  const [draft, setDraft] = useState(
-    allocations.length > 0
-      ? allocations.map((row) => ({
-          country: row.country,
-          weightPercent: String(Math.round(row.weight * 1000) / 10),
-        }))
-      : [{ country: "", weightPercent: "" }],
+  const [mode, setMode] = useState<EntryMode>(() =>
+    entryModeFromAllocations(allocations),
+  );
+  const [draftByMode, setDraftByMode] = useState(() =>
+    initialDraftsByMode(allocations),
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const draft = draftByMode[mode];
 
   async function saveManual() {
     setPending(true);
@@ -182,29 +201,6 @@ export function AssetGeographicSection({
     }
   }
 
-  async function syncJustEtf(restore = false) {
-    setPending(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/geography/sync", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ assetId, restore }),
-      });
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(body?.error ?? "Sync JustETF impossible");
-      }
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur");
-    } finally {
-      setPending(false);
-    }
-  }
-
   return (
     <Card>
       <CardHeader>
@@ -218,38 +214,13 @@ export function AssetGeographicSection({
         ) : (
           <ExposureBody countries={countries} regions={regions} />
         )}
-        {hasIsin && (
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={primaryButton}
-              disabled={pending}
-              onClick={() => void syncJustEtf(false)}
-            >
-              {allocations.length === 0
-                ? "Récupérer depuis JustETF"
-                : "Sync JustETF"}
-            </button>
-            {allocations.length > 0 && (
-              <button
-                type="button"
-                className={secondaryButton}
-                disabled={pending}
-                onClick={() => void syncJustEtf(true)}
-              >
-                Rétablir depuis JustETF
-              </button>
-            )}
-          </div>
-        )}
         <ManualWeightEditor
           mode={mode}
-          onModeChange={(nextMode) => {
-            setMode(nextMode);
-            setDraft([{ country: "", weightPercent: "" }]);
-          }}
+          onModeChange={setMode}
           draft={draft}
-          onChange={setDraft}
+          onChange={(next) =>
+            setDraftByMode((previous) => ({ ...previous, [mode]: next }))
+          }
           onSave={() => void saveManual()}
           pending={pending}
           error={error}

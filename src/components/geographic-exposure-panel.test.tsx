@@ -93,7 +93,6 @@ describe("web geographic UI", () => {
       <AssetGeographicSection
         assetId="btc"
         assetLabel="Bitcoin"
-        hasIsin={false}
         allocations={[]}
         regions={[]}
         countries={[]}
@@ -131,7 +130,6 @@ describe("web geographic UI", () => {
       <AssetGeographicSection
         assetId="world"
         assetLabel="World"
-        hasIsin={false}
         allocations={[]}
         regions={[]}
         countries={[]}
@@ -169,5 +167,51 @@ describe("web geographic UI", () => {
     const countrySelect = screen.getByLabelText(/Clé géographique 1/i);
     expect(countrySelect.tagName).toBe("SELECT");
     expect(screen.queryByPlaceholderText("US")).toBeNull();
+  });
+
+  it("web manual entry keeps country draft percentages when toggling to regions and back", () => {
+    render(
+      <AssetGeographicSection
+        assetId="world"
+        assetLabel="World"
+        allocations={[
+          {
+            assetId: "world",
+            country: "US",
+            weight: 0.7,
+            source: "manual",
+          },
+          {
+            assetId: "world",
+            country: "JP",
+            weight: 0.3,
+            source: "manual",
+          },
+        ]}
+        regions={[]}
+        countries={[]}
+      />,
+    );
+
+    const weightInputs = screen.getAllByPlaceholderText(
+      "70",
+    ) as HTMLInputElement[];
+    expect(weightInputs[0].value).toBe("70");
+    expect(weightInputs[1].value).toBe("30");
+
+    fireEvent.click(screen.getByRole("button", { name: /Régions/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Pays/i }));
+
+    const restoredInputs = screen.getAllByPlaceholderText(
+      "70",
+    ) as HTMLInputElement[];
+    expect(restoredInputs[0].value).toBe("70");
+    expect(restoredInputs[1].value).toBe("30");
+    expect(
+      (screen.getByLabelText(/Clé géographique 1/i) as HTMLSelectElement).value,
+    ).toBe("US");
+    expect(
+      (screen.getByLabelText(/Clé géographique 2/i) as HTMLSelectElement).value,
+    ).toBe("JP");
   });
 });
