@@ -35,7 +35,7 @@ Optional sheet `Exposition geo`:
 | Column | Model | Rule |
 |---|---|---|
 | `Actif` | `assetId` | Existing asset id |
-| `Pays` | `country` | ISO 3166-1 alpha-2, `OTHER`, **or** a product region key (`NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER`) |
+| `Pays` | `country` | ISO 3166-1 alpha-2, `OTHER`, **or** a product region key (`NORTH_AMERICA`, `LATIN_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `AFRICA_MIDDLE_EAST`, `OTHER`) |
 | `Poids %` | `weight` | Excel percent; model fraction in `[0, 1]` |
 | `Source` | `source` | `justetf` or `manual` |
 

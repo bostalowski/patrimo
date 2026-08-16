@@ -126,7 +126,7 @@ Optional sheet for look-through geographic weights. See [Geographic allocation](
 | Column | Schema field | Rules |
 |---|---|---|
 | `Actif` | `assetId` | Existing asset id |
-| `Pays` | `country` | ISO 3166-1 alpha-2, residual `OTHER`, or product region key (`NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER`); all rows for one asset are homogeneous (countries or regions) |
+| `Pays` | `country` | ISO 3166-1 alpha-2, residual `OTHER`, or product region key (`NORTH_AMERICA`, `LATIN_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `AFRICA_MIDDLE_EAST`, `OTHER`); all rows for one asset are homogeneous (countries or regions). Legacy `EMERGING` normalizes to `OTHER`. |
 | `Poids %` | `weight` | Percent in Excel (0–100); fraction in `[0, 1]` in the model; rows for one asset must sum to ~1 |
 | `Source` | `source` | `justetf` or `manual` |
 

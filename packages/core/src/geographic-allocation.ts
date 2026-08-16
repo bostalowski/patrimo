@@ -4,7 +4,10 @@ import type {
   GeographicAllocationSource,
   Workbook,
 } from "./schema";
-import { geographicAllocationGranularity } from "./geographic-exposure";
+import {
+  geographicAllocationGranularity,
+  normalizeGeographicRegionKey,
+} from "./geographic-exposure";
 
 export const GEOGRAPHIC_WEIGHT_SUM_TOLERANCE = 1e-3;
 
@@ -71,7 +74,7 @@ export function normalizeGeographicAllocations(
     const rows = byAsset.get(entry.assetId) ?? [];
     rows.push({
       assetId: entry.assetId,
-      country,
+      country: normalizeGeographicRegionKey(country),
       weight: entry.weight,
       source: entry.source,
     });
@@ -101,7 +104,7 @@ export function replaceGeographicAllocation(
   );
   const nextRows: GeographicAllocation[] = weights.map((row) => ({
     assetId,
-    country: row.country.trim(),
+    country: normalizeGeographicRegionKey(row.country.trim()),
     weight: row.weight,
     source,
   }));

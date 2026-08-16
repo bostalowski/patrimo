@@ -152,12 +152,18 @@ describe("web geographic UI", () => {
     ).toEqual(
       expect.arrayContaining([
         "NORTH_AMERICA",
+        "LATIN_AMERICA",
         "EUROPE",
         "ASIA_PACIFIC",
-        "EMERGING",
+        "AFRICA_MIDDLE_EAST",
         "OTHER",
       ]),
     );
+    expect(
+      Array.from((regionSelect as HTMLSelectElement).options).map(
+        (option) => option.value,
+      ),
+    ).not.toContain("EMERGING");
 
     fireEvent.click(screen.getByRole("button", { name: /Pays/i }));
     const countrySelect = screen.getByLabelText(/Clé géographique 1/i);

@@ -17,7 +17,8 @@ Contract (do not invent):
 - WHEN viewing geographic exposure (global, account, or asset) on web or mobile
 - THEN show two complementary breakdowns: (1) countries — interactive map+list on
   web, list on mobile; (2) regions — list (or equivalent non-map) using the five
-  product regions NORTH_AMERICA, EUROPE, ASIA_PACIFIC, EMERGING, OTHER
+  product regions NORTH_AMERICA, LATIN_AMERICA, EUROPE, ASIA_PACIFIC,
+  AFRICA_MIDDLE_EAST, OTHER
 - WHEN aggregating the country breakdown
 - THEN include only assets whose allocation rows are country-level (ISO 3166-1
   alpha-2 or residual OTHER); exclude assets whose rows are region keys
@@ -69,7 +70,8 @@ ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) an
 ## Invariants
 
 - ADR 0008 workbook authority, sum validation, manual lock, and deletion cascade remain.
-- The five product regions are the only region keys (`NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER`).
+- The six product regions are the only region keys (`NORTH_AMERICA`, `LATIN_AMERICA`,
+  `EUROPE`, `ASIA_PACIFIC`, `AFRICA_MIDDLE_EAST`, `OTHER`). Legacy `EMERGING` maps to `OTHER`.
 - Platforms must not fork parse, region mapping, or aggregation rules.
 - Country map remains web-only; region view is list-based on both platforms.
 

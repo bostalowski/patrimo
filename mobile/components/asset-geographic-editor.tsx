@@ -46,15 +46,16 @@ export function AssetGeographicEditor({
 }) {
   const initialMode =
     allocations.length > 0 &&
-    allocations.every(
-      (row) =>
-        row.country === "OTHER" ||
-        [
-          "NORTH_AMERICA",
-          "EUROPE",
-          "ASIA_PACIFIC",
-          "EMERGING",
-        ].includes(row.country),
+    allocations.every((row) =>
+      [
+        "NORTH_AMERICA",
+        "LATIN_AMERICA",
+        "EUROPE",
+        "ASIA_PACIFIC",
+        "AFRICA_MIDDLE_EAST",
+        "OTHER",
+        "EMERGING",
+      ].includes(row.country),
     )
       ? "regions"
       : "countries";

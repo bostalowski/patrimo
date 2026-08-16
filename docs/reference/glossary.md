@@ -96,7 +96,7 @@ Look-through geographic weights for an asset (fractions summing to ~1), persiste
 
 ## Geographic region
 
-Product finance-style rollup keys: `NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER` (French labels: Amérique du Nord, Europe, Asie-Pacifique, Marchés émergents, Autre). Used (1) as rollup of country rows via `regionForCountry`, and (2) as directly stored allocation keys when the user enters region-only weights. Manual region entry uses a closed picker of these five keys only.
+Product geographic rollup keys: `NORTH_AMERICA`, `LATIN_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `AFRICA_MIDDLE_EAST`, `OTHER` (French labels: Amérique du Nord, Amérique latine, Europe, Asie-Pacifique, Afrique & Moyen-Orient, Autre). Used (1) as rollup of country rows via `regionForCountry`, and (2) as directly stored allocation keys when the user enters region-only weights. Manual region entry uses a closed picker of these six keys only. Legacy workbook key `EMERGING` is normalized to `OTHER`.
 
 ## Allocation source
 

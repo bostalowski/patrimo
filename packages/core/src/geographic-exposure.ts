@@ -3,29 +3,41 @@ import { GEOGRAPHIC_WEIGHT_SUM_TOLERANCE } from "./geographic-allocation";
 
 export type GeographicRegion =
   | "NORTH_AMERICA"
+  | "LATIN_AMERICA"
   | "EUROPE"
   | "ASIA_PACIFIC"
-  | "EMERGING"
+  | "AFRICA_MIDDLE_EAST"
   | "OTHER";
 
 export const PRODUCT_GEOGRAPHIC_REGIONS: GeographicRegion[] = [
   "NORTH_AMERICA",
+  "LATIN_AMERICA",
   "EUROPE",
   "ASIA_PACIFIC",
-  "EMERGING",
+  "AFRICA_MIDDLE_EAST",
   "OTHER",
 ];
 
 export const GEOGRAPHIC_REGION_LABELS: Record<GeographicRegion, string> = {
   NORTH_AMERICA: "Amérique du Nord",
+  LATIN_AMERICA: "Amérique latine",
   EUROPE: "Europe",
   ASIA_PACIFIC: "Asie-Pacifique",
-  EMERGING: "Marchés émergents",
+  AFRICA_MIDDLE_EAST: "Afrique & Moyen-Orient",
   OTHER: "Autre",
 };
 
-export function isGeographicRegionKey(key: string): boolean {
+const LEGACY_REGION_ALIASES: Record<string, GeographicRegion> = {
+  EMERGING: "OTHER",
+};
+
+export function normalizeGeographicRegionKey(key: string): string {
   const normalized = key.trim().toUpperCase();
+  return LEGACY_REGION_ALIASES[normalized] ?? normalized;
+}
+
+export function isGeographicRegionKey(key: string): boolean {
+  const normalized = normalizeGeographicRegionKey(key);
   return (PRODUCT_GEOGRAPHIC_REGIONS as string[]).includes(normalized);
 }
 
@@ -75,7 +87,8 @@ export function geographicAllocationGranularity(
 }
 
 export function regionLabel(key: string): string {
-  return GEOGRAPHIC_REGION_LABELS[key as GeographicRegion] ?? key;
+  const normalized = normalizeGeographicRegionKey(key);
+  return GEOGRAPHIC_REGION_LABELS[normalized as GeographicRegion] ?? key;
 }
 
 export function geographicCountryLabel(countryCode: string): string {
@@ -116,6 +129,11 @@ const REGION_BY_COUNTRY: Record<string, GeographicRegion> = {
   US: "NORTH_AMERICA",
   CA: "NORTH_AMERICA",
   MX: "NORTH_AMERICA",
+  BR: "LATIN_AMERICA",
+  AR: "LATIN_AMERICA",
+  CL: "LATIN_AMERICA",
+  CO: "LATIN_AMERICA",
+  PE: "LATIN_AMERICA",
   GB: "EUROPE",
   FR: "EUROPE",
   DE: "EUROPE",
@@ -131,6 +149,10 @@ const REGION_BY_COUNTRY: Record<string, GeographicRegion> = {
   BE: "EUROPE",
   AT: "EUROPE",
   PT: "EUROPE",
+  PL: "EUROPE",
+  GR: "EUROPE",
+  HU: "EUROPE",
+  CZ: "EUROPE",
   JP: "ASIA_PACIFIC",
   AU: "ASIA_PACIFIC",
   NZ: "ASIA_PACIFIC",
@@ -138,19 +160,16 @@ const REGION_BY_COUNTRY: Record<string, GeographicRegion> = {
   SG: "ASIA_PACIFIC",
   KR: "ASIA_PACIFIC",
   TW: "ASIA_PACIFIC",
-  CN: "EMERGING",
-  IN: "EMERGING",
-  BR: "EMERGING",
-  ZA: "EMERGING",
-  SA: "EMERGING",
-  AE: "EMERGING",
-  KW: "EMERGING",
-  QA: "EMERGING",
-  TR: "EMERGING",
-  PL: "EMERGING",
-  GR: "EMERGING",
-  HU: "EMERGING",
-  CZ: "EMERGING",
+  CN: "ASIA_PACIFIC",
+  IN: "ASIA_PACIFIC",
+  ZA: "AFRICA_MIDDLE_EAST",
+  SA: "AFRICA_MIDDLE_EAST",
+  AE: "AFRICA_MIDDLE_EAST",
+  KW: "AFRICA_MIDDLE_EAST",
+  QA: "AFRICA_MIDDLE_EAST",
+  TR: "AFRICA_MIDDLE_EAST",
+  EG: "AFRICA_MIDDLE_EAST",
+  NG: "AFRICA_MIDDLE_EAST",
   OTHER: "OTHER",
 };
 
@@ -250,7 +269,7 @@ export function aggregateGeographicExposure(
     if (granularity === "region") {
       const regionWeights = rows
         .map((row) => ({
-          country: row.country.trim().toUpperCase(),
+          country: normalizeGeographicRegionKey(row.country),
           weight: row.weight,
         }))
         .filter((row) => row.weight > 0);
