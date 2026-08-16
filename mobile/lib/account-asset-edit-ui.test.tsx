@@ -184,15 +184,15 @@ describe("mobile account and asset edit interface", () => {
     };
   });
 
-  it("tapping an account card opens its edit screen", () => {
+  it("tapping an account card opens its account detail screen", () => {
     const renderer = render(<ComptesScreen />);
 
     act(() => {
-      accessible(renderer, "Modifier le compte Broker").props.onPress();
+      accessible(renderer, "Ouvrir le compte Broker").props.onPress();
     });
 
     expect(mocks.push).toHaveBeenCalledWith({
-      pathname: "/edit-account",
+      pathname: "/account-detail",
       params: { id: "broker" },
     });
   });
