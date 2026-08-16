@@ -17,6 +17,7 @@ const MENU_ITEMS: MenuItem[] = [
   { label: "Fiscalité", route: "/fiscalite", icon: "document-text-outline", description: "Plus-values et revenus imposables" },
   { label: "Investissements", route: "/investissements", icon: "trending-up-outline", description: "DCA et immobilier" },
   { label: "Projection", route: "/projection", icon: "analytics-outline", description: "Simulation sur 20 ans" },
+  { label: "Géographie", route: "/geographie", icon: "globe-outline", description: "Répartition géographique des actifs" },
 ];
 
 export default function MoreScreen() {

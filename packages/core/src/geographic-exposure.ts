@@ -7,6 +7,18 @@ export type GeographicRegion =
   | "EMERGING"
   | "OTHER";
 
+export const GEOGRAPHIC_REGION_LABELS: Record<GeographicRegion, string> = {
+  NORTH_AMERICA: "Amérique du Nord",
+  EUROPE: "Europe",
+  ASIA_PACIFIC: "Asie-Pacifique",
+  EMERGING: "Marchés émergents",
+  OTHER: "Autre",
+};
+
+export function regionLabel(key: string): string {
+  return GEOGRAPHIC_REGION_LABELS[key as GeographicRegion] ?? key;
+}
+
 export type GeographicSlice = {
   key: string;
   marketValue: number;

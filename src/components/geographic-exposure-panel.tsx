@@ -11,24 +11,15 @@ import {
 } from "@/components/ui/card";
 import { formatEuro, formatPercent } from "@/lib/utils";
 import type { GeographicAllocation } from "@patrimo/core/schema";
-import type { GeographicSlice } from "@patrimo/core/geographic-exposure";
-
-const REGION_LABELS: Record<string, string> = {
-  NORTH_AMERICA: "Amérique du Nord",
-  EUROPE: "Europe",
-  ASIA_PACIFIC: "Asie-Pacifique",
-  EMERGING: "Marchés émergents",
-  OTHER: "Autre",
-};
+import {
+  regionLabel,
+  type GeographicSlice,
+} from "@patrimo/core/geographic-exposure";
 
 const primaryButton =
   "rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900";
 const secondaryButton =
   "rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200";
-
-export function regionLabel(key: string): string {
-  return REGION_LABELS[key] ?? key;
-}
 
 function slicesToDonut(slices: GeographicSlice[]) {
   return slices.map((slice) => ({
