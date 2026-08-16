@@ -4,7 +4,7 @@ Canonical vocabulary for Patrimo. Prefer these terms in docs, ADRs, and code dis
 
 ## Account
 
-A portfolio container with an account type and tax envelope. Transactions reference accounts by identifier. Persisted in the `Comptes` sheet.
+A portfolio container with an account type and tax envelope. Transactions reference accounts by identifier. Persisted in the `Comptes` sheet. On web and mobile, the accounts list opens a dedicated account detail surface (positions and geographic exposure); metadata editing stays on the account form / edit-account screen.
 
 ## Asset
 
@@ -92,15 +92,15 @@ A user-entered dated valuation (typically FCPE VL) stored in the optional workbo
 
 ## Geographic allocation
 
-Look-through country weights for an asset (fractions summing to ~1), persisted in the optional workbook sheet `Exposition geo`. Used to build portfolio, account, and asset geographic breakdowns. Assets without an allocation are excluded from geo charts. On web, breakdowns are shown as an interactive country map plus a country list.
+Look-through geographic weights for an asset (fractions summing to ~1), persisted in the optional workbook sheet `Exposition geo`. Rows for one asset are either **country-level** (ISO 3166-1 alpha-2 or residual `OTHER`) or **region-level** (product region keys), never mixed. Used to build portfolio, account, and asset breakdowns. Assets without an allocation are excluded from geo charts. UI shows a **country** view and a **region** view; region-only assets appear only in the region view.
 
 ## Geographic region
 
-Optional finance-style rollup of countries (`NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER`) kept only as a non-primary helper. Web UI does not present these buckets as the main visualization; countries on a map do. Unknown or non-geographic codes use `OTHER` in stored data and appear in the list only.
+Product finance-style rollup keys: `NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER` (French labels: Amérique du Nord, Europe, Asie-Pacifique, Marchés émergents, Autre). Used (1) as rollup of country rows via `regionForCountry`, and (2) as directly stored allocation keys when the user enters region-only weights. Manual region entry uses a closed picker of these five keys only.
 
 ## Allocation source
 
-How a geographic allocation was last written: `justetf` (fetched) or `manual` (user-entered). Manual allocations are not overwritten by ordinary JustETF sync.
+How a geographic allocation was last written: `justetf` (fetched on web or mobile) or `manual` (user-entered). Manual allocations are not overwritten by ordinary JustETF sync.
 
 ## Tax estimate
 

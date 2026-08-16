@@ -1,6 +1,6 @@
 # ADR 0008: Geographic allocation in the workbook
 
-- Status: accepted
+- Status: accepted (account surface placement and JustETF platform scope amended by [ADR 0009](0009-account-detail-and-mobile-justetf.md))
 - Date: 2026-08-16
 - implementation_ready: yes
 
@@ -42,11 +42,13 @@ Contract (do not invent):
   core may still expose optional region rollup helpers for non-UI use, but web UI
   must not present finance regions as the main chart
 - FORBIDDEN treating fund domicile as geography; Yahoo as geo source; sector allocation;
-  temporal history of allocations; /comptes/[id] detail page; inventing default weights;
+  temporal history of allocations; inventing default weights;
   overwriting manual rows on ordinary JustETF sync; putting geo math only in UI;
   using finance "EMERGING" (or similar) buckets as the primary web visualization
 - OPEN (do not implement in this increment): interactive map on mobile;
   PDF/Amundi factsheet auto-import
+- NOTE: Account detail route and mobile JustETF sync are specified in ADR 0009
+  (this ADR originally forbade /comptes/[id] and left JustETF web-only)
 ```
 
 
@@ -61,7 +63,8 @@ Canonical terms: [glossary](../reference/glossary.md) (**Geographic allocation**
 - Persist look-through country weights in optional workbook sheet `Exposition geo`.
 - Shared pure mutations and aggregation live in `@patrimo/core`.
 - Fill via JustETF when possible; allow manual entry/edit; lock manual against silent overwrite.
-- Surface global, per-asset, and per-account views on web and mobile (account geo on existing accounts pages).
+- Surface global, per-asset, and per-account views on web and mobile.
+- Per-account geo placement and mobile JustETF: see ADR 0009 (detail surface, not list).
 - Web visualization is country-level (interactive map + list), not finance-region donuts.
 
 ## Invariants
@@ -93,25 +96,24 @@ Canonical terms: [glossary](../reference/glossary.md) (**Geographic allocation**
 
 - JustETF scraping is unofficial and can break.
 - Covered-only charts can look “fully diversified” while a large crypto/cash sleeve is invisible on the chart.
-- JustETF sync is web-only in the shipped increment; mobile supports display + manual entry.
 - Interactive map is web-first; mobile stays list-only until a follow-up.
+- Original ship put account geo on the accounts list and JustETF on web only — amended by ADR 0009.
 
 **To monitor**
 
 - JustETF markup / AJAX changes.
 - World-map topology / ISO matching edge cases (e.g. `OTHER`, disputed territories).
-- Optional later: JustETF sync on mobile; interactive map on mobile.
+- Optional later: interactive map on mobile.
 
 ## Uncovered cases
 
 - Sector allocation.
 - Historical allocation time series.
-- Dedicated account detail route.
 - Automatic import from issuer PDF factsheets (e.g. Amundi / fundinfo).
 
 ## Follow-up
 
-Optional: mobile choropleth; “coverage % of portfolio” KPI; issuer PDF geo import.
+Optional: mobile choropleth; “coverage % of portfolio” KPI; issuer PDF geo import. Account detail + mobile JustETF: ADR 0009.
 
 ## See also
 
@@ -119,3 +121,4 @@ Optional: mobile choropleth; “coverage % of portfolio” KPI; issuer PDF geo i
 - [Implement geographic allocation](../howto/implement-geographic-allocation.md)
 - [Excel workbook schema](../reference/excel-workbook.md)
 - [ADR 0002](0002-store-manual-prices-in-workbook.md) — same persistence pattern family
+- [ADR 0009](0009-account-detail-and-mobile-justetf.md) — account detail + mobile JustETF

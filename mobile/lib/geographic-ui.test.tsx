@@ -49,8 +49,15 @@ vi.mock("./write-asset", () => ({
   replaceGeographicAllocationInSource: mocks.replaceGeographic,
 }));
 
+vi.mock("./write-account", () => ({
+  updateAccountInSource: vi.fn(),
+  deleteAccountFromSource: vi.fn(),
+}));
+
+import { router } from "expo-router";
 import GeographieScreen from "../app/geographie";
 import ComptesScreen from "../app/comptes";
+import AccountDetailScreen from "../app/account-detail";
 import { AssetGeographicEditor } from "../components/asset-geographic-editor";
 
 function textOf(node: ReactTestInstance | string): string {
@@ -215,15 +222,68 @@ describe("mobile geographic UI", () => {
     ]);
   });
 
-  it("mobile accounts screen shows per-account geographic slices", () => {
+  it("mobile accounts list does not render per-account geographic exposure lists", () => {
     let renderer!: ReactTestRenderer;
     act(() => {
       renderer = create(<ComptesScreen />);
     });
 
-    expect(findByText(renderer, "Géographie du compte").length).toBeGreaterThan(
-      0,
+    expect(findByText(renderer, "Géographie du compte")).toHaveLength(0);
+    expect(findByText(renderer, /États-Unis/i)).toHaveLength(0);
+  });
+
+  it("mobile accounts list navigates to account detail instead of edit-account", () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<ComptesScreen />);
+    });
+
+    const accountCard = renderer.root.find(
+      (node) =>
+        node.props.accessibilityLabel === "Ouvrir le compte PEA" ||
+        node.props.accessibilityLabel === "Modifier le compte PEA",
     );
+    act(() => {
+      accountCard.props.onPress();
+    });
+
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: "/account-detail",
+      params: { id: "pea" },
+    });
+  });
+
+  it("mobile account detail shows positions and country plus region exposure", () => {
+    mocks.routeParams = { id: "pea" };
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<AccountDetailScreen />);
+    });
+
+    expect(findByText(renderer, /World ETF/i).length).toBeGreaterThan(0);
     expect(findByText(renderer, /États-Unis/i).length).toBeGreaterThan(0);
+    expect(findByText(renderer, /Amérique du Nord/i).length).toBeGreaterThan(0);
+    expect(findByText(renderer, /Asie-Pacifique/i).length).toBeGreaterThan(0);
+  });
+
+  it("mobile account detail links to edit-account for metadata", () => {
+    mocks.routeParams = { id: "pea" };
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(<AccountDetailScreen />);
+    });
+
+    const editButton = renderer.root.find(
+      (node) =>
+        node.props.accessibilityLabel === "Modifier le compte PEA",
+    );
+    act(() => {
+      editButton.props.onPress();
+    });
+
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: "/edit-account",
+      params: { id: "pea" },
+    });
   });
 });

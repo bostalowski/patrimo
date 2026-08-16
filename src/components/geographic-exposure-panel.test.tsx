@@ -35,8 +35,8 @@ describe("web geographic UI", () => {
     expect(screen.getByTestId("geographic-world-map")).toBeTruthy();
     expect(screen.getByText(/États-Unis/i)).toBeTruthy();
     expect(screen.getByText(/France/i)).toBeTruthy();
-    expect(screen.queryByText(/Amérique du Nord/i)).toBeNull();
-    expect(screen.queryByText(/^Europe$/i)).toBeNull();
+    expect(screen.getByText(/Amérique du Nord/i)).toBeTruthy();
+    expect(screen.getByText(/^Europe$/i)).toBeTruthy();
   });
 
   it("shows OTHER (and non-mappable codes) in the list only, not as a painted map country", () => {
@@ -81,10 +81,11 @@ describe("web geographic UI", () => {
       />,
     );
 
-    expect(
-      screen.getByText(/Aucune répartition géographique pour les positions couvertes/i),
-    ).toBeTruthy();
     expect(screen.queryByTestId("geographic-world-map")).toBeNull();
+    expect(screen.getByText(/^Europe$/i)).toBeTruthy();
+    expect(
+      screen.queryByText(/Aucune répartition géographique pour les positions couvertes/i),
+    ).toBeNull();
   });
 
   it("asset detail shows empty state when the asset has no allocation", () => {
@@ -116,6 +117,6 @@ describe("web geographic UI", () => {
     expect(screen.getByText("Géographie du compte")).toBeTruthy();
     expect(screen.getByTestId("geographic-world-map")).toBeTruthy();
     expect(screen.getByText(/Japon/i)).toBeTruthy();
-    expect(screen.queryByText(/Asie-Pacifique/i)).toBeNull();
+    expect(screen.getByText(/Asie-Pacifique/i)).toBeTruthy();
   });
 });

@@ -13,7 +13,7 @@ Canonical sheet names and headers come from `packages/core/src/workbook-template
 | `Immobilier` | No | Real-estate properties |
 | `DCA` | No | Investment plans (baskets + target %) |
 | `Prix manuels` | No | Dated user-entered valuations for `manual` assets |
-| `Exposition geo` | No | Look-through country weights per asset |
+| `Exposition geo` | No | Look-through country or region weights per asset |
 
 A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels` or `Exposition geo` remain valid; each sheet is created on the first write that needs it.
 
@@ -121,12 +121,12 @@ Logical key: `Actif + Date`. Last valid row wins when duplicates exist. Invalid 
 
 ## `Exposition geo`
 
-Optional sheet for look-through geographic weights. See [Geographic allocation](../architecture/geographic-allocation.md) and [ADR 0008](../adr/0008-geographic-allocation.md).
+Optional sheet for look-through geographic weights. See [Geographic allocation](../architecture/geographic-allocation.md), [ADR 0008](../adr/0008-geographic-allocation.md), and [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md).
 
 | Column | Schema field | Rules |
 |---|---|---|
 | `Actif` | `assetId` | Existing asset id |
-| `Pays` | `country` | ISO 3166-1 alpha-2 or `OTHER` |
+| `Pays` | `country` | ISO 3166-1 alpha-2, residual `OTHER`, or product region key (`NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER`); all rows for one asset are homogeneous (countries or regions) |
 | `Poids %` | `weight` | Percent in Excel (0–100); fraction in `[0, 1]` in the model; rows for one asset must sum to ~1 |
 | `Source` | `source` | `justetf` or `manual` |
 

@@ -12,15 +12,48 @@ import {
 import { geographicCountryLabel } from "@/lib/geographic-country-label";
 import { formatEuro, formatPercent } from "@/lib/utils";
 import type { GeographicAllocation } from "@patrimo/core/schema";
-import type { GeographicSlice } from "@patrimo/core/geographic-exposure";
+import {
+  regionLabel,
+  type GeographicSlice,
+} from "@patrimo/core/geographic-exposure";
 
 const primaryButton =
   "rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900";
 const secondaryButton =
   "rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200";
 
-function ExposureBody({ countries }: { countries: GeographicSlice[] }) {
-  if (countries.length === 0) {
+function SliceList({
+  slices,
+  labelFor,
+}: {
+  slices: GeographicSlice[];
+  labelFor: (key: string) => string;
+}) {
+  return (
+    <ul className="space-y-1 text-sm">
+      {slices.map((slice) => (
+        <li
+          key={slice.key}
+          className="flex items-center justify-between gap-4"
+        >
+          <span>{labelFor(slice.key)}</span>
+          <span className="font-mono text-zinc-600 dark:text-zinc-300">
+            {formatEuro(slice.marketValue)} · {formatPercent(slice.weight)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ExposureBody({
+  countries,
+  regions = [],
+}: {
+  countries: GeographicSlice[];
+  regions?: GeographicSlice[];
+}) {
+  if (countries.length === 0 && regions.length === 0) {
     return (
       <p className="text-sm text-zinc-500">
         Aucune répartition géographique pour les positions couvertes.
@@ -29,21 +62,21 @@ function ExposureBody({ countries }: { countries: GeographicSlice[] }) {
   }
 
   return (
-    <div className="space-y-4">
-      <GeographicWorldMap countries={countries} />
-      <ul className="space-y-1 text-sm">
-        {countries.map((slice) => (
-          <li
-            key={slice.key}
-            className="flex items-center justify-between gap-4"
-          >
-            <span>{geographicCountryLabel(slice.key)}</span>
-            <span className="font-mono text-zinc-600 dark:text-zinc-300">
-              {formatEuro(slice.marketValue)} · {formatPercent(slice.weight)}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-6">
+      {countries.length > 0 && (
+        <div className="space-y-4">
+          <GeographicWorldMap countries={countries} />
+          <SliceList slices={countries} labelFor={geographicCountryLabel} />
+        </div>
+      )}
+      {regions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+            Régions
+          </p>
+          <SliceList slices={regions} labelFor={regionLabel} />
+        </div>
+      )}
     </div>
   );
 }
@@ -51,6 +84,7 @@ function ExposureBody({ countries }: { countries: GeographicSlice[] }) {
 export function GeographicExposurePanel({
   title,
   countries,
+  regions = [],
 }: {
   title: string;
   regions?: GeographicSlice[];
@@ -62,7 +96,7 @@ export function GeographicExposurePanel({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardBody>
-        <ExposureBody countries={countries} />
+        <ExposureBody countries={countries} regions={regions} />
       </CardBody>
     </Card>
   );

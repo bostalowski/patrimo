@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Lock, LockOpen } from "lucide-react";
 import {
   Card,
@@ -25,12 +26,10 @@ import {
   ActiveAccountPositionsTable,
   ClosedAccountPositions,
 } from "./account-positions-tables";
-import { GeographicExposurePanel } from "@/components/geographic-exposure-panel";
 import {
   NO_ACCOUNT_ID,
   NO_ACCOUNT_LABEL,
 } from "@patrimo/core/deletion";
-import { aggregateGeographicExposureForAccount } from "@patrimo/core/geographic-exposure";
 
 export const dynamic = "force-dynamic";
 
@@ -155,25 +154,27 @@ export default async function ComptesPage() {
                 const closedPositions = account.positions.filter(
                   (p) => p.quantity <= 0,
                 );
-                const accountGeo = aggregateGeographicExposureForAccount(
-                  account.positions.map((position) => ({
-                    assetId: position.assetId,
-                    accountId: account.accountId,
-                    marketValue: position.marketValue,
-                  })),
-                  workbook.geographicAllocations ?? [],
-                  account.accountId,
-                );
+                const accountLabel =
+                  meta?.label ??
+                  (account.accountId === NO_ACCOUNT_ID
+                    ? NO_ACCOUNT_LABEL
+                    : account.accountId);
                 return (
                   <div key={account.accountId} className="pt-4 first:pt-0">
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-zinc-50/70 px-6 py-3 dark:bg-zinc-900/40">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-base font-semibold tracking-tight">
-                          {meta?.label ??
-                            (account.accountId === NO_ACCOUNT_ID
-                              ? NO_ACCOUNT_LABEL
-                              : account.accountId)}
-                        </h3>
+                        {account.accountId === NO_ACCOUNT_ID ? (
+                          <h3 className="text-base font-semibold tracking-tight">
+                            {accountLabel}
+                          </h3>
+                        ) : (
+                          <Link
+                            href={`/comptes/${encodeURIComponent(account.accountId)}`}
+                            className="text-base font-semibold tracking-tight hover:underline"
+                          >
+                            {accountLabel}
+                          </Link>
+                        )}
                         <Badge variant="default">{meta?.type ?? "—"}</Badge>
                         {meta && (
                           <AccountForm
@@ -199,14 +200,6 @@ export default async function ComptesPage() {
                       </div>
                     </div>
                     {unlock && <DeblocageRow unlock={unlock} />}
-                    {accountGeo.coveredMarketValue > 0 && (
-                      <div className="px-6 py-4">
-                        <GeographicExposurePanel
-                          title="Géographie du compte"
-                          countries={accountGeo.countries}
-                        />
-                      </div>
-                    )}
                     {meta?.envelope === "LIVRET" ? (
                       <LivretSummary
                         principal={account.costBasis}
