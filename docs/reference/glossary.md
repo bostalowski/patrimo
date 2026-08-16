@@ -92,11 +92,11 @@ A user-entered dated valuation (typically FCPE VL) stored in the optional workbo
 
 ## Geographic allocation
 
-Look-through country weights for an asset (fractions summing to ~1), persisted in the optional workbook sheet `Exposition geo`. Used to build portfolio, account, and asset geographic breakdowns. Assets without an allocation are excluded from geo donuts.
+Look-through country weights for an asset (fractions summing to ~1), persisted in the optional workbook sheet `Exposition geo`. Used to build portfolio, account, and asset geographic breakdowns. Assets without an allocation are excluded from geo charts. On web, breakdowns are shown as an interactive country map plus a country list.
 
 ## Geographic region
 
-Product rollup of countries for readable charts: `NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER`. Unknown country codes map to `OTHER`.
+Optional finance-style rollup of countries (`NORTH_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `EMERGING`, `OTHER`) kept only as a non-primary helper. Web UI does not present these buckets as the main visualization; countries on a map do. Unknown or non-geographic codes use `OTHER` in stored data and appear in the list only.
 
 ## Allocation source
 

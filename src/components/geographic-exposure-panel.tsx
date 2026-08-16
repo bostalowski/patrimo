@@ -2,60 +2,42 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AllocationDonut } from "@/components/charts/allocation-donut";
+import { GeographicWorldMap } from "@/components/geographic-world-map";
 import {
   Card,
   CardBody,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { geographicCountryLabel } from "@/lib/geographic-country-label";
 import { formatEuro, formatPercent } from "@/lib/utils";
 import type { GeographicAllocation } from "@patrimo/core/schema";
-import {
-  regionLabel,
-  type GeographicSlice,
-} from "@patrimo/core/geographic-exposure";
+import type { GeographicSlice } from "@patrimo/core/geographic-exposure";
 
 const primaryButton =
   "rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900";
 const secondaryButton =
   "rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200";
 
-function slicesToDonut(slices: GeographicSlice[]) {
-  return slices.map((slice) => ({
-    name: regionLabel(slice.key),
-    value: slice.marketValue,
-  }));
-}
-
-function ExposureBody({
-  regions,
-  countries,
-}: {
-  regions: GeographicSlice[];
-  countries: GeographicSlice[];
-}) {
-  const preferred = regions.length > 0 ? regions : countries;
-  const donutData = slicesToDonut(preferred);
-  if (donutData.length === 0) {
+function ExposureBody({ countries }: { countries: GeographicSlice[] }) {
+  if (countries.length === 0) {
     return (
       <p className="text-sm text-zinc-500">
         Aucune répartition géographique pour les positions couvertes.
       </p>
     );
   }
+
   return (
     <div className="space-y-4">
-      <AllocationDonut data={donutData} />
+      <GeographicWorldMap countries={countries} />
       <ul className="space-y-1 text-sm">
-        {preferred.map((slice) => (
+        {countries.map((slice) => (
           <li
             key={slice.key}
             className="flex items-center justify-between gap-4"
           >
-            <span>
-              {regions.length > 0 ? regionLabel(slice.key) : slice.key}
-            </span>
+            <span>{geographicCountryLabel(slice.key)}</span>
             <span className="font-mono text-zinc-600 dark:text-zinc-300">
               {formatEuro(slice.marketValue)} · {formatPercent(slice.weight)}
             </span>
@@ -68,11 +50,10 @@ function ExposureBody({
 
 export function GeographicExposurePanel({
   title,
-  regions,
   countries,
 }: {
   title: string;
-  regions: GeographicSlice[];
+  regions?: GeographicSlice[];
   countries: GeographicSlice[];
 }) {
   return (
@@ -81,7 +62,7 @@ export function GeographicExposurePanel({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardBody>
-        <ExposureBody regions={regions} countries={countries} />
+        <ExposureBody countries={countries} />
       </CardBody>
     </Card>
   );
@@ -92,14 +73,13 @@ export function AssetGeographicSection({
   assetLabel,
   hasIsin,
   allocations,
-  regions,
   countries,
 }: {
   assetId: string;
   assetLabel: string;
   hasIsin: boolean;
   allocations: GeographicAllocation[];
-  regions: GeographicSlice[];
+  regions?: GeographicSlice[];
   countries: GeographicSlice[];
 }) {
   const router = useRouter();
@@ -181,7 +161,7 @@ export function AssetGeographicSection({
             Aucune répartition géographique renseignée pour {assetLabel}.
           </p>
         ) : (
-          <ExposureBody regions={regions} countries={countries} />
+          <ExposureBody countries={countries} />
         )}
         {hasIsin && (
           <div className="flex flex-wrap gap-2">

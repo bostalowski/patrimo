@@ -40,6 +40,12 @@ Plus → Géographie, edit-asset manual weights, comptes panels.
 
 Tests: `mobile/lib/geographic-ui.test.tsx`.
 
+### Scope 6 — Web interactive country map (done)
+
+Replace finance-region donuts on web geo surfaces with choropleth + country list. Mobile map deferred.
+
+Tests: `src/components/geographic-exposure-panel.test.tsx`.
+
 ## Test strategy
 
 | Level | What it proves |

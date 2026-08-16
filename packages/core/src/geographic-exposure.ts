@@ -62,6 +62,15 @@ const REGION_BY_COUNTRY: Record<string, GeographicRegion> = {
   IN: "EMERGING",
   BR: "EMERGING",
   ZA: "EMERGING",
+  SA: "EMERGING",
+  AE: "EMERGING",
+  KW: "EMERGING",
+  QA: "EMERGING",
+  TR: "EMERGING",
+  PL: "EMERGING",
+  GR: "EMERGING",
+  HU: "EMERGING",
+  CZ: "EMERGING",
   OTHER: "OTHER",
 };
 

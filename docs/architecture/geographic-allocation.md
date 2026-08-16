@@ -46,7 +46,16 @@ Logical replace key: all rows for one `assetId` are replaced together. Missing s
 2. Skip assets with no allocation rows (or invalid sum).
 3. For each country: add `marketValue * weight`.
 4. Convert euro totals to percentages over the **covered** total only.
-5. Region view: map each country through the fixed product region table; roll up.
+5. Optional region rollup helpers may still exist in core; **web UI does not use them as the primary chart**.
+
+## Web visualization (country map)
+
+- Primary chart: interactive world choropleth via `d3-geo` + local `countries-110m` TopoJSON (ISO α-2 → color intensity by weight). `react-simple-maps` was rejected (no React 19 peer support).
+- Companion: sorted country list (French label, €, %).
+- `OTHER` and non-mappable codes: list only.
+- Hover: French name + € + %.
+- Surfaces: `/geographie`, asset detail, comptes panels (same component).
+- Out of this increment: mobile map (list remains).
 
 ## Manual lock
 
@@ -62,8 +71,8 @@ Deleting an asset removes its geographic rows (shared deletion pipeline extensio
 
 | Surface | Placement |
 |---|---|
-| Web | Sidebar `/geographie`, asset detail section, comptes per-account panel, `/api/geography` + `/api/geography/sync` |
-| Mobile | Plus → Géographie, edit-asset manual editor, comptes per-account list |
+| Web | Sidebar `/geographie`, asset detail section, comptes per-account panel, interactive country map + list, `/api/geography` + `/api/geography/sync` |
+| Mobile | Plus → Géographie, edit-asset manual editor, comptes per-account list (no interactive map yet) |
 
 ## See also
 

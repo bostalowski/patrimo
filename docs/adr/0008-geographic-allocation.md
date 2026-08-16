@@ -20,20 +20,33 @@ Contract (do not invent):
   include only positions with marketValue > 0 and a valid allocation;
   slice percentages are over that covered market-value total (sum to ~100%)
 - WHEN an asset has no allocation (crypto, cash, missing ETF data, …)
-- THEN exclude it from geo donuts; asset detail must show that allocation is absent
-- WHEN displaying regions
-- THEN map each stored country code to a fixed product region
-  (NORTH_AMERICA | EUROPE | ASIA_PACIFIC | EMERGING | OTHER); unknown → OTHER
+- THEN exclude it from geo charts; asset detail must show that allocation is absent
+- WHEN displaying geographic exposure on web
+- THEN primary UI is an interactive world choropleth keyed by ISO country code,
+  plus a country list (name, €, %); do not show finance region buckets
+  (NORTH_AMERICA / EUROPE / ASIA_PACIFIC / EMERGING / OTHER) in that UI
+- WHEN a slice key is OTHER or not a mappable ISO alpha-2 on the world map
+- THEN show it in the country list only (not painted on the map)
+- WHEN hovering a mapped country with weight > 0
+- THEN show a tooltip with French country label, market value (€), and weight (%)
+- WHEN mobile displays geographic exposure in this increment
+- THEN keep list-based country display (no interactive map yet); still no finance
+  region donuts as the primary story once web map ships (mobile map = follow-up)
 - WHEN an asset is deleted
 - THEN remove all of its geographic allocation rows (same cascade idea as Prix manuels)
 - ELSE workbook sheet "Exposition geo" is optional; missing sheet = empty collection;
   Excel column "Poids %" is percent 0–100 (same pattern as DCA "Cible %");
-  country is ISO 3166-1 alpha-2 or OTHER
+  country is ISO 3166-1 alpha-2 or OTHER;
+  core may still expose optional region rollup helpers for non-UI use, but web UI
+  must not present finance regions as the main chart
 - FORBIDDEN treating fund domicile as geography; Yahoo as geo source; sector allocation;
   temporal history of allocations; /comptes/[id] detail page; inventing default weights;
-  overwriting manual rows on ordinary JustETF sync; putting geo math only in UI
-- OPEN (do not implement): none blocking
+  overwriting manual rows on ordinary JustETF sync; putting geo math only in UI;
+  using finance "EMERGING" (or similar) buckets as the primary web visualization
+- OPEN (do not implement in this increment): interactive map on mobile;
+  PDF/Amundi factsheet auto-import
 ```
+
 
 ## Context
 
@@ -47,13 +60,16 @@ Canonical terms: [glossary](../reference/glossary.md) (**Geographic allocation**
 - Shared pure mutations and aggregation live in `@patrimo/core`.
 - Fill via JustETF when possible; allow manual entry/edit; lock manual against silent overwrite.
 - Surface global, per-asset, and per-account views on web and mobile (account geo on existing accounts pages).
+- Web visualization is country-level (interactive map + list), not finance-region donuts.
 
 ## Invariants
 
 - Workbook remains source of truth for allocations (not a derived local-only cache).
 - Aggregation and validation rules live only in `@patrimo/core`.
 - Platforms own JustETF I/O and UI; they must not redefine coverage or sum rules.
-- Donuts never invent exposure for assets without rows.
+- Charts never invent exposure for assets without rows.
+- Web geo UI places exposure on real countries (map), not abstract finance zones.
+
 
 ## Options considered
 
@@ -74,24 +90,26 @@ Canonical terms: [glossary](../reference/glossary.md) (**Geographic allocation**
 **Negatives**
 
 - JustETF scraping is unofficial and can break.
-- Covered-only donuts can look “fully diversified” while a large crypto/cash sleeve is invisible on the chart.
+- Covered-only charts can look “fully diversified” while a large crypto/cash sleeve is invisible on the chart.
 - JustETF sync is web-only in the shipped increment; mobile supports display + manual entry.
+- Interactive map is web-first; mobile stays list-only until a follow-up.
 
 **To monitor**
 
 - JustETF markup / AJAX changes.
-- Country→region map completeness for exotic holdings.
-- Optional later: JustETF sync on mobile.
+- World-map topology / ISO matching edge cases (e.g. `OTHER`, disputed territories).
+- Optional later: JustETF sync on mobile; interactive map on mobile.
 
 ## Uncovered cases
 
 - Sector allocation.
 - Historical allocation time series.
 - Dedicated account detail route.
+- Automatic import from issuer PDF factsheets (e.g. Amundi / fundinfo).
 
 ## Follow-up
 
-Optional: richer country→region map; “coverage % of portfolio” KPI (not in v1 checklist).
+Optional: mobile choropleth; “coverage % of portfolio” KPI; issuer PDF geo import.
 
 ## See also
 
