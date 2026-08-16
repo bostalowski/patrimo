@@ -20,6 +20,28 @@ export function regionLabel(key: string): string {
   return GEOGRAPHIC_REGION_LABELS[key as GeographicRegion] ?? key;
 }
 
+export function geographicCountryLabel(countryCode: string): string {
+  const code = countryCode.trim().toUpperCase();
+  if (code === "OTHER") return "Autre";
+  if (!/^[A-Z]{2}$/.test(code)) return code;
+  try {
+    return new Intl.DisplayNames(["fr"], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+export function isMappableCountryCode(countryCode: string): boolean {
+  const code = countryCode.trim().toUpperCase();
+  if (code === "OTHER" || !/^[A-Z]{2}$/.test(code)) return false;
+  try {
+    const name = new Intl.DisplayNames(["en"], { type: "region" }).of(code);
+    return Boolean(name && name !== code && name !== "Unknown Region");
+  } catch {
+    return false;
+  }
+}
+
 export type GeographicSlice = {
   key: string;
   marketValue: number;

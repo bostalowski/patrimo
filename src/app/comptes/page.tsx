@@ -203,7 +203,6 @@ export default async function ComptesPage() {
                       <div className="px-6 py-4">
                         <GeographicExposurePanel
                           title="Géographie du compte"
-                          regions={accountGeo.regions}
                           countries={accountGeo.countries}
                         />
                       </div>

@@ -147,7 +147,7 @@ describe("mobile geographic UI", () => {
     };
   });
 
-  it("mobile global geography screen renders aggregated region slices", () => {
+  it("mobile global geography screen renders aggregated country slices", () => {
     let renderer!: ReactTestRenderer;
     act(() => {
       renderer = create(<GeographieScreen />);
@@ -156,8 +156,8 @@ describe("mobile geographic UI", () => {
     expect(findByText(renderer, "Répartition géographique").length).toBeGreaterThan(
       0,
     );
-    expect(findByText(renderer, /Amérique du Nord/i).length).toBeGreaterThan(0);
-    expect(findByText(renderer, /Asie-Pacifique/i).length).toBeGreaterThan(0);
+    expect(findByText(renderer, /États-Unis/i).length).toBeGreaterThan(0);
+    expect(findByText(renderer, /Japon/i).length).toBeGreaterThan(0);
   });
 
   it("mobile asset screen shows empty state without allocation and can save manual weights", async () => {
@@ -224,6 +224,6 @@ describe("mobile geographic UI", () => {
     expect(findByText(renderer, "Géographie du compte").length).toBeGreaterThan(
       0,
     );
-    expect(findByText(renderer, /Amérique du Nord/i).length).toBeGreaterThan(0);
+    expect(findByText(renderer, /États-Unis/i).length).toBeGreaterThan(0);
   });
 });

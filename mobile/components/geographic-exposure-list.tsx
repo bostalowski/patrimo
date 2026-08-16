@@ -1,18 +1,17 @@
 import { View, Text } from "react-native";
 import {
-  regionLabel,
+  geographicCountryLabel,
   type GeographicSlice,
 } from "@patrimo/core/geographic-exposure";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
 
 export function GeographicExposureList({
   title,
-  regions,
   countries,
   colors,
 }: {
   title: string;
-  regions: GeographicSlice[];
+  regions?: GeographicSlice[];
   countries: GeographicSlice[];
   colors: {
     text: string;
@@ -21,8 +20,6 @@ export function GeographicExposureList({
     cardBorder: string;
   };
 }) {
-  const preferred = regions.length > 0 ? regions : countries;
-
   return (
     <View>
       <Text
@@ -31,7 +28,7 @@ export function GeographicExposureList({
       >
         {title}
       </Text>
-      {preferred.length === 0 ? (
+      {countries.length === 0 ? (
         <Text
           accessibilityLabel="Aucune répartition géographique"
           style={{ color: colors.textMuted, fontSize: 13 }}
@@ -39,7 +36,7 @@ export function GeographicExposureList({
           Aucune répartition géographique
         </Text>
       ) : (
-        preferred.map((slice, index) => (
+        countries.map((slice, index) => (
           <View
             key={slice.key}
             style={{
@@ -51,7 +48,7 @@ export function GeographicExposureList({
             }}
           >
             <Text style={{ color: colors.text, fontSize: 13 }}>
-              {regions.length > 0 ? regionLabel(slice.key) : slice.key}
+              {geographicCountryLabel(slice.key)}
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
               {formatEuro(slice.marketValue)} · {formatPercent(slice.weight)}
