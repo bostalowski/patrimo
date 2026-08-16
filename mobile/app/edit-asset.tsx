@@ -18,6 +18,7 @@ import {
   deleteAssetFromSource,
   deleteManualPriceFromSource,
   replaceGeographicAllocationInSource,
+  syncJustEtfGeographicAllocationInSource,
   updateAssetInSource,
   upsertManualPriceInSource,
 } from "../lib/write-asset";
@@ -150,6 +151,23 @@ function EditAssetForm({
     try {
       await replaceGeographicAllocationInSource(initial.id, weights);
       await refresh();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSyncJustEtf = async (options: { restore: boolean }) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const result = await syncJustEtfGeographicAllocationInSource(
+        initial.id,
+        options,
+      );
+      if (result.ok) {
+        await refresh();
+      }
+      return result;
     } finally {
       setSubmitting(false);
     }
@@ -328,11 +346,13 @@ function EditAssetForm({
         <AssetGeographicEditor
           assetId={initial.id}
           assetLabel={initial.label}
+          hasIsin={Boolean(initial.isin)}
           allocations={assetAllocations}
           regions={assetGeo.regions}
           countries={assetGeo.countries}
           colors={t}
           onSave={handleSaveGeographicAllocation}
+          onSyncJustEtf={handleSyncJustEtf}
           pending={submitting}
         />
       </View>

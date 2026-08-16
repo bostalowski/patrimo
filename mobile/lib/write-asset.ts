@@ -6,6 +6,7 @@ import {
   upsertManualPrice,
 } from "@patrimo/core/manual-prices";
 import { replaceGeographicAllocation } from "@patrimo/core/geographic-allocation";
+import { applyJustEtfGeographicSync } from "@patrimo/core/justetf-geography";
 import {
   getActiveSource,
   readSourceFile,
@@ -13,6 +14,7 @@ import {
 } from "./file-source";
 import { parseWorkbook, serializeWorkbook } from "./excel-mobile";
 import { removeAssetsFromPriceCache } from "./price-sync";
+import { fetchJustEtfProfileHtml } from "./justetf-geography";
 
 const SHEET_ACTIFS = "Actifs";
 
@@ -124,6 +126,32 @@ export async function replaceGeographicAllocationInSource(
     "manual",
   );
   await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
+}
+
+export async function syncJustEtfGeographicAllocationInSource(
+  assetId: string,
+  options: { restore?: boolean } = {},
+): Promise<{ ok: boolean }> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  const before = workbook.geographicAllocations ?? [];
+  const result = await applyJustEtfGeographicSync(workbook, assetId, {
+    fetchHtml: fetchJustEtfProfileHtml,
+    restore: options.restore,
+  });
+  if (!result.ok) {
+    return { ok: false };
+  }
+  const unchanged =
+    JSON.stringify(result.workbook.geographicAllocations ?? []) ===
+    JSON.stringify(before);
+  if (!unchanged) {
+    await writeSourceFile(source, serializeWorkbook(buffer, result.workbook));
+  }
+  return { ok: true };
 }
 
 export async function deleteAssetFromSource(assetId: string): Promise<void> {
