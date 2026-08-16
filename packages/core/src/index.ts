@@ -32,6 +32,7 @@ export * from "./retraite";
 export * from "./deletion";
 export * from "./manual-prices";
 export * from "./geographic-allocation";
+export * from "./geographic-exposure";
 export * as realestate from "./realestate/projection";
 export * as realestateProperty from "./realestate/property";
 export * as realestateLoan from "./realestate/loan";
