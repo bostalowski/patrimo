@@ -516,7 +516,9 @@ function parseTargetAllocations(
 		const rawPct = toNumber(row["Pourcentage cible"]);
 		if (rawPct === null) continue;
 		const targetPct = targetPctFromExcel(rawPct, allRawPcts);
-		const assetIdsRaw = emptyToUndefined(row["Actifs"]);
+		const assetIdsRaw =
+			emptyToUndefined(row["Actifs"]) ??
+			emptyToUndefined(row["Actifs (séparés par virgule)"]);
 		const assetIds = assetIdsRaw
 			? assetIdsRaw
 					.split(",")

@@ -45,7 +45,10 @@ function appendSheet(
 	);
 }
 
-function sourceBuffer(allocRows?: unknown[][]): ArrayBuffer {
+function sourceBuffer(
+	allocRows?: unknown[][],
+	headers: string[] = ALLOC_HEADERS,
+): ArrayBuffer {
 	const workbook = XLSX.utils.book_new();
 	appendSheet(workbook, "Transactions", [
 		[
@@ -141,7 +144,7 @@ function sourceBuffer(allocRows?: unknown[][]): ArrayBuffer {
 		["preserved", "yes"],
 	]);
 	if (allocRows) {
-		appendSheet(workbook, ALLOC_SHEET, [ALLOC_HEADERS, ...allocRows]);
+		appendSheet(workbook, ALLOC_SHEET, [headers, ...allocRows]);
 	}
 	return XLSX.write(workbook, {
 		type: "array",
@@ -191,6 +194,25 @@ describe("web and mobile Allocation cible Excel adapters", () => {
 
 		expect(webResult.targetAllocations).toEqual([]);
 		expect(mobileResult.workbook.targetAllocations).toEqual([]);
+	});
+
+	it("Excel parse accepts legacy header Actifs (séparés par virgule)", () => {
+		writeWebSource(
+			sourceBuffer(
+				[
+					["Monde", 70, "WPEA"],
+					["Crypto", 30, "BTC"],
+				],
+				["Catégorie", "Pourcentage cible", "Actifs (séparés par virgule)"],
+			),
+		);
+
+		const result = webExcel.loadWorkbook();
+
+		expect(result.targetAllocations).toEqual([
+			category("Monde", 0.7, ["WPEA"]),
+			category("Crypto", 0.3, ["BTC"]),
+		]);
 	});
 
 	it("parses percent-point values (e.g. 70 stored for 70%)", () => {
