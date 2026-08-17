@@ -15,6 +15,24 @@ export function isValidGeographicWeightSum(sum: number): boolean {
   return sum > 0 && sum <= 1 + GEOGRAPHIC_WEIGHT_SUM_TOLERANCE;
 }
 
+export function sumGeographicDraftWeightPercents(
+  weightPercents: readonly string[],
+): number {
+  return weightPercents.reduce((total, raw) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return total;
+    const value = Number(trimmed.replace(",", "."));
+    return Number.isFinite(value) ? total + value : total;
+  }, 0);
+}
+
+export function isIncompleteGeographicDraftSum(
+  sumPercent: number,
+  tolerance = 0.1,
+): boolean {
+  return sumPercent > 0 && Math.abs(sumPercent - 100) > tolerance;
+}
+
 function findAsset(assets: Asset[], assetId: string): Asset {
   const asset = assets.find((candidate) => candidate.id === assetId);
   if (!asset) {
