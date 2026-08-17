@@ -113,4 +113,30 @@ describe("AllocationCoherenceCard", () => {
 
 		expect(screen.getByText(/Gérer les plans DCA/i)).toBeTruthy();
 	});
+
+	it("shows a Modifier link to the Investments allocation editor", () => {
+		render(<AllocationCoherenceCard coherence={coherence()} />);
+
+		const link = screen.getByRole("link", { name: /Modifier/i });
+		expect(link.getAttribute("href")).toBe("/investissements");
+	});
+
+	it("never shows an overlapping-sleeve Double ligne chip", () => {
+		render(
+			<AllocationCoherenceCard
+				coherence={coherence({
+					categories: [
+						{
+							category: "Monde",
+							targetPct: 1,
+							stockPct: 1,
+							flowPct: null,
+						},
+					],
+				})}
+			/>,
+		);
+
+		expect(screen.queryByText(/Double ligne/i)).toBeNull();
+	});
 });
