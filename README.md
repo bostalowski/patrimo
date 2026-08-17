@@ -40,8 +40,10 @@ Détails (Node 24+, Drive OAuth mobile, build) :
 
 ```bash
 npm run electron:build   # .dmg arm64 + Intel dans release/
-npm version patch && git push --follow-tags   # release GitHub Actions
+npm version patch && git push --follow-tags   # release GitHub Actions (manuel)
 ```
+
+Ou : label `release:patch` / `release:minor` / `release:major` sur la PR, puis merge dans `main` — voir [Cut a desktop release](docs/howto/cut-a-desktop-release.md).
 
 ## Fichier Excel
 

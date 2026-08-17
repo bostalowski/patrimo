@@ -38,6 +38,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 
 ## How-to
 
+- [Cut a desktop release](howto/cut-a-desktop-release.md)
 - [Local development setup](howto/local-dev-setup.md)
 - [Configure the Excel source](howto/configure-excel-source.md)
 - [Sync prices](howto/sync-prices.md)

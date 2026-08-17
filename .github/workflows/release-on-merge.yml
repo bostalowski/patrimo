@@ -1,0 +1,78 @@
+name: Release on PR merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  bump:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.resolve.outputs.release }}
+      tag: ${{ steps.bump.outputs.tag }}
+    steps:
+      - name: Resolve release bump from labels
+        id: resolve
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map((label) => label.name);
+            const matches = ["release:patch", "release:minor", "release:major"].filter(
+              (name) => labels.includes(name),
+            );
+            if (matches.length === 0) {
+              core.info("No release:* label — skipping version bump");
+              core.setOutput("release", "false");
+              return;
+            }
+            if (matches.length > 1) {
+              core.setFailed(
+                `Exactly one release label is required, found: ${matches.join(", ")}`,
+              );
+              return;
+            }
+            const bump = matches[0].split(":")[1];
+            core.info(`Release bump: ${bump}`);
+            core.setOutput("release", "true");
+            core.setOutput("bump", bump);
+
+      - name: Checkout main
+        if: steps.resolve.outputs.release == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_GITHUB_TOKEN || github.token }}
+
+      - name: Setup Node
+        if: steps.resolve.outputs.release == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Bump version and push tag
+        if: steps.resolve.outputs.release == 'true'
+        id: bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npm version "${{ steps.resolve.outputs.bump }}" -m "chore: release %s"
+          TAG="v$(node -p "require('./package.json').version")"
+          git push origin HEAD:main
+          git push origin "$TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: bump
+    if: needs.bump.outputs.should_release == 'true' && needs.bump.outputs.tag != ''
+    uses: ./.github/workflows/release.yml
+    with:
+      ref: ${{ needs.bump.outputs.tag }}
+    secrets: inherit

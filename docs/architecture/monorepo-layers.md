@@ -40,7 +40,8 @@ Web modules under `src/lib/*.ts` often re-export `@patrimo/core` entry points so
 | Web/Electron scripts | root `package.json` |
 | Mobile scripts | `mobile/package.json` |
 | Shared tests (Vitest) | root `npm test` — includes `src/` and `mobile/` suites configured in `vitest.config.ts` |
-| Release DMG | `.github/workflows/release.yml` on `v*` tags |
+| Release DMG | `.github/workflows/release.yml` on `v*` tags (also called after labeled PR merges) |
+| Release on merge | `.github/workflows/release-on-merge.yml` when a PR to `main` has `release:patch` / `minor` / `major` |
 
 ## See also
 
