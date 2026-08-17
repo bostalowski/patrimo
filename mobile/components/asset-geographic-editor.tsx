@@ -68,15 +68,18 @@ function initialDraftsByMode(allocations: GeographicAllocation[]): Record<
 
 export function AssetGeographicEditor({
   assetLabel,
+  hasIsin = false,
   allocations,
   regions,
   countries,
   colors,
   onSave,
+  onSyncJustEtf,
   pending,
 }: {
   assetId: string;
   assetLabel: string;
+  hasIsin?: boolean;
   allocations: GeographicAllocation[];
   regions: GeographicSlice[];
   countries: GeographicSlice[];
@@ -90,6 +93,9 @@ export function AssetGeographicEditor({
   onSave: (
     weights: Array<{ country: string; weight: number }>,
   ) => Promise<void>;
+  onSyncJustEtf?: (options: {
+    restore: boolean;
+  }) => Promise<{ ok: boolean; skippedManual?: boolean }>;
   pending: boolean;
 }) {
   const [mode, setMode] = useState<EntryMode>(() =>
@@ -145,6 +151,31 @@ export function AssetGeographicEditor({
     }
   };
 
+  const syncJustEtf = async (restore: boolean) => {
+    if (!onSyncJustEtf) return;
+    try {
+      const result = await onSyncJustEtf({ restore });
+      if (result.skippedManual) {
+        Alert.alert(
+          "Répartition manuelle conservée",
+          "Utilise « Rétablir depuis JustETF » pour écraser la saisie manuelle.",
+        );
+        return;
+      }
+      if (!result.ok) {
+        Alert.alert(
+          "Sync JustETF impossible",
+          "La récupération depuis JustETF a échoué. Le classeur n'a pas été modifié.",
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "Sync JustETF impossible",
+        error instanceof Error ? error.message : "Erreur inconnue",
+      );
+    }
+  };
+
   return (
     <View style={{ gap: 12 }}>
       {allocations.length === 0 ? (
@@ -161,6 +192,54 @@ export function AssetGeographicEditor({
           countries={countries}
           colors={colors}
         />
+      )}
+
+      {hasIsin && onSyncJustEtf && (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          <TouchableOpacity
+            accessibilityLabel={
+              allocations.length === 0
+                ? "Récupérer depuis JustETF"
+                : "Sync JustETF"
+            }
+            disabled={pending}
+            onPress={() => void syncJustEtf(false)}
+            style={{
+              backgroundColor: colors.accentBg,
+              borderRadius: 10,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              opacity: pending ? 0.6 : 1,
+            }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
+              {allocations.length === 0
+                ? "Récupérer depuis JustETF"
+                : "Sync JustETF"}
+            </Text>
+          </TouchableOpacity>
+          {allocations.length > 0 && (
+            <TouchableOpacity
+              accessibilityLabel="Rétablir depuis JustETF"
+              disabled={pending}
+              onPress={() => void syncJustEtf(true)}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.cardBorder,
+                borderRadius: 10,
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                opacity: pending ? 0.6 : 1,
+              }}
+            >
+              <Text
+                style={{ color: colors.text, fontWeight: "600", fontSize: 13 }}
+              >
+                Rétablir depuis JustETF
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
 
       <View style={{ flexDirection: "row", gap: 8 }}>

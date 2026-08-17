@@ -156,6 +156,12 @@ Body: `{ assetId, source: "manual", weights: [{ country, weight }] }` with `weig
 
 Persists via `replaceGeographicAllocation` + `replaceWorkbook`.
 
+### `POST /api/geography/sync`
+
+Body: `{ assetId, restore?: boolean }`.
+
+Fetches JustETF profile HTML for the asset ISIN, parses country weights in `@patrimo/core`, writes `source=justetf` for that asset. Ordinary sync skips when current source is `manual`; `restore: true` overwrites. `502` when fetch/parse fails. See [ADR 0011](../adr/0011-restore-justetf-geographic-sync.md).
+
 ## Retirement profile
 
 ### `GET /api/retirement-profile`

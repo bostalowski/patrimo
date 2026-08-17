@@ -128,7 +128,7 @@ Optional sheet for look-through geographic weights. See [Geographic allocation](
 | `Actif` | `assetId` | Existing asset id |
 | `Pays` | `country` | ISO 3166-1 alpha-2, residual `OTHER`, or product region key (`NORTH_AMERICA`, `LATIN_AMERICA`, `EUROPE`, `ASIA_PACIFIC`, `AFRICA_MIDDLE_EAST`, `OTHER`); all rows for one asset are homogeneous (countries or regions). Legacy `EMERGING` normalizes to `OTHER`. |
 | `Poids %` | `weight` | Percent in Excel (0–100); fraction in `[0, 1]` in the model; per-asset sum must satisfy `0 < sum ≤ 1` (± 1e-3); see [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md) |
-| `Source` | `source` | `manual` on write; `justetf` retained for legacy read |
+| `Source` | `source` | `manual` or `justetf` |
 
 All rows for one `Actif` are replaced together on write. Missing sheet ⇒ empty collection.
 

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import * as XLSX from "xlsx";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Workbook } from "@patrimo/core/schema";
+import { replaceGeographicAllocation } from "@patrimo/core/geographic-allocation";
 import * as mobileExcel from "../../mobile/lib/excel-mobile";
 
 const configState = vi.hoisted(() => ({ excelPath: null as string | null }));
@@ -105,6 +106,17 @@ function sourceBuffer(geoRows?: unknown[][]): ArrayBuffer {
       "CW8",
       "yahoo",
       "CW8.PA",
+      "EUR",
+      null,
+    ],
+    [
+      "other",
+      "Other ETF",
+      "ETF",
+      "IE00B1XNHC34",
+      "CS1",
+      "yahoo",
+      "CS1.PA",
       "EUR",
       null,
     ],
@@ -248,5 +260,49 @@ describe("web and mobile geographic-allocation Excel adapters", () => {
       transactions: original.transactions,
       headers: GEO_HEADERS,
     });
+  });
+
+  it("reads Excel percentage-format fractions without dividing twice", () => {
+    writeWebSource(
+      sourceBuffer([
+        ["world", "US", 0.7, "manual"],
+        ["world", "JP", 0.3, "manual"],
+        ["other", "FR", 1, "manual"],
+      ]),
+    );
+
+    const parsed = webExcel.loadWorkbook();
+    expect(geographicAllocationsFrom(parsed)).toEqual([
+      allocation("world", "US", 0.7, "manual"),
+      allocation("world", "JP", 0.3, "manual"),
+      allocation("other", "FR", 1, "manual"),
+    ]);
+  });
+
+  it("saving one asset keeps other assets when weights are percentage-formatted", () => {
+    writeWebSource(
+      sourceBuffer([
+        ["world", "US", 0.7, "justetf"],
+        ["world", "JP", 0.3, "justetf"],
+        ["other", "FR", 1, "manual"],
+      ]),
+    );
+    const before = webExcel.loadWorkbook();
+
+    webExcel.replaceWorkbook(
+      replaceGeographicAllocation(
+        before,
+        "other",
+        [{ country: "DE", weight: 0.4 }],
+        "manual",
+      ),
+    );
+    webExcel.resetWorkbookCache();
+
+    expect(geographicAllocationsFrom(webExcel.loadWorkbook())).toEqual([
+      allocation("world", "US", 0.7, "justetf"),
+      allocation("world", "JP", 0.3, "justetf"),
+      allocation("other", "DE", 0.4, "manual"),
+    ]);
   });
 });

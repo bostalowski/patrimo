@@ -1,6 +1,6 @@
 # ADR 0008: Geographic allocation in the workbook
 
-- Status: accepted (account surface placement and geography write path amended by [ADR 0009](0009-account-detail-and-mobile-justetf.md); JustETF sync removed — manual writes only; weight sum and absolute look-through amended by [ADR 0010](0010-partial-geographic-allocation-weights.md))
+- Status: accepted (account surface placement amended by [ADR 0009](0009-account-detail-and-mobile-justetf.md); JustETF sync restored by [ADR 0011](0011-restore-justetf-geographic-sync.md); weight sum and absolute look-through amended by [ADR 0010](0010-partial-geographic-allocation-weights.md))
 - Date: 2026-08-16
 - implementation_ready: yes
 

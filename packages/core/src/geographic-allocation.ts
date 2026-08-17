@@ -33,6 +33,17 @@ export function isIncompleteGeographicDraftSum(
   return sumPercent > 0 && Math.abs(sumPercent - 100) > tolerance;
 }
 
+/** Excel may store 70 (percent points) or 0.7 (percentage format). */
+export function weightFromExcelPercentCell(
+  raw: number,
+  rawValuesForAsset: readonly number[],
+): number {
+  const storedAsPercentPoints = rawValuesForAsset.some(
+    (value) => value > 1 + GEOGRAPHIC_WEIGHT_SUM_TOLERANCE,
+  );
+  return storedAsPercentPoints ? raw / 100 : raw;
+}
+
 function findAsset(assets: Asset[], assetId: string): Asset {
   const asset = assets.find((candidate) => candidate.id === assetId);
   if (!asset) {
@@ -161,4 +172,20 @@ export function allocationSourceForAsset(
 ): GeographicAllocationSource | null {
   const row = allocations.find((entry) => entry.assetId === assetId);
   return row?.source ?? null;
+}
+
+export function applyFetchedGeographicAllocation(
+  workbook: Workbook,
+  assetId: string,
+  weights: Array<{ country: string; weight: number }>,
+  options: { restore?: boolean } = {},
+): Workbook {
+  const currentSource = allocationSourceForAsset(
+    workbook.geographicAllocations ?? [],
+    assetId,
+  );
+  if (currentSource === "manual" && !options.restore) {
+    return workbook;
+  }
+  return replaceGeographicAllocation(workbook, assetId, weights, "justetf");
 }

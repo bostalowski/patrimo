@@ -205,6 +205,7 @@ export function GeographicExposurePanel({
 export function AssetGeographicSection({
   assetId,
   assetLabel,
+  hasIsin = false,
   allocations,
   marketValue = 0,
   regions = [],
@@ -212,6 +213,7 @@ export function AssetGeographicSection({
 }: {
   assetId: string;
   assetLabel: string;
+  hasIsin?: boolean;
   allocations: GeographicAllocation[];
   marketValue?: number;
   regions?: GeographicSlice[];
@@ -225,7 +227,10 @@ export function AssetGeographicSection({
     initialDraftsByMode(allocations),
   );
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [localAllocations, setLocalAllocations] =
+    useState<GeographicAllocation[]>(allocations);
   const draft = draftByMode[mode];
   const draftExposure = exposureFromDraft(assetId, draft, marketValue);
   const shownCountries = draftExposure?.countries ?? countries;
@@ -233,9 +238,16 @@ export function AssetGeographicSection({
   const hasExposure =
     shownCountries.length > 0 || shownRegions.length > 0;
 
+  function applyAllocations(next: GeographicAllocation[]) {
+    setLocalAllocations(next);
+    setMode(entryModeFromAllocations(next));
+    setDraftByMode(initialDraftsByMode(next));
+  }
+
   async function saveManual() {
     setPending(true);
     setError(null);
+    setInfo(null);
     try {
       const weights = draftWeightRows(draft);
       const response = await fetch("/api/geography", {
@@ -252,6 +264,50 @@ export function AssetGeographicSection({
           error?: string;
         } | null;
         throw new Error(body?.error ?? "Enregistrement impossible");
+      }
+      applyAllocations(
+        weights.map((row) => ({
+          assetId,
+          country: row.country,
+          weight: row.weight,
+          source: "manual" as const,
+        })),
+      );
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function syncJustEtf(restore = false) {
+    setPending(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const response = await fetch("/api/geography/sync", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ assetId, restore }),
+      });
+      const body = (await response.json().catch(() => null)) as {
+        error?: string;
+        updated?: boolean;
+        skippedManual?: boolean;
+        allocations?: GeographicAllocation[];
+      } | null;
+      if (!response.ok) {
+        throw new Error(body?.error ?? "Sync JustETF impossible");
+      }
+      if (body?.skippedManual) {
+        setInfo(
+          "Répartition manuelle conservée. Utilise « Rétablir depuis JustETF » pour écraser.",
+        );
+        return;
+      }
+      if (body?.allocations) {
+        applyAllocations(body.allocations);
       }
       router.refresh();
     } catch (err) {
@@ -274,6 +330,30 @@ export function AssetGeographicSection({
             Aucune répartition géographique renseignée pour {assetLabel}.
           </p>
         )}
+        {hasIsin && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={primaryButton}
+              disabled={pending}
+              onClick={() => void syncJustEtf(false)}
+            >
+              {localAllocations.length === 0
+                ? "Récupérer depuis JustETF"
+                : "Sync JustETF"}
+            </button>
+            {localAllocations.length > 0 && (
+              <button
+                type="button"
+                className={secondaryButton}
+                disabled={pending}
+                onClick={() => void syncJustEtf(true)}
+              >
+                Rétablir depuis JustETF
+              </button>
+            )}
+          </div>
+        )}
         <ManualWeightEditor
           mode={mode}
           onModeChange={setMode}
@@ -284,6 +364,7 @@ export function AssetGeographicSection({
           onSave={() => void saveManual()}
           pending={pending}
           error={error}
+          info={info}
         />
       </CardBody>
     </Card>
@@ -298,6 +379,7 @@ function ManualWeightEditor({
   onSave,
   pending,
   error,
+  info,
 }: {
   mode: "countries" | "regions";
   onModeChange: (mode: "countries" | "regions") => void;
@@ -306,6 +388,7 @@ function ManualWeightEditor({
   onSave: () => void;
   pending: boolean;
   error: string | null;
+  info: string | null;
 }) {
   const keyOptions =
     mode === "regions"
@@ -387,6 +470,7 @@ function ManualWeightEditor({
           Enregistrer
         </button>
       </div>
+      {info && <p className="text-sm text-zinc-600 dark:text-zinc-300">{info}</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );

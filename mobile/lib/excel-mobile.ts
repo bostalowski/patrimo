@@ -1,6 +1,9 @@
 import * as XLSX from "xlsx";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
-import { normalizeGeographicAllocations } from "@patrimo/core/geographic-allocation";
+import {
+  normalizeGeographicAllocations,
+  weightFromExcelPercentCell,
+} from "@patrimo/core/geographic-allocation";
 import {
   ACTIFS_HEADERS,
   COMPTES_HEADERS,
@@ -405,22 +408,38 @@ function parseGeographicAllocations(
   rows: Record<string, unknown>[],
   assets: Asset[],
 ): GeographicAllocation[] {
-  const raw: GeographicAllocation[] = [];
+  type RawRow = {
+    assetId: string;
+    country: string;
+    source: GeographicAllocation["source"];
+    rawWeight: number;
+  };
+  const pending: RawRow[] = [];
+  const rawByAsset = new Map<string, number[]>();
+
   for (const row of rows) {
     const assetId = emptyToUndefined(row["Actif"]);
     const country = emptyToUndefined(row["Pays"]);
     const sourceRaw = emptyToUndefined(row["Source"]);
     if (!assetId || !country || !sourceRaw) continue;
     if (sourceRaw !== "justetf" && sourceRaw !== "manual") continue;
-    const percent = toNumber(row["Poids %"]);
-    if (percent === null) continue;
-    raw.push({
-      assetId,
-      country,
-      weight: percent / 100,
-      source: sourceRaw,
-    });
+    const rawWeight = toNumber(row["Poids %"]);
+    if (rawWeight === null) continue;
+    pending.push({ assetId, country, source: sourceRaw, rawWeight });
+    const bucket = rawByAsset.get(assetId) ?? [];
+    bucket.push(rawWeight);
+    rawByAsset.set(assetId, bucket);
   }
+
+  const raw: GeographicAllocation[] = pending.map((row) => ({
+    assetId: row.assetId,
+    country: row.country,
+    weight: weightFromExcelPercentCell(
+      row.rawWeight,
+      rawByAsset.get(row.assetId) ?? [row.rawWeight],
+    ),
+    source: row.source,
+  }));
   return normalizeGeographicAllocations(raw, assets);
 }
 

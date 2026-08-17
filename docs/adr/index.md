@@ -8,7 +8,8 @@
 - [ADR 0006: Portfolio risk readability](0006-portfolio-risk-readability.md) — accepted
 - [ADR 0007: Fee monitoring ratios on the Fees page](0007-fee-monitoring-ratios.md) — accepted
 - [ADR 0008: Geographic allocation in the workbook](0008-geographic-allocation.md) — accepted (amended by 0009)
-- [ADR 0009: Account detail and region allocations](0009-account-detail-and-mobile-justetf.md) — accepted
+- [ADR 0009: Account detail and region allocations](0009-account-detail-and-mobile-justetf.md) — accepted (amended by 0011)
 - [ADR 0010: Partial geographic allocation weights](0010-partial-geographic-allocation-weights.md) — accepted
+- [ADR 0011: Restore JustETF geographic sync](0011-restore-justetf-geographic-sync.md) — accepted
 
 Template: [_template.md](_template.md)
