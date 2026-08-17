@@ -66,7 +66,65 @@ function requireReplace(): NonNullable<
 }
 
 describe("core geographic allocations", () => {
-  it("rejects an allocation whose weights do not sum to ~1", () => {
+  it("accepts an allocation whose weights sum to less than 1", () => {
+    const replace = requireReplace();
+
+    const result = replace(
+      workbook(),
+      "world",
+      [
+        { country: "US", weight: 0.7 },
+        { country: "JP", weight: 0.1 },
+      ],
+      "manual",
+    );
+
+    expect(result.geographicAllocations).toEqual([
+      {
+        assetId: "world",
+        country: "US",
+        weight: 0.7,
+        source: "manual",
+      },
+      {
+        assetId: "world",
+        country: "JP",
+        weight: 0.1,
+        source: "manual",
+      },
+    ]);
+  });
+
+  it("accepts an allocation whose weights sum to ~1", () => {
+    const replace = requireReplace();
+
+    const result = replace(
+      workbook(),
+      "world",
+      [
+        { country: "US", weight: 0.7 },
+        { country: "JP", weight: 0.3 },
+      ],
+      "manual",
+    );
+
+    expect(result.geographicAllocations).toEqual([
+      {
+        assetId: "world",
+        country: "US",
+        weight: 0.7,
+        source: "manual",
+      },
+      {
+        assetId: "world",
+        country: "JP",
+        weight: 0.3,
+        source: "manual",
+      },
+    ]);
+  });
+
+  it("rejects an allocation whose weights sum to more than 1", () => {
     const replace = requireReplace();
 
     expect(() =>
@@ -75,7 +133,7 @@ describe("core geographic allocations", () => {
         "world",
         [
           { country: "US", weight: 0.7 },
-          { country: "JP", weight: 0.1 },
+          { country: "JP", weight: 0.4 },
         ],
         "manual",
       ),

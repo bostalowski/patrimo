@@ -17,10 +17,16 @@ import {
 import { formatEuro, formatPercent } from "@/lib/utils";
 import type { GeographicAllocation } from "@patrimo/core/schema";
 import {
+  aggregateGeographicExposure,
   geographicAllocationGranularity,
   regionLabel,
   type GeographicSlice,
 } from "@patrimo/core/geographic-exposure";
+import {
+  isIncompleteGeographicDraftSum,
+  isValidGeographicWeightSum,
+  sumGeographicDraftWeightPercents,
+} from "@patrimo/core/geographic-allocation";
 
 const primaryButton =
   "rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900";
@@ -32,6 +38,58 @@ type EntryMode = "countries" | "regions";
 
 function emptyDraft(): DraftRow[] {
   return [{ country: "", weightPercent: "" }];
+}
+
+function incompleteSumLabel(draft: DraftRow[]): string | null {
+  const sum = sumGeographicDraftWeightPercents(
+    draft.map((row) => row.weightPercent),
+  );
+  if (!isIncompleteGeographicDraftSum(sum)) return null;
+  return `${Math.round(sum * 10) / 10} % renseignés`;
+}
+
+function draftWeightRows(
+  draft: DraftRow[],
+): Array<{ country: string; weight: number }> {
+  return draft
+    .filter((row) => row.country.trim() && row.weightPercent.trim())
+    .map((row) => ({
+      country: row.country.trim().toUpperCase(),
+      weight: Number(row.weightPercent.replace(",", ".")) / 100,
+    }))
+    .filter(
+      (row) =>
+        row.country &&
+        Number.isFinite(row.weight) &&
+        row.weight >= 0,
+    );
+}
+
+function exposureFromDraft(
+  assetId: string,
+  draft: DraftRow[],
+  marketValue: number,
+): { countries: GeographicSlice[]; regions: GeographicSlice[] } | null {
+  const weights = draftWeightRows(draft);
+  if (weights.length === 0) return null;
+  const sum = weights.reduce((total, row) => total + row.weight, 0);
+  if (!isValidGeographicWeightSum(sum)) return null;
+
+  try {
+    geographicAllocationGranularity(weights.map((row) => row.country));
+  } catch {
+    return null;
+  }
+
+  return aggregateGeographicExposure(
+    [{ assetId, marketValue: marketValue > 0 ? marketValue : 1 }],
+    weights.map((row) => ({
+      assetId,
+      country: row.country,
+      weight: row.weight,
+      source: "manual",
+    })),
+  );
 }
 
 function draftFromAllocations(allocations: GeographicAllocation[]): DraftRow[] {
@@ -148,12 +206,14 @@ export function AssetGeographicSection({
   assetId,
   assetLabel,
   allocations,
+  marketValue = 0,
   regions = [],
   countries,
 }: {
   assetId: string;
   assetLabel: string;
   allocations: GeographicAllocation[];
+  marketValue?: number;
   regions?: GeographicSlice[];
   countries: GeographicSlice[];
 }) {
@@ -167,17 +227,17 @@ export function AssetGeographicSection({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const draft = draftByMode[mode];
+  const draftExposure = exposureFromDraft(assetId, draft, marketValue);
+  const shownCountries = draftExposure?.countries ?? countries;
+  const shownRegions = draftExposure?.regions ?? regions;
+  const hasExposure =
+    shownCountries.length > 0 || shownRegions.length > 0;
 
   async function saveManual() {
     setPending(true);
     setError(null);
     try {
-      const weights = draft
-        .filter((row) => row.country.trim() && row.weightPercent.trim())
-        .map((row) => ({
-          country: row.country.trim().toUpperCase(),
-          weight: Number(row.weightPercent.replace(",", ".")) / 100,
-        }));
+      const weights = draftWeightRows(draft);
       const response = await fetch("/api/geography", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -207,12 +267,12 @@ export function AssetGeographicSection({
         <CardTitle>Répartition géographique</CardTitle>
       </CardHeader>
       <CardBody className="space-y-4">
-        {allocations.length === 0 ? (
+        {hasExposure ? (
+          <ExposureBody countries={shownCountries} regions={shownRegions} />
+        ) : (
           <p className="text-sm text-zinc-500">
             Aucune répartition géographique renseignée pour {assetLabel}.
           </p>
-        ) : (
-          <ExposureBody countries={countries} regions={regions} />
         )}
         <ManualWeightEditor
           mode={mode}
@@ -251,6 +311,7 @@ function ManualWeightEditor({
     mode === "regions"
       ? geographicRegionOptions()
       : geographicCountryOptions();
+  const sumLabel = incompleteSumLabel(draft);
 
   return (
     <div className="space-y-3">
@@ -304,6 +365,9 @@ function ManualWeightEditor({
           />
         </div>
       ))}
+      {sumLabel && (
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">{sumLabel}</p>
+      )}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

@@ -92,7 +92,7 @@ A user-entered dated valuation (typically FCPE VL) stored in the optional workbo
 
 ## Geographic allocation
 
-Look-through geographic weights for an asset (fractions summing to ~1), persisted in the optional workbook sheet `Exposition geo`. Rows for one asset are either **country-level** (ISO 3166-1 alpha-2 or residual `OTHER`) or **region-level** (product region keys), never mixed. Used to build portfolio, account, and asset breakdowns. Assets without an allocation are excluded from geo charts. UI shows a **country** view and a **region** view; region-only assets appear only in the region view.
+Look-through geographic weights for an asset (fractions with `0 < sum ≤ 1` within tolerance; partial sums allowed), persisted in the optional workbook sheet `Exposition geo`. Rows for one asset are either **country-level** (ISO 3166-1 alpha-2 or residual `OTHER`) or **region-level** (product region keys), never mixed. Used to build portfolio, account, and asset breakdowns with **absolute** weights (missing fraction and country `OTHER` stay unreported on charts). Assets without an allocation are excluded from geo charts. UI shows a **country** view and a **region** view; region-only assets appear only in the region view. See [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md).
 
 ## Geographic region
 

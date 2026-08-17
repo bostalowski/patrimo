@@ -11,6 +11,10 @@ import {
   geographicAllocationGranularity,
   type GeographicSlice,
 } from "@patrimo/core/geographic-exposure";
+import {
+  isIncompleteGeographicDraftSum,
+  sumGeographicDraftWeightPercents,
+} from "@patrimo/core/geographic-allocation";
 import { GeographicExposureList } from "./geographic-exposure-list";
 import {
   geographicCountryOptions,
@@ -22,6 +26,14 @@ type EntryMode = "countries" | "regions";
 
 function emptyDraft(): DraftRow[] {
   return [{ country: "", weightPercent: "" }];
+}
+
+function incompleteSumLabel(draft: DraftRow[]): string | null {
+  const sum = sumGeographicDraftWeightPercents(
+    draft.map((row) => row.weightPercent),
+  );
+  if (!isIncompleteGeographicDraftSum(sum)) return null;
+  return `${Math.round(sum * 10) / 10} % renseignés`;
 }
 
 function draftFromAllocations(allocations: GeographicAllocation[]): DraftRow[] {
@@ -114,6 +126,7 @@ export function AssetGeographicEditor({
       option.label.toLowerCase().includes(query)
     );
   }).slice(0, 30);
+  const sumLabel = incompleteSumLabel(draft);
 
   const save = async () => {
     const weights = draftByModeRef.current[modeRef.current]
@@ -296,6 +309,14 @@ export function AssetGeographicEditor({
           Ajouter une ligne
         </Text>
       </TouchableOpacity>
+      {sumLabel && (
+        <Text
+          accessibilityLabel={sumLabel}
+          style={{ color: colors.textMuted, fontSize: 13 }}
+        >
+          {sumLabel}
+        </Text>
+      )}
       <TouchableOpacity
         accessibilityLabel="Enregistrer la répartition géographique"
         disabled={pending}

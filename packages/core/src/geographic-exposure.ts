@@ -1,5 +1,5 @@
 import type { GeographicAllocation } from "./schema";
-import { GEOGRAPHIC_WEIGHT_SUM_TOLERANCE } from "./geographic-allocation";
+import { isValidGeographicWeightSum } from "./geographic-allocation";
 
 export type GeographicRegion =
   | "NORTH_AMERICA"
@@ -197,7 +197,7 @@ function allocationsByAsset(
 function isValidAllocation(rows: GeographicAllocation[]): boolean {
   if (rows.length === 0) return false;
   const sum = rows.reduce((total, row) => total + row.weight, 0);
-  return Math.abs(sum - 1) <= GEOGRAPHIC_WEIGHT_SUM_TOLERANCE;
+  return isValidGeographicWeightSum(sum);
 }
 
 function lookThroughRows(
@@ -209,20 +209,12 @@ function lookThroughRows(
 export function lookThroughCountryWeights(
   weights: Array<{ country: string; weight: number }>,
 ): Array<{ country: string; weight: number }> {
-  const known = weights
+  return weights
     .map((row) => ({
       country: row.country.trim().toUpperCase(),
       weight: row.weight,
     }))
     .filter((row) => row.country && row.country !== "OTHER" && row.weight > 0);
-
-  const sum = known.reduce((total, row) => total + row.weight, 0);
-  if (sum <= 0) return [];
-
-  return known.map((row) => ({
-    country: row.country,
-    weight: Math.round((row.weight / sum) * 1e6) / 1e6,
-  }));
 }
 
 function toSortedSlices(
@@ -276,9 +268,9 @@ export function aggregateGeographicExposure(
       const sum = regionWeights.reduce((total, row) => total + row.weight, 0);
       if (sum <= 0) continue;
 
-      regionCoveredMarketValue += position.marketValue;
+      regionCoveredMarketValue += position.marketValue * sum;
       for (const row of regionWeights) {
-        const contribution = position.marketValue * (row.weight / sum);
+        const contribution = position.marketValue * row.weight;
         regionTotals.set(
           row.country,
           (regionTotals.get(row.country) ?? 0) + contribution,
@@ -290,10 +282,10 @@ export function aggregateGeographicExposure(
     const lookThrough = lookThroughRows(rows);
     if (lookThrough.length === 0) continue;
 
-    countryCoveredMarketValue += position.marketValue;
-    regionCoveredMarketValue += position.marketValue;
+    let assetCovered = 0;
     for (const row of lookThrough) {
       const contribution = position.marketValue * row.weight;
+      assetCovered += contribution;
       countryTotals.set(
         row.country,
         (countryTotals.get(row.country) ?? 0) + contribution,
@@ -301,6 +293,8 @@ export function aggregateGeographicExposure(
       const region = regionForCountry(row.country);
       regionTotals.set(region, (regionTotals.get(region) ?? 0) + contribution);
     }
+    countryCoveredMarketValue += assetCovered;
+    regionCoveredMarketValue += assetCovered;
   }
 
   return {

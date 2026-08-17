@@ -152,7 +152,7 @@ Removes that dated entry from the workbook.
 
 ### `POST /api/geography`
 
-Body: `{ assetId, source: "manual", weights: [{ country, weight }] }` with `weight` in `[0, 1]` summing to ~1.
+Body: `{ assetId, source: "manual", weights: [{ country, weight }] }` with `weight` in `[0, 1]` and `0 < sum(weights) ≤ 1` (± 1e-3); see [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md).
 
 Persists via `replaceGeographicAllocation` + `replaceWorkbook`.
 

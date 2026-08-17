@@ -83,11 +83,13 @@ export default async function AssetDetailPage({
   const assetAllocations = (workbook.geographicAllocations ?? []).filter(
     (row) => row.assetId === decodedId,
   );
+  const marketValue = position?.marketValue ?? 0;
   const assetGeo = aggregateGeographicExposure(
     [
       {
         assetId: decodedId,
-        marketValue: position?.marketValue ?? 0,
+        marketValue:
+          marketValue > 0 ? marketValue : assetAllocations.length > 0 ? 1 : 0,
       },
     ],
     assetAllocations,
@@ -173,6 +175,7 @@ export default async function AssetDetailPage({
         assetId={asset.id}
         assetLabel={asset.label}
         allocations={assetAllocations}
+        marketValue={marketValue}
         regions={assetGeo.regions}
         countries={assetGeo.countries}
       />

@@ -38,8 +38,9 @@ Contract (do not invent):
 - THEN treat them as valid legacy allocations for aggregation/display; do not
   offer JustETF fetch, sync, or restore actions
 - ELSE workbook sheet Exposition geo column Pays stores either an ISO alpha-2,
-  OTHER, or a GeographicRegion key; weight rules remain ADR 0008;
-  mobile account detail and mobile geo lists stay without interactive map
+  OTHER, or a GeographicRegion key; weight sum / absolute look-through: ADR 0010
+  (amends ADR 0008); mobile account detail and mobile geo lists stay without
+  interactive map
 - FORBIDDEN full geo panels on the accounts list; redefining coverage/sum rules
   outside @patrimo/core; inventing default weights; mixing country and region
   keys on one asset; free-text geo keys outside the guided pickers; interactive
@@ -62,7 +63,7 @@ ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) an
 
 ## Invariants
 
-- ADR 0008 workbook authority, sum validation, and deletion cascade remain.
+- ADR 0008 workbook authority and deletion cascade remain; sum validation and absolute look-through follow ADR 0010.
 - The six product regions are the only region keys (`NORTH_AMERICA`, `LATIN_AMERICA`,
   `EUROPE`, `ASIA_PACIFIC`, `AFRICA_MIDDLE_EAST`, `OTHER`). Legacy `EMERGING` maps to `OTHER`.
 - Platforms must not fork region mapping or aggregation rules.

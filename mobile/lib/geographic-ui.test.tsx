@@ -345,6 +345,54 @@ describe("mobile geographic UI", () => {
     ).toBe("30");
   });
 
+  it("shows a non-blocking current-sum indicator when draft weights sum to less than 100%", () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        <AssetGeographicEditor
+          assetId="world"
+          assetLabel="World ETF"
+          allocations={[
+            {
+              assetId: "world",
+              country: "US",
+              weight: 0.7,
+              source: "manual",
+            },
+            {
+              assetId: "world",
+              country: "JP",
+              weight: 0.1,
+              source: "manual",
+            },
+          ]}
+          regions={[]}
+          countries={[]}
+          colors={{
+            text: "#000",
+            textSecondary: "#666",
+            textMuted: "#999",
+            cardBorder: "#ddd",
+            accentBg: "#111",
+          }}
+          onSave={mocks.replaceGeographic}
+          pending={false}
+        />,
+      );
+    });
+
+    expect(findByText(renderer, /80\s*%\s*renseignés/i).length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      renderer.root.find(
+        (node) =>
+          node.props.accessibilityLabel ===
+          "Enregistrer la répartition géographique",
+      ).props.disabled,
+    ).toBe(false);
+  });
+
   it("mobile accounts list does not render per-account geographic exposure lists", () => {
     let renderer!: ReactTestRenderer;
     act(() => {
