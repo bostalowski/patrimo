@@ -4,18 +4,18 @@ Ordered vertical scopes and test strategy for geographic allocation (web + mobil
 
 ## Prerequisites
 
-- Spec: [ADR 0008](../adr/0008-geographic-allocation.md) (accepted), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md) (accepted), [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md) (proposed — partial weights)
+- Spec: [ADR 0008](../adr/0008-geographic-allocation.md) (accepted), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md) (accepted), [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md) (accepted — partial weights)
 - Branch (current increment): `fix/geo-partial-allocation-weights`
 
 ## Increment plan (ADR 0010)
 
-### Scope A — Core validation + absolute aggregation
+### Scope A — Core validation + absolute aggregation (done)
 
 Allow `0 < sum ≤ 1` on replace/normalize; reject sum &gt; 1; aggregate with absolute weights; drop country `OTHER` without renormalizing. Covers Phase 0 cases 1, 2, 4, 5.
 
 Tests: `src/lib/geographic-allocation-core.test.ts`, `src/lib/geographic-allocation-aggregate.test.ts`, region cases as needed in `src/lib/geographic-region-allocation.test.ts`.
 
-### Scope B — Editor sum indicator (web + mobile)
+### Scope B — Editor sum indicator (web + mobile) (done)
 
 Non-blocking current-sum feedback on geographic editors; save still allowed under Scope A rules. Covers Phase 0 case 3.
 

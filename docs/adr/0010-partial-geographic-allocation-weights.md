@@ -1,6 +1,6 @@
 # ADR 0010: Partial geographic allocation weights
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-17
 - implementation_ready: yes
 - Amends: [ADR 0008](0008-geographic-allocation.md) (weight sum validation; look-through renormalization after dropping `OTHER`)

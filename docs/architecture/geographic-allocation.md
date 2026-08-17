@@ -1,7 +1,5 @@
 # Geographic allocation
 
-> 🚧 Anticipated mechanics for partial weights (Phase 1.5 draft) — confirm after implementation. See [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md).
-
 How Patrimo stores look-through geographic weights and aggregates them into portfolio, account, and asset views. Decisions: [ADR 0008](../adr/0008-geographic-allocation.md), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md), [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md).
 
 ## Intent
