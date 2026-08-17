@@ -214,4 +214,35 @@ describe("web geographic UI", () => {
       (screen.getByLabelText(/Clé géographique 2/i) as HTMLSelectElement).value,
     ).toBe("JP");
   });
+
+  it("shows a non-blocking current-sum indicator when draft weights sum to less than 100%", () => {
+    render(
+      <AssetGeographicSection
+        assetId="world"
+        assetLabel="World"
+        allocations={[
+          {
+            assetId: "world",
+            country: "US",
+            weight: 0.7,
+            source: "manual",
+          },
+          {
+            assetId: "world",
+            country: "JP",
+            weight: 0.1,
+            source: "manual",
+          },
+        ]}
+        regions={[]}
+        countries={[]}
+      />,
+    );
+
+    expect(screen.getByText(/80\s*%\s*renseignés/i)).toBeTruthy();
+    expect(
+      (screen.getByRole("button", { name: /Enregistrer/i }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+  });
 });

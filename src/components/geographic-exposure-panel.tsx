@@ -30,8 +30,28 @@ const secondaryButton =
 type DraftRow = { country: string; weightPercent: string };
 type EntryMode = "countries" | "regions";
 
+const COMPLETE_SUM_PERCENT_TOLERANCE = 0.1;
+
 function emptyDraft(): DraftRow[] {
   return [{ country: "", weightPercent: "" }];
+}
+
+function draftWeightSumPercent(draft: DraftRow[]): number {
+  return draft.reduce((sum, row) => {
+    const raw = row.weightPercent.trim();
+    if (!raw) return sum;
+    const value = Number(raw.replace(",", "."));
+    return Number.isFinite(value) ? sum + value : sum;
+  }, 0);
+}
+
+function incompleteSumLabel(draft: DraftRow[]): string | null {
+  const sum = draftWeightSumPercent(draft);
+  if (!(sum > 0) || Math.abs(sum - 100) <= COMPLETE_SUM_PERCENT_TOLERANCE) {
+    return null;
+  }
+  const rounded = Math.round(sum * 10) / 10;
+  return `${rounded} % renseignés`;
 }
 
 function draftFromAllocations(allocations: GeographicAllocation[]): DraftRow[] {
@@ -251,6 +271,7 @@ function ManualWeightEditor({
     mode === "regions"
       ? geographicRegionOptions()
       : geographicCountryOptions();
+  const sumLabel = incompleteSumLabel(draft);
 
   return (
     <div className="space-y-3">
@@ -304,6 +325,9 @@ function ManualWeightEditor({
           />
         </div>
       ))}
+      {sumLabel && (
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">{sumLabel}</p>
+      )}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
