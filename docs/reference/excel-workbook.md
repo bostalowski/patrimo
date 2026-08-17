@@ -141,9 +141,9 @@ Optional sheet for portfolio-level target allocation. See [Allocation coherence]
 |---|---|---|
 | `Catégorie` | `category` | Unique label; stable identifier |
 | `Pourcentage cible` | `targetPct` | Percent in Excel (0–100); fraction in `(0, 1]` in the model |
-| `Actifs` | `assetIds` | Comma-separated asset ids; each asset belongs to at most one category |
+| `Actifs` | `assetIds` | Comma-separated asset ids; each asset belongs to at most one category. Legacy Excel header `Actifs (séparés par virgule)` is also accepted on parse. |
 
-Validation: Σ `targetPct` must be ≈ 1 (±1e-3); otherwise the sheet is ignored and the card is hidden. Asset ids not found in `Actifs` are silently dropped. Missing sheet ⇒ empty collection ⇒ coherence card hidden.
+Validation: Σ `targetPct` must be ≈ 1 (±1e-3); otherwise the sheet is ignored and the card is hidden. Asset ids not found in `Actifs` are silently dropped on parse. Save paths (`PUT /api/target-allocation`, mobile editor) reject unknown or duplicate assets via `validateTargetAllocations`. Missing sheet ⇒ empty collection ⇒ coherence card hidden; the editor may still show a DCA bootstrap suggestion.
 
 ## Validation ownership
 

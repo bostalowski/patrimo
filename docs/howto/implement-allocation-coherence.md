@@ -16,36 +16,36 @@ Ordered vertical scopes after SPEC LOCK. Decision: [ADR 0012](../adr/0012-alloca
 
 ## Scopes
 
-### Scope 1 — Core plan math
+### Scope 1 — Core plan math (done)
 
 - `suggestTargetPlanFromDca`, `validateTargetAllocations`
 - Remove `overlapping_sleeve` from `assessAllocationCoherence` (+ status watch = geo only)
 - Tests: bootstrap merge/claim, empty DCA, validation errors, no overlapping finding
 
-### Scope 2 — Web persist API
+### Scope 2 — Web persist API (done)
 
-- `PUT` (or `POST`) route replacing `targetAllocations` via `replaceWorkbook`
-- Excel header alias for Actifs column if not already
+- `PUT /api/target-allocation` replacing `targetAllocations` via `replaceWorkbook`
+- Excel header alias for Actifs column
 - Tests: happy path + invalid payload rejects
 
-### Scope 3 — Web editor (Investissements)
+### Scope 3 — Web editor (Investissements) (done)
 
-- Tab/section Allocation: list, edit, save, « Proposer depuis DCA »
+- Tab Allocation cible: list, edit, save, « Proposer depuis DCA »
 - Tests: UI save / bootstrap display
 
-### Scope 4 — Dashboard card wiring
+### Scope 4 — Dashboard card wiring (done)
 
 - « Modifier » link; no overlapping chip; keep drift/flow/geo chips
 - Tests
 
-### Scope 5 — Mobile parity
+### Scope 5 — Mobile parity (done)
 
-- Editor + card + serialize already present for sheet
+- Tab Allocation + editor + card Modifier; serialize via mobile workbook write
 - Tests
 
-### Scope 6 — Doc confirm
+### Scope 6 — Doc confirm (done)
 
-- ADR accepted; remove provisional banner; glossary « Allocation plan » alias
+- ADR accepted; provisional architecture banner removed; glossary « Allocation plan » alias
 
 ## See also
 

@@ -1,6 +1,6 @@
 # ADR 0012: Allocation plan (target) and coherence
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-17
 - implementation_ready: yes
 

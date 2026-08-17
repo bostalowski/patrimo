@@ -1,6 +1,3 @@
-> **Provisional** — mechanics for bootstrap + in-app editor not yet confirmed in production code.
-> Remove this banner after implementation ships (Phase 5).
-
 # Allocation plan and coherence
 
 How Patrimo lets the user form an **allocation plan** (target), optionally seeded
@@ -39,12 +36,15 @@ Optional sheet `Allocation cible` (unchanged columns). Parse accepts header
 | `validateTargetAllocations(targets, assets)` | Save gate |
 | `assessAllocationCoherence(...)` | Status + findings (no `overlapping_sleeve`) |
 
+Thresholds and bootstrap math live only in `@patrimo/core`. Platforms adapt I/O and UI only.
+
 ## Surfaces
 
 | Surface | Role |
 |---|---|
-| Investissements (web) + mobile equivalent | CRUD plan + bootstrap CTA |
-| Dashboard card | Read-only status; « Modifier » → editor |
+| Web Investissements — tab Allocation cible | Editor + « Proposer depuis DCA »; save via `PUT /api/target-allocation` |
+| Mobile Investissements — tab Allocation | Same editor; save via `saveTargetAllocations` (serialize workbook) |
+| Dashboard card (web + mobile) | Read-only status; « Modifier » → Investissements |
 
 ## Out of scope
 
@@ -57,3 +57,5 @@ Optional sheet `Allocation cible` (unchanged columns). Parse accepts header
 - [ADR 0012](../adr/0012-allocation-coherence.md)
 - [Implement allocation plan](../howto/implement-allocation-coherence.md)
 - [Geographic allocation](geographic-allocation.md)
+- [Excel workbook — Allocation cible](../reference/excel-workbook.md)
+- [API — target-allocation](../reference/api-routes.md)

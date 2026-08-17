@@ -105,6 +105,14 @@ Body: `DcaConfig`. Rejects when basket target percentages do not sum to `1` (±0
 
 Body: `{ id }`.
 
+## Target allocation
+
+### `PUT /api/target-allocation`
+
+Body: `{ categories: TargetAllocationCategory[] }` (`category`, `targetPct` in `(0, 1]`, non-empty `assetIds`).
+
+Validates with `validateTargetAllocations` (unique labels, known assets, asset uniqueness, Σ ≈ 1), then `replaceWorkbook` with the new `targetAllocations`. Mobile does not call this route; it writes the sheet via client serialize. See [ADR 0012](../adr/0012-allocation-coherence.md).
+
 ## Properties
 
 ### `POST /api/properties`
