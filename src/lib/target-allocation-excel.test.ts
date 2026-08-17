@@ -215,6 +215,46 @@ describe("web and mobile Allocation cible Excel adapters", () => {
 		]);
 	});
 
+	it("replaceWorkbook keeps asset ids when sheet had legacy Actifs header", () => {
+		writeWebSource(
+			sourceBuffer(
+				[
+					["Monde", 70, null],
+					["Crypto", 30, null],
+				],
+				["Catégorie", "Pourcentage cible", "Actifs (séparés par virgule)"],
+			),
+		);
+
+		const workbook = webExcel.loadWorkbook();
+		webExcel.replaceWorkbook({
+			...workbook,
+			targetAllocations: [
+				category("Monde", 0.7, ["WPEA"]),
+				category("Crypto", 0.3, ["BTC"]),
+			],
+		});
+		webExcel.resetWorkbookCache();
+
+		const reloaded = webExcel.loadWorkbook();
+		expect(reloaded.targetAllocations).toEqual([
+			category("Monde", 0.7, ["WPEA"]),
+			category("Crypto", 0.3, ["BTC"]),
+		]);
+
+		const sheet = XLSX.read(readFileSync(configState.excelPath!), {
+			type: "buffer",
+		}).Sheets[ALLOC_SHEET];
+		const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+			defval: null,
+		});
+		expect(rows[0]).toMatchObject({
+			Catégorie: "Monde",
+			Actifs: "WPEA",
+		});
+		expect(rows[0]["Actifs (séparés par virgule)"]).toBeUndefined();
+	});
+
 	it("parses percent-point values (e.g. 70 stored for 70%)", () => {
 		writeWebSource(
 			sourceBuffer([

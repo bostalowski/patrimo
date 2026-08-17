@@ -864,8 +864,10 @@ function replaceSheetRows(
 				defval: null,
 			})
 		: [];
-	const headers = ((existingRows[0] as string[] | undefined) ??
-		defaultHeaders) as readonly string[] | undefined;
+	const headers = (defaultHeaders ??
+		(existingRows[0] as string[] | undefined)) as
+		| readonly string[]
+		| undefined;
 
 	if (!headers || headers.length === 0) {
 		throw new Error(`Sheet "${sheetName}" has no header row.`);
