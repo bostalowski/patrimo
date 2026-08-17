@@ -7,7 +7,12 @@ import { colors } from "./theme";
 vi.mock("react-native", () => ({
 	View: "View",
 	Text: "Text",
+	Pressable: "Pressable",
 	StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 },
+}));
+
+vi.mock("expo-router", () => ({
+	router: { push: vi.fn() },
 }));
 
 import { AllocationCoherenceCard } from "./allocation-coherence-card";
@@ -101,6 +106,24 @@ describe("mobile AllocationCoherenceCard", () => {
 
 		expect(text).toContain("À surveiller");
 		expect(text).toMatch(/Géo incomplète/i);
+	});
+
+	it("never shows Double ligne overlapping chip and still shows status", () => {
+		const text = visibleText(
+			render(
+				<AllocationCoherenceCard
+					coherence={coherence({
+						status: "aligned",
+						findings: [],
+					})}
+					theme={colors.light}
+				/>,
+			),
+		);
+
+		expect(text).toContain("Aligné");
+		expect(text).toContain("Modifier");
+		expect(text).not.toMatch(/Double ligne/i);
 	});
 
 	it("shows DCA column header when annualDcaTotal > 0", () => {

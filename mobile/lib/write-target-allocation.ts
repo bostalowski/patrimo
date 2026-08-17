@@ -1,0 +1,21 @@
+import type { TargetAllocationCategory } from "@patrimo/core/schema";
+import { parseWorkbook, serializeWorkbook } from "./excel-mobile";
+import {
+	getActiveSource,
+	readSourceFile,
+	writeSourceFile,
+} from "./file-source";
+
+export async function saveTargetAllocations(
+	targets: TargetAllocationCategory[],
+): Promise<void> {
+	const source = await getActiveSource();
+	if (!source) throw new Error("No file source configured");
+
+	const buffer = await readSourceFile(source);
+	const workbook = parseWorkbook(buffer);
+	await writeSourceFile(
+		source,
+		serializeWorkbook({ ...workbook, targetAllocations: targets }),
+	);
+}

@@ -3,7 +3,8 @@ import type {
 	AllocationCoherenceStatus,
 	AllocationFindingKind,
 } from "@patrimo/core/allocation-coherence";
-import { Text, View } from "react-native";
+import { router } from "expo-router";
+import { Pressable, Text, View } from "react-native";
 import { shared, type Theme } from "./theme";
 
 const STATUS_LABEL: Record<AllocationCoherenceStatus, string> = {
@@ -70,9 +71,22 @@ export function AllocationCoherenceCard({
 				<Text style={[shared.label, { color: t.textSecondary }]}>
 					Cohérence d&apos;allocation
 				</Text>
-				<Text style={{ color: tone, fontSize: 13, fontWeight: "600" }}>
-					{STATUS_LABEL[coherence.status]}
-				</Text>
+				<View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+					<Pressable
+						onPress={() => router.push("/investissements")}
+						accessibilityRole="button"
+						accessibilityLabel="Modifier le plan d'allocation"
+					>
+						<Text
+							style={{ color: t.textMuted, fontSize: 12, fontWeight: "600" }}
+						>
+							Modifier
+						</Text>
+					</Pressable>
+					<Text style={{ color: tone, fontSize: 13, fontWeight: "600" }}>
+						{STATUS_LABEL[coherence.status]}
+					</Text>
+				</View>
 			</View>
 
 			{deduped.length > 0 && (
