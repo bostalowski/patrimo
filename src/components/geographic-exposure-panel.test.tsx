@@ -234,6 +234,7 @@ describe("web geographic UI", () => {
             source: "manual",
           },
         ]}
+        marketValue={1000}
         regions={[]}
         countries={[]}
       />,
@@ -244,5 +245,28 @@ describe("web geographic UI", () => {
       (screen.getByRole("button", { name: /Enregistrer/i }) as HTMLButtonElement)
         .disabled,
     ).toBe(false);
+  });
+
+  it("updates the region breakdown live when country draft weights change", () => {
+    render(
+      <AssetGeographicSection
+        assetId="world"
+        assetLabel="World"
+        allocations={[]}
+        marketValue={1000}
+        regions={[]}
+        countries={[]}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/Clé géographique 1/i), {
+      target: { value: "US" },
+    });
+    fireEvent.change(screen.getAllByPlaceholderText("70")[0], {
+      target: { value: "70" },
+    });
+
+    expect(screen.getByTestId("geographic-world-map")).toBeTruthy();
+    expect(screen.getByText(/Amérique du Nord/i)).toBeTruthy();
   });
 });
