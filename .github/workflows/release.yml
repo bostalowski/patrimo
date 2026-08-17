@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "v*"
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref to build (usually a v* tag)
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -14,6 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || github.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -30,6 +39,7 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.ref != '' && inputs.ref || github.ref_name }}
           files: |
             release/*.dmg
             release/*.zip
