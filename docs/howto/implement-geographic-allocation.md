@@ -4,10 +4,26 @@ Ordered vertical scopes and test strategy for geographic allocation (web + mobil
 
 ## Prerequisites
 
-- Spec: [ADR 0008](../adr/0008-geographic-allocation.md) (accepted), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md) (accepted)
-- Branch: `feat/account-detail-and-mobile-justetf`
+- Spec: [ADR 0008](../adr/0008-geographic-allocation.md) (accepted), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md) (accepted), [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md) (proposed — partial weights)
+- Branch (current increment): `fix/geo-partial-allocation-weights`
 
-## Increment plan
+## Increment plan (ADR 0010)
+
+### Scope A — Core validation + absolute aggregation
+
+Allow `0 < sum ≤ 1` on replace/normalize; reject sum &gt; 1; aggregate with absolute weights; drop country `OTHER` without renormalizing. Covers Phase 0 cases 1, 2, 4, 5.
+
+Tests: `src/lib/geographic-allocation-core.test.ts`, `src/lib/geographic-allocation-aggregate.test.ts`, region cases as needed in `src/lib/geographic-region-allocation.test.ts`.
+
+### Scope B — Editor sum indicator (web + mobile)
+
+Non-blocking current-sum feedback on geographic editors; save still allowed under Scope A rules. Covers Phase 0 case 3.
+
+Tests: `src/components/geographic-exposure-panel.test.tsx`, `mobile/lib/geographic-ui.test.tsx`.
+
+---
+
+## Prior increments (done)
 
 ### Scope 1 — Model + workbook persistence (done)
 
@@ -63,9 +79,9 @@ Tests: `src/lib/geographic-region-allocation.test.ts`; web + mobile geographic U
 
 | Level | What it proves |
 |---|---|
-| Core unit | Validation sum; replace; deletion; aggregation |
+| Core unit | Partial sum accepted; sum &gt; 1 rejected; absolute aggregation; OTHER not redistributed; replace; deletion |
 | Excel adapters | Round-trip sheet; missing sheet = empty; percent ↔ fraction |
-| Web / mobile UI | Account list has no full geo; detail shows account geo; guided manual pickers; no JustETF actions |
+| Web / mobile UI | Non-blocking sum indicator; account list has no full geo; detail shows account geo; guided manual pickers; no JustETF actions |
 
 ## Commands
 

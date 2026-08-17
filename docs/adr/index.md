@@ -9,5 +9,6 @@
 - [ADR 0007: Fee monitoring ratios on the Fees page](0007-fee-monitoring-ratios.md) — accepted
 - [ADR 0008: Geographic allocation in the workbook](0008-geographic-allocation.md) — accepted (amended by 0009)
 - [ADR 0009: Account detail and region allocations](0009-account-detail-and-mobile-justetf.md) — accepted
+- [ADR 0010: Partial geographic allocation weights](0010-partial-geographic-allocation-weights.md) — proposed
 
 Template: [_template.md](_template.md)

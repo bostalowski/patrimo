@@ -91,7 +91,7 @@ describe("core geographic exposure aggregation", () => {
     ]);
   });
 
-  it("rolls country exposure up to product regions", () => {
+  it("rolls country exposure up to product regions with absolute weights", () => {
     const aggregate = requireAggregate();
 
     const result = aggregate(
@@ -105,8 +105,7 @@ describe("core geographic exposure aggregation", () => {
       ],
     );
 
-    // OTHER is dropped and remaining weights are renormalized over 0.95
-    expect(result.coveredMarketValue).toBe(1000);
+    expect(result.coveredMarketValue).toBe(950);
     expect(result.countries.map((slice) => slice.key)).toEqual([
       "US",
       "JP",
@@ -114,7 +113,7 @@ describe("core geographic exposure aggregation", () => {
       "BR",
     ]);
     expect(result.countries.find((slice) => slice.key === "US")?.weight).toBeCloseTo(
-      0.6 / 0.95,
+      600 / 950,
       6,
     );
     expect(result.regions.map((slice) => slice.key)).toEqual([
@@ -126,7 +125,7 @@ describe("core geographic exposure aggregation", () => {
     expect(result.regions.find((slice) => slice.key === "OTHER")).toBeUndefined();
   });
 
-  it("drops OTHER and renormalizes known countries by asset market value", () => {
+  it("drops OTHER without redistributing its weight onto other countries", () => {
     const aggregate = requireAggregate();
 
     const result = aggregate(
@@ -138,11 +137,45 @@ describe("core geographic exposure aggregation", () => {
       ],
     );
 
-    expect(result.coveredMarketValue).toBe(1000);
+    expect(result.coveredMarketValue).toBe(800);
     expect(result.countries).toEqual([
-      { key: "US", marketValue: 875, weight: 0.875 },
-      { key: "JP", marketValue: 125, weight: 0.125 },
+      { key: "US", marketValue: 700, weight: 700 / 800 },
+      { key: "JP", marketValue: 100, weight: 100 / 800 },
     ]);
+  });
+
+  it("includes a partially allocated asset in country slices with absolute weights", () => {
+    const aggregate = requireAggregate();
+
+    const result = aggregate(
+      [{ assetId: "world", marketValue: 1000 }],
+      [
+        allocation("world", "US", 0.7),
+        allocation("world", "JP", 0.1),
+      ],
+    );
+
+    expect(result.coveredMarketValue).toBe(800);
+    expect(result.countries).toEqual([
+      { key: "US", marketValue: 700, weight: 700 / 800 },
+      { key: "JP", marketValue: 100, weight: 100 / 800 },
+    ]);
+  });
+
+  it("ignores an allocation whose weights sum to more than 1", () => {
+    const aggregate = requireAggregate();
+
+    const result = aggregate(
+      [{ assetId: "world", marketValue: 1000 }],
+      [
+        allocation("world", "US", 0.7),
+        allocation("world", "JP", 0.4),
+      ],
+    );
+
+    expect(result.coveredMarketValue).toBe(0);
+    expect(result.countries).toEqual([]);
+    expect(result.regions).toEqual([]);
   });
 
   it("excludes assets without allocation from geo slices", () => {

@@ -11,6 +11,10 @@ import {
 
 export const GEOGRAPHIC_WEIGHT_SUM_TOLERANCE = 1e-3;
 
+export function isValidGeographicWeightSum(sum: number): boolean {
+  return sum > 0 && sum <= 1 + GEOGRAPHIC_WEIGHT_SUM_TOLERANCE;
+}
+
 function findAsset(assets: Asset[], assetId: string): Asset {
   const asset = assets.find((candidate) => candidate.id === assetId);
   if (!asset) {
@@ -44,9 +48,11 @@ function assertValidWeightRows(
     sum += row.weight;
   }
 
-  if (Math.abs(sum - 1) > GEOGRAPHIC_WEIGHT_SUM_TOLERANCE) {
+  if (!isValidGeographicWeightSum(sum)) {
     throw new Error(
-      `Geographic allocation weights must sum to 1 (got ${sum})`,
+      sum > 1 + GEOGRAPHIC_WEIGHT_SUM_TOLERANCE
+        ? `Geographic allocation weights must not exceed 1 (got ${sum})`
+        : `Geographic allocation weights must sum to a positive amount (got ${sum})`,
     );
   }
 }
@@ -84,7 +90,7 @@ export function normalizeGeographicAllocations(
   const normalized: GeographicAllocation[] = [];
   for (const rows of byAsset.values()) {
     const sum = rows.reduce((total, row) => total + row.weight, 0);
-    if (Math.abs(sum - 1) > GEOGRAPHIC_WEIGHT_SUM_TOLERANCE) continue;
+    if (!isValidGeographicWeightSum(sum)) continue;
     normalized.push(...rows);
   }
   return normalized;

@@ -1,6 +1,6 @@
 # ADR 0008: Geographic allocation in the workbook
 
-- Status: accepted (account surface placement and geography write path amended by [ADR 0009](0009-account-detail-and-mobile-justetf.md); JustETF sync removed — manual writes only)
+- Status: accepted (account surface placement and geography write path amended by [ADR 0009](0009-account-detail-and-mobile-justetf.md); JustETF sync removed — manual writes only; weight sum and absolute look-through amended by [ADR 0010](0010-partial-geographic-allocation-weights.md))
 - Date: 2026-08-16
 - implementation_ready: yes
 
@@ -8,14 +8,13 @@
 Contract (do not invent):
 - WHEN an asset has a geographic allocation
 - THEN it is a set of rows (assetId, country, weight) with source justetf|manual,
-  weights in [0, 1], and sum(weights) within 1e-3 of 1.0
+  weights in [0, 1]; sum rules: see ADR 0010 (0 < sum ≤ 1 ± 1e-3)
 - WHEN the user saves a geographic allocation
 - THEN replace all rows for that asset with source=manual (after validation)
 - WHEN building portfolio / account / global geo slices
-- THEN weight each country by position.marketValue * country.weight;
+- THEN contribute marketValue * weight with absolute weights (ADR 0010);
   include only positions with marketValue > 0 and a valid allocation;
-  drop country code OTHER (residual bucket) and renormalize remaining
-  country weights to sum to 1 per asset before applying market value;
+  drop country code OTHER (residual bucket) without redistributing its weight;
   slice percentages are over that covered market-value total (sum to ~100%)
 - WHEN an asset has no allocation (crypto, cash, missing data, …)
 - THEN exclude it from geo charts; asset detail must show that allocation is absent
@@ -114,3 +113,4 @@ Optional: mobile choropleth; “coverage % of portfolio” KPI; issuer PDF geo i
 - [Excel workbook schema](../reference/excel-workbook.md)
 - [ADR 0002](0002-store-manual-prices-in-workbook.md) — same persistence pattern family
 - [ADR 0009](0009-account-detail-and-mobile-justetf.md) — account detail + region allocations
+- [ADR 0010](0010-partial-geographic-allocation-weights.md) — partial weights + absolute look-through

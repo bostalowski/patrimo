@@ -24,3 +24,4 @@ Read [DOC_STRUCTURE_MODEL.md](../DOC_STRUCTURE_MODEL.md) before adding or editin
 - [ADR 0006](adr/0006-portfolio-risk-readability.md) — readable risk badges on Dashboards.
 - [ADR 0008](adr/0008-geographic-allocation.md) — geographic allocation in the workbook.
 - [ADR 0009](adr/0009-account-detail-and-mobile-justetf.md) — account detail and region allocations (manual geography).
+- [ADR 0010](adr/0010-partial-geographic-allocation-weights.md) — partial geographic weights (sum ≤ 1, absolute look-through).

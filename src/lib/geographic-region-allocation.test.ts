@@ -44,6 +44,30 @@ describe("core geographic region-level allocations", () => {
     ).toThrow(/mix|region|country/i);
   });
 
+  it("includes a partially allocated region-level asset with absolute weights", () => {
+    const next = replaceGeographicAllocation(
+      workbook(),
+      "europe-fund",
+      [
+        { country: "EUROPE", weight: 0.5 },
+        { country: "ASIA_PACIFIC", weight: 0.2 },
+      ],
+      "manual",
+    );
+
+    const exposure = aggregateGeographicExposure(
+      [{ assetId: "europe-fund", marketValue: 1000 }],
+      next.geographicAllocations ?? [],
+    );
+
+    expect(exposure.countries).toEqual([]);
+    expect(exposure.coveredMarketValue).toBe(700);
+    expect(exposure.regions).toEqual([
+      { key: "EUROPE", marketValue: 500, weight: 500 / 700 },
+      { key: "ASIA_PACIFIC", marketValue: 200, weight: 200 / 700 },
+    ]);
+  });
+
   it("core accepts homogeneous region-key rows and aggregates them into the region breakdown only", () => {
     const next = replaceGeographicAllocation(
       workbook(),
