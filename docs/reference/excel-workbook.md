@@ -14,8 +14,9 @@ Canonical sheet names and headers come from `packages/core/src/workbook-template
 | `DCA` | No | Investment plans (baskets + target %) |
 | `Prix manuels` | No | Dated user-entered valuations for `manual` assets |
 | `Exposition geo` | No | Look-through country or region weights per asset |
+| `Allocation cible` | No | Portfolio target allocation by category |
 
-A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels` or `Exposition geo` remain valid; each sheet is created on the first write that needs it.
+A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels`, `Exposition geo`, or `Allocation cible` remain valid; each sheet is created on the first write that needs it.
 
 ## `Transactions`
 
@@ -131,6 +132,18 @@ Optional sheet for look-through geographic weights. See [Geographic allocation](
 | `Source` | `source` | `manual` or `justetf` |
 
 All rows for one `Actif` are replaced together on write. Missing sheet ⇒ empty collection.
+
+## `Allocation cible`
+
+Optional sheet for portfolio-level target allocation. See [Allocation coherence](../architecture/allocation-coherence.md) and [ADR 0012](../adr/0012-allocation-coherence.md).
+
+| Column | Schema field | Rules |
+|---|---|---|
+| `Catégorie` | `category` | Unique label; stable identifier |
+| `Pourcentage cible` | `targetPct` | Percent in Excel (0–100); fraction in `(0, 1]` in the model |
+| `Actifs` | `assetIds` | Comma-separated asset ids; each asset belongs to at most one category |
+
+Validation: Σ `targetPct` must be ≈ 1 (±1e-3); otherwise the sheet is ignored and the card is hidden. Asset ids not found in `Actifs` are silently dropped. Missing sheet ⇒ empty collection ⇒ coherence card hidden.
 
 ## Validation ownership
 

@@ -11,5 +11,6 @@
 - [ADR 0009: Account detail and region allocations](0009-account-detail-and-mobile-justetf.md) — accepted (amended by 0011)
 - [ADR 0010: Partial geographic allocation weights](0010-partial-geographic-allocation-weights.md) — accepted
 - [ADR 0011: Restore JustETF geographic sync](0011-restore-justetf-geographic-sync.md) — accepted
+- [ADR 0012: Allocation plan (target) and coherence](0012-allocation-coherence.md) — proposed
 
 Template: [_template.md](_template.md)

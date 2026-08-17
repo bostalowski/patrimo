@@ -118,6 +118,14 @@ Sum of calendar-year explicit fees and the estimated annual TER euro cost, divid
 
 All-time explicit fees divided by portfolio (or asset) **total return** (unrealized + realized + income as produced by the portfolio engine). Undefined when total return is zero or negative — not a fee-health score in down markets.
 
+## Target allocation
+
+Also called **Allocation plan** (FR UI: « Allocation cible » / plan d’allocation). Portfolio-level intent: categories with target percentage and mapped asset ids. Persisted in optional workbook sheet `Allocation cible`. May be **suggested** from annualized DCA flows (`suggestTargetPlanFromDca`) but only **persisted** after user save. When the sheet is absent or Σ targetPct is not ≈ 1, coherence assessment returns null (card hidden); the editor may still show a bootstrap suggestion. See [ADR 0012](../adr/0012-allocation-coherence.md).
+
+## Allocation coherence
+
+Measure of alignment between the **allocation plan** (saved target), current stock mix, and annualized DCA flow mix. Computed by `assessAllocationCoherence`. Statuses: `aligned`, `watch` (only `geo_coverage_gap`), `misaligned` (drift, flow, or unmapped). Multi-asset sleeves are allowed and do **not** emit a finding. Never uses HHI / Top1 / Top3 ([ADR 0006](../adr/0006-portfolio-risk-readability.md)).
+
 ## See also
 
 - [Key principles](../overview/key-principles.md)
