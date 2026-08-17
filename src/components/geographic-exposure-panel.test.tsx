@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import {
   AssetGeographicSection,
   GeographicExposurePanel,
@@ -167,6 +167,114 @@ describe("web geographic UI", () => {
     const countrySelect = screen.getByLabelText(/Clé géographique 1/i);
     expect(countrySelect.tagName).toBe("SELECT");
     expect(screen.queryByPlaceholderText("US")).toBeNull();
+  });
+
+  it("asset detail shows JustETF sync actions when the asset has an ISIN", () => {
+    render(
+      <AssetGeographicSection
+        assetId="world"
+        assetLabel="World"
+        hasIsin
+        allocations={[]}
+        regions={[]}
+        countries={[]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Récupérer depuis JustETF/i }),
+    ).toBeTruthy();
+  });
+
+  it("asset detail hides JustETF actions when the asset has no ISIN", () => {
+    render(
+      <AssetGeographicSection
+        assetId="btc"
+        assetLabel="Bitcoin"
+        hasIsin={false}
+        allocations={[]}
+        regions={[]}
+        countries={[]}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /JustETF/i }),
+    ).toBeNull();
+  });
+
+  it("applies JustETF sync allocations into the draft instead of keeping stale local weights", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        updated: true,
+        skippedManual: false,
+        allocations: [
+          {
+            assetId: "world",
+            country: "US",
+            weight: 0.55,
+            source: "justetf",
+          },
+          {
+            assetId: "world",
+            country: "JP",
+            weight: 0.2,
+            source: "justetf",
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AssetGeographicSection
+        assetId="world"
+        assetLabel="World"
+        hasIsin
+        allocations={[
+          {
+            assetId: "world",
+            country: "US",
+            weight: 0.7,
+            source: "justetf",
+          },
+          {
+            assetId: "world",
+            country: "JP",
+            weight: 0.3,
+            source: "justetf",
+          },
+        ]}
+        regions={[]}
+        countries={[]}
+      />,
+    );
+
+    expect(
+      (screen.getAllByPlaceholderText("70")[0] as HTMLInputElement).value,
+    ).toBe("70");
+
+    await fireEvent.click(screen.getByRole("button", { name: /Sync JustETF/i }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/geography/sync",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ assetId: "world", restore: false }),
+      }),
+    );
+    await waitFor(() => {
+      expect(
+        (screen.getAllByPlaceholderText("70")[0] as HTMLInputElement).value,
+      ).toBe("55");
+      expect(
+        (screen.getAllByPlaceholderText("70")[1] as HTMLInputElement).value,
+      ).toBe("20");
+    });
+
+    vi.unstubAllGlobals();
   });
 
   it("web manual entry keeps country draft percentages when toggling to regions and back", () => {

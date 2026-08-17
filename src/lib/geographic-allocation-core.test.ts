@@ -20,6 +20,10 @@ type GeographicApi = typeof core & {
     weights: Array<{ country: string; weight: number }>,
     source: GeographicAllocation["source"],
   ) => GeographicWorkbook;
+  weightFromExcelPercentCell?: (
+    raw: number,
+    rawValuesForAsset: readonly number[],
+  ) => number;
 };
 
 const geographicApi = core as GeographicApi;
@@ -218,5 +222,25 @@ describe("core geographic allocations", () => {
         source: "manual",
       },
     ]);
+  });
+});
+
+describe("weightFromExcelPercentCell", () => {
+  it("treats percent-point rows (70) as percent points when any value is > 1", () => {
+    expect(
+      geographicApi.weightFromExcelPercentCell?.(0.9, [30.4, 0.9]),
+    ).toBeCloseTo(0.009);
+    expect(
+      geographicApi.weightFromExcelPercentCell?.(30.4, [30.4, 0.9]),
+    ).toBeCloseTo(0.304);
+  });
+
+  it("treats Excel percentage-format fractions (0.7) as model weights", () => {
+    expect(
+      geographicApi.weightFromExcelPercentCell?.(0.697, [0.697, 0.303]),
+    ).toBe(0.697);
+    expect(
+      geographicApi.weightFromExcelPercentCell?.(1, [1]),
+    ).toBe(1);
   });
 });

@@ -29,6 +29,7 @@
     "./manual-prices": "./src/manual-prices.ts",
     "./geographic-allocation": "./src/geographic-allocation.ts",
     "./geographic-exposure": "./src/geographic-exposure.ts",
+    "./justetf-geography": "./src/justetf-geography.ts",
     "./realestate/loan": "./src/realestate/loan.ts",
     "./realestate/property": "./src/realestate/property.ts",
     "./realestate/tax": "./src/realestate/tax.ts",

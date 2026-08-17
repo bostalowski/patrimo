@@ -4,8 +4,8 @@ Ordered vertical scopes and test strategy for geographic allocation (web + mobil
 
 ## Prerequisites
 
-- Spec: [ADR 0008](../adr/0008-geographic-allocation.md) (accepted), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md) (accepted), [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md) (accepted — partial weights)
-- Branch (current increment): `fix/geo-partial-allocation-weights`
+- Spec: [ADR 0008](../adr/0008-geographic-allocation.md) (accepted), [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md) (accepted), [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md) (accepted — partial weights), [ADR 0011](../adr/0011-restore-justetf-geographic-sync.md) (accepted — JustETF sync restored)
+- Branch (current increment): `main` (JustETF restore + Excel percent-format read)
 
 ## Increment plan (ADR 0010)
 
@@ -37,9 +37,11 @@ Tests: `src/lib/geographic-allocation-core.test.ts`, `geographic-allocation-exce
 
 Tests: `src/lib/geographic-allocation-aggregate.test.ts`.
 
-### Scope 3 — JustETF sync (removed)
+### Scope 3 — JustETF sync (done; restored by ADR 0011)
 
-Earlier scrape/sync path deleted. Geography writes are manual-only (`source=manual`). Legacy `source=justetf` rows remain readable.
+On-demand JustETF fetch/parse/apply with manual lock and Restore. Web `POST /api/geography/sync`; mobile asset-edit actions when ISIN present.
+
+Tests: `packages/core/src/justetf-geography.test.ts`, `src/lib/prices/justetf-geography.test.ts`, `src/app/api/geography/sync/route.test.ts`.
 
 ### Scope 4 — Web UI (done; account panel location superseded by Scope 7)
 
@@ -65,9 +67,11 @@ Web `/comptes/[id]` and mobile account-detail: positions + account geo (dual cou
 
 Tests: `src/app/comptes/comptes-account-detail.test.tsx`; `mobile/lib/geographic-ui.test.tsx`.
 
-### Scope 8 — Shared JustETF parse + mobile sync (removed)
+### Scope 8 — Shared JustETF parse + mobile sync (done; restored by ADR 0011)
 
-JustETF parse, `/api/geography/sync`, and mobile sync actions removed. Manual entry only.
+Shared parse in `@patrimo/core`; mobile sync/restore on edit-asset.
+
+Tests: `mobile/lib/geographic-ui.test.tsx`.
 
 ### Scope 9 — Region-level allocations + dual views + guided pickers (done)
 
@@ -81,7 +85,7 @@ Tests: `src/lib/geographic-region-allocation.test.ts`; web + mobile geographic U
 |---|---|
 | Core unit | Partial sum accepted; sum &gt; 1 rejected; absolute aggregation; OTHER not redistributed; replace; deletion |
 | Excel adapters | Round-trip sheet; missing sheet = empty; percent ↔ fraction |
-| Web / mobile UI | Non-blocking sum indicator; account list has no full geo; detail shows account geo; guided manual pickers; no JustETF actions |
+| Web / mobile UI | Non-blocking sum indicator; account list has no full geo; detail shows account geo; guided manual pickers; JustETF sync/restore when ISIN present |
 
 ## Commands
 
@@ -96,3 +100,5 @@ npm test -- mobile/lib/geographic-ui.test.tsx
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [ADR 0008](../adr/0008-geographic-allocation.md)
 - [ADR 0009](../adr/0009-account-detail-and-mobile-justetf.md)
+- [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md)
+- [ADR 0011](../adr/0011-restore-justetf-geographic-sync.md)

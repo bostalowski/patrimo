@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   workbookState: {} as Record<string, unknown>,
   routeParams: {} as Record<string, string>,
   replaceGeographic: vi.fn(),
+  syncJustEtf: vi.fn(),
   refresh: vi.fn(),
 }));
 
@@ -47,6 +48,7 @@ vi.mock("./write-asset", () => ({
   upsertManualPriceInSource: vi.fn(),
   deleteManualPriceFromSource: vi.fn(),
   replaceGeographicAllocationInSource: mocks.replaceGeographic,
+  syncJustEtfGeographicAllocationInSource: mocks.syncJustEtf,
 }));
 
 vi.mock("./write-account", () => ({
@@ -145,6 +147,7 @@ describe("mobile geographic UI", () => {
     vi.clearAllMocks();
     mocks.refresh.mockResolvedValue(undefined);
     mocks.replaceGeographic.mockResolvedValue(undefined);
+    mocks.syncJustEtf.mockResolvedValue({ ok: true });
     mocks.workbookState = {
       workbook: workbook(),
       prices: new Map([["world", 100]]),
@@ -224,6 +227,169 @@ describe("mobile geographic UI", () => {
     expect(mocks.replaceGeographic).toHaveBeenCalledWith([
       { country: "US", weight: 1 },
     ]);
+  });
+
+  it("mobile asset editor shows JustETF sync and restore when the asset has an ISIN", () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        <AssetGeographicEditor
+          assetId="world"
+          assetLabel="World ETF"
+          hasIsin
+          allocations={[
+            {
+              assetId: "world",
+              country: "US",
+              weight: 0.7,
+              source: "justetf",
+            },
+          ]}
+          regions={[]}
+          countries={[{ key: "US", marketValue: 70, weight: 0.7 }]}
+          colors={{
+            text: "#000",
+            textSecondary: "#666",
+            textMuted: "#999",
+            cardBorder: "#ddd",
+            accentBg: "#111",
+          }}
+          onSave={mocks.replaceGeographic}
+          onSyncJustEtf={mocks.syncJustEtf}
+          pending={false}
+        />,
+      );
+    });
+
+    expect(
+      renderer.root.find(
+        (node) => node.props.accessibilityLabel === "Sync JustETF",
+      ),
+    ).toBeTruthy();
+    expect(
+      renderer.root.find(
+        (node) =>
+          node.props.accessibilityLabel === "Rétablir depuis JustETF",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("mobile asset editor hides JustETF actions when the asset has no ISIN", () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        <AssetGeographicEditor
+          assetId="btc"
+          assetLabel="Bitcoin"
+          hasIsin={false}
+          allocations={[]}
+          regions={[]}
+          countries={[]}
+          colors={{
+            text: "#000",
+            textSecondary: "#666",
+            textMuted: "#999",
+            cardBorder: "#ddd",
+            accentBg: "#111",
+          }}
+          onSave={mocks.replaceGeographic}
+          onSyncJustEtf={mocks.syncJustEtf}
+          pending={false}
+        />,
+      );
+    });
+
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.props.accessibilityLabel === "Sync JustETF" ||
+          node.props.accessibilityLabel === "Récupérer depuis JustETF" ||
+          node.props.accessibilityLabel === "Rétablir depuis JustETF",
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("mobile ordinary JustETF sync calls restore=false", async () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        <AssetGeographicEditor
+          assetId="world"
+          assetLabel="World ETF"
+          hasIsin
+          allocations={[
+            {
+              assetId: "world",
+              country: "US",
+              weight: 0.7,
+              source: "manual",
+            },
+          ]}
+          regions={[]}
+          countries={[]}
+          colors={{
+            text: "#000",
+            textSecondary: "#666",
+            textMuted: "#999",
+            cardBorder: "#ddd",
+            accentBg: "#111",
+          }}
+          onSave={mocks.replaceGeographic}
+          onSyncJustEtf={mocks.syncJustEtf}
+          pending={false}
+        />,
+      );
+    });
+
+    const syncButton = renderer.root.find(
+      (node) => node.props.accessibilityLabel === "Sync JustETF",
+    );
+    await act(async () => {
+      await syncButton.props.onPress();
+    });
+    expect(mocks.syncJustEtf).toHaveBeenCalledWith({ restore: false });
+  });
+
+  it("mobile restore from JustETF calls restore=true", async () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        <AssetGeographicEditor
+          assetId="world"
+          assetLabel="World ETF"
+          hasIsin
+          allocations={[
+            {
+              assetId: "world",
+              country: "US",
+              weight: 0.7,
+              source: "manual",
+            },
+          ]}
+          regions={[]}
+          countries={[]}
+          colors={{
+            text: "#000",
+            textSecondary: "#666",
+            textMuted: "#999",
+            cardBorder: "#ddd",
+            accentBg: "#111",
+          }}
+          onSave={mocks.replaceGeographic}
+          onSyncJustEtf={mocks.syncJustEtf}
+          pending={false}
+        />,
+      );
+    });
+
+    const restoreButton = renderer.root.find(
+      (node) =>
+        node.props.accessibilityLabel === "Rétablir depuis JustETF",
+    );
+    await act(async () => {
+      await restoreButton.props.onPress();
+    });
+    expect(mocks.syncJustEtf).toHaveBeenCalledWith({ restore: true });
   });
 
   it("mobile manual entry offers the same guided countries|regions pickers", () => {

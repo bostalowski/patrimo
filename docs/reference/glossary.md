@@ -100,7 +100,7 @@ Product geographic rollup keys: `NORTH_AMERICA`, `LATIN_AMERICA`, `EUROPE`, `ASI
 
 ## Allocation source
 
-How a geographic allocation was last written: `manual` (user-entered) or legacy `justetf` (older sync rows still readable). New writes always use `manual`. There is no JustETF sync in the product.
+How a geographic allocation was last written: `manual` (user-entered) or `justetf` (fetched from JustETF). Manual lock: ordinary JustETF sync does not overwrite `manual` rows; Restore does.
 
 ## Tax estimate
 

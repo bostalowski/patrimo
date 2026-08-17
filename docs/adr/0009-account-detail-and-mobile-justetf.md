@@ -3,7 +3,8 @@
 - Status: accepted
 - Date: 2026-08-16
 - implementation_ready: yes
-- Amends: [ADR 0008](0008-geographic-allocation.md) (account geo placement; manual-only geography writes; region-level manual allocations; dual country/region views; JustETF sync removed)
+- Amends: [ADR 0008](0008-geographic-allocation.md) (account geo placement; region-level manual allocations; dual country/region views)
+- Amended by: [ADR 0011](0011-restore-justetf-geographic-sync.md) (JustETF sync restored)
 
 ```text
 Contract (do not invent):
@@ -35,8 +36,9 @@ Contract (do not invent):
   countries = searchable/selectable list of ISO alpha-2 with French labels
   (plus OTHER); free-typed codes outside the picker are not accepted
 - WHEN reading workbook rows with source=justetf
-- THEN treat them as valid legacy allocations for aggregation/display; do not
-  offer JustETF fetch, sync, or restore actions
+- THEN treat them as valid allocations for aggregation/display
+- WHEN JustETF sync/restore is requested
+- THEN follow [ADR 0011](0011-restore-justetf-geographic-sync.md)
 - ELSE workbook sheet Exposition geo column Pays stores either an ISO alpha-2,
   OTHER, or a GeographicRegion key; weight sum / absolute look-through: ADR 0010
   (amends ADR 0008); mobile account detail and mobile geo lists stay without
@@ -44,22 +46,21 @@ Contract (do not invent):
 - FORBIDDEN full geo panels on the accounts list; redefining coverage/sum rules
   outside @patrimo/core; inventing default weights; mixing country and region
   keys on one asset; free-text geo keys outside the guided pickers; interactive
-  map on mobile; JustETF scrape/sync UI or API
+  map on mobile
 - OPEN (do not implement): interactive map on mobile; PDF factsheet import;
-  coverage % KPI; custom user-defined regions beyond the six product regions;
-  reintroducing automated JustETF sync
+  coverage % KPI; custom user-defined regions beyond the six product regions
 ```
 
 ## Context
 
-ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) and originally filled weights via JustETF scrape. Users often have only **region** factsheet splits (e.g. North America / Europe). Free-typed ISO codes invite typos. JustETF sync proved unreliable in practice, so geography writes are **manual-only**.
+ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) and filled weights via JustETF scrape. Users often have only **region** factsheet splits (e.g. North America / Europe). Free-typed ISO codes invite typos. Account detail and guided region/country entry address those UX issues. JustETF sync availability is governed by [ADR 0011](0011-restore-justetf-geographic-sync.md).
 
 ## Decision
 
 - Dedicated **account detail** on web and mobile; accounts list opens it (mobile: list → detail → edit metadata).
 - **Two exposure views** everywhere geo is shown: countries and regions.
 - Manual entry chooses **countries or regions** per asset (homogeneous rows); guided pickers only (no free-typed keys).
-- **No JustETF sync** (web or mobile). Legacy `source=justetf` rows remain readable.
+- JustETF sync/restore: see ADR 0011 (amends the earlier manual-only write path in this ADR).
 
 ## Invariants
 
@@ -68,16 +69,16 @@ ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) an
   `EUROPE`, `ASIA_PACIFIC`, `AFRICA_MIDDLE_EAST`, `OTHER`). Legacy `EMERGING` maps to `OTHER`.
 - Platforms must not fork region mapping or aggregation rules.
 - Country map remains web-only; region view is list-based on both platforms.
-- New geographic writes always use `source=manual`.
+- Manual geographic writes use `source=manual`; JustETF writes use `source=justetf` (ADR 0011).
 
 ## Options considered
 
 | Option | Status | Why |
 |---|---|---|
-| A — Account detail + dual country/region views + guided entry + manual-only writes | Retained | List stays readable; coarse factsheets work; typos reduced; no fragile scrape |
+| A — Account detail + dual country/region views + guided entry | Retained | List stays readable; coarse factsheets work; typos reduced |
 | B — Region-only storage and UI | Rejected | Discards country look-through and the country map |
 | C — Free-typed ISO / region strings | Rejected | User-requested guide; typos break aggregation |
-| D — Keep / extend JustETF sync (including mobile) | Rejected | Sync unreliable; user chose manual-only |
+| D — JustETF sync (including mobile) | Amended by ADR 0011 | Initially dropped as unreliable; restored on demand with manual lock |
 | E — Compact geo teaser on accounts list only | Rejected | Still clutters; no clear account home |
 
 ## Consequences
@@ -88,13 +89,11 @@ ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) an
 - Region-only factsheets can be entered without inventing fake countries.
 - Dual views: map stays useful; region view covers all geo-backed assets.
 - Guided pickers reduce invalid keys.
-- No dependency on unofficial JustETF markup.
 
 **Negatives**
 
 - Extra mobile navigation hop before account edit.
 - Country and region covered totals can differ (region-only assets absent from country view).
-- Users must enter or maintain weights manually (no auto-fill from ISIN).
 - Longer manual entry UI (mode + pickers).
 
 **To monitor**
@@ -107,7 +106,6 @@ ADR 0008 shipped per-account geography on the accounts **list** (overcrowded) an
 - Interactive map on mobile.
 - PDF issuer factsheet import.
 - User-defined region taxonomies.
-- Automated geo import from any external provider.
 
 ## Follow-up
 
@@ -116,6 +114,7 @@ Optional: mobile choropleth; coverage % KPI; issuer PDF geo import.
 ## See also
 
 - [ADR 0008](0008-geographic-allocation.md)
+- [ADR 0011](0011-restore-justetf-geographic-sync.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [Platforms](../overview/platforms.md)
 - [Implement geographic allocation](../howto/implement-geographic-allocation.md)

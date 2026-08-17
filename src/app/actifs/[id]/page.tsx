@@ -172,8 +172,16 @@ export default async function AssetDetailPage({
       )}
 
       <AssetGeographicSection
+        key={JSON.stringify(
+          assetAllocations.map((row) => [
+            row.country,
+            row.weight,
+            row.source,
+          ]),
+        )}
         assetId={asset.id}
         assetLabel={asset.label}
+        hasIsin={Boolean(asset.isin)}
         allocations={assetAllocations}
         marketValue={marketValue}
         regions={assetGeo.regions}
