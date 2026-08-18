@@ -258,5 +258,6 @@ export type Workbook = {
 	dca: DcaConfig[];
 	manualPrices: ManualPrice[];
 	geographicAllocations: GeographicAllocation[];
-	targetAllocations: TargetAllocationCategory[];
+	diversificationTargets: DiversificationTarget[];
+	targetAllocations?: TargetAllocationCategory[];
 };

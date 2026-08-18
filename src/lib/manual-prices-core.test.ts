@@ -50,6 +50,7 @@ function workbook(overrides: Partial<ManualPriceWorkbook> = {}): ManualPriceWork
     dca: [],
     manualPrices: [],
     geographicAllocations: [],
+    diversificationTargets: [],
     ...overrides,
   };
 }

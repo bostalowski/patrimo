@@ -78,7 +78,7 @@ export default function DashboardScreen() {
 		depensesMensuelles,
 	);
 	const allocationCoherence = assessAllocationCoherence({
-		targets: workbook.targetAllocations,
+		targets: [],
 		positions: portfolio.assets,
 		dca: workbook.dca,
 		geographicAllocations: workbook.geographicAllocations,

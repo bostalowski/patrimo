@@ -1,6 +1,5 @@
 import { suggestTargetPlanFromDca } from "@patrimo/core/allocation-coherence";
 import { portfolioByEnvelope } from "@patrimo/core/portfolio";
-import { isValidTargetPctSum } from "@patrimo/core/target-allocation";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
@@ -46,15 +45,7 @@ export default async function InvestissementsPage() {
 
 	const priceMapRecord: Record<string, number> = Object.fromEntries(priceMap);
 
-	const targetSum = workbook.targetAllocations.reduce(
-		(sum, row) => sum + row.targetPct,
-		0,
-	);
-	const hasValidTargets =
-		workbook.targetAllocations.length > 0 && isValidTargetPctSum(targetSum);
-	const allocationSuggestion = hasValidTargets
-		? []
-		: suggestTargetPlanFromDca(workbook.dca);
+	const allocationSuggestion = suggestTargetPlanFromDca(workbook.dca);
 
 	return (
 		<div className="space-y-8">
@@ -84,7 +75,7 @@ export default async function InvestissementsPage() {
 					dateAcquisition: p.dateAcquisition?.toISOString(),
 					dateDebutCredit: p.dateDebutCredit?.toISOString(),
 				}))}
-				targetAllocations={hasValidTargets ? workbook.targetAllocations : []}
+				targetAllocations={[]}
 				allocationSuggestion={allocationSuggestion}
 			/>
 		</div>

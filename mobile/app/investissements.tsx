@@ -20,7 +20,6 @@ import {
 import { suggestTargetPlanFromDca } from "@patrimo/core/allocation-coherence";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
 import { clampRetirementAge } from "@patrimo/core/schema";
-import { isValidTargetPctSum } from "@patrimo/core/target-allocation";
 import type { Envelope, DcaConfig, DcaFrequency, DcaLine, RetirementProfile } from "@patrimo/core/schema";
 import { saveDcaConfigs } from "../lib/write-dca";
 import { AllocationPlanEditor } from "../lib/allocation-plan-editor";
@@ -92,15 +91,7 @@ export default function InvestissementsScreen() {
     return true;
   });
 
-  const targetSum = workbook.targetAllocations.reduce(
-    (sum, row) => sum + row.targetPct,
-    0,
-  );
-  const hasValidTargets =
-    workbook.targetAllocations.length > 0 && isValidTargetPctSum(targetSum);
-  const allocationSuggestion = hasValidTargets
-    ? []
-    : suggestTargetPlanFromDca(workbook.dca);
+  const allocationSuggestion = suggestTargetPlanFromDca(workbook.dca);
 
   return (
     <ScrollView
@@ -148,7 +139,7 @@ export default function InvestissementsScreen() {
 
       {tab === "allocation" && (
         <AllocationPlanEditor
-          initialTargets={workbook.targetAllocations}
+          initialTargets={[]}
           suggestion={allocationSuggestion}
           assets={workbook.assets}
           theme={t}

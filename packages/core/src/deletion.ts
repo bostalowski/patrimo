@@ -1,7 +1,6 @@
 import { removeGeographicAllocationsForAssets } from "./geographic-allocation";
 import { removeManualPricesForAssets } from "./manual-prices";
 import type { DcaConfig, Transaction, Workbook } from "./schema";
-import { removeTargetAllocationEntriesForAssets } from "./target-allocation";
 
 export const NO_ACCOUNT_ID = "__NO_ACCOUNT__";
 export const UNASSIGNED_CASH_ASSET_ID = "__UNASSIGNED_CASH__";
@@ -176,8 +175,7 @@ export function deleteAccount(
 		.map((asset) => asset.id);
 	const deletedAssetIdSet = new Set(deletedAssetIds);
 
-	const nextWorkbook = removeTargetAllocationEntriesForAssets(
-		removeGeographicAllocationsForAssets(
+	const nextWorkbook = removeGeographicAllocationsForAssets(
 			removeManualPricesForAssets(
 				{
 					...workbook,
@@ -191,9 +189,7 @@ export function deleteAccount(
 				deletedAssetIdSet,
 			),
 			deletedAssetIdSet,
-		),
-		deletedAssetIdSet,
-	);
+		);
 
 	return {
 		workbook: nextWorkbook,
@@ -210,19 +206,16 @@ export function deleteAsset(
 	}
 
 	const deletedAssetIds = new Set([assetId]);
-	const nextWorkbook = removeTargetAllocationEntriesForAssets(
-		removeGeographicAllocationsForAssets(
-			removeManualPricesForAssets(
-				{
-					...workbook,
-					assets: workbook.assets.filter((asset) => asset.id !== assetId),
-					transactions: workbook.transactions.filter(
-						(transaction) => transaction.actif !== assetId,
-					),
-					dca: cleanInvestmentPlans(workbook.dca, deletedAssetIds),
-				},
-				deletedAssetIds,
-			),
+	const nextWorkbook = removeGeographicAllocationsForAssets(
+		removeManualPricesForAssets(
+			{
+				...workbook,
+				assets: workbook.assets.filter((asset) => asset.id !== assetId),
+				transactions: workbook.transactions.filter(
+					(transaction) => transaction.actif !== assetId,
+				),
+				dca: cleanInvestmentPlans(workbook.dca, deletedAssetIds),
+			},
 			deletedAssetIds,
 		),
 		deletedAssetIds,

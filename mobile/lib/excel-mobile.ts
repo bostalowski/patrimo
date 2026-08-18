@@ -4,8 +4,8 @@ import {
 } from "@patrimo/core/geographic-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import type {
+	DiversificationTarget,
 	GeographicAllocation,
-	TargetAllocationCategory,
 } from "@patrimo/core/schema";
 import {
 	Account,
@@ -18,18 +18,19 @@ import {
 	type Workbook,
 } from "@patrimo/core/schema";
 import {
-	normalizeTargetAllocations,
-	targetPctFromExcel,
-} from "@patrimo/core/target-allocation";
+	diversificationPctFromExcel,
+	normalizeDiversificationTargets,
+} from "@patrimo/core/diversification-targets";
 import {
 	ACTIFS_HEADERS,
-	ALLOCATION_CIBLE_HEADERS,
+	CIBLES_DIVERSIFICATION_HEADERS,
 	COMPTES_HEADERS,
 	DCA_HEADERS,
 	EXPOSITION_GEO_HEADERS,
 	PRIX_MANUELS_HEADERS,
 	SHEET_ACTIFS,
 	SHEET_ALLOCATION_CIBLE,
+	SHEET_CIBLES_DIVERSIFICATION,
 	SHEET_COMPTES,
 	SHEET_DCA,
 	SHEET_EXPOSITION_GEO,
@@ -56,7 +57,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	const rawDca = readSheet(wb, "DCA");
 	const rawManualPrices = readSheet(wb, SHEET_PRIX_MANUELS);
 	const rawGeographicAllocations = readSheet(wb, SHEET_EXPOSITION_GEO);
-	const rawTargetAllocations = readSheet(wb, SHEET_ALLOCATION_CIBLE);
+	const rawDiversificationTargets = readSheet(wb, SHEET_CIBLES_DIVERSIFICATION);
 
 	const { transactions, keys: transactionKeys } =
 		parseTransactions(rawTransactions);
@@ -70,9 +71,8 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 		rawGeographicAllocations,
 		assets,
 	);
-	const targetAllocations = parseTargetAllocations(
-		rawTargetAllocations,
-		assets,
+	const diversificationTargets = parseDiversificationTargets(
+		rawDiversificationTargets,
 	);
 
 	console.log("[Parser v2] Results:", {
@@ -84,7 +84,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 		dca: dca.length,
 		manualPrices: manualPrices.length,
 		geographicAllocations: geographicAllocations.length,
-		targetAllocations: targetAllocations.length,
+		diversificationTargets: diversificationTargets.length,
 	});
 
 	return {
@@ -97,7 +97,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 			dca,
 			manualPrices,
 			geographicAllocations,
-			targetAllocations,
+			diversificationTargets,
 		},
 		transactionKeys,
 	};
@@ -119,6 +119,13 @@ function replaceRows(
 	if (!workbook.SheetNames.includes(sheetName)) {
 		workbook.SheetNames.push(sheetName);
 	}
+}
+
+function deleteSheetIfPresent(workbook: XLSX.WorkBook, sheetName: string): void {
+	const index = workbook.SheetNames.indexOf(sheetName);
+	if (index === -1) return;
+	workbook.SheetNames.splice(index, 1);
+	delete workbook.Sheets[sheetName];
 }
 
 export function serializeWorkbook(
@@ -216,14 +223,15 @@ export function serializeWorkbook(
 	);
 	replaceRows(
 		workbook,
-		SHEET_ALLOCATION_CIBLE,
-		ALLOCATION_CIBLE_HEADERS,
-		(workbookData.targetAllocations ?? []).map((entry) => ({
-			Catégorie: entry.category,
-			"Pourcentage cible": Math.round(entry.targetPct * 1000) / 10,
-			Actifs: entry.assetIds.join(", "),
+		SHEET_CIBLES_DIVERSIFICATION,
+		CIBLES_DIVERSIFICATION_HEADERS,
+		(workbookData.diversificationTargets ?? []).map((entry) => ({
+			Dimension: entry.key,
+			"Min %": Math.round(entry.minPct * 1000) / 10,
+			"Max %": Math.round(entry.maxPct * 1000) / 10,
 		})),
 	);
+	deleteSheetIfPresent(workbook, SHEET_ALLOCATION_CIBLE);
 
 	return XLSX.write(workbook, {
 		type: "array",
@@ -499,35 +507,32 @@ function parseGeographicAllocations(
 	return normalizeGeographicAllocations(raw, assets);
 }
 
-function parseTargetAllocations(
+function parseDiversificationTargets(
 	rows: Record<string, unknown>[],
-	assets: Asset[],
-): TargetAllocationCategory[] {
-	const allRawPcts: number[] = [];
+): DiversificationTarget[] {
+	const allRawMin: number[] = [];
+	const allRawMax: number[] = [];
 	for (const row of rows) {
-		const raw = toNumber(row["Pourcentage cible"]);
-		if (raw !== null) allRawPcts.push(raw);
+		const rawMin = toNumber(row["Min %"]);
+		const rawMax = toNumber(row["Max %"]);
+		if (rawMin !== null) allRawMin.push(rawMin);
+		if (rawMax !== null) allRawMax.push(rawMax);
 	}
 
-	const pending: TargetAllocationCategory[] = [];
+	const pending: DiversificationTarget[] = [];
 	for (const row of rows) {
-		const category = emptyToUndefined(row["Catégorie"]);
-		if (!category) continue;
-		const rawPct = toNumber(row["Pourcentage cible"]);
-		if (rawPct === null) continue;
-		const targetPct = targetPctFromExcel(rawPct, allRawPcts);
-		const assetIdsRaw =
-			emptyToUndefined(row["Actifs"]) ??
-			emptyToUndefined(row["Actifs (séparés par virgule)"]);
-		const assetIds = assetIdsRaw
-			? assetIdsRaw
-					.split(",")
-					.map((s) => s.trim())
-					.filter((s) => s.length > 0)
-			: [];
-		pending.push({ category, targetPct, assetIds });
+		const key = emptyToUndefined(row["Dimension"]);
+		if (!key) continue;
+		const rawMin = toNumber(row["Min %"]);
+		const rawMax = toNumber(row["Max %"]);
+		if (rawMin === null || rawMax === null) continue;
+		pending.push({
+			key,
+			minPct: diversificationPctFromExcel(rawMin, allRawMin),
+			maxPct: diversificationPctFromExcel(rawMax, allRawMax),
+		});
 	}
-	return normalizeTargetAllocations(pending, assets);
+	return normalizeDiversificationTargets(pending);
 }
 
 function parseDca(rows: Record<string, unknown>[]): DcaConfig[] {

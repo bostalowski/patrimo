@@ -14,16 +14,16 @@ import {
 } from "@patrimo/core/geographic-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import type {
+	DiversificationTarget,
 	GeographicAllocation,
-	TargetAllocationCategory,
 } from "@patrimo/core/schema";
 import {
-	normalizeTargetAllocations,
-	targetPctFromExcel,
-} from "@patrimo/core/target-allocation";
+	diversificationPctFromExcel,
+	normalizeDiversificationTargets,
+} from "@patrimo/core/diversification-targets";
 import {
 	ALL_SHEETS,
-	ALLOCATION_CIBLE_HEADERS,
+	CIBLES_DIVERSIFICATION_HEADERS,
 	BUDGET_HEADERS,
 	DCA_HEADERS,
 	EXPOSITION_GEO_HEADERS,
@@ -32,6 +32,7 @@ import {
 	SHEET_ACTIFS,
 	SHEET_ALLOCATION_CIBLE,
 	SHEET_BUDGET,
+	SHEET_CIBLES_DIVERSIFICATION,
 	SHEET_COMPTES,
 	SHEET_DCA,
 	SHEET_EXPOSITION_GEO,
@@ -444,35 +445,32 @@ function parseGeographicAllocations(
 	return normalizeGeographicAllocations(raw, assets);
 }
 
-function parseTargetAllocations(
+function parseDiversificationTargets(
 	rows: Record<string, unknown>[],
-	assets: Asset[],
-): TargetAllocationCategory[] {
-	const allRawPcts: number[] = [];
+): DiversificationTarget[] {
+	const allRawMin: number[] = [];
+	const allRawMax: number[] = [];
 	for (const row of rows) {
-		const raw = toNumber(row["Pourcentage cible"]);
-		if (raw !== null) allRawPcts.push(raw);
+		const rawMin = toNumber(row["Min %"]);
+		const rawMax = toNumber(row["Max %"]);
+		if (rawMin !== null) allRawMin.push(rawMin);
+		if (rawMax !== null) allRawMax.push(rawMax);
 	}
 
-	const pending: TargetAllocationCategory[] = [];
+	const pending: DiversificationTarget[] = [];
 	for (const row of rows) {
-		const category = emptyToUndefined(row["Catégorie"]);
-		if (!category) continue;
-		const rawPct = toNumber(row["Pourcentage cible"]);
-		if (rawPct === null) continue;
-		const targetPct = targetPctFromExcel(rawPct, allRawPcts);
-		const assetIdsRaw =
-			emptyToUndefined(row["Actifs"]) ??
-			emptyToUndefined(row["Actifs (séparés par virgule)"]);
-		const assetIds = assetIdsRaw
-			? assetIdsRaw
-					.split(",")
-					.map((s) => s.trim())
-					.filter((s) => s.length > 0)
-			: [];
-		pending.push({ category, targetPct, assetIds });
+		const key = emptyToUndefined(row["Dimension"]);
+		if (!key) continue;
+		const rawMin = toNumber(row["Min %"]);
+		const rawMax = toNumber(row["Max %"]);
+		if (rawMin === null || rawMax === null) continue;
+		pending.push({
+			key,
+			minPct: diversificationPctFromExcel(rawMin, allRawMin),
+			maxPct: diversificationPctFromExcel(rawMax, allRawMax),
+		});
 	}
-	return normalizeTargetAllocations(pending, assets);
+	return normalizeDiversificationTargets(pending);
 }
 
 function toNumber(value: unknown): number | null {
@@ -524,9 +522,8 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 		readSheetOptional(sheet, SHEET_EXPOSITION_GEO),
 		assets,
 	);
-	const targetAllocations = parseTargetAllocations(
-		readSheetOptional(sheet, SHEET_ALLOCATION_CIBLE),
-		assets,
+	const diversificationTargets = parseDiversificationTargets(
+		readSheetOptional(sheet, SHEET_CIBLES_DIVERSIFICATION),
 	);
 
 	const transactions = [...parsedTransactions].sort(
@@ -543,7 +540,7 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 			dca,
 			manualPrices,
 			geographicAllocations,
-			targetAllocations,
+			diversificationTargets,
 		},
 		transactionRows,
 	};
@@ -887,6 +884,13 @@ function replaceSheetRows(
 	}
 }
 
+function deleteSheetIfPresent(workbook: XLSX.WorkBook, sheetName: string): void {
+	const index = workbook.SheetNames.indexOf(sheetName);
+	if (index === -1) return;
+	workbook.SheetNames.splice(index, 1);
+	delete workbook.Sheets[sheetName];
+}
+
 export function replaceWorkbook(nextWorkbook: Workbook): void {
 	const path = getExcelPath();
 	const fileBuffer = readFileSync(path);
@@ -936,14 +940,15 @@ export function replaceWorkbook(nextWorkbook: Workbook): void {
 	);
 	replaceSheetRows(
 		workbook,
-		SHEET_ALLOCATION_CIBLE,
-		(nextWorkbook.targetAllocations ?? []).map((entry) => ({
-			Catégorie: entry.category,
-			"Pourcentage cible": Math.round(entry.targetPct * 1000) / 10,
-			Actifs: entry.assetIds.join(", "),
+		SHEET_CIBLES_DIVERSIFICATION,
+		(nextWorkbook.diversificationTargets ?? []).map((entry) => ({
+			Dimension: entry.key,
+			"Min %": Math.round(entry.minPct * 1000) / 10,
+			"Max %": Math.round(entry.maxPct * 1000) / 10,
 		})),
-		ALLOCATION_CIBLE_HEADERS,
+		CIBLES_DIVERSIFICATION_HEADERS,
 	);
+	deleteSheetIfPresent(workbook, SHEET_ALLOCATION_CIBLE);
 
 	writeWorkbook(workbook, path);
 }

@@ -16,6 +16,9 @@ export async function saveTargetAllocations(
 	const workbook = parseWorkbook(buffer);
 	await writeSourceFile(
 		source,
-		serializeWorkbook({ ...workbook, targetAllocations: targets }),
+		serializeWorkbook(buffer, {
+			...workbook.workbook,
+			targetAllocations: targets,
+		}),
 	);
 }

@@ -103,3 +103,36 @@ export function isValueInDiversificationBand(
 		value <= maxPct + DIVERSIFICATION_BAND_TOLERANCE
 	);
 }
+
+/** Excel may store 70 (percent points) or 0.7 (percentage format). */
+export function diversificationPctFromExcel(
+	raw: number,
+	allRawValues: readonly number[],
+): number {
+	const storedAsPercentPoints = allRawValues.some(
+		(value) => value > 1 + DIVERSIFICATION_BAND_TOLERANCE,
+	);
+	return storedAsPercentPoints ? raw / 100 : raw;
+}
+
+export function normalizeDiversificationTargets(
+	raw: DiversificationTarget[],
+): DiversificationTarget[] {
+	const normalized: DiversificationTarget[] = [];
+
+	for (const entry of raw) {
+		if (!isValidDiversificationKey(entry.key)) continue;
+		if (!isValidBand(entry.minPct, entry.maxPct)) continue;
+
+		const key = normalizeDiversificationKey(entry.key);
+		const overlapsExisting = normalized.some(
+			(existing) =>
+				existing.key === key || diversificationKeysOverlap(existing.key, key),
+		);
+		if (overlapsExisting) continue;
+
+		normalized.push({ key, minPct: entry.minPct, maxPct: entry.maxPct });
+	}
+
+	return normalized;
+}

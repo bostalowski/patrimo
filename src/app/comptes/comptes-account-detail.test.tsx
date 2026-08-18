@@ -54,6 +54,7 @@ const workbookFixture = {
       source: "manual" as const,
     },
   ],
+  diversificationTargets: [],
 };
 
 vi.mock("@/lib/page-guards", () => ({
@@ -133,6 +134,7 @@ describe("web comptes account detail surface", () => {
     vi.mocked(loadWorkbook).mockReturnValue({
       ...workbookFixture,
       geographicAllocations: [],
+      diversificationTargets: [],
     });
 
     const { default: AccountDetailPage } = await import("./[id]/page");

@@ -28,6 +28,7 @@ function workbook(): Workbook {
     dca: [],
     manualPrices: [],
     geographicAllocations: [],
+    diversificationTargets: [],
   };
 }
 

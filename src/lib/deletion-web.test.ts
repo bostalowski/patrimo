@@ -98,7 +98,7 @@ function sourceWorkbook(): Workbook {
 		properties: [],
 		manualPrices: [],
 		geographicAllocations: [],
-		targetAllocations: [],
+		diversificationTargets: [],
 	};
 }
 

@@ -7,6 +7,7 @@ export const SHEET_DCA = "DCA";
 export const SHEET_PRIX_MANUELS = "Prix manuels";
 export const SHEET_EXPOSITION_GEO = "Exposition geo";
 export const SHEET_ALLOCATION_CIBLE = "Allocation cible";
+export const SHEET_CIBLES_DIVERSIFICATION = "Cibles diversification";
 
 export const TRANSACTIONS_HEADERS = [
 	"Date",
@@ -109,6 +110,12 @@ export const ALLOCATION_CIBLE_HEADERS = [
 	"Actifs",
 ] as const;
 
+export const CIBLES_DIVERSIFICATION_HEADERS = [
+	"Dimension",
+	"Min %",
+	"Max %",
+] as const;
+
 export const ALL_SHEETS = [
 	{ name: SHEET_TRANSACTIONS, headers: [...TRANSACTIONS_HEADERS] },
 	{ name: SHEET_ACTIFS, headers: [...ACTIFS_HEADERS] },
@@ -118,5 +125,8 @@ export const ALL_SHEETS = [
 	{ name: SHEET_DCA, headers: [...DCA_HEADERS] },
 	{ name: SHEET_PRIX_MANUELS, headers: [...PRIX_MANUELS_HEADERS] },
 	{ name: SHEET_EXPOSITION_GEO, headers: [...EXPOSITION_GEO_HEADERS] },
-	{ name: SHEET_ALLOCATION_CIBLE, headers: [...ALLOCATION_CIBLE_HEADERS] },
+	{
+		name: SHEET_CIBLES_DIVERSIFICATION,
+		headers: [...CIBLES_DIVERSIFICATION_HEADERS],
+	},
 ] as const;

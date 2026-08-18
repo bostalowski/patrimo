@@ -138,6 +138,7 @@ function workbook(overrides: Partial<Workbook> = {}): Workbook {
         source: "manual",
       },
     ],
+    diversificationTargets: [],
     ...overrides,
   };
 }
