@@ -1,38 +1,26 @@
 import type {
-	AllocationCoherenceResult,
-	AllocationCoherenceStatus,
-	AllocationFindingKind,
-} from "@patrimo/core/allocation-coherence";
+	DiversificationCoherenceResult,
+	DiversificationCoherenceStatus,
+	DiversificationFindingKind,
+} from "@patrimo/core/diversification-coherence";
+import { diversificationKeyLabel } from "@patrimo/core/diversification-labels";
+import { isValueInDiversificationBand } from "@patrimo/core/diversification-targets";
 import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { shared, type Theme } from "./theme";
 
-const STATUS_LABEL: Record<AllocationCoherenceStatus, string> = {
+const STATUS_LABEL: Record<DiversificationCoherenceStatus, string> = {
 	aligned: "Aligné",
-	watch: "À surveiller",
 	misaligned: "Décalé",
 };
 
-const FINDING_LABEL: Record<AllocationFindingKind, string> = {
-	category_drift: "Stock décalé",
-	flow_misalign: "DCA décalé",
-	unmapped_stock: "Actifs non ciblés",
-	geo_coverage_gap: "Géo incomplète",
+const FINDING_LABEL: Record<DiversificationFindingKind, string> = {
+	band_drift: "Stock hors bande",
+	flow_misalign: "DCA hors bande",
 };
 
-function statusColor(status: AllocationCoherenceStatus, theme: Theme): string {
-	switch (status) {
-		case "aligned":
-			return theme.success;
-		case "watch":
-			return "#d97706";
-		case "misaligned":
-			return theme.danger;
-	}
-}
-
-function findingColor(kind: AllocationFindingKind, theme: Theme): string {
-	return kind === "geo_coverage_gap" ? "#d97706" : theme.danger;
+function statusColor(status: DiversificationCoherenceStatus, theme: Theme): string {
+	return status === "aligned" ? theme.success : theme.danger;
 }
 
 const pctFormatter = new Intl.NumberFormat("fr-FR", {
@@ -45,11 +33,16 @@ function fmt(value: number | null | undefined): string {
 	return pctFormatter.format(value);
 }
 
+function fmtBand(minPct: number, maxPct: number): string {
+	if (minPct === maxPct) return fmt(minPct);
+	return `${pctFormatter.format(minPct)}–${pctFormatter.format(maxPct)}`;
+}
+
 export function AllocationCoherenceCard({
 	coherence,
 	theme: t,
 }: {
-	coherence: AllocationCoherenceResult | null;
+	coherence: DiversificationCoherenceResult | null;
 	theme: Theme;
 }) {
 	if (!coherence) return null;
@@ -59,7 +52,7 @@ export function AllocationCoherenceCard({
 
 	const seen = new Set<string>();
 	const deduped = coherence.findings.filter((f) => {
-		const key = `${f.kind}:${f.categoryLabel ?? ""}`;
+		const key = `${f.kind}:${f.key}`;
 		if (seen.has(key)) return false;
 		seen.add(key);
 		return true;
@@ -69,13 +62,13 @@ export function AllocationCoherenceCard({
 		<View style={[shared.card, { backgroundColor: t.card, marginBottom: 24 }]}>
 			<View style={[shared.row, { marginBottom: 8 }]}>
 				<Text style={[shared.label, { color: t.textSecondary }]}>
-					Cohérence d&apos;allocation
+					Cohérence diversification
 				</Text>
 				<View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
 					<Pressable
-						onPress={() => router.push("/investissements")}
+						onPress={() => router.push("/geographie")}
 						accessibilityRole="button"
-						accessibilityLabel="Modifier le plan d'allocation"
+						accessibilityLabel="Modifier"
 					>
 						<Text
 							style={{ color: t.textMuted, fontSize: 12, fontWeight: "600" }}
@@ -100,23 +93,23 @@ export function AllocationCoherenceCard({
 				>
 					{deduped.map((f) => (
 						<View
-							key={`${f.kind}:${f.categoryLabel ?? ""}`}
+							key={`${f.kind}:${f.key}`}
 							style={{
 								paddingHorizontal: 8,
 								paddingVertical: 2,
 								borderRadius: 6,
-								backgroundColor: `${findingColor(f.kind, t)}22`,
+								backgroundColor: `${t.danger}22`,
 							}}
 						>
 							<Text
 								style={{
-									color: findingColor(f.kind, t),
+									color: t.danger,
 									fontSize: 11,
 									fontWeight: "600",
 								}}
 							>
 								{FINDING_LABEL[f.kind]}
-								{f.categoryLabel ? ` · ${f.categoryLabel}` : ""}
+								{f.key ? ` · ${diversificationKeyLabel(f.key)}` : ""}
 							</Text>
 						</View>
 					))}
@@ -134,11 +127,11 @@ export function AllocationCoherenceCard({
 							textTransform: "uppercase",
 						}}
 					>
-						Catégorie
+						Dimension
 					</Text>
 					<Text
 						style={{
-							width: 44,
+							width: 56,
 							textAlign: "right",
 							color: t.textMuted,
 							fontSize: 11,
@@ -146,7 +139,7 @@ export function AllocationCoherenceCard({
 							textTransform: "uppercase",
 						}}
 					>
-						Cible
+						Bande
 					</Text>
 					<Text
 						style={{
@@ -175,16 +168,22 @@ export function AllocationCoherenceCard({
 						</Text>
 					)}
 				</View>
-				{coherence.categories.map((cat, i) => {
-					const driftBad =
-						cat.stockPct !== undefined &&
-						Math.abs(cat.stockPct - cat.targetPct) >= 0.05;
+				{coherence.bands.map((band, i) => {
+					const driftBad = !isValueInDiversificationBand(
+						band.stockPct,
+						band.minPct,
+						band.maxPct,
+					);
 					const flowBad =
-						cat.flowPct !== null &&
-						Math.abs(cat.flowPct - cat.targetPct) >= 0.05;
+						band.flowPct !== null &&
+						!isValueInDiversificationBand(
+							band.flowPct,
+							band.minPct,
+							band.maxPct,
+						);
 					return (
 						<View
-							key={cat.category}
+							key={band.key}
 							style={{
 								flexDirection: "row",
 								paddingVertical: 8,
@@ -193,17 +192,17 @@ export function AllocationCoherenceCard({
 							}}
 						>
 							<Text style={{ flex: 1, color: t.textSecondary, fontSize: 13 }}>
-								{cat.category}
+								{diversificationKeyLabel(band.key)}
 							</Text>
 							<Text
 								style={{
-									width: 44,
+									width: 56,
 									textAlign: "right",
 									color: t.textMuted,
 									fontSize: 13,
 								}}
 							>
-								{fmt(cat.targetPct)}
+								{fmtBand(band.minPct, band.maxPct)}
 							</Text>
 							<Text
 								style={{
@@ -214,7 +213,7 @@ export function AllocationCoherenceCard({
 									color: driftBad ? t.danger : t.text,
 								}}
 							>
-								{fmt(cat.stockPct)}
+								{fmt(band.stockPct)}
 							</Text>
 							{showDca && (
 								<Text
@@ -226,7 +225,7 @@ export function AllocationCoherenceCard({
 										color: flowBad ? t.danger : t.text,
 									}}
 								>
-									{fmt(cat.flowPct)}
+									{fmt(band.flowPct)}
 								</Text>
 							)}
 						</View>

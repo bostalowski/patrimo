@@ -17,12 +17,10 @@ import {
   type DcaExecution,
   type ExecutionLine,
 } from "@patrimo/core/dca";
-import { suggestTargetPlanFromDca } from "@patrimo/core/allocation-coherence";
 import { formatEuro, formatPercent } from "@patrimo/core/format";
 import { clampRetirementAge } from "@patrimo/core/schema";
 import type { Envelope, DcaConfig, DcaFrequency, DcaLine, RetirementProfile } from "@patrimo/core/schema";
 import { saveDcaConfigs } from "../lib/write-dca";
-import { AllocationPlanEditor } from "../lib/allocation-plan-editor";
 import { useThemeColors, shared } from "../lib/theme";
 import type { Theme } from "../lib/theme";
 
@@ -47,10 +45,9 @@ const DEFAULT_MIN_ORDERS: Partial<Record<Envelope, number>> = {
 
 const RETIREMENT_STORAGE_KEY = "@patrimo/retirement-profile";
 
-type Tab = "allocation" | "dca" | "execution" | "retraite" | "immobilier";
+type Tab = "dca" | "execution" | "retraite" | "immobilier";
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "allocation", label: "Allocation" },
   { key: "dca", label: "DCA" },
   { key: "execution", label: "Exécution" },
   { key: "retraite", label: "Retraite" },
@@ -60,8 +57,8 @@ const TABS: { key: Tab; label: string }[] = [
 export default function InvestissementsScreen() {
   const isDark = useColorScheme() === "dark";
   const t = useThemeColors(isDark);
-  const { workbook, prices, loading, error, refresh } = useWorkbook();
-  const [tab, setTab] = useState<Tab>("allocation");
+  const { workbook, prices, loading, error } = useWorkbook();
+  const [tab, setTab] = useState<Tab>("dca");
 
   if (loading) {
     return (
@@ -90,8 +87,6 @@ export default function InvestissementsScreen() {
     if (tabItem.key === "execution") return hasDca;
     return true;
   });
-
-  const allocationSuggestion = suggestTargetPlanFromDca(workbook.dca);
 
   return (
     <ScrollView
@@ -137,16 +132,7 @@ export default function InvestissementsScreen() {
         ))}
       </View>
 
-      {tab === "allocation" && (
-        <AllocationPlanEditor
-          initialTargets={[]}
-          suggestion={allocationSuggestion}
-          assets={workbook.assets}
-          theme={t}
-          onSaved={refresh}
-        />
-      )}
-      {tab === "dca" && <DcaTab workbook={workbook} prices={prices} theme={t} />}
+      {tab === "dca" && <DcaTab workbook={workbook} theme={t} />}
       {tab === "execution" && (
         <ExecutionTab workbook={workbook} prices={prices} theme={t} />
       )}
@@ -231,11 +217,9 @@ function draftToConfig(draft: DcaDraft): DcaConfig | null {
 
 function DcaTab({
   workbook,
-  prices,
   theme: t,
 }: {
   workbook: NonNullable<ReturnType<typeof useWorkbook>["workbook"]>;
-  prices: Map<string, number>;
   theme: Theme;
 }) {
   const { refresh } = useWorkbook();
@@ -574,7 +558,7 @@ function DcaEditorCard({
       <View style={{ marginTop: 16 }}>
         <View style={[shared.row, { marginBottom: 8 }]}>
           <Text style={{ color: t.text, fontSize: 14, fontWeight: "600" }}>
-            Lignes d'allocation
+            {"Lignes d'allocation"}
           </Text>
           <Text
             style={{

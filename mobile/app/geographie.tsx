@@ -4,11 +4,12 @@ import { buildPortfolio } from "@patrimo/core/portfolio";
 import { aggregateGeographicExposure } from "@patrimo/core/geographic-exposure";
 import { useThemeColors, shared } from "../lib/theme";
 import { GeographicExposureList } from "../components/geographic-exposure-list";
+import { DiversificationTargetsEditor } from "../lib/diversification-targets-editor";
 
 export default function GeographieScreen() {
   const isDark = useColorScheme() === "dark";
   const t = useThemeColors(isDark);
-  const { workbook, prices, loading, error } = useWorkbook();
+  const { workbook, prices, loading, error, refresh } = useWorkbook();
 
   if (loading) {
     return (
@@ -56,6 +57,11 @@ export default function GeographieScreen() {
       style={{ flex: 1, backgroundColor: t.bg }}
       contentContainerStyle={{ padding: 16 }}
     >
+      <DiversificationTargetsEditor
+        initialTargets={workbook.diversificationTargets ?? []}
+        theme={t}
+        onSaved={refresh}
+      />
       <View style={[shared.card, { backgroundColor: t.card }]}>
         <GeographicExposureList
           title="Répartition géographique"

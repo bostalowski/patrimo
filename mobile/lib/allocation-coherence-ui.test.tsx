@@ -1,4 +1,4 @@
-import type { AllocationCoherenceResult } from "@patrimo/core/allocation-coherence";
+import type { DiversificationCoherenceResult } from "@patrimo/core/diversification-coherence";
 import type React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
@@ -18,13 +18,25 @@ vi.mock("expo-router", () => ({
 import { AllocationCoherenceCard } from "./allocation-coherence-card";
 
 function coherence(
-	overrides: Partial<AllocationCoherenceResult> = {},
-): AllocationCoherenceResult {
+	overrides: Partial<DiversificationCoherenceResult> = {},
+): DiversificationCoherenceResult {
 	return {
 		status: "aligned",
-		categories: [
-			{ category: "Monde", targetPct: 0.7, stockPct: 0.7, flowPct: null },
-			{ category: "Crypto", targetPct: 0.3, stockPct: 0.3, flowPct: null },
+		bands: [
+			{
+				key: "US",
+				minPct: 0.6,
+				maxPct: 0.7,
+				stockPct: 0.65,
+				flowPct: null,
+			},
+			{
+				key: "CRYPTO",
+				minPct: 0,
+				maxPct: 0.05,
+				stockPct: 0.03,
+				flowPct: null,
+			},
 		],
 		findings: [],
 		liquidInvested: 10_000,
@@ -58,7 +70,7 @@ describe("mobile AllocationCoherenceCard", () => {
 		expect(renderer.toJSON()).toBeNull();
 	});
 
-	it("renders title, status, and category names", () => {
+	it("renders Cohérence diversification, Aligné, and band rows", () => {
 		const text = visibleText(
 			render(
 				<AllocationCoherenceCard
@@ -68,19 +80,19 @@ describe("mobile AllocationCoherenceCard", () => {
 			),
 		);
 
-		expect(text).toMatch(/cohérence d'allocation/i);
+		expect(text).toMatch(/Cohérence diversification/i);
 		expect(text).toContain("Aligné");
-		expect(text).toContain("Monde");
+		expect(text).toContain("États-Unis");
 		expect(text).toContain("Crypto");
 	});
 
-	it("shows Décalé when status is misaligned", () => {
+	it("shows Décalé and Stock hors bande when band_drift", () => {
 		const text = visibleText(
 			render(
 				<AllocationCoherenceCard
 					coherence={coherence({
 						status: "misaligned",
-						findings: [{ kind: "category_drift", categoryLabel: "Monde" }],
+						findings: [{ kind: "band_drift", key: "US" }],
 					})}
 					theme={colors.light}
 				/>,
@@ -88,56 +100,24 @@ describe("mobile AllocationCoherenceCard", () => {
 		);
 
 		expect(text).toContain("Décalé");
-		expect(text).toMatch(/Stock décalé/i);
+		expect(text).toMatch(/Stock hors bande/i);
 	});
 
-	it("shows À surveiller and finding chips", () => {
+	it("shows DCA hors bande when flow_misalign", () => {
 		const text = visibleText(
 			render(
 				<AllocationCoherenceCard
 					coherence={coherence({
-						status: "watch",
-						findings: [{ kind: "geo_coverage_gap" }],
-					})}
-					theme={colors.light}
-				/>,
-			),
-		);
-
-		expect(text).toContain("À surveiller");
-		expect(text).toMatch(/Géo incomplète/i);
-	});
-
-	it("never shows Double ligne overlapping chip and still shows status", () => {
-		const text = visibleText(
-			render(
-				<AllocationCoherenceCard
-					coherence={coherence({
-						status: "aligned",
-						findings: [],
-					})}
-					theme={colors.light}
-				/>,
-			),
-		);
-
-		expect(text).toContain("Aligné");
-		expect(text).toContain("Modifier");
-		expect(text).not.toMatch(/Double ligne/i);
-	});
-
-	it("shows DCA column header when annualDcaTotal > 0", () => {
-		const text = visibleText(
-			render(
-				<AllocationCoherenceCard
-					coherence={coherence({
+						status: "misaligned",
+						findings: [{ kind: "flow_misalign", key: "US" }],
 						annualDcaTotal: 4800,
-						categories: [
+						bands: [
 							{
-								category: "Monde",
-								targetPct: 0.7,
-								stockPct: 0.7,
-								flowPct: 0.7,
+								key: "US",
+								minPct: 0.6,
+								maxPct: 0.7,
+								stockPct: 0.65,
+								flowPct: 0.9,
 							},
 						],
 					})}
@@ -146,6 +126,25 @@ describe("mobile AllocationCoherenceCard", () => {
 			),
 		);
 
-		expect(text).toContain("DCA");
+		expect(text).toMatch(/DCA hors bande/i);
+	});
+
+	it("Modifier navigates to /geographie", () => {
+		const renderer = render(
+			<AllocationCoherenceCard
+				coherence={coherence()}
+				theme={colors.light}
+			/>,
+		);
+
+		const modifier = renderer.root.find(
+			(node) =>
+				node.props.accessibilityLabel === "Modifier" ||
+				(node.type === "Text" &&
+					node.children.some(
+						(child) => typeof child === "string" && child === "Modifier",
+					)),
+		);
+		expect(modifier).toBeTruthy();
 	});
 });

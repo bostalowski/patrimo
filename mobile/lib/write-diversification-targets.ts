@@ -1,4 +1,4 @@
-import type { TargetAllocationCategory } from "@patrimo/core/schema";
+import type { DiversificationTarget } from "@patrimo/core/schema";
 import { parseWorkbook, serializeWorkbook } from "./excel-mobile";
 import {
 	getActiveSource,
@@ -6,8 +6,8 @@ import {
 	writeSourceFile,
 } from "./file-source";
 
-export async function saveTargetAllocations(
-	targets: TargetAllocationCategory[],
+export async function saveDiversificationTargets(
+	targets: DiversificationTarget[],
 ): Promise<void> {
 	const source = await getActiveSource();
 	if (!source) throw new Error("No file source configured");
@@ -18,7 +18,7 @@ export async function saveTargetAllocations(
 		source,
 		serializeWorkbook(buffer, {
 			...workbook.workbook,
-			targetAllocations: targets,
+			diversificationTargets: targets,
 		}),
 	);
 }

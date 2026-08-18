@@ -1,4 +1,4 @@
-import { assessAllocationCoherence } from "@patrimo/core/allocation-coherence";
+import { assessDiversificationCoherence } from "@patrimo/core/diversification-coherence";
 import { summarizeBudget } from "@patrimo/core/budget";
 import {
 	computeEmergencyFundHealth,
@@ -77,11 +77,12 @@ export default function DashboardScreen() {
 		livretBalance,
 		depensesMensuelles,
 	);
-	const allocationCoherence = assessAllocationCoherence({
-		targets: [],
+	const allocationCoherence = assessDiversificationCoherence({
+		targets: workbook.diversificationTargets,
 		positions: portfolio.assets,
 		dca: workbook.dca,
 		geographicAllocations: workbook.geographicAllocations,
+		assets: workbook.assets,
 	});
 
 	const history = buildHistorySeries(

@@ -22,6 +22,7 @@ vi.mock("react-native", () => ({
   ScrollView: "ScrollView",
   TouchableOpacity: "TouchableOpacity",
   TextInput: "TextInput",
+  Pressable: "Pressable",
   ActivityIndicator: "ActivityIndicator",
   Alert: { alert: vi.fn() },
   StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 },
@@ -49,6 +50,10 @@ vi.mock("./write-asset", () => ({
   deleteManualPriceFromSource: vi.fn(),
   replaceGeographicAllocationInSource: mocks.replaceGeographic,
   syncJustEtfGeographicAllocationInSource: mocks.syncJustEtf,
+}));
+
+vi.mock("./write-diversification-targets", () => ({
+  saveDiversificationTargets: vi.fn(),
 }));
 
 vi.mock("./write-account", () => ({
