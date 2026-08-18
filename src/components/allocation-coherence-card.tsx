@@ -1,32 +1,30 @@
 import type {
-	AllocationCoherenceResult,
-	AllocationCoherenceStatus,
-	AllocationFindingKind,
-} from "@patrimo/core/allocation-coherence";
+	DiversificationCoherenceResult,
+	DiversificationCoherenceStatus,
+	DiversificationFindingKind,
+} from "@patrimo/core/diversification-coherence";
+import { diversificationKeyLabel } from "@patrimo/core/diversification-labels";
+import { isValueInDiversificationBand } from "@patrimo/core/diversification-targets";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 
-const STATUS_LABEL: Record<AllocationCoherenceStatus, string> = {
+const STATUS_LABEL: Record<DiversificationCoherenceStatus, string> = {
 	aligned: "Aligné",
-	watch: "À surveiller",
 	misaligned: "Décalé",
 };
 
 const STATUS_BADGE: Record<
-	AllocationCoherenceStatus,
-	"success" | "warning" | "danger"
+	DiversificationCoherenceStatus,
+	"success" | "danger"
 > = {
 	aligned: "success",
-	watch: "warning",
 	misaligned: "danger",
 };
 
-const FINDING_LABEL: Record<AllocationFindingKind, string> = {
-	category_drift: "Stock décalé",
-	flow_misalign: "DCA décalé",
-	unmapped_stock: "Actifs non ciblés",
-	geo_coverage_gap: "Géo incomplète",
+const FINDING_LABEL: Record<DiversificationFindingKind, string> = {
+	band_drift: "Stock hors bande",
+	flow_misalign: "DCA hors bande",
 };
 
 const pctFormatter = new Intl.NumberFormat("fr-FR", {
@@ -39,27 +37,25 @@ function fmt(value: number | null | undefined): string {
 	return pctFormatter.format(value);
 }
 
-function findingVariant(kind: AllocationFindingKind): "danger" | "warning" {
-	return kind === "geo_coverage_gap" ? "warning" : "danger";
+function fmtBand(minPct: number, maxPct: number): string {
+	if (minPct === maxPct) return fmt(minPct);
+	return `${pctFormatter.format(minPct)}–${pctFormatter.format(maxPct)}`;
 }
 
 export function AllocationCoherenceCard({
 	coherence,
 }: {
-	coherence: AllocationCoherenceResult | null;
+	coherence: DiversificationCoherenceResult | null;
 }) {
 	if (!coherence) return null;
 
 	const hasDcaFindings = coherence.findings.some(
 		(f) => f.kind === "flow_misalign",
 	);
-	const hasGeoFindings = coherence.findings.some(
-		(f) => f.kind === "geo_coverage_gap",
-	);
 
 	const seenKeys = new Set<string>();
 	const deduped = coherence.findings.filter((f) => {
-		const key = `${f.kind}:${f.categoryLabel ?? ""}`;
+		const key = `${f.kind}:${f.key}`;
 		if (seenKeys.has(key)) return false;
 		seenKeys.add(key);
 		return true;
@@ -69,10 +65,10 @@ export function AllocationCoherenceCard({
 		<Card className="max-w-2xl">
 			<CardHeader>
 				<div className="flex items-center justify-between gap-2">
-					<CardTitle>Cohérence d&apos;allocation</CardTitle>
+					<CardTitle>Cohérence diversification</CardTitle>
 					<div className="flex items-center gap-2">
 						<Link
-							href="/investissements"
+							href="/geographie"
 							className="text-xs font-medium text-zinc-500 hover:underline dark:text-zinc-400"
 						>
 							Modifier
@@ -85,12 +81,9 @@ export function AllocationCoherenceCard({
 				{deduped.length > 0 && (
 					<div className="mt-2 flex flex-wrap gap-1">
 						{deduped.map((f) => (
-							<Badge
-								key={`${f.kind}:${f.categoryLabel ?? ""}`}
-								variant={findingVariant(f.kind)}
-							>
+							<Badge key={`${f.kind}:${f.key}`} variant="danger">
 								{FINDING_LABEL[f.kind]}
-								{f.categoryLabel ? ` · ${f.categoryLabel}` : ""}
+								{f.key ? ` · ${diversificationKeyLabel(f.key)}` : ""}
 							</Badge>
 						))}
 					</div>
@@ -101,10 +94,10 @@ export function AllocationCoherenceCard({
 					<thead>
 						<tr className="border-b border-zinc-100 dark:border-zinc-800">
 							<th className="py-2 text-left font-medium text-zinc-500 dark:text-zinc-400">
-								Catégorie
+								Dimension
 							</th>
 							<th className="py-2 pr-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
-								Cible
+								Bande
 							</th>
 							<th className="py-2 pr-2 text-right font-medium text-zinc-500 dark:text-zinc-400">
 								Réel
@@ -117,23 +110,29 @@ export function AllocationCoherenceCard({
 						</tr>
 					</thead>
 					<tbody>
-						{coherence.categories.map((cat) => {
-							const driftBad =
-								cat.stockPct !== undefined &&
-								Math.abs(cat.stockPct - cat.targetPct) >= 0.05;
+						{coherence.bands.map((band) => {
+							const driftBad = !isValueInDiversificationBand(
+								band.stockPct,
+								band.minPct,
+								band.maxPct,
+							);
 							const flowBad =
-								cat.flowPct !== null &&
-								Math.abs(cat.flowPct - cat.targetPct) >= 0.05;
+								band.flowPct !== null &&
+								!isValueInDiversificationBand(
+									band.flowPct,
+									band.minPct,
+									band.maxPct,
+								);
 							return (
 								<tr
-									key={cat.category}
-									className="border-b border-zinc-50 dark:border-zinc-800/50 last:border-0"
+									key={band.key}
+									className="border-b border-zinc-50 last:border-0 dark:border-zinc-800/50"
 								>
 									<td className="py-2 text-zinc-700 dark:text-zinc-300">
-										{cat.category}
+										{diversificationKeyLabel(band.key)}
 									</td>
 									<td className="py-2 pr-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
-										{fmt(cat.targetPct)}
+										{fmtBand(band.minPct, band.maxPct)}
 									</td>
 									<td
 										className={`py-2 pr-2 text-right tabular-nums ${
@@ -142,7 +141,7 @@ export function AllocationCoherenceCard({
 												: "text-zinc-700 dark:text-zinc-300"
 										}`}
 									>
-										{fmt(cat.stockPct)}
+										{fmt(band.stockPct)}
 									</td>
 									{coherence.annualDcaTotal > 0 && (
 										<td
@@ -152,7 +151,7 @@ export function AllocationCoherenceCard({
 													: "text-zinc-700 dark:text-zinc-300"
 											}`}
 										>
-											{fmt(cat.flowPct)}
+											{fmt(band.flowPct)}
 										</td>
 									)}
 								</tr>
@@ -160,18 +159,13 @@ export function AllocationCoherenceCard({
 						})}
 					</tbody>
 				</table>
-				<div className="mt-3 flex flex-wrap gap-3 text-xs text-zinc-400 dark:text-zinc-500">
-					{hasDcaFindings && (
+				{hasDcaFindings && (
+					<div className="mt-3 text-xs text-zinc-400 dark:text-zinc-500">
 						<Link href="/investissements" className="hover:underline">
 							Gérer les plans DCA →
 						</Link>
-					)}
-					{hasGeoFindings && (
-						<Link href="/geographie" className="hover:underline">
-							Compléter la géographie →
-						</Link>
-					)}
-				</div>
+					</div>
+				)}
 			</CardBody>
 		</Card>
 	);

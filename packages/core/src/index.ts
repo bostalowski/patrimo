@@ -5,6 +5,7 @@ export * from "./dca";
 export * from "./deblocage";
 export * from "./deletion";
 export * from "./diversification-coherence";
+export * from "./diversification-labels";
 export * from "./diversification-targets";
 export * from "./emergency-fund";
 export * from "./fees";

@@ -1,4 +1,5 @@
 import { Globe } from "lucide-react";
+import { DiversificationTargetsEditor } from "@/app/geographie/diversification-targets-editor";
 import { GeographicExposurePanel } from "@/components/geographic-exposure-panel";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
@@ -33,6 +34,10 @@ export default async function GeographyPage() {
           marché).
         </p>
       </header>
+
+      <DiversificationTargetsEditor
+        initialTargets={workbook.diversificationTargets ?? []}
+      />
 
       <GeographicExposurePanel
         title="Répartition géographique"

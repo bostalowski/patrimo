@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { AllocationCoherenceResult } from "@patrimo/core/allocation-coherence";
+import type { DiversificationCoherenceResult } from "@patrimo/core/diversification-coherence";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { AllocationCoherenceCard } from "@/components/allocation-coherence-card";
@@ -8,13 +8,25 @@ import { AllocationCoherenceCard } from "@/components/allocation-coherence-card"
 afterEach(cleanup);
 
 function coherence(
-	overrides: Partial<AllocationCoherenceResult> = {},
-): AllocationCoherenceResult {
+	overrides: Partial<DiversificationCoherenceResult> = {},
+): DiversificationCoherenceResult {
 	return {
 		status: "aligned",
-		categories: [
-			{ category: "Monde", targetPct: 0.7, stockPct: 0.7, flowPct: null },
-			{ category: "Crypto", targetPct: 0.3, stockPct: 0.3, flowPct: null },
+		bands: [
+			{
+				key: "US",
+				minPct: 0.6,
+				maxPct: 0.7,
+				stockPct: 0.65,
+				flowPct: null,
+			},
+			{
+				key: "CRYPTO",
+				minPct: 0,
+				maxPct: 0.05,
+				stockPct: 0.03,
+				flowPct: null,
+			},
 		],
 		findings: [],
 		liquidInvested: 10_000,
@@ -29,114 +41,56 @@ describe("AllocationCoherenceCard", () => {
 		expect(container.firstChild).toBeNull();
 	});
 
-	it("renders title, status badge, and category rows", () => {
+	it("renders Cohérence diversification, Aligné, and band rows", () => {
 		render(<AllocationCoherenceCard coherence={coherence()} />);
 
-		expect(screen.getByText(/cohérence d'allocation/i)).toBeTruthy();
+		expect(screen.getByText(/Cohérence diversification/i)).toBeTruthy();
 		expect(screen.getByText("Aligné")).toBeTruthy();
-		expect(screen.getByText("Monde")).toBeTruthy();
+		expect(screen.getByText("États-Unis")).toBeTruthy();
 		expect(screen.getByText("Crypto")).toBeTruthy();
-		expect(screen.getAllByText("70 %").length).toBeGreaterThanOrEqual(1);
 	});
 
-	it("shows Décalé badge when status is misaligned", () => {
+	it("shows Décalé and Stock hors bande when band_drift", () => {
 		render(
 			<AllocationCoherenceCard
 				coherence={coherence({
 					status: "misaligned",
-					findings: [{ kind: "category_drift", categoryLabel: "Monde" }],
+					findings: [{ kind: "band_drift", key: "US" }],
 				})}
 			/>,
 		);
 
 		expect(screen.getByText("Décalé")).toBeTruthy();
-		expect(screen.getByText(/Stock décalé/i)).toBeTruthy();
+		expect(screen.getByText(/Stock hors bande/i)).toBeTruthy();
 	});
 
-	it("shows À surveiller badge and finding chips when status is watch", () => {
-		render(
-			<AllocationCoherenceCard
-				coherence={coherence({
-					status: "watch",
-					findings: [{ kind: "geo_coverage_gap" }],
-				})}
-			/>,
-		);
-
-		expect(screen.getByText("À surveiller")).toBeTruthy();
-		expect(screen.getByText(/Géo incomplète/i)).toBeTruthy();
-	});
-
-	it("shows DCA column and link when annualDcaTotal > 0", () => {
-		render(
-			<AllocationCoherenceCard
-				coherence={coherence({
-					annualDcaTotal: 4800,
-					categories: [
-						{ category: "Monde", targetPct: 0.7, stockPct: 0.7, flowPct: 0.7 },
-						{ category: "Crypto", targetPct: 0.3, stockPct: 0.3, flowPct: 0.3 },
-					],
-				})}
-			/>,
-		);
-
-		expect(screen.getByText("DCA")).toBeTruthy();
-	});
-
-	it("shows géographie link when geo_coverage_gap finding exists", () => {
-		render(
-			<AllocationCoherenceCard
-				coherence={coherence({
-					status: "watch",
-					findings: [{ kind: "geo_coverage_gap" }],
-				})}
-			/>,
-		);
-
-		expect(screen.getByText(/Compléter la géographie/i)).toBeTruthy();
-	});
-
-	it("shows DCA link when flow_misalign finding exists", () => {
+	it("shows DCA hors bande when flow_misalign", () => {
 		render(
 			<AllocationCoherenceCard
 				coherence={coherence({
 					status: "misaligned",
-					findings: [{ kind: "flow_misalign", categoryLabel: "Monde" }],
+					findings: [{ kind: "flow_misalign", key: "US" }],
 					annualDcaTotal: 4800,
-					categories: [
-						{ category: "Monde", targetPct: 0.7, stockPct: 0.7, flowPct: 0.5 },
-						{ category: "Crypto", targetPct: 0.3, stockPct: 0.3, flowPct: 0.5 },
-					],
-				})}
-			/>,
-		);
-
-		expect(screen.getByText(/Gérer les plans DCA/i)).toBeTruthy();
-	});
-
-	it("shows a Modifier link to the Investments allocation editor", () => {
-		render(<AllocationCoherenceCard coherence={coherence()} />);
-
-		const link = screen.getByRole("link", { name: /Modifier/i });
-		expect(link.getAttribute("href")).toBe("/investissements");
-	});
-
-	it("never shows an overlapping-sleeve Double ligne chip", () => {
-		render(
-			<AllocationCoherenceCard
-				coherence={coherence({
-					categories: [
+					bands: [
 						{
-							category: "Monde",
-							targetPct: 1,
-							stockPct: 1,
-							flowPct: null,
+							key: "US",
+							minPct: 0.6,
+							maxPct: 0.7,
+							stockPct: 0.65,
+							flowPct: 0.9,
 						},
 					],
 				})}
 			/>,
 		);
 
-		expect(screen.queryByText(/Double ligne/i)).toBeNull();
+		expect(screen.getByText(/DCA hors bande/i)).toBeTruthy();
+	});
+
+	it("Modifier links to /geographie", () => {
+		render(<AllocationCoherenceCard coherence={coherence()} />);
+
+		const link = screen.getByRole("link", { name: /Modifier/i });
+		expect(link.getAttribute("href")).toBe("/geographie");
 	});
 });

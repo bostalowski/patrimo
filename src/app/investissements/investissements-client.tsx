@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { DcaPlanner } from "@/app/dca/dca-planner";
 import { DeletePropertyButton } from "@/app/immobilier/delete-property-button";
 import { PropertyForm } from "@/app/immobilier/property-form";
@@ -15,7 +15,6 @@ import type {
 	Detention,
 	Property,
 	PropertyRegime,
-	TargetAllocationCategory,
 } from "@/lib/schema";
 import { clampRetirementAge } from "@/lib/schema";
 import {
@@ -25,7 +24,6 @@ import {
 	formatPercent,
 	signClass,
 } from "@/lib/utils";
-import { AllocationPlanEditor } from "./allocation-plan-editor";
 import { DcaExecutionCalculator } from "./dca-execution";
 
 export type RetraiteProfileForm = {
@@ -67,14 +65,11 @@ type Props = {
 	priceMap: Record<string, number>;
 	initialProfile: RetraiteProfileForm;
 	properties: SerializedProperty[];
-	targetAllocations: TargetAllocationCategory[];
-	allocationSuggestion: TargetAllocationCategory[];
 };
 
-type Tab = "allocation" | "dca" | "execution" | "retraite" | "immobilier";
+type Tab = "dca" | "execution" | "retraite" | "immobilier";
 
 const TABS: { key: Tab; label: string }[] = [
-	{ key: "allocation", label: "Allocation cible" },
 	{ key: "dca", label: "Plans DCA" },
 	{ key: "execution", label: "Exécution" },
 	{ key: "retraite", label: "Retraite" },
@@ -89,10 +84,8 @@ export function InvestissementsClient({
 	priceMap,
 	initialProfile,
 	properties,
-	targetAllocations,
-	allocationSuggestion,
 }: Props) {
-	const [tab, setTab] = useState<Tab>("allocation");
+	const [tab, setTab] = useState<Tab>("dca");
 
 	return (
 		<div className="space-y-6">
@@ -113,14 +106,6 @@ export function InvestissementsClient({
 					</button>
 				))}
 			</div>
-
-			{tab === "allocation" && (
-				<AllocationPlanEditor
-					initialTargets={targetAllocations}
-					suggestion={allocationSuggestion}
-					assets={assets}
-				/>
-			)}
 
 			{tab === "dca" && (
 				<DcaPlanner
@@ -161,11 +146,6 @@ function RetirementProfileSection({
 		String(initialProfile.targetRetirementAge),
 	);
 	const [saveError, setSaveError] = useState<string | null>(null);
-
-	useEffect(() => {
-		setProfile(initialProfile);
-		setAgeDraft(String(initialProfile.targetRetirementAge));
-	}, [initialProfile]);
 
 	async function persist(next: RetraiteProfileForm, refresh: boolean) {
 		setSaveError(null);

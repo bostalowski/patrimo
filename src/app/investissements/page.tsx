@@ -1,4 +1,3 @@
-import { suggestTargetPlanFromDca } from "@patrimo/core/allocation-coherence";
 import { portfolioByEnvelope } from "@patrimo/core/portfolio";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
@@ -45,8 +44,6 @@ export default async function InvestissementsPage() {
 
 	const priceMapRecord: Record<string, number> = Object.fromEntries(priceMap);
 
-	const allocationSuggestion = suggestTargetPlanFromDca(workbook.dca);
-
 	return (
 		<div className="space-y-8">
 			<header className="space-y-1.5">
@@ -54,8 +51,8 @@ export default async function InvestissementsPage() {
 					Investissements
 				</h1>
 				<p className="max-w-2xl text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-					Définis ton allocation cible, configure tes plans DCA, exécute tes
-					ordres, gère ton profil retraite et tes biens immobiliers.
+					Configure tes plans DCA, exécute tes ordres, gère ton profil retraite
+					et tes biens immobiliers.
 				</p>
 			</header>
 
@@ -75,8 +72,6 @@ export default async function InvestissementsPage() {
 					dateAcquisition: p.dateAcquisition?.toISOString(),
 					dateDebutCredit: p.dateDebutCredit?.toISOString(),
 				}))}
-				targetAllocations={[]}
-				allocationSuggestion={allocationSuggestion}
 			/>
 		</div>
 	);
