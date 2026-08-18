@@ -4,7 +4,7 @@ Patrimo is a local wealth-tracking product. These commitments constrain product 
 
 ## Excel workbook is the source of truth
 
-Transactions, assets, accounts, budget lines, properties, DCA plans, manual prices, and geographic allocations live in a `.xlsx` workbook. Local JSON and AsyncStorage automatic price files are derived caches, not authoritative portfolio state.
+Transactions, assets, accounts, budget lines, properties, DCA plans, manual prices, geographic allocations, and diversification targets live in a `.xlsx` workbook. Local JSON and AsyncStorage automatic price files are derived caches, not authoritative portfolio state.
 
 ## Shared domain logic lives in `@patrimo/core`
 

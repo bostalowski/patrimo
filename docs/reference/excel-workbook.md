@@ -14,9 +14,9 @@ Canonical sheet names and headers come from `packages/core/src/workbook-template
 | `DCA` | No | Investment plans (baskets + target %) |
 | `Prix manuels` | No | Dated user-entered valuations for `manual` assets |
 | `Exposition geo` | No | Look-through country or region weights per asset |
-| `Allocation cible` | No | Portfolio target allocation by category |
+| `Cibles diversification` | No | Diversification target bands (geo keys + crypto) |
 
-A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels`, `Exposition geo`, or `Allocation cible` remain valid; each sheet is created on the first write that needs it.
+A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels`, `Exposition geo`, or `Cibles diversification` remain valid; each sheet is created on the first write that needs it. Legacy sheet `Allocation cible` is ignored on read and deleted on the next workbook write.
 
 ## `Transactions`
 
@@ -133,17 +133,19 @@ Optional sheet for look-through geographic weights. See [Geographic allocation](
 
 All rows for one `Actif` are replaced together on write. Missing sheet ⇒ empty collection.
 
-## `Allocation cible`
+## `Cibles diversification`
 
-Optional sheet for portfolio-level target allocation. See [Allocation coherence](../architecture/allocation-coherence.md) and [ADR 0012](../adr/0012-allocation-coherence.md).
+> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0012](../adr/0012-allocation-coherence.md).
+
+Optional sheet for diversification target bands. See [Diversification targets](../architecture/diversification-targets.md) and [ADR 0012](../adr/0012-allocation-coherence.md).
 
 | Column | Schema field | Rules |
 |---|---|---|
-| `Catégorie` | `category` | Unique label; stable identifier |
-| `Pourcentage cible` | `targetPct` | Percent in Excel (0–100); fraction in `(0, 1]` in the model |
-| `Actifs` | `assetIds` | Comma-separated asset ids; each asset belongs to at most one category. Legacy Excel header `Actifs (séparés par virgule)` is also accepted on parse. |
+| `Dimension` | `key` | ISO 3166-1 alpha-2, product region key, or `CRYPTO` (trim + upper case; legacy `EMERGING` → `OTHER`) |
+| `Min %` | `minPct` | Percent in Excel (0–100) or fraction; model in `[0, 1]` |
+| `Max %` | `maxPct` | Same encoding as min; must satisfy `minPct ≤ maxPct` |
 
-Validation: Σ `targetPct` must be ≈ 1 (±1e-3); otherwise the sheet is ignored and the card is hidden. Asset ids not found in `Actifs` are silently dropped on parse. Save paths (`PUT /api/target-allocation`, mobile editor) reject unknown or duplicate assets via `validateTargetAllocations`. Missing sheet ⇒ empty collection ⇒ coherence card hidden; the editor may still show a DCA bootstrap suggestion.
+Keys on the sheet must not overlap (duplicate key, or country + its parent region). Parse drops invalid rows and later overlapping keys (first row wins). Save paths (`PUT /api/diversification-targets`, mobile editor) reject via `validateDiversificationTargets`. Σ min/max need not equal 1. Missing sheet ⇒ empty collection ⇒ coherence card hidden. Empty save clears the plan. Legacy `Allocation cible` is not parsed.
 
 ## Validation ownership
 

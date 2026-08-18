@@ -242,6 +242,13 @@ export const TargetAllocationCategory = z.object({
 });
 export type TargetAllocationCategory = z.infer<typeof TargetAllocationCategory>;
 
+export const DiversificationTarget = z.object({
+	key: z.string().min(1),
+	minPct: z.number().min(0).max(1),
+	maxPct: z.number().min(0).max(1),
+});
+export type DiversificationTarget = z.infer<typeof DiversificationTarget>;
+
 export type Workbook = {
 	transactions: Transaction[];
 	assets: Asset[];

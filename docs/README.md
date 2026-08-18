@@ -29,7 +29,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Portfolio risk readability](architecture/portfolio-risk-readability.md)
 - [Fee monitoring ratios](architecture/fee-monitoring-ratios.md)
 - [Geographic allocation](architecture/geographic-allocation.md)
-- [Allocation plan and coherence](architecture/allocation-coherence.md)
+- [Diversification targets and coherence](architecture/diversification-targets.md)
 
 ## Reference
 
@@ -51,7 +51,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Implement portfolio risk readability](howto/implement-portfolio-risk-readability.md)
 - [Implement fee monitoring ratios](howto/implement-fee-monitoring-ratios.md)
 - [Implement geographic allocation](howto/implement-geographic-allocation.md)
-- [Implement allocation plan (coherence)](howto/implement-allocation-coherence.md)
+- [Implement diversification targets](howto/implement-diversification-targets.md)
 
 ## Decisions
 

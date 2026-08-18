@@ -118,13 +118,13 @@ Sum of calendar-year explicit fees and the estimated annual TER euro cost, divid
 
 All-time explicit fees divided by portfolio (or asset) **total return** (unrealized + realized + income as produced by the portfolio engine). Undefined when total return is zero or negative — not a fee-health score in down markets.
 
-## Target allocation
+## Diversification target
 
-Also called **Allocation plan** (FR UI: « Allocation cible » / plan d’allocation). Portfolio-level intent: categories with target percentage and mapped asset ids. Persisted in optional workbook sheet `Allocation cible`. May be **suggested** from annualized DCA flows (`suggestTargetPlanFromDca`) but only **persisted** after user save. When the sheet is absent or Σ targetPct is not ≈ 1, coherence assessment returns null (card hidden); the editor may still show a bootstrap suggestion. See [ADR 0012](../adr/0012-allocation-coherence.md).
+Portfolio-level intent as min–max bands on diversification keys: ISO country, product **Geographic region**, or `CRYPTO`. Persisted in optional workbook sheet `Cibles diversification`. Partial plans are allowed (bands need not sum to 100 %). Empty collection clears the plan. Keys must not overlap (a country and its parent region are overlapping). See [ADR 0012](../adr/0012-allocation-coherence.md).
 
 ## Allocation coherence
 
-Measure of alignment between the **allocation plan** (saved target), current stock mix, and annualized DCA flow mix. Computed by `assessAllocationCoherence`. Statuses: `aligned`, `watch` (only `geo_coverage_gap`), `misaligned` (drift, flow, or unmapped). Multi-asset sleeves are allowed and do **not** emit a finding. Never uses HHI / Top1 / Top3 ([ADR 0006](../adr/0006-portfolio-risk-readability.md)).
+Measure of alignment between saved **Diversification target** bands, current liquid stock (look-through geo + crypto by `AssetType`), and annualized DCA flow mix. Computed by `assessDiversificationCoherence`. Statuses: `aligned`, `misaligned` (`band_drift` and/or `flow_misalign`). Returns null (card hidden) when no bands are saved or liquid invested is zero. Geographic charts still use covered market value ([ADR 0010](../adr/0010-partial-geographic-allocation-weights.md)); band percentages use full liquid MV / full annual DCA. Never uses HHI / Top1 / Top3 ([ADR 0006](../adr/0006-portfolio-risk-readability.md)).
 
 ## See also
 
@@ -137,5 +137,7 @@ Measure of alignment between the **allocation plan** (saved target), current sto
 - [ADR 0006](../adr/0006-portfolio-risk-readability.md)
 - [ADR 0007](../adr/0007-fee-monitoring-ratios.md)
 - [ADR 0008](../adr/0008-geographic-allocation.md)
+- [ADR 0012](../adr/0012-allocation-coherence.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
+- [Diversification targets](../architecture/diversification-targets.md)

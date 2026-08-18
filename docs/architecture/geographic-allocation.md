@@ -94,4 +94,5 @@ Accounts list → account detail (positions + geo) → edit-account (metadata on
 - [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md)
 - [ADR 0011](../adr/0011-restore-justetf-geographic-sync.md)
 - [Implement geographic allocation](../howto/implement-geographic-allocation.md)
+- [Diversification targets](diversification-targets.md)
 - [Manual price persistence](manual-price-persistence.md)

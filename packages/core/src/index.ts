@@ -4,6 +4,8 @@ export * from "./budget";
 export * from "./dca";
 export * from "./deblocage";
 export * from "./deletion";
+export * from "./diversification-coherence";
+export * from "./diversification-targets";
 export * from "./emergency-fund";
 export * from "./fees";
 export * from "./fiscal-advice";

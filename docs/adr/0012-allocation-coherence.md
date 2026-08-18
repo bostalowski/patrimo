@@ -1,130 +1,168 @@
-# ADR 0012: Allocation plan (target) and coherence
+# ADR 0012: Diversification target bands and coherence
 
-- Status: accepted
-- Date: 2026-08-17
+- Status: proposed
+- Date: 2026-08-18
 - implementation_ready: yes
 
 ```text
 Contract (do not invent):
 
-Allocation plan = Target allocation = categories with targetPct and assetIds
-  stored in workbook sheet "Allocation cible".
-  Categories unique; each assetId in at most one category; Σ targetPct ≈ 1 (±1e-3).
+Diversification target = { key, minPct, maxPct } persisted in workbook sheet
+  "Cibles diversification". Partial plans allowed (Σ min/max need not be 1).
+  Empty collection is valid (clears the plan).
 
-Bootstrap (suggest only — never auto-persist):
-  WHEN targetAllocations empty OR Σ targetPct not ≈ 1
-    AND annualized DCA total > 0
-  THEN suggestTargetPlanFromDca(dca) returns proposed categories:
-    - each DCA line → candidate (label = line.label ?? config.label,
-      assetIds = line.assetIds, annualEUR = annualize(config) * line.targetPct)
-    - merge candidates with the same sorted assetIds set (sum annualEUR; keep first label)
-    - assign each assetId to at most one category (first claim by descending annualEUR
-      of the candidate; drop asset from later candidates)
-    - drop candidates with zero remaining assets or zero annualEUR
-    - targetPct = categoryAnnual / sum(categoryAnnual); renormalize to sum ≈ 1
-  WHEN no usable DCA → suggestion is [].
+Keys (after trim + upper case; legacy EMERGING → OTHER):
+  - ISO 3166-1 alpha-2 country (US, FR, …)
+  - product region (NORTH_AMERICA, LATIN_AMERICA, EUROPE, ASIA_PACIFIC,
+    AFRICA_MIDDLE_EAST, OTHER)
+  - CRYPTO
+FORBIDDEN as keys: free labels, asset ids, sector names.
+
+Overlap (save rejects; parse first-wins then drops later overlapping rows):
+  - same normalized key
+  - country C and region R when regionForCountry(C) === R
+  - CRYPTO overlaps only CRYPTO
+  - two distinct countries never overlap; two distinct regions never overlap
+
+Bands: 0 ≤ minPct ≤ maxPct ≤ 1; min === max allowed.
+Save/API rejects invalid_key, invalid_band, duplicate_key, overlapping_keys.
+Impossible plans (e.g. Σ minPct > 1) are savable.
+
+Look-through for geo numerators (non-CRYPTO asset type only):
+  reuse Exposition geo rules (ADR 0008/0010): valid per-asset sum 0 < sum ≤ 1;
+  country OTHER rows dropped without redistribution; region-level rows stay
+  region-level.
+  Country band K: only country-level rows with country === K.
+    Region-only assets contribute 0 to country bands.
+  Region band R: country-level rows with regionForCountry(country) === R
+    (excluding dropped OTHER country rows)
+    PLUS region-level rows whose key === R.
+
+CRYPTO numerator: full market value (or full annualized DCA) of assets with
+  type === CRYPTO. Those assets never enter geo numerators, even if they have
+  Exposition geo rows.
+
+Denominator (stock): sum of positions with marketValue > 0 (all types).
+  Missing geo contributes 0 to geo numerators and still sits in the denominator.
+Denominator (flow): sum of annualized DCA by asset (computeFlowMixByAsset).
+  WHEN annualDcaTotal === 0 THEN do not emit flow findings.
+
+In-band: value ∈ [minPct − 1e-3, maxPct + 1e-3].
+
+assessDiversificationCoherence:
+  WHEN targets empty OR liquidInvested === 0 THEN return null (hide card).
+  WHEN targets non-empty and liquidInvested > 0 THEN per-target stockPct
+    and, if annualDcaTotal > 0, flowPct.
+  Findings ONLY:
+    band_drift    : stockPct outside band
+    flow_misalign : annualDcaTotal > 0 AND flowPct outside band
+  Status: misaligned if any finding; else aligned.
+  No watch status. No geo_coverage_gap / unmapped_stock / category_drift.
 
 Persistence:
-  WHEN user saves a plan
-  THEN validate (unique labels, known assets, asset uniqueness, Σ ≈ 1, targetPct > 0)
-    ELSE reject save with error; do not write workbook.
-  THEN write sheet "Allocation cible" (web API + mobile serialize).
-  Excel column "Actifs" OR legacy header "Actifs (séparés par virgule)" both parse.
+  WHEN user saves THEN validate then replace the whole sheet
+    "Cibles diversification" (columns Dimension, Min %, Max % — Excel
+    percent 0–100 or fraction, same heuristic as other % columns).
+  WHEN reading workbooks THEN ignore sheet "Allocation cible"
+    (do not map it to diversificationTargets).
+  WHEN writing workbooks THEN delete sheet "Allocation cible" if present.
+  Missing "Cibles diversification" ⇒ empty collection.
 
-Coherence (assessAllocationCoherence):
-  WHEN no valid saved targets (empty OR Σ not ≈ 1)
-  THEN return null → UI hides status card (editor may still show bootstrap suggestion).
+Surfaces:
+  Editor on web /geographie and mobile geography surface.
+  Dashboard card « Modifier » → geography. Investissements is DCA only.
+  Web PUT /api/diversification-targets { targets }; mobile serialize.
 
-  WHEN targets valid
-  THEN liquidInvested, annualDcaTotal, per-category targetPct / stockPct / flowPct
-       as in prior contract.
-  THEN findings ONLY:
-    category_drift   : |stockPct − targetPct| ≥ 0.05 (liquidInvested > 0)
-    flow_misalign    : annualDcaTotal > 0 AND |flowPct − targetPct| ≥ 0.05
-    unmapped_stock   : unmapped MV ≥ 5% of liquidInvested
-    geo_coverage_gap : uncovered liquid MV share ≥ 0.25
-  THEN status:
-    misaligned if any category_drift, flow_misalign, or unmapped_stock
-    watch      if only geo_coverage_gap
-    aligned    if no findings
+REMOVED: TargetAllocationCategory / Allocation cible as product intent;
+  suggestTargetPlanFromDca; PUT /api/target-allocation; Investissements
+  allocation-plan editor / bootstrap.
 
-REMOVED: overlapping_sleeve (multi-asset sleeves are intentional).
+FORBIDDEN: inventing country weight from a region-only row; using covered
+  geo MV as band denominator; counting CRYPTO type in geo numerators;
+  HHI / Top1 / Top3; auto-persist without user save; sector bands;
+  "aligned" when a defined band is outside range.
 
-FORBIDDEN: HHI / Top1 / Top3; thresholds outside @patrimo/core;
-  auto-persisting bootstrap without user confirm; inventing sector weights;
-  "aligned" when findings exist.
-
-OPEN (out of scope this increment): sector look-through; geo target bands;
-  LLM coach.
+OPEN (do not implement this increment): sector look-through / sector bands;
+  ETF purchase recommendations; LLM coach; renaming Géographie nav to
+  Diversification.
 ```
 
 ## Context
 
-Users care about an allocation **plan** and diversification (geo now; sector later),
-but often have **no intent beyond DCA**. A read-only coherence card against an
-orphan Excel sheet is not usable. Root cause: no in-app plan lifecycle
-(bootstrap → edit → save → align).
+Users state intent as diversification bands (e.g. United States 60–70 %, Europe
+15 %, crypto 5 %). The previous unshipped model on this branch stored
+**vehicle sleeves** (category + `targetPct` + `assetIds`) in `Allocation cible`
+and compared stock to those sleeves. That asked the wrong question: a World ETF
+is a vehicle, not a geography.
 
-Canonical terms: [glossary](../reference/glossary.md) (**Target allocation** /
-**Allocation plan**, **Investment plan**, **Geographic allocation**).
+Look-through geography already exists (`Exposition geo`). Root cause is missing
+**target bands on diversification dimensions**, not missing charts.
+
+This ADR is edited in place (never shipped to production). Canonical terms:
+[glossary](../reference/glossary.md) (**Diversification target**,
+**Allocation coherence**).
 
 ## Decision
 
-- Keep workbook sheet `Allocation cible` as the persisted plan.
-- Add `suggestTargetPlanFromDca` in `@patrimo/core` (suggestion only).
-- Add in-app editor (web Investissements + mobile parity) with validate-then-save.
-- Keep `assessAllocationCoherence`; **remove** `overlapping_sleeve`.
-- Dashboard card links to the editor; shows stock vs plan (+ flow_misalign).
-- Geo: keep `geo_coverage_gap` + link to `/geographie`; no geo target bands yet.
+- Persist bands in optional sheet `Cibles diversification`.
+- Validate keys, bands, and overlap in `@patrimo/core`.
+- Assess stock and annualized DCA flows against bands using look-through
+  (country vs region granularity as in ADR 0008/0010) and `AssetType.CRYPTO`.
+- Place the editor on the geography surface; remove the sleeve-based plan.
+- On the next workbook write, drop legacy sheet `Allocation cible`.
 
 ## Invariants
 
-- Thresholds and bootstrap math live only in `@patrimo/core`.
-- Bootstrap never writes the workbook by itself.
+- Thresholds, overlap, and look-through band math live only in `@patrimo/core`.
 - Platforms adapt I/O and UI only.
-- Multi-asset categories (e.g. MSCI World → WPEA+DCAM) are first-class and not alerts.
+- Geographic **charts** keep covered-MV denominators (ADR 0010). Band **coherence**
+  uses full liquid MV / full annual DCA.
+- Workbook remains source of truth.
 
 ## Options considered
 
 | Option | Status | Why |
 |---|---|---|
-| A — Editable plan seeded from DCA + coherence | Retained | Matches intent without requiring a pre-existing vision |
-| B — DCA-only alignment (drop target sheet) | Rejected | Cannot diverge plan from contributions |
-| C — Manual plan only (no bootstrap) | Rejected | Leaves empty plan for users whose only vision is DCA |
-| D — Auto-persist bootstrap on load | Rejected | Silent overwrite of intent / Excel |
+| A — Diversification bands (geo keys + CRYPTO) replacing sleeve plan | Retained | Matches stated intent; reuses look-through |
+| B — Keep sleeve plan and add a read-only geo overlay | Rejected | Leaves intent on vehicles |
+| C — Region-only keys (no country, no CRYPTO) | Rejected | Cannot express “US 60–70 %” or crypto |
+| D — Reuse sheet name `Allocation cible` with new columns | Rejected | Mixes two contracts in one Excel tab |
 
 ## Consequences
 
 **Positives**
 
-- Plan becomes usable in-app; DCA is a starting point, not the ceiling.
-- Intentional multi-ETF sleeves no longer false-alarm.
+- Intent matches “where I want to be exposed”.
+- Crypto is a first-class bucket without pretending it is a country.
+- Incomplete geography is visible: uncovered MV dilutes every geo band.
 
 **Negatives**
 
-- Bootstrap may propose imperfect labels/splits when DCA baskets overlap oddly.
-- Two surfaces (editor + card) to keep in sync.
+- Region-only ETFs do not fill a country band (no invented look-through).
+- Cash / unmapped assets dilute geo bands by design.
+- Existing `Allocation cible` rows are discarded on the next write (no conversion).
 
 **To monitor**
 
-- Bootstrap quality when the same asset appears in multiple DCA plans.
-- Users who never save a suggestion (card stays hidden).
+- Users who only have region-level weights and a country band (US reads low).
+- Impossible saved plans (Σ minPct > 1) always misaligned.
 
 ## Uncovered cases
 
-- Sector look-through.
-- Editable geographic target bands.
+- Sector look-through and sector target bands.
+- Coaching which vehicles to buy to enter a band.
 - Shock scenarios / LLM narrative.
+- Navigation rename Géographie → Diversification.
 
 ## Follow-up
 
-- Sector allocation sheet (analogous to `Exposition geo`).
-- Stronger diversification coaching once sector exists.
+- Sector allocation sheet (analogous to `Exposition geo`) and a Diversification
+  menu that hosts geography + sectors + special buckets.
 
 ## See also
 
-- [Allocation plan architecture](../architecture/allocation-coherence.md)
-- [Implement allocation plan](../howto/implement-allocation-coherence.md)
-- [ADR 0005](0005-emergency-fund-health-indicator.md)
+- [Diversification targets architecture](../architecture/diversification-targets.md)
+- [Implement diversification targets](../howto/implement-diversification-targets.md)
 - [ADR 0006](0006-portfolio-risk-readability.md)
 - [ADR 0008](0008-geographic-allocation.md)
+- [ADR 0010](0010-partial-geographic-allocation-weights.md)

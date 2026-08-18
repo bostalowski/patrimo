@@ -105,13 +105,17 @@ Body: `DcaConfig`. Rejects when basket target percentages do not sum to `1` (±0
 
 Body: `{ id }`.
 
-## Target allocation
+## Diversification targets
 
-### `PUT /api/target-allocation`
+> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0012](../adr/0012-allocation-coherence.md).
 
-Body: `{ categories: TargetAllocationCategory[] }` (`category`, `targetPct` in `(0, 1]`, non-empty `assetIds`).
+### `PUT /api/diversification-targets`
 
-Validates with `validateTargetAllocations` (unique labels, known assets, asset uniqueness, Σ ≈ 1), then `replaceWorkbook` with the new `targetAllocations`. Mobile does not call this route; it writes the sheet via client serialize. See [ADR 0012](../adr/0012-allocation-coherence.md).
+Body: `{ targets: DiversificationTarget[] }` (`key`, `minPct`, `maxPct` in `[0, 1]` with `minPct ≤ maxPct`). Empty `targets` clears the plan.
+
+Validates with `validateDiversificationTargets` (known keys, valid bands, unique keys, no country/region overlap), then `replaceWorkbook` with the new `diversificationTargets`. Mobile does not call this route; it writes the sheet via client serialize. See [ADR 0012](../adr/0012-allocation-coherence.md).
+
+Removed: `PUT /api/target-allocation`.
 
 ## Properties
 

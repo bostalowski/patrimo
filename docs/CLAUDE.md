@@ -26,3 +26,4 @@ Read [DOC_STRUCTURE_MODEL.md](../DOC_STRUCTURE_MODEL.md) before adding or editin
 - [ADR 0009](adr/0009-account-detail-and-mobile-justetf.md) — account detail and region allocations.
 - [ADR 0011](adr/0011-restore-justetf-geographic-sync.md) — JustETF geographic sync restored.
 - [ADR 0010](adr/0010-partial-geographic-allocation-weights.md) — partial geographic weights (sum ≤ 1, absolute look-through).
+- [ADR 0012](adr/0012-allocation-coherence.md) — diversification target bands and coherence.
