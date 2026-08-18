@@ -1,6 +1,6 @@
 # ADR 0012: Diversification target bands and coherence
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-08-18
 - implementation_ready: yes
 

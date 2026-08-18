@@ -1,7 +1,5 @@
 # How to implement diversification target bands
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0012](../adr/0012-allocation-coherence.md).
-
 Ordered vertical scopes after SPEC LOCK. Decision: [ADR 0012](../adr/0012-allocation-coherence.md).
 
 ## Checklist (Phase 0 reference)

@@ -1,7 +1,5 @@
 # Diversification targets and coherence
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0012](../adr/0012-allocation-coherence.md).
-
 How Patrimo lets the user set **diversification target bands** (geography + crypto)
 and checks alignment of liquid stock and annualized DCA flows against those bands.
 Decision: [ADR 0012](../adr/0012-allocation-coherence.md).
@@ -48,6 +46,7 @@ Missing sheet ⇒ empty collection. Empty save is allowed (clears the plan).
 |---|---|
 | `diversificationKeysOverlap(a, b)` | Same key, or country vs its `regionForCountry` |
 | `validateDiversificationTargets(targets)` | Save gate (empty OK) |
+| `computeFlowMixByAsset(dca)` | Annualized DCA euros per asset |
 | `assessDiversificationCoherence(...)` | Status + `band_drift` / `flow_misalign` |
 
 Look-through rows follow [geographic allocation](geographic-allocation.md). Band

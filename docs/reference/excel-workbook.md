@@ -135,8 +135,6 @@ All rows for one `Actif` are replaced together on write. Missing sheet ⇒ empty
 
 ## `Cibles diversification`
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0012](../adr/0012-allocation-coherence.md).
-
 Optional sheet for diversification target bands. See [Diversification targets](../architecture/diversification-targets.md) and [ADR 0012](../adr/0012-allocation-coherence.md).
 
 | Column | Schema field | Rules |

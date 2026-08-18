@@ -107,8 +107,6 @@ Body: `{ id }`.
 
 ## Diversification targets
 
-> 🚧 Anticipated mechanics (Phase 1.5 draft) — confirm after implementation. See [ADR 0012](../adr/0012-allocation-coherence.md).
-
 ### `PUT /api/diversification-targets`
 
 Body: `{ targets: DiversificationTarget[] }` (`key`, `minPct`, `maxPct` in `[0, 1]` with `minPct ≤ maxPct`). Empty `targets` clears the plan.
