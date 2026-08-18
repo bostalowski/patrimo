@@ -235,13 +235,6 @@ export const GeographicAllocation = z.object({
 });
 export type GeographicAllocation = z.infer<typeof GeographicAllocation>;
 
-export const TargetAllocationCategory = z.object({
-	category: z.string().min(1),
-	targetPct: z.number().min(0).max(1),
-	assetIds: z.array(z.string().min(1)),
-});
-export type TargetAllocationCategory = z.infer<typeof TargetAllocationCategory>;
-
 export const DiversificationTarget = z.object({
 	key: z.string().min(1),
 	minPct: z.number().min(0).max(1),
@@ -259,5 +252,4 @@ export type Workbook = {
 	manualPrices: ManualPrice[];
 	geographicAllocations: GeographicAllocation[];
 	diversificationTargets: DiversificationTarget[];
-	targetAllocations?: TargetAllocationCategory[];
 };

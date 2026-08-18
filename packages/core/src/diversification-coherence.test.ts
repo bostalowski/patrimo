@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { assessDiversificationCoherence } from "./diversification-coherence";
+import {
+	annualizeDcaAmount,
+	assessDiversificationCoherence,
+	computeFlowMixByAsset,
+} from "./diversification-coherence";
 import type { AssetPosition } from "./portfolio";
 import type {
 	Asset,
@@ -63,6 +67,47 @@ function monthly(assetId: string, amount: number): DcaConfig {
 		lines: [{ assetIds: [assetId], targetPct: 1 }],
 	};
 }
+
+describe("annualizeDcaAmount", () => {
+	it("multiplies monthly by 12", () => {
+		expect(annualizeDcaAmount(100, "MENSUEL")).toBe(1200);
+	});
+	it("multiplies quarterly by 4", () => {
+		expect(annualizeDcaAmount(300, "TRIMESTRIEL")).toBe(1200);
+	});
+	it("keeps annual as-is", () => {
+		expect(annualizeDcaAmount(1800, "ANNUEL")).toBe(1800);
+	});
+});
+
+describe("computeFlowMixByAsset", () => {
+	it("returns empty map for no DCA", () => {
+		expect(computeFlowMixByAsset([])).toEqual(new Map());
+	});
+
+	it("computes annual EUR per asset from a monthly plan", () => {
+		expect(computeFlowMixByAsset([monthly("WPEA", 400)]).get("WPEA")).toBe(4800);
+	});
+
+	it("splits basket contributions evenly across assetIds in a line", () => {
+		const result = computeFlowMixByAsset([
+			{
+				id: "pea",
+				label: "PEA",
+				envelope: "PEA",
+				amount: 400,
+				frequency: "MENSUEL",
+				lines: [
+					{ assetIds: ["WPEA", "DCAM"], targetPct: 0.75 },
+					{ assetIds: ["PLEM"], targetPct: 0.25 },
+				],
+			},
+		]);
+		expect(result.get("WPEA")).toBeCloseTo((4800 * 0.75) / 2, 5);
+		expect(result.get("DCAM")).toBeCloseTo((4800 * 0.75) / 2, 5);
+		expect(result.get("PLEM")).toBeCloseTo(4800 * 0.25, 5);
+	});
+});
 
 describe("assessDiversificationCoherence", () => {
 	it("returns null when targets is empty", () => {

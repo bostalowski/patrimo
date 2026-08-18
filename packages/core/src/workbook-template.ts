@@ -104,12 +104,6 @@ export const EXPOSITION_GEO_HEADERS = [
 	"Source",
 ] as const;
 
-export const ALLOCATION_CIBLE_HEADERS = [
-	"Catégorie",
-	"Pourcentage cible",
-	"Actifs",
-] as const;
-
 export const CIBLES_DIVERSIFICATION_HEADERS = [
 	"Dimension",
 	"Min %",

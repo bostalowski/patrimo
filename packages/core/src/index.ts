@@ -1,4 +1,3 @@
-export * from "./allocation-coherence";
 export * from "./benchmarks";
 export * from "./budget";
 export * from "./dca";
@@ -41,6 +40,5 @@ export * as realestateProperty from "./realestate/property";
 export * as realestateTax from "./realestate/tax";
 export * from "./retraite";
 export * from "./schema";
-export * from "./target-allocation";
 export * from "./tax-rules";
 export * from "./workbook-template";

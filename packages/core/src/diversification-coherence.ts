@@ -1,4 +1,3 @@
-import { computeFlowMixByAsset } from "./allocation-coherence";
 import { isValidGeographicWeightSum } from "./geographic-allocation";
 import {
 	geographicAllocationGranularity,
@@ -44,6 +43,31 @@ export type DiversificationCoherenceResult = {
 	liquidInvested: number;
 	annualDcaTotal: number;
 };
+
+export function annualizeDcaAmount(
+	amount: number,
+	frequency: DcaConfig["frequency"],
+): number {
+	if (frequency === "MENSUEL") return amount * 12;
+	if (frequency === "TRIMESTRIEL") return amount * 4;
+	return amount;
+}
+
+export function computeFlowMixByAsset(dca: DcaConfig[]): Map<string, number> {
+	const result = new Map<string, number>();
+	for (const config of dca) {
+		const annual = annualizeDcaAmount(config.amount, config.frequency);
+		for (const line of config.lines) {
+			const lineAnnual = annual * line.targetPct;
+			const perAsset =
+				line.assetIds.length > 0 ? lineAnnual / line.assetIds.length : 0;
+			for (const assetId of line.assetIds) {
+				result.set(assetId, (result.get(assetId) ?? 0) + perAsset);
+			}
+		}
+	}
+	return result;
+}
 
 function allocationsByAsset(
 	allocations: GeographicAllocation[],

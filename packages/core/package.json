@@ -33,8 +33,6 @@
     "./geographic-allocation": "./src/geographic-allocation.ts",
     "./geographic-exposure": "./src/geographic-exposure.ts",
     "./justetf-geography": "./src/justetf-geography.ts",
-    "./target-allocation": "./src/target-allocation.ts",
-    "./allocation-coherence": "./src/allocation-coherence.ts",
     "./realestate/loan": "./src/realestate/loan.ts",
     "./realestate/property": "./src/realestate/property.ts",
     "./realestate/tax": "./src/realestate/tax.ts",
