@@ -173,6 +173,7 @@ describe("aggregatePortfolioDiversificationBreakdown", () => {
 			positions,
 			dca: [],
 			geographicAllocations: allocations,
+			sectorAllocations: [],
 			assets,
 		});
 		const northAmerica = breakdown?.regions.find(
@@ -243,6 +244,7 @@ describe("assessDiversificationCoherence", () => {
 				positions: [position("WPEA", 1000)],
 				dca: [],
 				geographicAllocations: [geo("WPEA", "US", 1)],
+			sectorAllocations: [],
 				assets,
 			}),
 		).toBeNull();
@@ -255,6 +257,7 @@ describe("assessDiversificationCoherence", () => {
 				positions: [position("WPEA", 0)],
 				dca: [],
 				geographicAllocations: [geo("WPEA", "US", 1)],
+			sectorAllocations: [],
 				assets,
 			}),
 		).toBeNull();
@@ -266,6 +269,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 10_000), position("CASH", 3_000)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 0.7), geo("WPEA", "FR", 0.3)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.bands[0]?.stockPct).toBeCloseTo(7000 / 13_000, 5);
@@ -277,6 +281,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("NA-FUND", 1000)],
 			dca: [],
 			geographicAllocations: [geo("NA-FUND", "NORTH_AMERICA", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.bands[0]?.stockPct).toBe(0);
@@ -288,6 +293,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("EU-FUND", 1000)],
 			dca: [],
 			geographicAllocations: [geo("EU-FUND", "FR", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.bands[0]?.stockPct).toBeCloseTo(1, 5);
@@ -299,6 +305,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 1000)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 0.7), geo("WPEA", "FR", 0.3)],
+			sectorAllocations: [],
 			assets,
 		});
 		const us = result?.bands.find((b) => b.key === "US");
@@ -313,6 +320,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("BTC", 500), position("WPEA", 1500)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.bands[0]?.stockPct).toBeCloseTo(0.25, 5);
@@ -324,6 +332,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("BTC", 1000)],
 			dca: [],
 			geographicAllocations: [geo("BTC", "US", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.bands[0]?.stockPct).toBeCloseTo(1, 5);
@@ -357,6 +366,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 700), position("CASH", 300)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.bands[0]?.stockPct).toBeCloseTo(0.7, 5);
@@ -368,6 +378,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 1000)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 0.5), geo("WPEA", "FR", 0.3)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.bands[0]?.stockPct).toBeCloseTo(0.5, 5);
@@ -379,6 +390,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 900), position("BTC", 100)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.status).toBe("aligned");
@@ -391,6 +403,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 1000)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "FR", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.findings).toEqual([{ kind: "band_drift", key: "US" }]);
@@ -403,6 +416,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 1000)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 0.7005)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.status).toBe("aligned");
@@ -415,6 +429,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 1000)],
 			dca: [monthly("WPEA", 100)],
 			geographicAllocations: [geo("WPEA", "US", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.findings.some((f) => f.kind === "flow_misalign")).toBe(true);
@@ -427,6 +442,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 1000)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.findings.some((f) => f.kind === "flow_misalign")).toBe(false);
@@ -438,6 +454,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 850), position("CASH", 150)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 0.7), geo("WPEA", "FR", 0.3)],
+			sectorAllocations: [],
 			assets,
 		});
 		expect(result?.findings).toEqual([]);
@@ -450,6 +467,7 @@ describe("assessDiversificationCoherence", () => {
 			positions: [position("WPEA", 700), position("CASH", 300)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 1)],
+			sectorAllocations: [],
 			assets,
 		});
 		const kinds = result?.findings.map((f) => f.kind) ?? [];

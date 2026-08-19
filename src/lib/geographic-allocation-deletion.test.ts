@@ -43,6 +43,7 @@ function workbook(
     dca: [],
     manualPrices: [],
     geographicAllocations: [],
+    sectorAllocations: [],
     diversificationTargets: [],
     ...overrides,
   };

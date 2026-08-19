@@ -30,6 +30,7 @@ const emptyWorkbook: Workbook = {
 	dca: [],
 	manualPrices: [],
 	geographicAllocations: [],
+	sectorAllocations: [],
 	diversificationTargets: [],
 };
 

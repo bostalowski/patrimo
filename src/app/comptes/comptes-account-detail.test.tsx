@@ -134,6 +134,7 @@ describe("web comptes account detail surface", () => {
     vi.mocked(loadWorkbook).mockReturnValue({
       ...workbookFixture,
       geographicAllocations: [],
+      sectorAllocations: [],
       diversificationTargets: [],
     });
 

@@ -12,10 +12,12 @@ import {
 	normalizeGeographicAllocations,
 	weightFromExcelPercentCell,
 } from "@patrimo/core/geographic-allocation";
+import { normalizeSectorAllocations } from "@patrimo/core/sector-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import type {
 	DiversificationTarget,
 	GeographicAllocation,
+	SectorAllocation,
 } from "@patrimo/core/schema";
 import {
 	diversificationPctFromExcel,
@@ -27,6 +29,7 @@ import {
 	BUDGET_HEADERS,
 	DCA_HEADERS,
 	EXPOSITION_GEO_HEADERS,
+	EXPOSITION_SECTEUR_HEADERS,
 	IMMOBILIER_HEADERS,
 	PRIX_MANUELS_HEADERS,
 	SHEET_ACTIFS,
@@ -36,6 +39,7 @@ import {
 	SHEET_COMPTES,
 	SHEET_DCA,
 	SHEET_EXPOSITION_GEO,
+	SHEET_EXPOSITION_SECTEUR,
 	SHEET_IMMOBILIER,
 	SHEET_PRIX_MANUELS,
 	SHEET_TRANSACTIONS,
@@ -445,6 +449,45 @@ function parseGeographicAllocations(
 	return normalizeGeographicAllocations(raw, assets);
 }
 
+function parseSectorAllocations(
+	rows: Record<string, unknown>[],
+	assets: Asset[],
+): SectorAllocation[] {
+	type RawRow = {
+		assetId: string;
+		sector: string;
+		source: SectorAllocation["source"];
+		rawWeight: number;
+	};
+	const pending: RawRow[] = [];
+	const rawByAsset = new Map<string, number[]>();
+
+	for (const row of rows) {
+		const assetId = emptyToUndefined(row["Actif"]);
+		const sector = emptyToUndefined(row["Secteur"]);
+		const sourceRaw = emptyToUndefined(row["Source"]);
+		if (!assetId || !sector || !sourceRaw) continue;
+		if (sourceRaw !== "justetf" && sourceRaw !== "manual") continue;
+		const rawWeight = toNumber(row["Poids %"]);
+		if (rawWeight === null) continue;
+		pending.push({ assetId, sector, source: sourceRaw, rawWeight });
+		const bucket = rawByAsset.get(assetId) ?? [];
+		bucket.push(rawWeight);
+		rawByAsset.set(assetId, bucket);
+	}
+
+	const raw: SectorAllocation[] = pending.map((row) => ({
+		assetId: row.assetId,
+		sector: row.sector,
+		weight: weightFromExcelPercentCell(
+			row.rawWeight,
+			rawByAsset.get(row.assetId) ?? [row.rawWeight],
+		),
+		source: row.source,
+	}));
+	return normalizeSectorAllocations(raw, assets);
+}
+
 function parseDiversificationTargets(
 	rows: Record<string, unknown>[],
 ): DiversificationTarget[] {
@@ -522,6 +565,10 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 		readSheetOptional(sheet, SHEET_EXPOSITION_GEO),
 		assets,
 	);
+	const sectorAllocations = parseSectorAllocations(
+		readSheetOptional(sheet, SHEET_EXPOSITION_SECTEUR),
+		assets,
+	);
 	const diversificationTargets = parseDiversificationTargets(
 		readSheetOptional(sheet, SHEET_CIBLES_DIVERSIFICATION),
 	);
@@ -540,6 +587,7 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 			dca,
 			manualPrices,
 			geographicAllocations,
+			sectorAllocations,
 			diversificationTargets,
 		},
 		transactionRows,
@@ -937,6 +985,17 @@ export function replaceWorkbook(nextWorkbook: Workbook): void {
 			Source: entry.source,
 		})),
 		EXPOSITION_GEO_HEADERS,
+	);
+	replaceSheetRows(
+		workbook,
+		SHEET_EXPOSITION_SECTEUR,
+		(nextWorkbook.sectorAllocations ?? []).map((entry) => ({
+			Actif: entry.assetId,
+			Secteur: entry.sector,
+			"Poids %": Math.round(entry.weight * 1000) / 10,
+			Source: entry.source,
+		})),
+		EXPOSITION_SECTEUR_HEADERS,
 	);
 	replaceSheetRows(
 		workbook,

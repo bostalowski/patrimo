@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GeographicExposurePanel } from "@/components/geographic-exposure-panel";
+import { SectorExposurePanel } from "@/components/sector-exposure-panel";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
@@ -20,6 +21,7 @@ import {
   NO_ACCOUNT_LABEL,
 } from "@patrimo/core/deletion";
 import { aggregateGeographicExposureForAccount } from "@patrimo/core/geographic-exposure";
+import { aggregateSectorExposureForAccount } from "@patrimo/core/sector-exposure";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +59,16 @@ export default async function AccountDetailPage({
     decodedId,
   );
 
+  const accountSectors = aggregateSectorExposureForAccount(
+    positions.map((position) => ({
+      assetId: position.assetId,
+      accountId: decodedId,
+      marketValue: position.marketValue,
+    })),
+    workbook.sectorAllocations ?? [],
+    decodedId,
+  );
+
   return (
     <div className="space-y-6">
       <Link
@@ -91,6 +103,11 @@ export default async function AccountDetailPage({
         title="Géographie du compte"
         countries={accountGeo.countries}
         regions={accountGeo.regions}
+      />
+
+      <SectorExposurePanel
+        title="Secteurs du compte"
+        sectors={accountSectors.sectors}
       />
 
       {meta.envelope === "LIVRET" ? (

@@ -15,6 +15,9 @@ export * from "./geographic-allocation";
 export * from "./geographic-exposure";
 export * from "./inflation";
 export * from "./justetf-geography";
+export * from "./justetf-sectors";
+export * from "./sector-allocation";
+export * from "./sector-exposure";
 export {
 	computeLivretState,
 	isLivretAccount,

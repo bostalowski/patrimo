@@ -4,6 +4,7 @@ import {
 	normalizeGeographicRegionKey,
 	regionForCountry,
 } from "./geographic-exposure";
+import { isSectorKey, normalizeSectorKey } from "./sector-exposure";
 import type { DiversificationTarget } from "./schema";
 
 export const DIVERSIFICATION_CRYPTO_KEY = "CRYPTO";
@@ -16,12 +17,14 @@ export type DiversificationTargetValidation =
 export function normalizeDiversificationKey(key: string): string {
 	const trimmed = key.trim().toUpperCase();
 	if (trimmed === DIVERSIFICATION_CRYPTO_KEY) return DIVERSIFICATION_CRYPTO_KEY;
+	if (isSectorKey(trimmed)) return normalizeSectorKey(trimmed);
 	return normalizeGeographicRegionKey(trimmed);
 }
 
 export function isValidDiversificationKey(key: string): boolean {
 	const normalized = normalizeDiversificationKey(key);
 	if (normalized === DIVERSIFICATION_CRYPTO_KEY) return true;
+	if (isSectorKey(normalized)) return true;
 	if (isGeographicRegionKey(normalized)) return true;
 	return isIsoCountryKey(normalized);
 }

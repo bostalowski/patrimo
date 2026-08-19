@@ -18,14 +18,18 @@ import {
   deleteAssetFromSource,
   deleteManualPriceFromSource,
   replaceGeographicAllocationInSource,
+  replaceSectorAllocationInSource,
   syncJustEtfGeographicAllocationInSource,
+  syncJustEtfSectorAllocationInSource,
   updateAssetInSource,
   upsertManualPriceInSource,
 } from "../lib/write-asset";
 import { useThemeColors, shared } from "../lib/theme";
 import { DeletionModal } from "../components/deletion-modal";
 import { AssetGeographicEditor } from "../components/asset-geographic-editor";
+import { AssetSectorEditor } from "../components/asset-sector-editor";
 import { aggregateGeographicExposure } from "@patrimo/core/geographic-exposure";
+import { aggregateSectorExposure } from "@patrimo/core/sector-exposure";
 import { buildPortfolio } from "@patrimo/core/portfolio";
 
 const ASSET_TYPES = ["CRYPTO", "ETF", "ACTION", "FCPE", "CASH"] as const;
@@ -143,6 +147,34 @@ function EditAssetForm({
     }
   }, [workbook, prices, initial.id, assetAllocations]);
 
+  const assetSectorAllocations = useMemo(
+    () =>
+      (workbook.sectorAllocations ?? []).filter(
+        (entry) => entry.assetId === initial.id,
+      ),
+    [workbook.sectorAllocations, initial.id],
+  );
+
+  const assetSectors = useMemo(() => {
+    try {
+      const portfolio = buildPortfolio(workbook, prices);
+      const position = portfolio.assets.find(
+        (entry) => entry.assetId === initial.id,
+      );
+      return aggregateSectorExposure(
+        [
+          {
+            assetId: initial.id,
+            marketValue: position?.marketValue ?? 0,
+          },
+        ],
+        assetSectorAllocations,
+      );
+    } catch {
+      return { sectors: [], coveredMarketValue: 0 };
+    }
+  }, [workbook, prices, initial.id, assetSectorAllocations]);
+
   const handleSaveGeographicAllocation = async (
     weights: Array<{ country: string; weight: number }>,
   ) => {
@@ -161,6 +193,42 @@ function EditAssetForm({
     setError(null);
     try {
       const result = await syncJustEtfGeographicAllocationInSource(
+        initial.id,
+        options,
+      );
+      if (result.ok && result.skippedManual) {
+        return {
+          ok: false,
+          skippedManual: true,
+        };
+      }
+      if (result.ok && result.updated) {
+        await refresh();
+      }
+      return result;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSaveSectorAllocation = async (
+    weights: Array<{ sector: string; weight: number }>,
+  ) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await replaceSectorAllocationInSource(initial.id, weights);
+      await refresh();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSyncJustEtfSector = async (options: { restore: boolean }) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const result = await syncJustEtfSectorAllocationInSource(
         initial.id,
         options,
       );
@@ -359,6 +427,25 @@ function EditAssetForm({
           colors={t}
           onSave={handleSaveGeographicAllocation}
           onSyncJustEtf={handleSyncJustEtf}
+          pending={submitting}
+        />
+      </View>
+
+      <View
+        style={[
+          shared.card,
+          { backgroundColor: t.card, marginBottom: 16, gap: 12 },
+        ]}
+      >
+        <AssetSectorEditor
+          assetId={initial.id}
+          assetLabel={initial.label}
+          hasIsin={Boolean(initial.isin)}
+          allocations={assetSectorAllocations}
+          sectors={assetSectors.sectors}
+          colors={t}
+          onSave={handleSaveSectorAllocation}
+          onSyncJustEtf={handleSyncJustEtfSector}
           pending={submitting}
         />
       </View>

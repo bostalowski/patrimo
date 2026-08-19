@@ -5,12 +5,14 @@ import {
 	aggregatePortfolioDiversificationBreakdown,
 	assessDiversificationCoherence,
 } from "@patrimo/core/diversification-coherence";
+import { aggregatePortfolioSectorBreakdown } from "@patrimo/core/sector-exposure";
 import { useThemeColors, shared } from "../lib/theme";
 import { AllocationCoherenceCard } from "../lib/allocation-coherence-card";
 import { GeographicExposureList } from "../components/geographic-exposure-list";
+import { SectorExposureList } from "../components/sector-exposure-list";
 import { DiversificationTargetsEditor } from "../lib/diversification-targets-editor";
 
-export default function GeographieScreen() {
+export default function DiversificationScreen() {
   const isDark = useColorScheme() === "dark";
   const t = useThemeColors(isDark);
   const { workbook, prices, loading, error, refresh } = useWorkbook();
@@ -57,11 +59,16 @@ export default function GeographieScreen() {
     workbook.geographicAllocations ?? [],
     workbook.assets,
   );
+  const sectorBreakdown = aggregatePortfolioSectorBreakdown(
+    positions,
+    workbook.sectorAllocations ?? [],
+  );
   const coherence = assessDiversificationCoherence({
     targets: workbook.diversificationTargets,
     positions: portfolio.assets,
     dca: workbook.dca,
     geographicAllocations: workbook.geographicAllocations,
+    sectorAllocations: workbook.sectorAllocations ?? [],
     assets: workbook.assets,
   });
 
@@ -79,11 +86,21 @@ export default function GeographieScreen() {
       {breakdown && (
         <View style={[shared.card, { backgroundColor: t.card }]}>
           <GeographicExposureList
-            title="Répartition actuelle"
+            title="Répartition géographique"
             regions={breakdown.regions}
             countries={breakdown.countries}
             crypto={breakdown.crypto}
             unmapped={breakdown.unmapped}
+            colors={t}
+          />
+        </View>
+      )}
+      {sectorBreakdown && (
+        <View style={[shared.card, { backgroundColor: t.card, marginTop: 12 }]}>
+          <SectorExposureList
+            title="Répartition sectorielle"
+            sectors={sectorBreakdown.sectors}
+            unmapped={sectorBreakdown.unmapped}
             colors={t}
           />
         </View>

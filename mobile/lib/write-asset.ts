@@ -6,7 +6,9 @@ import {
   upsertManualPrice,
 } from "@patrimo/core/manual-prices";
 import { replaceGeographicAllocation } from "@patrimo/core/geographic-allocation";
+import { replaceSectorAllocation } from "@patrimo/core/sector-allocation";
 import { applyJustEtfGeographicSync } from "@patrimo/core/justetf-geography";
+import { applyJustEtfSectorSync } from "@patrimo/core/justetf-sectors";
 import {
   getActiveSource,
   readSourceFile,
@@ -138,6 +140,50 @@ export async function syncJustEtfGeographicAllocationInSource(
   const buffer = await readSourceFile(source);
   const { workbook } = parseWorkbook(buffer);
   const result = await applyJustEtfGeographicSync(workbook, assetId, {
+    fetchHtml: fetchJustEtfProfileHtml,
+    restore: options.restore,
+  });
+  if (!result.ok) {
+    return { ok: false, updated: false, skippedManual: false };
+  }
+  if (result.updated) {
+    await writeSourceFile(source, serializeWorkbook(buffer, result.workbook));
+  }
+  return {
+    ok: true,
+    updated: result.updated,
+    skippedManual: result.skippedManual,
+  };
+}
+
+export async function replaceSectorAllocationInSource(
+  assetId: string,
+  weights: Array<{ sector: string; weight: number }>,
+): Promise<void> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  const nextWorkbook = replaceSectorAllocation(
+    workbook,
+    assetId,
+    weights,
+    "manual",
+  );
+  await writeSourceFile(source, serializeWorkbook(buffer, nextWorkbook));
+}
+
+export async function syncJustEtfSectorAllocationInSource(
+  assetId: string,
+  options: { restore?: boolean } = {},
+): Promise<{ ok: boolean; updated: boolean; skippedManual: boolean }> {
+  const source = await getActiveSource();
+  if (!source) throw new Error("No file source configured");
+
+  const buffer = await readSourceFile(source);
+  const { workbook } = parseWorkbook(buffer);
+  const result = await applyJustEtfSectorSync(workbook, assetId, {
     fetchHtml: fetchJustEtfProfileHtml,
     restore: options.restore,
   });

@@ -6,6 +6,7 @@ export const SHEET_IMMOBILIER = "Immobilier";
 export const SHEET_DCA = "DCA";
 export const SHEET_PRIX_MANUELS = "Prix manuels";
 export const SHEET_EXPOSITION_GEO = "Exposition geo";
+export const SHEET_EXPOSITION_SECTEUR = "Exposition secteur";
 export const SHEET_ALLOCATION_CIBLE = "Allocation cible";
 export const SHEET_CIBLES_DIVERSIFICATION = "Cibles diversification";
 
@@ -104,6 +105,13 @@ export const EXPOSITION_GEO_HEADERS = [
 	"Source",
 ] as const;
 
+export const EXPOSITION_SECTEUR_HEADERS = [
+	"Actif",
+	"Secteur",
+	"Poids %",
+	"Source",
+] as const;
+
 export const CIBLES_DIVERSIFICATION_HEADERS = [
 	"Dimension",
 	"Min %",
@@ -119,6 +127,7 @@ export const ALL_SHEETS = [
 	{ name: SHEET_DCA, headers: [...DCA_HEADERS] },
 	{ name: SHEET_PRIX_MANUELS, headers: [...PRIX_MANUELS_HEADERS] },
 	{ name: SHEET_EXPOSITION_GEO, headers: [...EXPOSITION_GEO_HEADERS] },
+	{ name: SHEET_EXPOSITION_SECTEUR, headers: [...EXPOSITION_SECTEUR_HEADERS] },
 	{
 		name: SHEET_CIBLES_DIVERSIFICATION,
 		headers: [...CIBLES_DIVERSIFICATION_HEADERS],

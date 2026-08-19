@@ -1,4 +1,5 @@
 import { removeGeographicAllocationsForAssets } from "./geographic-allocation";
+import { removeSectorAllocationsForAssets } from "./sector-allocation";
 import { removeManualPricesForAssets } from "./manual-prices";
 import type { DcaConfig, Transaction, Workbook } from "./schema";
 
@@ -20,6 +21,16 @@ export type DeletionImpact = {
 	priceCount: number;
 	investmentPlanCount: number;
 };
+
+function removeAllocationsForAssets(
+	workbook: Workbook,
+	assetIds: ReadonlySet<string>,
+): Workbook {
+	return removeSectorAllocationsForAssets(
+		removeGeographicAllocationsForAssets(workbook, assetIds),
+		assetIds,
+	);
+}
 
 function cleanInvestmentPlans(
 	configs: DcaConfig[],
@@ -175,7 +186,7 @@ export function deleteAccount(
 		.map((asset) => asset.id);
 	const deletedAssetIdSet = new Set(deletedAssetIds);
 
-	const nextWorkbook = removeGeographicAllocationsForAssets(
+	const nextWorkbook = removeAllocationsForAssets(
 			removeManualPricesForAssets(
 				{
 					...workbook,
@@ -206,7 +217,7 @@ export function deleteAsset(
 	}
 
 	const deletedAssetIds = new Set([assetId]);
-	const nextWorkbook = removeGeographicAllocationsForAssets(
+	const nextWorkbook = removeAllocationsForAssets(
 		removeManualPricesForAssets(
 			{
 				...workbook,

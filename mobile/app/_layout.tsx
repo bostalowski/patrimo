@@ -85,7 +85,7 @@ export default function RootLayout() {
         <Tabs.Screen name="fiscalite" options={{ href: null, title: "Fiscalité" }} />
         <Tabs.Screen name="investissements" options={{ href: null, title: "Investissements" }} />
         <Tabs.Screen name="projection" options={{ href: null, title: "Projection" }} />
-        <Tabs.Screen name="geographie" options={{ href: null, title: "Diversification" }} />
+        <Tabs.Screen name="diversification" options={{ href: null, title: "Diversification" }} />
         <Tabs.Screen name="add-transaction" options={{ href: null, title: "Nouvelle transaction" }} />
         <Tabs.Screen name="edit-transaction" options={{ href: null, title: "Modifier la transaction" }} />
         <Tabs.Screen name="add-asset" options={{ href: null, title: "Nouvel actif" }} />

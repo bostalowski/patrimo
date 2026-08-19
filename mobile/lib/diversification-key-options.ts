@@ -3,6 +3,7 @@ import {
 	DIVERSIFICATION_CRYPTO_KEY,
 	isDiversificationKeySelectable,
 } from "@patrimo/core/diversification-targets";
+import { sectorOptions } from "./sector-key-options";
 import {
 	geographicCountryOptions,
 	geographicRegionOptions,
@@ -19,6 +20,10 @@ export function diversificationKeyOptionGroups(): DiversificationKeyOptionGroup[
 		{
 			label: "Crypto",
 			options: [{ value: DIVERSIFICATION_CRYPTO_KEY, label: "Crypto" }],
+		},
+		{
+			label: "Secteurs",
+			options: sectorOptions(),
 		},
 		{
 			label: "Régions",

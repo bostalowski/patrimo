@@ -110,6 +110,7 @@ function workbook(): Workbook {
     dca: [],
     manualPrices: [],
     geographicAllocations: [],
+    sectorAllocations: [],
     diversificationTargets: [],
   };
 }
