@@ -28,7 +28,13 @@ Bands: 0 ≤ minPct ≤ maxPct ≤ 1; min === max allowed.
 Save/API rejects invalid_key, invalid_band, duplicate_key, overlapping_keys.
 Impossible plans (e.g. Σ minPct > 1) are savable.
 
-Look-through for geo numerators (non-CRYPTO asset type only):
+Independent axes (geo and CRYPTO overlap by design):
+  Geographic and CRYPTO bands answer different questions on the same capital.
+  The same euro may count toward a geo band AND toward the CRYPTO band.
+  Summing geo % and crypto % is meaningless; each axis uses full liquid MV
+  (stock) or full annual DCA (flow) as its own denominator.
+
+Look-through for geo numerators (all asset types, including CRYPTO):
   reuse Exposition geo rules (ADR 0008/0010): valid per-asset sum 0 < sum ≤ 1;
   country OTHER rows dropped without redistribution; region-level rows stay
   region-level.
@@ -37,10 +43,17 @@ Look-through for geo numerators (non-CRYPTO asset type only):
   Region band R: country-level rows with regionForCountry(country) === R
     (excluding dropped OTHER country rows)
     PLUS region-level rows whose key === R.
+  CRYPTO assets with Exposition geo rows contribute to geo bands via look-through
+    like any other asset type.
 
 CRYPTO numerator: full market value (or full annualized DCA) of assets with
-  type === CRYPTO. Those assets never enter geo numerators, even if they have
-  Exposition geo rows.
+  type === CRYPTO, independent of Exposition geo rows.
+
+Portfolio breakdown (Diversification page):
+  geo slices (countries + regions) + unmapped geo = 100 % of liquid MV.
+  crypto slice is a separate axis on the same liquid MV denominator.
+  unmapped geo = liquidInvested − sum(absolute geo contributions); crypto MV
+    is NOT subtracted from unmapped.
 
 Denominator (stock): sum of positions with marketValue > 0 (all types).
   Missing geo contributes 0 to geo numerators and still sits in the denominator.
@@ -78,8 +91,10 @@ REMOVED: TargetAllocationCategory / Allocation cible as product intent;
   allocation-plan editor / bootstrap.
 
 FORBIDDEN: inventing country weight from a region-only row; using covered
-  geo MV as band denominator; counting CRYPTO type in geo numerators;
-  HHI / Top1 / Top3; auto-persist without user save; sector bands;
+  geo MV as band denominator for band coherence or portfolio breakdown;
+  treating geo + crypto + unmapped as a single partition that must sum to 100 %;
+  subtracting crypto MV from unmapped geo; HHI / Top1 / Top3;
+  auto-persist without user save; sector bands;
   "aligned" when a defined band is outside range.
 
 OPEN (do not implement this increment): sector look-through / sector bands;
@@ -106,7 +121,8 @@ This ADR is edited in place (never shipped to production). Canonical terms:
 - Persist bands in optional sheet `Cibles diversification`.
 - Validate keys, bands, and overlap in `@patrimo/core`.
 - Assess stock and annualized DCA flows against bands using look-through
-  (country vs region granularity as in ADR 0008/0010) and `AssetType.CRYPTO`.
+  (country vs region granularity as in ADR 0008/0010) for geo keys and
+  `AssetType.CRYPTO` for the CRYPTO key. Geo and CRYPTO axes overlap by design.
 - Place the editor on the geography surface; remove the sleeve-based plan.
 - On the next workbook write, drop legacy sheet `Allocation cible`.
 
@@ -133,6 +149,7 @@ This ADR is edited in place (never shipped to production). Canonical terms:
 
 - Intent matches “where I want to be exposed”.
 - Crypto is a first-class bucket without pretending it is a country.
+- Geographic look-through applies to crypto too (e.g. US/EU split on BTC).
 - Incomplete geography is visible: uncovered MV dilutes every geo band.
 
 **Negatives**

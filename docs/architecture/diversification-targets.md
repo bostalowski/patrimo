@@ -49,13 +49,22 @@ Missing sheet ⇒ empty collection. Empty save is allowed (clears the plan).
 | `computeFlowMixByAsset(dca)` | Annualized DCA euros per asset |
 | `assessDiversificationCoherence(...)` | Status + `band_drift` / `flow_misalign` |
 
-Look-through rows follow [geographic allocation](geographic-allocation.md). Band
-percentages and the Diversification page breakdown use **full liquid MV** /
-**full annual DCA**. Account and asset geo charts still use covered market value
+Look-through rows follow [geographic allocation](geographic-allocation.md) for
+**all** asset types, including `CRYPTO`. Band percentages and the Diversification
+page breakdown use **full liquid MV** / **full annual DCA**. Account and asset geo
+charts still use covered market value
 ([ADR 0010](../adr/0010-partial-geographic-allocation-weights.md)).
 
-`CRYPTO` assets (`AssetType`) fill the `CRYPTO` band at 100 % of their value and
-are excluded from geo numerators.
+**Independent axes:** geo bands and the `CRYPTO` band overlap by design. The same
+euro can count toward US (look-through) and toward CRYPTO (`AssetType`). Summing
+geo % and crypto % is not expected to equal 100 %.
+
+`CRYPTO` assets fill the `CRYPTO` band at 100 % of their market value. When they
+have `Exposition geo` rows, they also contribute to geo bands via look-through.
+
+Portfolio breakdown on the Diversification page: **geo slices + unmapped geo =
+100 %** of liquid MV; **crypto** is shown as a separate slice on the same
+denominator (not subtracted from unmapped geo).
 
 ## Surfaces
 
