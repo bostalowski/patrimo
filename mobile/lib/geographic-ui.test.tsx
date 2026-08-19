@@ -22,6 +22,7 @@ vi.mock("react-native", () => ({
   ScrollView: "ScrollView",
   TouchableOpacity: "TouchableOpacity",
   TextInput: "TextInput",
+  Pressable: "Pressable",
   ActivityIndicator: "ActivityIndicator",
   Alert: { alert: vi.fn() },
   StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 1 },
@@ -49,6 +50,10 @@ vi.mock("./write-asset", () => ({
   deleteManualPriceFromSource: vi.fn(),
   replaceGeographicAllocationInSource: mocks.replaceGeographic,
   syncJustEtfGeographicAllocationInSource: mocks.syncJustEtf,
+}));
+
+vi.mock("./write-diversification-targets", () => ({
+  saveDiversificationTargets: vi.fn(),
 }));
 
 vi.mock("./write-account", () => ({
@@ -138,6 +143,7 @@ function workbook(overrides: Partial<Workbook> = {}): Workbook {
         source: "manual",
       },
     ],
+    diversificationTargets: [],
     ...overrides,
   };
 }
@@ -163,7 +169,7 @@ describe("mobile geographic UI", () => {
       renderer = create(<GeographieScreen />);
     });
 
-    expect(findByText(renderer, "Répartition géographique").length).toBeGreaterThan(
+    expect(findByText(renderer, "Répartition actuelle").length).toBeGreaterThan(
       0,
     );
     expect(findByText(renderer, /États-Unis/i).length).toBeGreaterThan(0);

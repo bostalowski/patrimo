@@ -105,6 +105,16 @@ Body: `DcaConfig`. Rejects when basket target percentages do not sum to `1` (±0
 
 Body: `{ id }`.
 
+## Diversification targets
+
+### `PUT /api/diversification-targets`
+
+Body: `{ targets: DiversificationTarget[] }` (`key`, `minPct`, `maxPct` in `[0, 1]` with `minPct ≤ maxPct`). Empty `targets` clears the plan.
+
+Validates with `validateDiversificationTargets` (known keys, valid bands, unique keys, no country/region overlap), then `replaceWorkbook` with the new `diversificationTargets`. Mobile does not call this route; it writes the sheet via client serialize. See [ADR 0012](../adr/0012-allocation-coherence.md).
+
+Removed: `PUT /api/target-allocation`.
+
 ## Properties
 
 ### `POST /api/properties`

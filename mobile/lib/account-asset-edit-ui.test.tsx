@@ -319,6 +319,7 @@ describe("mobile account and asset edit interface", () => {
         ],
         manualPrices: [],
         geographicAllocations: [],
+        diversificationTargets: [],
       }),
     };
     const AssetEditScreen = await loadEditScreen("../app/edit-asset.tsx");

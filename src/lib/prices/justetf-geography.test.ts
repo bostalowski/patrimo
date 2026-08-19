@@ -99,6 +99,7 @@ function workbook(
     dca: [],
     manualPrices: [],
     geographicAllocations: [],
+    diversificationTargets: [],
     ...overrides,
   };
 }

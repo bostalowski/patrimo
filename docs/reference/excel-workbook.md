@@ -14,8 +14,9 @@ Canonical sheet names and headers come from `packages/core/src/workbook-template
 | `DCA` | No | Investment plans (baskets + target %) |
 | `Prix manuels` | No | Dated user-entered valuations for `manual` assets |
 | `Exposition geo` | No | Look-through country or region weights per asset |
+| `Cibles diversification` | No | Diversification target bands (geo keys + crypto) |
 
-A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels` or `Exposition geo` remain valid; each sheet is created on the first write that needs it.
+A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels`, `Exposition geo`, or `Cibles diversification` remain valid; each sheet is created on the first write that needs it. Legacy sheet `Allocation cible` is ignored on read and deleted on the next workbook write.
 
 ## `Transactions`
 
@@ -131,6 +132,18 @@ Optional sheet for look-through geographic weights. See [Geographic allocation](
 | `Source` | `source` | `manual` or `justetf` |
 
 All rows for one `Actif` are replaced together on write. Missing sheet ⇒ empty collection.
+
+## `Cibles diversification`
+
+Optional sheet for diversification target bands. See [Diversification targets](../architecture/diversification-targets.md) and [ADR 0012](../adr/0012-allocation-coherence.md).
+
+| Column | Schema field | Rules |
+|---|---|---|
+| `Dimension` | `key` | ISO 3166-1 alpha-2, product region key, or `CRYPTO` (trim + upper case; legacy `EMERGING` → `OTHER`) |
+| `Min %` | `minPct` | Percent in Excel (0–100) or fraction; model in `[0, 1]` |
+| `Max %` | `maxPct` | Same encoding as min; must satisfy `minPct ≤ maxPct` |
+
+Keys on the sheet must not overlap (duplicate key, or country + its parent region). Parse drops invalid rows and later overlapping keys (first row wins). Save paths (`PUT /api/diversification-targets`, mobile editor) reject via `validateDiversificationTargets`. Σ min/max need not equal 1. Missing sheet ⇒ empty collection ⇒ coherence card hidden. Empty save clears the plan. Legacy `Allocation cible` is not parsed.
 
 ## Validation ownership
 

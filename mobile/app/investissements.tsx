@@ -82,9 +82,9 @@ export default function InvestissementsScreen() {
 
   const hasDca = workbook.dca.length > 0;
   const hasProperties = workbook.properties.length > 0;
-  const visibleTabs = TABS.filter((t) => {
-    if (t.key === "immobilier") return hasProperties;
-    if (t.key === "execution") return hasDca;
+  const visibleTabs = TABS.filter((tabItem) => {
+    if (tabItem.key === "immobilier") return hasProperties;
+    if (tabItem.key === "execution") return hasDca;
     return true;
   });
 
@@ -132,7 +132,7 @@ export default function InvestissementsScreen() {
         ))}
       </View>
 
-      {tab === "dca" && <DcaTab workbook={workbook} prices={prices} theme={t} />}
+      {tab === "dca" && <DcaTab workbook={workbook} theme={t} />}
       {tab === "execution" && (
         <ExecutionTab workbook={workbook} prices={prices} theme={t} />
       )}
@@ -217,11 +217,9 @@ function draftToConfig(draft: DcaDraft): DcaConfig | null {
 
 function DcaTab({
   workbook,
-  prices,
   theme: t,
 }: {
   workbook: NonNullable<ReturnType<typeof useWorkbook>["workbook"]>;
-  prices: Map<string, number>;
   theme: Theme;
 }) {
   const { refresh } = useWorkbook();
@@ -560,7 +558,7 @@ function DcaEditorCard({
       <View style={{ marginTop: 16 }}>
         <View style={[shared.row, { marginBottom: 8 }]}>
           <Text style={{ color: t.text, fontSize: 14, fontWeight: "600" }}>
-            Lignes d'allocation
+            {"Lignes d'allocation"}
           </Text>
           <Text
             style={{

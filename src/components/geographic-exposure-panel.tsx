@@ -149,33 +149,75 @@ function SliceList({
 function ExposureBody({
   countries,
   regions = [],
+  crypto,
+  unmapped,
+  showMap = true,
 }: {
   countries: GeographicSlice[];
   regions?: GeographicSlice[];
+  crypto?: { marketValue: number; weight: number } | null;
+  unmapped?: { marketValue: number; weight: number } | null;
+  showMap?: boolean;
 }) {
-  if (countries.length === 0 && regions.length === 0) {
+  const hasGeo = countries.length > 0 || regions.length > 0;
+
+  if (!hasGeo && !crypto && !unmapped) {
     return (
       <p className="text-sm text-zinc-500">
-        Aucune répartition géographique pour les positions couvertes.
+        Aucune répartition disponible pour les positions liquides.
       </p>
     );
   }
 
   return (
     <div className="space-y-6">
-      {countries.length > 0 && (
-        <div className="space-y-4">
-          <GeographicWorldMap countries={countries} />
-          <SliceList slices={countries} labelFor={geographicCountryLabel} />
-        </div>
+      {crypto && (
+        <ul className="space-y-1 text-sm">
+          <li className="flex items-center justify-between gap-4">
+            <span>Crypto</span>
+            <span className="font-mono text-zinc-600 dark:text-zinc-300">
+              {formatEuro(crypto.marketValue)} · {formatPercent(crypto.weight)}
+            </span>
+          </li>
+        </ul>
       )}
-      {regions.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-            Régions
+      {hasGeo ? (
+        <>
+          {countries.length > 0 && (
+            <div className="space-y-4">
+              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                Pays
+              </p>
+              {showMap && <GeographicWorldMap countries={countries} />}
+              <SliceList slices={countries} labelFor={geographicCountryLabel} />
+            </div>
+          )}
+          {regions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                Régions
+              </p>
+              <SliceList slices={regions} labelFor={regionLabel} />
+            </div>
+          )}
+        </>
+      ) : (
+        !unmapped && (
+          <p className="text-sm text-zinc-500">
+            Aucune répartition géographique pour les positions couvertes.
           </p>
-          <SliceList slices={regions} labelFor={regionLabel} />
-        </div>
+        )
+      )}
+      {unmapped && (
+        <ul className="space-y-1 text-sm">
+          <li className="flex items-center justify-between gap-4">
+            <span>Hors géo et crypto</span>
+            <span className="font-mono text-zinc-600 dark:text-zinc-300">
+              {formatEuro(unmapped.marketValue)} ·{" "}
+              {formatPercent(unmapped.weight)}
+            </span>
+          </li>
+        </ul>
       )}
     </div>
   );
@@ -185,10 +227,16 @@ export function GeographicExposurePanel({
   title,
   countries,
   regions = [],
+  crypto,
+  unmapped,
+  showMap = true,
 }: {
   title: string;
   regions?: GeographicSlice[];
   countries: GeographicSlice[];
+  crypto?: { marketValue: number; weight: number } | null;
+  unmapped?: { marketValue: number; weight: number } | null;
+  showMap?: boolean;
 }) {
   return (
     <Card>
@@ -196,7 +244,13 @@ export function GeographicExposurePanel({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardBody>
-        <ExposureBody countries={countries} regions={regions} />
+        <ExposureBody
+          countries={countries}
+          regions={regions}
+          crypto={crypto}
+          unmapped={unmapped}
+          showMap={showMap}
+        />
       </CardBody>
     </Card>
   );

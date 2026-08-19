@@ -82,6 +82,7 @@ function workbook(overrides: Partial<Workbook> = {}): Workbook {
     dca: [],
     manualPrices: [],
     geographicAllocations: [],
+    diversificationTargets: [],
     ...overrides,
   };
 }

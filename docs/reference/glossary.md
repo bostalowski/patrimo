@@ -118,6 +118,14 @@ Sum of calendar-year explicit fees and the estimated annual TER euro cost, divid
 
 All-time explicit fees divided by portfolio (or asset) **total return** (unrealized + realized + income as produced by the portfolio engine). Undefined when total return is zero or negative — not a fee-health score in down markets.
 
+## Diversification target
+
+Portfolio-level intent as min–max bands on diversification keys: ISO country, product **Geographic region**, or `CRYPTO`. Persisted in optional workbook sheet `Cibles diversification`. Partial plans are allowed (bands need not sum to 100 %). Empty collection clears the plan. Keys must not overlap (a country and its parent region are overlapping). See [ADR 0012](../adr/0012-allocation-coherence.md).
+
+## Allocation coherence
+
+Measure of alignment between saved **Diversification target** bands, current liquid stock, and annualized DCA flow mix. Computed by `assessDiversificationCoherence`. Geo bands use look-through from `Exposition geo` on **all** asset types (including `CRYPTO`). The `CRYPTO` band uses `AssetType.CRYPTO` at full value. Geo and crypto axes **overlap by design** — the same euro may count toward both a country/region band and the `CRYPTO` band. Statuses: `aligned`, `misaligned` (`band_drift` and/or `flow_misalign`). Returns null (card hidden) when no bands are saved or liquid invested is zero. The Diversification menu breakdown (`aggregatePortfolioDiversificationBreakdown`) partitions full liquid MV into geo slices, crypto, and **unmapped** (hors geo et hors crypto — livret, cash, actifs non renseignés). Band coherence axes still overlap. Account and asset geo charts still use covered market value ([ADR 0010](../adr/0010-partial-geographic-allocation-weights.md)). Never uses HHI / Top1 / Top3 ([ADR 0006](../adr/0006-portfolio-risk-readability.md)).
+
 ## See also
 
 - [Key principles](../overview/key-principles.md)
@@ -129,5 +137,7 @@ All-time explicit fees divided by portfolio (or asset) **total return** (unreali
 - [ADR 0006](../adr/0006-portfolio-risk-readability.md)
 - [ADR 0007](../adr/0007-fee-monitoring-ratios.md)
 - [ADR 0008](../adr/0008-geographic-allocation.md)
+- [ADR 0012](../adr/0012-allocation-coherence.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
+- [Diversification targets](../architecture/diversification-targets.md)

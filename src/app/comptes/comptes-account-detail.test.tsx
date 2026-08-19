@@ -54,6 +54,7 @@ const workbookFixture = {
       source: "manual" as const,
     },
   ],
+  diversificationTargets: [],
 };
 
 vi.mock("@/lib/page-guards", () => ({
@@ -133,13 +134,15 @@ describe("web comptes account detail surface", () => {
     vi.mocked(loadWorkbook).mockReturnValue({
       ...workbookFixture,
       geographicAllocations: [],
+      diversificationTargets: [],
     });
 
+    vi.resetModules();
     const { default: AccountDetailPage } = await import("./[id]/page");
     await renderPage(AccountDetailPage({ params: Promise.resolve({ id: "pea" }) }));
 
     expect(
-      screen.getByText(/Aucune répartition géographique/i),
+      screen.getByText(/Aucune répartition disponible pour les positions liquides/i),
     ).toBeTruthy();
     expect(screen.queryByTestId("geographic-world-map")).toBeNull();
   });
