@@ -1,9 +1,11 @@
 import { isValidGeographicWeightSum } from "./geographic-allocation";
 import {
+	aggregateGeographicExposure,
 	geographicAllocationGranularity,
 	lookThroughCountryWeights,
 	normalizeGeographicRegionKey,
 	regionForCountry,
+	type GeographicSlice,
 } from "./geographic-exposure";
 import type { AssetPosition } from "./portfolio";
 import type {
@@ -138,6 +140,97 @@ function contributionToKey(
 
 function isIsoCountryTarget(key: string): boolean {
 	return /^[A-Z]{2}$/.test(key);
+}
+
+export type CryptoExposureSlice = {
+	marketValue: number;
+	weight: number;
+	liquidInvested: number;
+};
+
+export type UnmappedExposureSlice = {
+	marketValue: number;
+	weight: number;
+};
+
+export type PortfolioDiversificationBreakdown = {
+	liquidInvested: number;
+	regions: GeographicSlice[];
+	countries: GeographicSlice[];
+	crypto: CryptoExposureSlice | null;
+	unmapped: UnmappedExposureSlice | null;
+};
+
+function reweightSlicesToLiquid(
+	slices: GeographicSlice[],
+	liquidInvested: number,
+): GeographicSlice[] {
+	if (liquidInvested <= 0) return [];
+	return slices.map((slice) => ({
+		...slice,
+		weight: slice.marketValue / liquidInvested,
+	}));
+}
+
+export function aggregatePortfolioDiversificationBreakdown(
+	positions: Array<{ assetId: string; marketValue: number }>,
+	allocations: GeographicAllocation[],
+	assets: Asset[],
+): PortfolioDiversificationBreakdown | null {
+	const liquidPositions = positions.filter((position) => position.marketValue > 0);
+	const liquidInvested = liquidPositions.reduce(
+		(total, position) => total + position.marketValue,
+		0,
+	);
+	if (liquidInvested <= 0) return null;
+
+	const exposure = aggregateGeographicExposure(positions, allocations);
+	const crypto = aggregateCryptoExposure(positions, assets);
+	const geoMapped = exposure.regions.reduce(
+		(total, slice) => total + slice.marketValue,
+		0,
+	);
+	const cryptoMarketValue = crypto?.marketValue ?? 0;
+	const unmappedMarketValue =
+		liquidInvested - geoMapped - cryptoMarketValue;
+	const unmapped =
+		unmappedMarketValue > 1e-6
+			? {
+					marketValue: unmappedMarketValue,
+					weight: unmappedMarketValue / liquidInvested,
+				}
+			: null;
+
+	return {
+		liquidInvested,
+		regions: reweightSlicesToLiquid(exposure.regions, liquidInvested),
+		countries: reweightSlicesToLiquid(exposure.countries, liquidInvested),
+		crypto,
+		unmapped,
+	};
+}
+
+export function aggregateCryptoExposure(
+	positions: Array<{ assetId: string; marketValue: number }>,
+	assets: Asset[],
+): CryptoExposureSlice | null {
+	const liquid = positions.filter((position) => position.marketValue > 0);
+	const liquidInvested = liquid.reduce(
+		(total, position) => total + position.marketValue,
+		0,
+	);
+	if (liquidInvested <= 0) return null;
+
+	const types = assetTypeById(assets);
+	const cryptoMarketValue = liquid
+		.filter((position) => types.get(position.assetId) === "CRYPTO")
+		.reduce((total, position) => total + position.marketValue, 0);
+
+	return {
+		marketValue: cryptoMarketValue,
+		weight: cryptoMarketValue / liquidInvested,
+		liquidInvested,
+	};
 }
 
 export function assessDiversificationCoherence(params: {

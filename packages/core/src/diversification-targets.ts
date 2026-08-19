@@ -53,6 +53,27 @@ export function diversificationKeysOverlap(a: string, b: string): boolean {
 	return false;
 }
 
+export function isDiversificationKeySelectable(
+	candidate: string,
+	selectedKeys: readonly string[],
+	editingKey?: string,
+): boolean {
+	if (!isValidDiversificationKey(candidate)) return false;
+	const normalized = normalizeDiversificationKey(candidate);
+	if (
+		editingKey?.trim() &&
+		normalizeDiversificationKey(editingKey) === normalized
+	) {
+		return true;
+	}
+	for (const existing of selectedKeys) {
+		if (!existing.trim()) continue;
+		if (normalizeDiversificationKey(existing) === normalized) return false;
+		if (diversificationKeysOverlap(candidate, existing)) return false;
+	}
+	return true;
+}
+
 function isValidBand(minPct: number, maxPct: number): boolean {
 	return (
 		typeof minPct === "number" &&

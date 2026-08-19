@@ -86,11 +86,4 @@ describe("AllocationCoherenceCard", () => {
 
 		expect(screen.getByText(/DCA hors bande/i)).toBeTruthy();
 	});
-
-	it("Modifier links to /geographie", () => {
-		render(<AllocationCoherenceCard coherence={coherence()} />);
-
-		const link = screen.getByRole("link", { name: /Modifier/i });
-		expect(link.getAttribute("href")).toBe("/geographie");
-	});
 });

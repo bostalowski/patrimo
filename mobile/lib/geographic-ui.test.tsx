@@ -169,7 +169,7 @@ describe("mobile geographic UI", () => {
       renderer = create(<GeographieScreen />);
     });
 
-    expect(findByText(renderer, "Répartition géographique").length).toBeGreaterThan(
+    expect(findByText(renderer, "Répartition actuelle").length).toBeGreaterThan(
       0,
     );
     expect(findByText(renderer, /États-Unis/i).length).toBeGreaterThan(0);

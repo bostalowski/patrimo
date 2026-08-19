@@ -1,10 +1,8 @@
-import { assessDiversificationCoherence } from "@patrimo/core/diversification-coherence";
 import {
 	computeEmergencyFundHealth,
 	sumLivretMarketValue,
 } from "@patrimo/core/emergency-fund";
 import { computeNetWorth } from "@patrimo/core/portfolio";
-import { AllocationCoherenceCard } from "@/components/allocation-coherence-card";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { PerformanceSection } from "@/components/performance-section";
@@ -82,14 +80,6 @@ export default async function DashboardPage() {
 		depensesMensuelles,
 	);
 
-	const allocationCoherence = assessDiversificationCoherence({
-		targets: workbook.diversificationTargets,
-		positions: portfolio.assets,
-		dca: workbook.dca,
-		geographicAllocations: workbook.geographicAllocations,
-		assets: workbook.assets,
-	});
-
 	return (
 		<div className="space-y-8">
 			<header className="flex flex-wrap items-end justify-between gap-4">
@@ -160,8 +150,6 @@ export default async function DashboardPage() {
 			</div>
 
 			<EmergencyFundCard health={emergencyFund} />
-
-			<AllocationCoherenceCard coherence={allocationCoherence} />
 
 			<PerformanceSection history={history} benchmarks={benchmarks} />
 

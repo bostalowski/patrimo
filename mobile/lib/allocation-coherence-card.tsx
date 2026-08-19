@@ -5,8 +5,7 @@ import type {
 } from "@patrimo/core/diversification-coherence";
 import { diversificationKeyLabel } from "@patrimo/core/diversification-labels";
 import { isValueInDiversificationBand } from "@patrimo/core/diversification-targets";
-import { router } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { shared, type Theme } from "./theme";
 
 const STATUS_LABEL: Record<DiversificationCoherenceStatus, string> = {
@@ -64,22 +63,9 @@ export function AllocationCoherenceCard({
 				<Text style={[shared.label, { color: t.textSecondary }]}>
 					Cohérence diversification
 				</Text>
-				<View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-					<Pressable
-						onPress={() => router.push("/geographie")}
-						accessibilityRole="button"
-						accessibilityLabel="Modifier"
-					>
-						<Text
-							style={{ color: t.textMuted, fontSize: 12, fontWeight: "600" }}
-						>
-							Modifier
-						</Text>
-					</Pressable>
-					<Text style={{ color: tone, fontSize: 13, fontWeight: "600" }}>
-						{STATUS_LABEL[coherence.status]}
-					</Text>
-				</View>
+				<Text style={{ color: tone, fontSize: 13, fontWeight: "600" }}>
+					{STATUS_LABEL[coherence.status]}
+				</Text>
 			</View>
 
 			{deduped.length > 0 && (

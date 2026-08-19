@@ -59,6 +59,8 @@ describe("mobile DiversificationTargetsEditor", () => {
 			/>,
 		);
 
+		expect(visibleText(renderer)).toMatch(/Ajouter une règle/i);
+
 		const saveButton = renderer.root.find(
 			(node) => node.props.accessibilityLabel === "Enregistrer",
 		);

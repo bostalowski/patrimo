@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { DiversificationTarget } from "./schema";
-import { validateDiversificationTargets } from "./diversification-targets";
+import {
+	isDiversificationKeySelectable,
+	validateDiversificationTargets,
+} from "./diversification-targets";
 
 function band(
 	key: string,
@@ -107,5 +110,21 @@ describe("validateDiversificationTargets", () => {
 		expect(result.ok === false && result.reason).toMatch(
 			/overlapping_keys|duplicate_key/,
 		);
+	});
+});
+
+describe("isDiversificationKeySelectable", () => {
+	it("rejects a key already used on another row", () => {
+		expect(isDiversificationKeySelectable("US", ["US"], undefined)).toBe(false);
+	});
+
+	it("rejects a region overlapping an existing country", () => {
+		expect(
+			isDiversificationKeySelectable("NORTH_AMERICA", ["US"], undefined),
+		).toBe(false);
+	});
+
+	it("keeps the row being edited selectable", () => {
+		expect(isDiversificationKeySelectable("US", ["EUROPE"], "US")).toBe(true);
 	});
 });

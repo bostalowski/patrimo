@@ -66,17 +66,9 @@ export function AllocationCoherenceCard({
 			<CardHeader>
 				<div className="flex items-center justify-between gap-2">
 					<CardTitle>Cohérence diversification</CardTitle>
-					<div className="flex items-center gap-2">
-						<Link
-							href="/geographie"
-							className="text-xs font-medium text-zinc-500 hover:underline dark:text-zinc-400"
-						>
-							Modifier
-						</Link>
-						<Badge variant={STATUS_BADGE[coherence.status]}>
-							{STATUS_LABEL[coherence.status]}
-						</Badge>
-					</div>
+					<Badge variant={STATUS_BADGE[coherence.status]}>
+						{STATUS_LABEL[coherence.status]}
+					</Badge>
 				</div>
 				{deduped.length > 0 && (
 					<div className="mt-2 flex flex-wrap gap-1">

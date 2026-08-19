@@ -40,6 +40,9 @@ describe("DiversificationTargetsEditor", () => {
 	it("editor save with valid bands calls PUT /api/diversification-targets", async () => {
 		render(<DiversificationTargetsEditor initialTargets={initial} />);
 
+		expect(screen.getByRole("combobox", { name: /Dimension 1/i })).toBeTruthy();
+		expect(screen.getByRole("button", { name: /Ajouter une règle/i })).toBeTruthy();
+
 		fireEvent.click(screen.getByRole("button", { name: /Enregistrer/i }));
 
 		await waitFor(() => {

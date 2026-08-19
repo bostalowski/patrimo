@@ -69,8 +69,8 @@ Persistence:
   Missing "Cibles diversification" ⇒ empty collection.
 
 Surfaces:
-  Editor on web /geographie and mobile geography surface.
-  Dashboard card « Modifier » → geography. Investissements is DCA only.
+  Editor + coherence card on web /geographie (nav Diversification) and mobile
+  Diversification screen. Investissements is DCA only.
   Web PUT /api/diversification-targets { targets }; mobile serialize.
 
 REMOVED: TargetAllocationCategory / Allocation cible as product intent;
@@ -83,8 +83,7 @@ FORBIDDEN: inventing country weight from a region-only row; using covered
   "aligned" when a defined band is outside range.
 
 OPEN (do not implement this increment): sector look-through / sector bands;
-  ETF purchase recommendations; LLM coach; renaming Géographie nav to
-  Diversification.
+  ETF purchase recommendations; LLM coach.
 ```
 
 ## Context
@@ -152,7 +151,6 @@ This ADR is edited in place (never shipped to production). Canonical terms:
 - Sector look-through and sector target bands.
 - Coaching which vehicles to buy to enter a band.
 - Shock scenarios / LLM narrative.
-- Navigation rename Géographie → Diversification.
 
 ## Follow-up
 

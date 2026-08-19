@@ -128,23 +128,4 @@ describe("mobile AllocationCoherenceCard", () => {
 
 		expect(text).toMatch(/DCA hors bande/i);
 	});
-
-	it("Modifier navigates to /geographie", () => {
-		const renderer = render(
-			<AllocationCoherenceCard
-				coherence={coherence()}
-				theme={colors.light}
-			/>,
-		);
-
-		const modifier = renderer.root.find(
-			(node) =>
-				node.props.accessibilityLabel === "Modifier" ||
-				(node.type === "Text" &&
-					node.children.some(
-						(child) => typeof child === "string" && child === "Modifier",
-					)),
-		);
-		expect(modifier).toBeTruthy();
-	});
 });

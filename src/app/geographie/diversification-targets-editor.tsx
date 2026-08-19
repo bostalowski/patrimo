@@ -5,6 +5,7 @@ import type { DiversificationTarget } from "@patrimo/core/schema";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { diversificationKeyOptionsForRow } from "@/lib/diversification-key-options";
 
 type DraftRow = {
 	id: string;
@@ -73,7 +74,7 @@ export function DiversificationTargetsEditor({
 			setError(
 				validation.reason === "overlapping_keys"
 					? "Ces dimensions se chevauchent (pays et sa région)."
-					: "Bandes invalides — vérifie les clés et les min/max.",
+					: "Règles invalides — vérifie la dimension et les min/max.",
 			);
 			return;
 		}
@@ -106,49 +107,71 @@ export function DiversificationTargetsEditor({
 			<CardBody className="space-y-4">
 				{rows.length === 0 && (
 					<p className="text-sm text-zinc-500">
-						Aucune bande. Ajoute une ligne (pays, région ou crypto).
+						Aucune règle définie. Ajoute un pays, une région ou la crypto.
 					</p>
 				)}
 
-				{rows.map((row, index) => (
-					<div
-						key={row.id}
-						className="grid gap-3 rounded-lg border border-zinc-100 p-3 dark:border-zinc-800 sm:grid-cols-[1.2fr_0.6fr_0.6fr_auto]"
-					>
-						<input
-							className={inputClasses}
-							placeholder="US, EUROPE, CRYPTO…"
-							value={row.key}
-							onChange={(event) => updateRow(index, { key: event.target.value })}
-							aria-label={`Dimension ${index + 1}`}
-						/>
-						<input
-							className={inputClasses}
-							placeholder="Min %"
-							value={row.minPercent}
-							onChange={(event) =>
-								updateRow(index, { minPercent: event.target.value })
-							}
-							aria-label={`Min ${index + 1}`}
-						/>
-						<input
-							className={inputClasses}
-							placeholder="Max %"
-							value={row.maxPercent}
-							onChange={(event) =>
-								updateRow(index, { maxPercent: event.target.value })
-							}
-							aria-label={`Max ${index + 1}`}
-						/>
-						<button
-							type="button"
-							onClick={() => removeRow(index)}
-							className="text-sm text-rose-600 hover:underline"
+				{rows.map((row, index) => {
+					const otherKeys = rows
+						.filter((_, i) => i !== index)
+						.map((entry) => entry.key);
+					const optionGroups = diversificationKeyOptionsForRow({
+						currentKey: row.key,
+						otherKeys,
+					});
+
+					return (
+						<div
+							key={row.id}
+							className="grid gap-3 rounded-lg border border-zinc-100 p-3 dark:border-zinc-800 sm:grid-cols-[1.2fr_0.6fr_0.6fr_auto]"
 						>
-							Supprimer
-						</button>
-					</div>
-				))}
+							<select
+								className={inputClasses}
+								value={row.key}
+								onChange={(event) =>
+									updateRow(index, { key: event.target.value })
+								}
+								aria-label={`Dimension ${index + 1}`}
+							>
+								<option value="">Choisir une dimension…</option>
+								{optionGroups.map((group) => (
+									<optgroup key={group.label} label={group.label}>
+										{group.options.map((option) => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
+									</optgroup>
+								))}
+							</select>
+							<input
+								className={inputClasses}
+								placeholder="Min %"
+								value={row.minPercent}
+								onChange={(event) =>
+									updateRow(index, { minPercent: event.target.value })
+								}
+								aria-label={`Min ${index + 1}`}
+							/>
+							<input
+								className={inputClasses}
+								placeholder="Max %"
+								value={row.maxPercent}
+								onChange={(event) =>
+									updateRow(index, { maxPercent: event.target.value })
+								}
+								aria-label={`Max ${index + 1}`}
+							/>
+							<button
+								type="button"
+								onClick={() => removeRow(index)}
+								className="text-sm text-rose-600 hover:underline"
+							>
+								Supprimer
+							</button>
+						</div>
+					);
+				})}
 
 				{error && (
 					<p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
@@ -160,7 +183,7 @@ export function DiversificationTargetsEditor({
 						onClick={addRow}
 						className="rounded-lg border border-zinc-200 px-4 py-2 text-sm dark:border-zinc-700"
 					>
-						Ajouter une bande
+						Ajouter une règle
 					</button>
 					<button
 						type="button"

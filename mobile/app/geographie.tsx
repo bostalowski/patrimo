@@ -1,8 +1,12 @@
 import { View, Text, ScrollView, useColorScheme } from "react-native";
 import { useWorkbook } from "../lib/use-workbook";
 import { buildPortfolio } from "@patrimo/core/portfolio";
-import { aggregateGeographicExposure } from "@patrimo/core/geographic-exposure";
+import {
+	aggregatePortfolioDiversificationBreakdown,
+	assessDiversificationCoherence,
+} from "@patrimo/core/diversification-coherence";
 import { useThemeColors, shared } from "../lib/theme";
+import { AllocationCoherenceCard } from "../lib/allocation-coherence-card";
 import { GeographicExposureList } from "../components/geographic-exposure-list";
 import { DiversificationTargetsEditor } from "../lib/diversification-targets-editor";
 
@@ -44,13 +48,22 @@ export default function GeographieScreen() {
     );
   }
 
-  const exposure = aggregateGeographicExposure(
-    portfolio.assets.map((position) => ({
-      assetId: position.assetId,
-      marketValue: position.marketValue,
-    })),
+  const positions = portfolio.assets.map((position) => ({
+    assetId: position.assetId,
+    marketValue: position.marketValue,
+  }));
+  const breakdown = aggregatePortfolioDiversificationBreakdown(
+    positions,
     workbook.geographicAllocations ?? [],
+    workbook.assets,
   );
+  const coherence = assessDiversificationCoherence({
+    targets: workbook.diversificationTargets,
+    positions: portfolio.assets,
+    dca: workbook.dca,
+    geographicAllocations: workbook.geographicAllocations,
+    assets: workbook.assets,
+  });
 
   return (
     <ScrollView
@@ -62,14 +75,19 @@ export default function GeographieScreen() {
         theme={t}
         onSaved={refresh}
       />
-      <View style={[shared.card, { backgroundColor: t.card }]}>
-        <GeographicExposureList
-          title="Répartition géographique"
-          regions={exposure.regions}
-          countries={exposure.countries}
-          colors={t}
-        />
-      </View>
+      <AllocationCoherenceCard coherence={coherence} theme={t} />
+      {breakdown && (
+        <View style={[shared.card, { backgroundColor: t.card }]}>
+          <GeographicExposureList
+            title="Répartition actuelle"
+            regions={breakdown.regions}
+            countries={breakdown.countries}
+            crypto={breakdown.crypto}
+            unmapped={breakdown.unmapped}
+            colors={t}
+          />
+        </View>
+      )}
     </ScrollView>
   );
 }

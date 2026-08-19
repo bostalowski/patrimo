@@ -1,4 +1,3 @@
-import { assessDiversificationCoherence } from "@patrimo/core/diversification-coherence";
 import { summarizeBudget } from "@patrimo/core/budget";
 import {
 	computeEmergencyFundHealth,
@@ -17,7 +16,6 @@ import {
 	buildHistorySeries,
 } from "@patrimo/core/portfolio-history";
 import { ScrollView, Text, useColorScheme, View } from "react-native";
-import { AllocationCoherenceCard } from "../lib/allocation-coherence-card";
 import { EmergencyFundCard } from "../lib/emergency-fund-card";
 import { RiskBadges } from "../lib/risk-badges";
 import { shared, useThemeColors } from "../lib/theme";
@@ -77,13 +75,6 @@ export default function DashboardScreen() {
 		livretBalance,
 		depensesMensuelles,
 	);
-	const allocationCoherence = assessDiversificationCoherence({
-		targets: workbook.diversificationTargets,
-		positions: portfolio.assets,
-		dca: workbook.dca,
-		geographicAllocations: workbook.geographicAllocations,
-		assets: workbook.assets,
-	});
 
 	const history = buildHistorySeries(
 		workbook,
@@ -153,8 +144,6 @@ export default function DashboardScreen() {
 			</View>
 
 			<EmergencyFundCard health={emergencyFund} theme={t} />
-
-			<AllocationCoherenceCard coherence={allocationCoherence} theme={t} />
 
 			<RiskBadges
 				volatility={volatility}

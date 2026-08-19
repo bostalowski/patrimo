@@ -35,15 +35,15 @@ Ordered vertical scopes after SPEC LOCK. Decision: [ADR 0012](../adr/0012-alloca
 - `PUT /api/diversification-targets`; remove `PUT /api/target-allocation`
 - Tests: round-trip, ignore/wipe legacy sheet, invalid API payload
 
-### Scope 3 — Web geography editor + dashboard card
+### Scope 3 — Web geography editor + coherence card
 
-- Editor on `/geographie`; card uses new assessment; « Modifier » → `/geographie`
+- Editor + coherence card on `/geographie` (nav Diversification)
 - Remove Investissements « Allocation cible » tab and bootstrap
 - Tests: save, overlap error, hidden card, finding chips
 
 ### Scope 4 — Mobile parity
 
-- Geography editor + serialize save; dashboard card; remove Investissements allocation tab
+- Geography editor + coherence card on Diversification screen; serialize save; remove Investissements allocation tab
 - Tests: same behaviours as web editor/card
 
 ## See also

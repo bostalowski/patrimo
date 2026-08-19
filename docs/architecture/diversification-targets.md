@@ -20,9 +20,9 @@ validateDiversificationTargets ──► workbook Cibles diversification
 Positions + DCA + Exposition geo + asset types
         │
         ▼
-assessDiversificationCoherence ──► Dashboard card
+assessDiversificationCoherence ──► Diversification page card
         │
-        └── « Modifier » → /geographie (web) / geography (mobile)
+        └── DCA link → Investissements when flow_misalign
 ```
 
 On every workbook write, sheet `Allocation cible` is deleted if present. Reads
@@ -50,7 +50,9 @@ Missing sheet ⇒ empty collection. Empty save is allowed (clears the plan).
 | `assessDiversificationCoherence(...)` | Status + `band_drift` / `flow_misalign` |
 
 Look-through rows follow [geographic allocation](geographic-allocation.md). Band
-percentages use **full liquid MV** / **full annual DCA**, not covered-geo totals.
+percentages and the Diversification page breakdown use **full liquid MV** /
+**full annual DCA**. Account and asset geo charts still use covered market value
+([ADR 0010](../adr/0010-partial-geographic-allocation-weights.md)).
 
 `CRYPTO` assets (`AssetType`) fill the `CRYPTO` band at 100 % of their value and
 are excluded from geo numerators.
@@ -59,9 +61,8 @@ are excluded from geo numerators.
 
 | Surface | Role |
 |---|---|
-| Web `/geographie` | Band editor; save via `PUT /api/diversification-targets` |
-| Mobile geography | Same editor; save via workbook serialize |
-| Dashboard card (web + mobile) | Read-only; « Modifier » → geography |
+| Web `/geographie` (nav **Diversification**) | Band editor + coherence card; save via `PUT /api/diversification-targets`; portfolio breakdown (geo, crypto, unmapped) on **full liquid MV** |
+| Mobile Diversification screen | Same editor + coherence card; save via workbook serialize; same portfolio breakdown on full liquid MV |
 | Investissements | DCA only (no allocation-plan tab) |
 
 FR UI labels: editor « Cibles de diversification »; card « Cohérence diversification »;
@@ -72,7 +73,6 @@ FR UI labels: editor « Cibles de diversification »; card « Cohérence diversi
 - Sector look-through and sector bands.
 - Vehicle / ETF purchase recommendations.
 - Top1 / HHI ([ADR 0006](../adr/0006-portfolio-risk-readability.md)).
-- Renaming the Géographie navigation item to Diversification.
 
 ## See also
 

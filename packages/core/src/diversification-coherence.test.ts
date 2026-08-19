@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
 	annualizeDcaAmount,
+	aggregateCryptoExposure,
+	aggregatePortfolioDiversificationBreakdown,
 	assessDiversificationCoherence,
 	computeFlowMixByAsset,
 } from "./diversification-coherence";
@@ -106,6 +108,97 @@ describe("computeFlowMixByAsset", () => {
 		expect(result.get("WPEA")).toBeCloseTo((4800 * 0.75) / 2, 5);
 		expect(result.get("DCAM")).toBeCloseTo((4800 * 0.75) / 2, 5);
 		expect(result.get("PLEM")).toBeCloseTo(4800 * 0.25, 5);
+	});
+});
+
+describe("aggregateCryptoExposure", () => {
+	it("returns null when liquid invested is zero", () => {
+		expect(aggregateCryptoExposure([], assets)).toBeNull();
+	});
+
+	it("computes crypto share against full liquid portfolio", () => {
+		const result = aggregateCryptoExposure(
+			[position("WPEA", 7000), position("BTC", 3000)],
+			assets,
+		);
+		expect(result).toEqual({
+			marketValue: 3000,
+			weight: 0.3,
+			liquidInvested: 10_000,
+		});
+	});
+
+	it("returns zero crypto weight when no crypto assets are held", () => {
+		const result = aggregateCryptoExposure([position("WPEA", 5000)], assets);
+		expect(result).toEqual({
+			marketValue: 0,
+			weight: 0,
+			liquidInvested: 5000,
+		});
+	});
+});
+
+describe("aggregatePortfolioDiversificationBreakdown", () => {
+	it("returns null when liquid invested is 0", () => {
+		expect(
+			aggregatePortfolioDiversificationBreakdown(
+				[position("WPEA", 0)],
+				[geo("WPEA", "US", 1)],
+				assets,
+			),
+		).toBeNull();
+	});
+
+	it("expresses region weights against full liquid portfolio", () => {
+		const result = aggregatePortfolioDiversificationBreakdown(
+			[position("WPEA", 700), position("CASH", 300)],
+			[geo("WPEA", "US", 1)],
+			assets,
+		);
+		const northAmerica = result?.regions.find((slice) => slice.key === "NORTH_AMERICA");
+		expect(northAmerica?.weight).toBeCloseTo(0.7, 5);
+		expect(result?.unmapped?.weight).toBeCloseTo(0.3, 5);
+	});
+
+	it("matches coherence stockPct for the same region band", () => {
+		const positions = [position("WPEA", 700), position("CASH", 300)];
+		const allocations = [geo("WPEA", "US", 1)];
+		const breakdown = aggregatePortfolioDiversificationBreakdown(
+			positions,
+			allocations,
+			assets,
+		);
+		const coherence = assessDiversificationCoherence({
+			targets: [band("NORTH_AMERICA", 0.6, 0.8)],
+			positions,
+			dca: [],
+			geographicAllocations: allocations,
+			assets,
+		});
+		const northAmerica = breakdown?.regions.find(
+			(slice) => slice.key === "NORTH_AMERICA",
+		);
+		const bandResult = coherence?.bands.find((b) => b.key === "NORTH_AMERICA");
+		expect(northAmerica?.weight).toBeCloseTo(bandResult?.stockPct ?? 0, 5);
+	});
+
+	it("includes crypto and unmapped slices that sum to 100%", () => {
+		const result = aggregatePortfolioDiversificationBreakdown(
+			[
+				position("WPEA", 500),
+				position("BTC", 200),
+				position("CASH", 300),
+			],
+			[geo("WPEA", "US", 0.5), geo("WPEA", "FR", 0.3)],
+			assets,
+		);
+		const totalWeight =
+			(result?.regions.reduce((sum, slice) => sum + slice.weight, 0) ?? 0) +
+			(result?.crypto?.weight ?? 0) +
+			(result?.unmapped?.weight ?? 0);
+		expect(totalWeight).toBeCloseTo(1, 5);
+		expect(result?.crypto?.weight).toBeCloseTo(0.2, 5);
+		expect(result?.unmapped?.weight).toBeCloseTo(0.4, 5);
 	});
 });
 
