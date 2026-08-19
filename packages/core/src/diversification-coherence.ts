@@ -103,7 +103,6 @@ function contributionToKey(
 	if (key === DIVERSIFICATION_CRYPTO_KEY) {
 		return assetType === "CRYPTO" ? amount : 0;
 	}
-	if (assetType === "CRYPTO") return 0;
 	if (!rows || rows.length === 0) return 0;
 
 	const sum = rows.reduce((total, row) => total + row.weight, 0);
@@ -190,9 +189,7 @@ export function aggregatePortfolioDiversificationBreakdown(
 		(total, slice) => total + slice.marketValue,
 		0,
 	);
-	const cryptoMarketValue = crypto?.marketValue ?? 0;
-	const unmappedMarketValue =
-		liquidInvested - geoMapped - cryptoMarketValue;
+	const unmappedMarketValue = liquidInvested - geoMapped;
 	const unmapped =
 		unmappedMarketValue > 1e-6
 			? {

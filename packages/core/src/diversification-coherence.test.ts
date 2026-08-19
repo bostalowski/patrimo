@@ -182,7 +182,7 @@ describe("aggregatePortfolioDiversificationBreakdown", () => {
 		expect(northAmerica?.weight).toBeCloseTo(bandResult?.stockPct ?? 0, 5);
 	});
 
-	it("includes crypto and unmapped slices that sum to 100%", () => {
+	it("geo slices plus unmapped geo sum to 100% with crypto shown separately", () => {
 		const result = aggregatePortfolioDiversificationBreakdown(
 			[
 				position("WPEA", 500),
@@ -192,13 +192,45 @@ describe("aggregatePortfolioDiversificationBreakdown", () => {
 			[geo("WPEA", "US", 0.5), geo("WPEA", "FR", 0.3)],
 			assets,
 		);
-		const totalWeight =
+		const geoWeight =
 			(result?.regions.reduce((sum, slice) => sum + slice.weight, 0) ?? 0) +
-			(result?.crypto?.weight ?? 0) +
 			(result?.unmapped?.weight ?? 0);
-		expect(totalWeight).toBeCloseTo(1, 5);
+		expect(geoWeight).toBeCloseTo(1, 5);
 		expect(result?.crypto?.weight).toBeCloseTo(0.2, 5);
-		expect(result?.unmapped?.weight).toBeCloseTo(0.4, 5);
+		expect(result?.unmapped?.weight).toBeCloseTo(0.6, 5);
+	});
+
+	it("crypto weight is independent and not subtracted from unmapped geo", () => {
+		const result = aggregatePortfolioDiversificationBreakdown(
+			[
+				position("WPEA", 500),
+				position("BTC", 500),
+			],
+			[
+				geo("WPEA", "US", 1),
+				geo("BTC", "US", 0.6),
+				geo("BTC", "FR", 0.4),
+			],
+			assets,
+		);
+		const northAmerica = result?.regions.find(
+			(slice) => slice.key === "NORTH_AMERICA",
+		);
+		const europe = result?.regions.find((slice) => slice.key === "EUROPE");
+		expect(northAmerica?.weight).toBeCloseTo(0.8, 5);
+		expect(europe?.weight).toBeCloseTo(0.2, 5);
+		expect(result?.unmapped?.weight ?? 0).toBeCloseTo(0, 5);
+		expect(result?.crypto?.weight).toBeCloseTo(0.5, 5);
+	});
+
+	it("CRYPTO without geo sits in unmapped geo while filling the crypto slice", () => {
+		const result = aggregatePortfolioDiversificationBreakdown(
+			[position("BTC", 400), position("CASH", 600)],
+			[],
+			assets,
+		);
+		expect(result?.crypto?.weight).toBeCloseTo(0.4, 5);
+		expect(result?.unmapped?.weight).toBeCloseTo(1, 5);
 	});
 });
 
@@ -285,15 +317,37 @@ describe("assessDiversificationCoherence", () => {
 		expect(result?.bands[0]?.stockPct).toBeCloseTo(0.25, 5);
 	});
 
-	it("CRYPTO type is excluded from geographic numerators even with geo rows", () => {
+	it("CRYPTO asset with US geo rows contributes to US band via look-through", () => {
 		const result = assessDiversificationCoherence({
-			targets: [band("US", 0, 0.1)],
+			targets: [band("US", 0.9, 1)],
 			positions: [position("BTC", 1000)],
 			dca: [],
 			geographicAllocations: [geo("BTC", "US", 1)],
 			assets,
 		});
-		expect(result?.bands[0]?.stockPct).toBe(0);
+		expect(result?.bands[0]?.stockPct).toBeCloseTo(1, 5);
+	});
+
+	it("US and CRYPTO bands are evaluated independently on overlapping portfolio", () => {
+		const result = assessDiversificationCoherence({
+			targets: [band("US", 0.75, 0.85), band("EUROPE", 0.15, 0.25), band("CRYPTO", 0.45, 0.55)],
+			positions: [position("WPEA", 500), position("BTC", 500)],
+			dca: [],
+			geographicAllocations: [
+				geo("WPEA", "US", 1),
+				geo("BTC", "US", 0.6),
+				geo("BTC", "FR", 0.4),
+			],
+			assets,
+		});
+		const us = result?.bands.find((b) => b.key === "US");
+		const europe = result?.bands.find((b) => b.key === "EUROPE");
+		const crypto = result?.bands.find((b) => b.key === "CRYPTO");
+		expect(us?.stockPct).toBeCloseTo(0.8, 5);
+		expect(europe?.stockPct).toBeCloseTo(0.2, 5);
+		expect(crypto?.stockPct).toBeCloseTo(0.5, 5);
+		expect(result?.status).toBe("aligned");
+		expect(result?.findings).toEqual([]);
 	});
 
 	it("asset without geo sits in the denominator and not in geo numerators", () => {
