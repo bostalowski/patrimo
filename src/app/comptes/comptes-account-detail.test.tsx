@@ -137,11 +137,12 @@ describe("web comptes account detail surface", () => {
       diversificationTargets: [],
     });
 
+    vi.resetModules();
     const { default: AccountDetailPage } = await import("./[id]/page");
     await renderPage(AccountDetailPage({ params: Promise.resolve({ id: "pea" }) }));
 
     expect(
-      screen.getByText(/Aucune répartition géographique/i),
+      screen.getByText(/Aucune répartition disponible pour les positions liquides/i),
     ).toBeTruthy();
     expect(screen.queryByTestId("geographic-world-map")).toBeNull();
   });
