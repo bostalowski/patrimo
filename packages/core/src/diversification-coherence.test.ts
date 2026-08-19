@@ -182,7 +182,7 @@ describe("aggregatePortfolioDiversificationBreakdown", () => {
 		expect(northAmerica?.weight).toBeCloseTo(bandResult?.stockPct ?? 0, 5);
 	});
 
-	it("geo slices plus unmapped geo sum to 100% with crypto shown separately", () => {
+	it("geo, crypto and unmapped partition the liquid portfolio", () => {
 		const result = aggregatePortfolioDiversificationBreakdown(
 			[
 				position("WPEA", 500),
@@ -192,15 +192,16 @@ describe("aggregatePortfolioDiversificationBreakdown", () => {
 			[geo("WPEA", "US", 0.5), geo("WPEA", "FR", 0.3)],
 			assets,
 		);
-		const geoWeight =
+		const totalWeight =
 			(result?.regions.reduce((sum, slice) => sum + slice.weight, 0) ?? 0) +
+			(result?.crypto?.weight ?? 0) +
 			(result?.unmapped?.weight ?? 0);
-		expect(geoWeight).toBeCloseTo(1, 5);
+		expect(totalWeight).toBeCloseTo(1, 5);
 		expect(result?.crypto?.weight).toBeCloseTo(0.2, 5);
-		expect(result?.unmapped?.weight).toBeCloseTo(0.6, 5);
+		expect(result?.unmapped?.weight).toBeCloseTo(0.4, 5);
 	});
 
-	it("crypto weight is independent and not subtracted from unmapped geo", () => {
+	it("crypto with geo does not appear in unmapped", () => {
 		const result = aggregatePortfolioDiversificationBreakdown(
 			[
 				position("WPEA", 500),
@@ -223,14 +224,14 @@ describe("aggregatePortfolioDiversificationBreakdown", () => {
 		expect(result?.crypto?.weight).toBeCloseTo(0.5, 5);
 	});
 
-	it("CRYPTO without geo sits in unmapped geo while filling the crypto slice", () => {
+	it("CRYPTO without geo fills only the crypto slice, not unmapped", () => {
 		const result = aggregatePortfolioDiversificationBreakdown(
 			[position("BTC", 400), position("CASH", 600)],
 			[],
 			assets,
 		);
 		expect(result?.crypto?.weight).toBeCloseTo(0.4, 5);
-		expect(result?.unmapped?.weight).toBeCloseTo(1, 5);
+		expect(result?.unmapped?.weight).toBeCloseTo(0.6, 5);
 	});
 });
 

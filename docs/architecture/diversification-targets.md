@@ -62,9 +62,11 @@ geo % and crypto % is not expected to equal 100 %.
 `CRYPTO` assets fill the `CRYPTO` band at 100 % of their market value. When they
 have `Exposition geo` rows, they also contribute to geo bands via look-through.
 
-Portfolio breakdown on the Diversification page: **geo slices + unmapped geo =
-100 %** of liquid MV; **crypto** is shown as a separate slice on the same
-denominator (not subtracted from unmapped geo).
+Portfolio breakdown on the Diversification page partitions full liquid MV into
+**geo slices** (look-through, including crypto with `Exposition geo` rows),
+**crypto** (full `AssetType.CRYPTO` market value), and **unmapped** (the
+remainder: livret, cash, and non-crypto without geo — crypto never appears
+here). Band coherence axes still overlap (geo bands vs `CRYPTO` band).
 
 ## Surfaces
 

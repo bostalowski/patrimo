@@ -189,7 +189,11 @@ export function aggregatePortfolioDiversificationBreakdown(
 		(total, slice) => total + slice.marketValue,
 		0,
 	);
-	const unmappedMarketValue = liquidInvested - geoMapped;
+	const cryptoMarketValue = crypto?.marketValue ?? 0;
+	const unmappedMarketValue = Math.max(
+		0,
+		liquidInvested - geoMapped - cryptoMarketValue,
+	);
 	const unmapped =
 		unmappedMarketValue > 1e-6
 			? {

@@ -211,7 +211,7 @@ function ExposureBody({
       {unmapped && (
         <ul className="space-y-1 text-sm">
           <li className="flex items-center justify-between gap-4">
-            <span>Non renseigné</span>
+            <span>Hors géo et crypto</span>
             <span className="font-mono text-zinc-600 dark:text-zinc-300">
               {formatEuro(unmapped.marketValue)} ·{" "}
               {formatPercent(unmapped.weight)}

@@ -155,7 +155,7 @@ export function GeographicExposureList({
 						borderTopColor: colors.cardBorder,
 					}}
 				>
-					<Text style={{ color: colors.text, fontSize: 13 }}>Non renseigné</Text>
+					<Text style={{ color: colors.text, fontSize: 13 }}>Hors géo et crypto</Text>
 					<Text style={{ color: colors.textSecondary, fontSize: 13 }}>
 						{formatEuro(unmapped.marketValue)} ·{" "}
 						{formatPercent(unmapped.weight)}

@@ -50,10 +50,13 @@ CRYPTO numerator: full market value (or full annualized DCA) of assets with
   type === CRYPTO, independent of Exposition geo rows.
 
 Portfolio breakdown (Diversification page):
-  geo slices (countries + regions) + unmapped geo = 100 % of liquid MV.
-  crypto slice is a separate axis on the same liquid MV denominator.
-  unmapped geo = liquidInvested − sum(absolute geo contributions); crypto MV
-    is NOT subtracted from unmapped.
+  Three mutually exclusive buckets on full liquid MV:
+    geo slices (look-through, including crypto geo rows),
+    crypto slice (full CRYPTO asset type MV),
+    unmapped (liquidInvested − geoMapped − crypto MV; livret, cash, and
+      non-crypto assets without geo — never crypto).
+  WHEN geoMapped + crypto MV > liquidInvested THEN unmapped = 0 (full geo
+    coverage on crypto overlaps the crypto bucket by design).
 
 Denominator (stock): sum of positions with marketValue > 0 (all types).
   Missing geo contributes 0 to geo numerators and still sits in the denominator.
@@ -93,7 +96,7 @@ REMOVED: TargetAllocationCategory / Allocation cible as product intent;
 FORBIDDEN: inventing country weight from a region-only row; using covered
   geo MV as band denominator for band coherence or portfolio breakdown;
   treating geo + crypto + unmapped as a single partition that must sum to 100 %;
-  subtracting crypto MV from unmapped geo; HHI / Top1 / Top3;
+  counting crypto MV in unmapped; HHI / Top1 / Top3;
   auto-persist without user save; sector bands;
   "aligned" when a defined band is outside range.
 
