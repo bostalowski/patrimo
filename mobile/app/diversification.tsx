@@ -90,7 +90,6 @@ export default function DiversificationScreen() {
             regions={breakdown.regions}
             countries={breakdown.countries}
             crypto={breakdown.crypto}
-            unmapped={breakdown.unmapped}
             colors={t}
           />
         </View>
@@ -100,7 +99,6 @@ export default function DiversificationScreen() {
           <SectorExposureList
             title="Répartition sectorielle"
             sectors={sectorBreakdown.sectors}
-            unmapped={sectorBreakdown.unmapped}
             colors={t}
           />
         </View>

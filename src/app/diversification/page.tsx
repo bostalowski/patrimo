@@ -51,7 +51,7 @@ export default async function DiversificationPage() {
         </h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           Cibles min–max et répartition actuelle du portefeuille liquide (géo,
-          secteurs, crypto et non renseigné).
+          secteurs et crypto).
         </p>
       </header>
 
@@ -67,7 +67,6 @@ export default async function DiversificationPage() {
           countries={breakdown.countries}
           regions={breakdown.regions}
           crypto={breakdown.crypto}
-          unmapped={breakdown.unmapped}
           showMap={false}
         />
       )}
@@ -76,7 +75,6 @@ export default async function DiversificationPage() {
         <SectorExposurePanel
           title="Répartition sectorielle"
           sectors={sectorBreakdown.sectors}
-          unmapped={sectorBreakdown.unmapped}
         />
       )}
     </div>

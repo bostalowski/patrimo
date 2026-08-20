@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ExposureBarList } from "@/components/exposure-bar-list";
 import {
 	Card,
 	CardBody,
@@ -9,7 +10,6 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { sectorOptions } from "@/lib/sector-key-options";
-import { formatEuro, formatPercent } from "@/lib/utils";
 import type { SectorAllocation } from "@patrimo/core/schema";
 import {
 	aggregateSectorExposure,
@@ -66,30 +66,19 @@ function draftFromAllocations(allocations: SectorAllocation[]): DraftRow[] {
 
 function SliceList({ slices }: { slices: SectorSlice[] }) {
 	return (
-		<ul className="space-y-1 text-sm">
-			{slices.map((slice) => (
-				<li
-					key={slice.key}
-					className="flex items-center justify-between gap-4"
-				>
-					<span>{sectorLabel(slice.key)}</span>
-					<span className="font-mono text-zinc-600 dark:text-zinc-300">
-						{formatEuro(slice.marketValue)} · {formatPercent(slice.weight)}
-					</span>
-				</li>
-			))}
-		</ul>
+		<ExposureBarList
+			items={slices.map((slice) => ({
+				key: slice.key,
+				label: sectorLabel(slice.key),
+				weight: slice.weight,
+				marketValue: slice.marketValue,
+			}))}
+		/>
 	);
 }
 
-function ExposureBody({
-	sectors,
-	unmapped,
-}: {
-	sectors: SectorSlice[];
-	unmapped?: { marketValue: number; weight: number } | null;
-}) {
-	if (sectors.length === 0 && !unmapped) {
+function ExposureBody({ sectors }: { sectors: SectorSlice[] }) {
+	if (sectors.length === 0) {
 		return (
 			<p className="text-sm text-zinc-500">
 				Aucune répartition sectorielle disponible.
@@ -99,18 +88,7 @@ function ExposureBody({
 
 	return (
 		<div className="space-y-4">
-			{sectors.length > 0 && <SliceList slices={sectors} />}
-			{unmapped && (
-				<ul className="space-y-1 text-sm">
-					<li className="flex items-center justify-between gap-4">
-						<span>Non renseigné</span>
-						<span className="font-mono text-zinc-600 dark:text-zinc-300">
-							{formatEuro(unmapped.marketValue)} ·{" "}
-							{formatPercent(unmapped.weight)}
-						</span>
-					</li>
-				</ul>
-			)}
+			<SliceList slices={sectors} />
 		</div>
 	);
 }
@@ -118,11 +96,9 @@ function ExposureBody({
 export function SectorExposurePanel({
 	title,
 	sectors,
-	unmapped,
 }: {
 	title: string;
 	sectors: SectorSlice[];
-	unmapped?: { marketValue: number; weight: number } | null;
 }) {
 	return (
 		<Card>
@@ -130,7 +106,7 @@ export function SectorExposurePanel({
 				<CardTitle>{title}</CardTitle>
 			</CardHeader>
 			<CardBody>
-				<ExposureBody sectors={sectors} unmapped={unmapped} />
+				<ExposureBody sectors={sectors} />
 			</CardBody>
 		</Card>
 	);
