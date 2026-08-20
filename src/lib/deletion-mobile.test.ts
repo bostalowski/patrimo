@@ -117,6 +117,7 @@ function workbook(): Workbook {
     properties: [],
     manualPrices: [],
     geographicAllocations: [],
+    sectorAllocations: [],
     diversificationTargets: [],
   };
 }

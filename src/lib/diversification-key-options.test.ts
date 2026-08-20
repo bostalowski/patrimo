@@ -42,6 +42,6 @@ describe("diversificationKeyOptionsForRow", () => {
 describe("diversificationKeyOptionGroups", () => {
 	it("includes crypto, regions, and countries", () => {
 		const labels = diversificationKeyOptionGroups().map((group) => group.label);
-		expect(labels).toEqual(["Crypto", "Régions", "Pays"]);
+		expect(labels).toEqual(["Crypto", "Secteurs", "Régions", "Pays"]);
 	});
 });

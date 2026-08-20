@@ -1,7 +1,8 @@
 import { Layers } from "lucide-react";
-import { DiversificationTargetsEditor } from "@/app/geographie/diversification-targets-editor";
+import { DiversificationTargetsEditor } from "@/app/diversification/diversification-targets-editor";
 import { AllocationCoherenceCard } from "@/components/allocation-coherence-card";
 import { GeographicExposurePanel } from "@/components/geographic-exposure-panel";
+import { SectorExposurePanel } from "@/components/sector-exposure-panel";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
@@ -10,10 +11,11 @@ import {
 	aggregatePortfolioDiversificationBreakdown,
 	assessDiversificationCoherence,
 } from "@patrimo/core/diversification-coherence";
+import { aggregatePortfolioSectorBreakdown } from "@patrimo/core/sector-exposure";
 
 export const dynamic = "force-dynamic";
 
-export default async function GeographyPage() {
+export default async function DiversificationPage() {
   requireExcelConfigured();
   const workbook = loadWorkbook();
   const priceMap = await readPriceMap(workbook.assets);
@@ -27,11 +29,16 @@ export default async function GeographyPage() {
     workbook.geographicAllocations ?? [],
     workbook.assets,
   );
+  const sectorBreakdown = aggregatePortfolioSectorBreakdown(
+    positions,
+    workbook.sectorAllocations ?? [],
+  );
   const coherence = assessDiversificationCoherence({
     targets: workbook.diversificationTargets,
     positions: portfolio.assets,
     dca: workbook.dca,
     geographicAllocations: workbook.geographicAllocations,
+    sectorAllocations: workbook.sectorAllocations ?? [],
     assets: workbook.assets,
   });
 
@@ -44,7 +51,7 @@ export default async function GeographyPage() {
         </h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           Cibles min–max et répartition actuelle du portefeuille liquide (géo,
-          crypto et non renseigné).
+          secteurs et crypto).
         </p>
       </header>
 
@@ -56,12 +63,18 @@ export default async function GeographyPage() {
 
       {breakdown && (
         <GeographicExposurePanel
-          title="Répartition actuelle"
+          title="Répartition géographique"
           countries={breakdown.countries}
           regions={breakdown.regions}
           crypto={breakdown.crypto}
-          unmapped={breakdown.unmapped}
           showMap={false}
+        />
+      )}
+
+      {sectorBreakdown && (
+        <SectorExposurePanel
+          title="Répartition sectorielle"
+          sectors={sectorBreakdown.sectors}
         />
       )}
     </div>

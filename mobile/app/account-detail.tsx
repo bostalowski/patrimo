@@ -16,8 +16,10 @@ import {
 import {
   aggregateGeographicExposureForAccount,
 } from "@patrimo/core/geographic-exposure";
+import { aggregateSectorExposureForAccount } from "@patrimo/core/sector-exposure";
 import { useThemeColors, shared } from "../lib/theme";
 import { GeographicExposureList } from "../components/geographic-exposure-list";
+import { SectorExposureList } from "../components/sector-exposure-list";
 
 export default function AccountDetailScreen() {
   const isDark = useColorScheme() === "dark";
@@ -84,6 +86,15 @@ export default function AccountDetailScreen() {
     workbook.geographicAllocations ?? [],
     accountId,
   );
+  const accountSectors = aggregateSectorExposureForAccount(
+    positions.map((position) => ({
+      assetId: position.assetId,
+      accountId,
+      marketValue: position.marketValue,
+    })),
+    workbook.sectorAllocations ?? [],
+    accountId,
+  );
 
   const dividerRow = [
     shared.row,
@@ -133,6 +144,14 @@ export default function AccountDetailScreen() {
             title="Géographie du compte"
             countries={accountGeo.countries}
             regions={accountGeo.regions}
+            colors={t}
+          />
+        </View>
+
+        <View style={[shared.card, { backgroundColor: t.card }]}>
+          <SectorExposureList
+            title="Secteurs du compte"
+            sectors={accountSectors.sectors}
             colors={t}
           />
         </View>

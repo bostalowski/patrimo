@@ -62,7 +62,7 @@ vi.mock("./write-account", () => ({
 }));
 
 import { router } from "expo-router";
-import GeographieScreen from "../app/geographie";
+import DiversificationScreen from "../app/diversification";
 import ComptesScreen from "../app/comptes";
 import AccountDetailScreen from "../app/account-detail";
 import { AssetGeographicEditor } from "../components/asset-geographic-editor";
@@ -166,10 +166,10 @@ describe("mobile geographic UI", () => {
   it("mobile global geography screen renders aggregated country slices", () => {
     let renderer!: ReactTestRenderer;
     act(() => {
-      renderer = create(<GeographieScreen />);
+      renderer = create(<DiversificationScreen />);
     });
 
-    expect(findByText(renderer, "Répartition actuelle").length).toBeGreaterThan(
+    expect(findByText(renderer, "Répartition géographique").length).toBeGreaterThan(
       0,
     );
     expect(findByText(renderer, /États-Unis/i).length).toBeGreaterThan(0);

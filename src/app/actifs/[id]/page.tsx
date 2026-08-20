@@ -21,6 +21,7 @@ import { AssetForm } from "../asset-form";
 import { AssetPositionKpis } from "../asset-position-kpis";
 import { ManualPriceInput } from "./manual-price-input";
 import { AssetGeographicSection } from "@/components/geographic-exposure-panel";
+import { AssetSectorSection } from "@/components/sector-exposure-panel";
 import { assetDeletionImpact } from "@/lib/deletion-impact";
 import {
   formatDate,
@@ -29,6 +30,7 @@ import {
   formatQuantity,
 } from "@/lib/utils";
 import { aggregateGeographicExposure } from "@patrimo/core/geographic-exposure";
+import { aggregateSectorExposure } from "@patrimo/core/sector-exposure";
 
 const typeVariants = {
   ACHAT: "success",
@@ -84,6 +86,9 @@ export default async function AssetDetailPage({
     (row) => row.assetId === decodedId,
   );
   const marketValue = position?.marketValue ?? 0;
+  const assetSectorAllocations = (workbook.sectorAllocations ?? []).filter(
+    (row) => row.assetId === decodedId,
+  );
   const assetGeo = aggregateGeographicExposure(
     [
       {
@@ -93,6 +98,20 @@ export default async function AssetDetailPage({
       },
     ],
     assetAllocations,
+  );
+  const assetSectors = aggregateSectorExposure(
+    [
+      {
+        assetId: decodedId,
+        marketValue:
+          marketValue > 0
+            ? marketValue
+            : assetSectorAllocations.length > 0
+              ? 1
+              : 0,
+      },
+    ],
+    assetSectorAllocations,
   );
 
   const sourceUrl = getAssetSourceUrl(asset);
@@ -186,6 +205,22 @@ export default async function AssetDetailPage({
         marketValue={marketValue}
         regions={assetGeo.regions}
         countries={assetGeo.countries}
+      />
+
+      <AssetSectorSection
+        key={JSON.stringify(
+          assetSectorAllocations.map((row) => [
+            row.sector,
+            row.weight,
+            row.source,
+          ]),
+        )}
+        assetId={asset.id}
+        assetLabel={asset.label}
+        hasIsin={Boolean(asset.isin)}
+        allocations={assetSectorAllocations}
+        marketValue={marketValue}
+        sectors={assetSectors.sectors}
       />
 
       <Card>

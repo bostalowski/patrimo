@@ -235,6 +235,17 @@ export const GeographicAllocation = z.object({
 });
 export type GeographicAllocation = z.infer<typeof GeographicAllocation>;
 
+export const SectorAllocationSource = GeographicAllocationSource;
+export type SectorAllocationSource = GeographicAllocationSource;
+
+export const SectorAllocation = z.object({
+	assetId: z.string().min(1),
+	sector: z.string().min(1),
+	weight: z.number().min(0).max(1),
+	source: SectorAllocationSource,
+});
+export type SectorAllocation = z.infer<typeof SectorAllocation>;
+
 export const DiversificationTarget = z.object({
 	key: z.string().min(1),
 	minPct: z.number().min(0).max(1),
@@ -251,5 +262,6 @@ export type Workbook = {
 	dca: DcaConfig[];
 	manualPrices: ManualPrice[];
 	geographicAllocations: GeographicAllocation[];
+	sectorAllocations: SectorAllocation[];
 	diversificationTargets: DiversificationTarget[];
 };

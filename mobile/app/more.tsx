@@ -17,7 +17,7 @@ const MENU_ITEMS: MenuItem[] = [
   { label: "Fiscalité", route: "/fiscalite", icon: "document-text-outline", description: "Plus-values et revenus imposables" },
   { label: "Investissements", route: "/investissements", icon: "trending-up-outline", description: "DCA et immobilier" },
   { label: "Projection", route: "/projection", icon: "analytics-outline", description: "Simulation sur 20 ans" },
-  { label: "Diversification", route: "/geographie", icon: "layers-outline", description: "Cibles, crypto et répartition géographique" },
+  { label: "Diversification", route: "/diversification", icon: "layers-outline", description: "Cibles, géo, secteurs et crypto" },
 ];
 
 export default function MoreScreen() {

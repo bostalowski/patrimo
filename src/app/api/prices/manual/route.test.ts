@@ -67,6 +67,7 @@ function workbook(
     properties: [],
     dca: [],
     geographicAllocations: [],
+    sectorAllocations: [],
     diversificationTargets: [],
     manualPrices,
   };
@@ -182,6 +183,7 @@ describe("/api/prices/manual", () => {
       ...workbook(),
       manualPrices: [],
     geographicAllocations: [],
+    sectorAllocations: [],
     diversificationTargets: [],
     });
   });

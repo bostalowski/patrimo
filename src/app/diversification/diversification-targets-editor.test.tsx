@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({
 	useRouter: () => ({ refresh: vi.fn() }),
 }));
 
-import { DiversificationTargetsEditor } from "@/app/geographie/diversification-targets-editor";
+import { DiversificationTargetsEditor } from "@/app/diversification/diversification-targets-editor";
 
 afterEach(() => {
 	cleanup();

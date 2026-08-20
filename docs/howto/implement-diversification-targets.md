@@ -13,6 +13,8 @@ Ordered vertical scopes after SPEC LOCK. Decision: [ADR 0012](../adr/0012-alloca
 - [x] 5. Portfolio breakdown: geo slices + unmapped geo = 100 %; crypto slice is separate on same denominator
 - [x] 6. Mixed country + region keys without overlap are evaluated independently
 - [x] 7. All defined bands in range → status `aligned`
+- [x] 7b. Slightly outside (≤ 2 pp) → status `watch` + finding tone `watch`
+- [x] 7c. Far outside (> 2 pp) → status `misaligned` + finding tone `breach`
 - [x] 8. Account and asset geo charts include crypto look-through when Exposition geo rows exist
 
 ### Cas qui dérapent

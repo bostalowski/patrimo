@@ -98,6 +98,7 @@ function sourceWorkbook(): Workbook {
 		properties: [],
 		manualPrices: [],
 		geographicAllocations: [],
+		sectorAllocations: [],
 		diversificationTargets: [],
 	};
 }

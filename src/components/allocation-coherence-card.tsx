@@ -1,35 +1,64 @@
 import type {
 	DiversificationCoherenceResult,
 	DiversificationCoherenceStatus,
+	DiversificationFinding,
 	DiversificationFindingKind,
 } from "@patrimo/core/diversification-coherence";
 import { diversificationKeyLabel } from "@patrimo/core/diversification-labels";
-import { isValueInDiversificationBand } from "@patrimo/core/diversification-targets";
+import {
+	assessDiversificationBandTone,
+	diversificationBandSignedDelta,
+	type DiversificationBandTone,
+} from "@patrimo/core/diversification-targets";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 
 const STATUS_LABEL: Record<DiversificationCoherenceStatus, string> = {
 	aligned: "Aligné",
+	watch: "À surveiller",
 	misaligned: "Décalé",
 };
 
 const STATUS_BADGE: Record<
 	DiversificationCoherenceStatus,
-	"success" | "danger"
+	"success" | "warning" | "danger"
 > = {
 	aligned: "success",
+	watch: "warning",
 	misaligned: "danger",
 };
 
-const FINDING_LABEL: Record<DiversificationFindingKind, string> = {
-	band_drift: "Stock hors bande",
-	flow_misalign: "DCA hors bande",
+const FINDING_LABEL: Record<
+	DiversificationFindingKind,
+	Record<"watch" | "breach", string>
+> = {
+	band_drift: {
+		watch: "Stock à surveiller",
+		breach: "Stock hors bande",
+	},
+	flow_misalign: {
+		watch: "DCA à surveiller",
+		breach: "DCA hors bande",
+	},
+};
+
+const TONE_TEXT: Record<DiversificationBandTone, string> = {
+	ok: "text-zinc-700 dark:text-zinc-300",
+	watch: "font-semibold text-amber-700 dark:text-amber-400",
+	breach: "font-semibold text-rose-600 dark:text-rose-400",
 };
 
 const pctFormatter = new Intl.NumberFormat("fr-FR", {
 	style: "percent",
-	maximumFractionDigits: 0,
+	minimumFractionDigits: 1,
+	maximumFractionDigits: 1,
+});
+
+const ppFormatter = new Intl.NumberFormat("fr-FR", {
+	signDisplay: "exceptZero",
+	minimumFractionDigits: 1,
+	maximumFractionDigits: 1,
 });
 
 function fmt(value: number | null | undefined): string {
@@ -40,6 +69,40 @@ function fmt(value: number | null | undefined): string {
 function fmtBand(minPct: number, maxPct: number): string {
 	if (minPct === maxPct) return fmt(minPct);
 	return `${pctFormatter.format(minPct)}–${pctFormatter.format(maxPct)}`;
+}
+
+function fmtDelta(delta: number): string | null {
+	if (delta === 0) return null;
+	return `${ppFormatter.format(delta * 100)} pp`;
+}
+
+function findingLabel(f: DiversificationFinding): string {
+	return FINDING_LABEL[f.kind][f.tone];
+}
+
+function ValueCell({
+	value,
+	minPct,
+	maxPct,
+}: {
+	value: number | null;
+	minPct: number;
+	maxPct: number;
+}) {
+	if (value === null) {
+		return <span className="text-zinc-700 dark:text-zinc-300">—</span>;
+	}
+	const tone = assessDiversificationBandTone(value, minPct, maxPct);
+	const delta = diversificationBandSignedDelta(value, minPct, maxPct);
+	const deltaLabel = fmtDelta(delta);
+	return (
+		<span className={`inline-flex flex-col items-end leading-tight ${TONE_TEXT[tone]}`}>
+			<span>{fmt(value)}</span>
+			{deltaLabel && (
+				<span className="text-[11px] font-medium opacity-90">{deltaLabel}</span>
+			)}
+		</span>
+	);
 }
 
 export function AllocationCoherenceCard({
@@ -73,8 +136,11 @@ export function AllocationCoherenceCard({
 				{deduped.length > 0 && (
 					<div className="mt-2 flex flex-wrap gap-1">
 						{deduped.map((f) => (
-							<Badge key={`${f.kind}:${f.key}`} variant="danger">
-								{FINDING_LABEL[f.kind]}
+							<Badge
+								key={`${f.kind}:${f.key}`}
+								variant={f.tone === "watch" ? "warning" : "danger"}
+							>
+								{findingLabel(f)}
 								{f.key ? ` · ${diversificationKeyLabel(f.key)}` : ""}
 							</Badge>
 						))}
@@ -102,53 +168,35 @@ export function AllocationCoherenceCard({
 						</tr>
 					</thead>
 					<tbody>
-						{coherence.bands.map((band) => {
-							const driftBad = !isValueInDiversificationBand(
-								band.stockPct,
-								band.minPct,
-								band.maxPct,
-							);
-							const flowBad =
-								band.flowPct !== null &&
-								!isValueInDiversificationBand(
-									band.flowPct,
-									band.minPct,
-									band.maxPct,
-								);
-							return (
-								<tr
-									key={band.key}
-									className="border-b border-zinc-50 last:border-0 dark:border-zinc-800/50"
-								>
-									<td className="py-2 text-zinc-700 dark:text-zinc-300">
-										{diversificationKeyLabel(band.key)}
+						{coherence.bands.map((band) => (
+							<tr
+								key={band.key}
+								className="border-b border-zinc-50 last:border-0 dark:border-zinc-800/50"
+							>
+								<td className="py-2 text-zinc-700 dark:text-zinc-300">
+									{diversificationKeyLabel(band.key)}
+								</td>
+								<td className="py-2 pr-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+									{fmtBand(band.minPct, band.maxPct)}
+								</td>
+								<td className="py-2 pr-2 text-right tabular-nums">
+									<ValueCell
+										value={band.stockPct}
+										minPct={band.minPct}
+										maxPct={band.maxPct}
+									/>
+								</td>
+								{coherence.annualDcaTotal > 0 && (
+									<td className="py-2 text-right tabular-nums">
+										<ValueCell
+											value={band.flowPct}
+											minPct={band.minPct}
+											maxPct={band.maxPct}
+										/>
 									</td>
-									<td className="py-2 pr-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
-										{fmtBand(band.minPct, band.maxPct)}
-									</td>
-									<td
-										className={`py-2 pr-2 text-right tabular-nums ${
-											driftBad
-												? "font-semibold text-rose-600 dark:text-rose-400"
-												: "text-zinc-700 dark:text-zinc-300"
-										}`}
-									>
-										{fmt(band.stockPct)}
-									</td>
-									{coherence.annualDcaTotal > 0 && (
-										<td
-											className={`py-2 text-right tabular-nums ${
-												flowBad
-													? "font-semibold text-rose-600 dark:text-rose-400"
-													: "text-zinc-700 dark:text-zinc-300"
-											}`}
-										>
-											{fmt(band.flowPct)}
-										</td>
-									)}
-								</tr>
-							);
-						})}
+								)}
+							</tr>
+						))}
 					</tbody>
 				</table>
 				{hasDcaFindings && (

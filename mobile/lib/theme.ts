@@ -11,6 +11,7 @@ export const colors = {
     accent: "#a78bfa",
     accentBg: "#7c3aed",
     success: "#34d399",
+    warning: "#fbbf24",
     danger: "#f87171",
   },
   light: {
@@ -23,6 +24,7 @@ export const colors = {
     accent: "#7c3aed",
     accentBg: "#7c3aed",
     success: "#059669",
+    warning: "#d97706",
     danger: "#dc2626",
   },
 } as const;
