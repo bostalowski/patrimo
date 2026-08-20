@@ -1,0 +1,24 @@
+# Run: harness-dod-observability-loops
+
+- Date: 2026-08-20
+- Goal: Close harness gaps — three-layer DoD, CI e2e, sprint/checker observability, FEATURES contracts, loop helpers
+- Feature (FEATURES.md): Agent / harness meta (DoD, contracts, maker/checker, loops, cold-start script)
+- Sprint contract:
+  - Scope: harness docs/scripts/CI/rules only; no product feature work
+  - Verification: `make verify`; `make cold-start`; `make next-feature`; scripts executable
+  - Exclusions: mobile lint debt; product FEATURES rows; full overnight `/loop` automation
+- Files read: CONSTRAINTS, AGENTS, FEATURES, PROGRESS, DOC_MODEL, playwright.config, ci.yml, Learn Harness gap analysis
+- Changes:
+  - CONSTRAINTS 19–23 (DoD layers, checker, WIP=1)
+  - AGENTS lifecycle + DoD table
+  - CI e2e job
+  - docs/agent/* templates; howto maker-checker + agent-loop
+  - FEATURES open-work contracts
+  - scripts next-feature / cold-start-check; Makefile targets; npm scripts
+  - `.cursor/skills/patrimo-harness`
+- Verify:
+  - Layer 1 `make verify` → (session end)
+  - Layer 2 n/a (docs/scripts)
+  - Layer 3 `make e2e` → n/a for this change set (CI will run on PR); smoke already exists
+- Checker: harness-meta / docs — maker self-check via cold-start 5/5 + next-feature prints Sector allocation; full adversarial checker optional for doc-only
+- Handoff / next: fresh-session cold-start; then product `make next-feature`

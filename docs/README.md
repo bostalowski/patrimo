@@ -2,35 +2,42 @@
 
 Technical documentation for **Patrimo**, a local wealth-tracking application.
 
+Harness map: [AGENTS.md](../AGENTS.md) · [CONSTRAINTS.md](../CONSTRAINTS.md) · [docs/DOC_MODEL.md](DOC_MODEL.md) · [FEATURES.md](../FEATURES.md) · [PROGRESS.md](../PROGRESS.md).
+
 End-user installation and Excel setup remain in the root [README](../README.md).
 
-## Anchor pages
+## Entry points
 
 | Page | Role |
 |---|---|
-| [Key principles](overview/key-principles.md) | Design commitments |
-| [Foundations](architecture/foundations.md) | Mechanical invariants |
+| [CONSTRAINTS.md](../CONSTRAINTS.md) | Hard MUST / MUST NOT |
+| [packages/core/ARCHITECTURE.md](../packages/core/ARCHITECTURE.md) | Domain mechanics |
+| [src/ARCHITECTURE.md](../src/ARCHITECTURE.md) | Web adapters / UI |
+| [mobile/ARCHITECTURE.md](../mobile/ARCHITECTURE.md) | Expo app |
+| [electron/ARCHITECTURE.md](../electron/ARCHITECTURE.md) | Desktop shell |
 | [Glossary](reference/glossary.md) | Canonical vocabulary |
 
 ## Overview
 
 - [Platforms](overview/platforms.md) — web, Electron, mobile capabilities
 
-## Architecture
+## Colocated mechanics (canonical)
 
-- [Monorepo layers](architecture/monorepo-layers.md)
-- [Workbook persistence](architecture/workbook-persistence.md)
-- [Price sync pipeline](architecture/price-sync-pipeline.md)
-- [Manual price persistence](architecture/manual-price-persistence.md)
-- [Deletion pipeline](architecture/deletion-pipeline.md)
-- [Asset invested display](architecture/asset-invested-display.md)
-- [Mobile projection extra contributions](architecture/mobile-projection-extra-contributions.md)
-- [Emergency fund health](architecture/emergency-fund-health.md)
-- [Portfolio risk readability](architecture/portfolio-risk-readability.md)
-- [Fee monitoring ratios](architecture/fee-monitoring-ratios.md)
-- [Geographic allocation](architecture/geographic-allocation.md)
-- [Diversification targets and coherence](architecture/diversification-targets.md)
-- [Financial goals](architecture/financial-goals.md)
+- [Workbook persistence](../src/workbook-persistence.md)
+- [Price sync](../src/price-sync.md)
+- [Deletion](../packages/core/deletion.md)
+- [Manual prices](../packages/core/manual-prices.md)
+- [Geographic allocation](../packages/core/geographic-allocation.md)
+- [Sector allocation](../packages/core/sector-allocation.md)
+- [Diversification targets](../packages/core/diversification-targets.md)
+- [Financial goals](../packages/core/financial-goals.md)
+- [Emergency fund](../packages/core/emergency-fund.md)
+- [Portfolio risk](../packages/core/portfolio-risk.md)
+- [Fee monitoring](../packages/core/fee-monitoring.md)
+- [Asset invested display](../src/asset-invested-display.md)
+- [Mobile projection extras](../mobile/projection-extra-contributions.md)
+
+Stubs under [architecture/](architecture/) redirect to the paths above.
 
 ## Reference
 
@@ -38,8 +45,18 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Excel workbook schema](reference/excel-workbook.md)
 - [Web API routes](reference/api-routes.md)
 
+## Agent harness
+
+- [Sprint contract](agent/sprint-contract.md)
+- [Scoring rubric](agent/scoring-rubric.md)
+- [Run logs](agent/runs/README.md)
+- [Maker / checker](howto/maker-checker.md)
+- [Agent loops](howto/agent-loop.md)
+- [Cold-start test](howto/cold-start-test.md)
+
 ## How-to
 
+- [PR checklist (harness)](howto/pr-checklist.md)
 - [Cut a desktop release](howto/cut-a-desktop-release.md)
 - [Local development setup](howto/local-dev-setup.md)
 - [Configure the Excel source](howto/configure-excel-source.md)

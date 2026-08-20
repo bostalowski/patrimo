@@ -143,6 +143,8 @@ describe("normalizeFinancialGoals inflationIncluded", () => {
 				type: "CAPITAL_AT_DATE",
 				targetAmount: 100_000,
 				targetDate: new Date("2035-01-01T00:00:00.000Z"),
+				// Simulate legacy workbook rows before the field existed.
+				inflationIncluded: undefined as unknown as boolean,
 			},
 		]);
 		expect(goal.inflationIncluded).toBe(true);

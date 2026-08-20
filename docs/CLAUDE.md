@@ -1,20 +1,26 @@
 # Docs contributor guardrails
 
-Read [DOC_STRUCTURE_MODEL.md](../DOC_STRUCTURE_MODEL.md) before adding or editing documentation.
+Read [DOC_MODEL.md](DOC_MODEL.md) before adding or editing documentation.
 
 ## Always load first
 
-1. [Key principles](overview/key-principles.md)
-2. [Foundations](architecture/foundations.md)
-3. [Glossary](reference/glossary.md)
+1. [CONSTRAINTS.md](../CONSTRAINTS.md)
+2. [Glossary](reference/glossary.md)
+3. [PROGRESS.md](../PROGRESS.md)
+
+Then the colocated `ARCHITECTURE.md` for the package you change.
 
 ## Placement checklist
 
-- Choose one Diátaxis family per page.
+- Mechanics → colocated `ARCHITECTURE.md` (or topic note beside the module).
+- Decisions → [adr/](adr/) (append-only once accepted).
+- Names → [reference/glossary.md](reference/glossary.md) first.
+- Procedures → [howto/](howto/).
 - Prefer linking over restating.
 - Keep sheet names, enums, and reserved identifiers identical to `@patrimo/core`.
 - Tax pages must describe estimates as simplified / indicative unless an accepted ADR says otherwise.
 - Platform pages describe current web and mobile capabilities factually. Feature parity is a product direction, not an implemented guarantee.
+- If you change code, update the neighboring ARCHITECTURE map when it would otherwise lie.
 
 ## Existing decision records
 

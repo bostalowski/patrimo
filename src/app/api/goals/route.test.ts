@@ -78,6 +78,7 @@ describe("/api/goals", () => {
 					type: "RETIREMENT_INCOME",
 					targetAmount: 3000,
 					targetAge: 60,
+					inflationIncluded: true,
 				},
 			],
 		});

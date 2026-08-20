@@ -36,7 +36,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | Benchmarks | Present | Absent |
 | Emergency fund health | Present | Present |
 | Portfolio readable risk badges | Present | Present |
-| Geographic allocation | Present — `/geographie`, asset detail, account detail; dual country + region views; guided manual pickers | Present — Plus menu, edit asset (guided manual), account detail; dual lists; accounts list without full geo; map later |
+| Geographic allocation | Present — `/diversification` (legacy `/geographie` redirects), asset detail, account detail; dual country + region views; guided manual pickers | Present — Plus menu, edit asset (guided manual), account detail; dual lists; accounts list without full geo; map later |
 
 ## Shared versus platform-owned
 
@@ -49,6 +49,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 
 ## See also
 
-- [Key principles](key-principles.md)
-- [Monorepo layers](../architecture/monorepo-layers.md)
-- [Price sync pipeline](../architecture/price-sync-pipeline.md)
+- [CONSTRAINTS.md](../../CONSTRAINTS.md)
+- [FEATURES.md](../../FEATURES.md)
+- [src/ARCHITECTURE.md](../../src/ARCHITECTURE.md)
+- [Price sync](../../src/price-sync.md)
