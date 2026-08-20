@@ -19,8 +19,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh, push }),
 }));
 
-const AccountFormWithDeletion = AccountForm as ComponentType<any>;
-const AssetFormWithDeletion = AssetForm as ComponentType<any>;
+const AccountFormWithDeletion = AccountForm as ComponentType<
+  Record<string, unknown>
+>;
+const AssetFormWithDeletion = AssetForm as ComponentType<
+  Record<string, unknown>
+>;
 
 afterEach(cleanup);
 

@@ -142,8 +142,8 @@ Measure of alignment between saved **Diversification target** bands, current liq
 
 ## See also
 
-- [Key principles](../overview/key-principles.md)
-- [Foundations](../architecture/foundations.md)
+- [CONSTRAINTS.md](../../CONSTRAINTS.md)
+- [packages/core/ARCHITECTURE.md](../../packages/core/ARCHITECTURE.md)
 - [ADR 0001](../adr/0001-share-deletion-rules-across-platforms.md)
 - [ADR 0002](../adr/0002-store-manual-prices-in-workbook.md)
 - [ADR 0004](../adr/0004-show-non-monthly-streams-on-mobile-projection.md)

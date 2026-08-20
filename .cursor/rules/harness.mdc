@@ -1,0 +1,24 @@
+---
+description: Patrimo harness — load constraints, verify before done, update PROGRESS
+alwaysApply: true
+---
+
+# Patrimo harness
+
+Before changing product behavior:
+
+1. Read [CONSTRAINTS.md](CONSTRAINTS.md)
+2. Read [docs/reference/glossary.md](docs/reference/glossary.md)
+3. Read [PROGRESS.md](PROGRESS.md)
+4. Read the colocated `ARCHITECTURE.md` for the package you touch
+
+## Stop criteria
+
+- Do not declare a task done without green `make verify` (lint + typecheck + unit tests).
+- Work one [FEATURES.md](FEATURES.md) item at a time.
+- Do not invent sheet names, enums, or reserved IDs — use the glossary and `@patrimo/core`.
+- Update PROGRESS.md at session end. Optional run log: `docs/agent/runs/`.
+
+## Doc placement
+
+Mechanics live next to code (`ARCHITECTURE.md`). Decisions live in `docs/adr/`. See [docs/DOC_MODEL.md](docs/DOC_MODEL.md).

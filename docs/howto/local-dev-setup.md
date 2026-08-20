@@ -54,9 +54,11 @@ npm run ios
 ## Test and lint
 
 ```bash
-npm test
-npm run lint
+make verify
+# or: npm run verify
 ```
+
+`make verify` runs lint, typecheck, and unit tests.
 
 ## Build artifacts
 
