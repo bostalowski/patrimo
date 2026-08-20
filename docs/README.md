@@ -45,10 +45,18 @@ Stubs under [architecture/](architecture/) redirect to the paths above.
 - [Excel workbook schema](reference/excel-workbook.md)
 - [Web API routes](reference/api-routes.md)
 
+## Agent harness
+
+- [Sprint contract](agent/sprint-contract.md)
+- [Scoring rubric](agent/scoring-rubric.md)
+- [Run logs](agent/runs/README.md)
+- [Maker / checker](howto/maker-checker.md)
+- [Agent loops](howto/agent-loop.md)
+- [Cold-start test](howto/cold-start-test.md)
+
 ## How-to
 
 - [PR checklist (harness)](howto/pr-checklist.md)
-- [Cold-start test](howto/cold-start-test.md)
 - [Cut a desktop release](howto/cut-a-desktop-release.md)
 - [Local development setup](howto/local-dev-setup.md)
 - [Configure the Excel source](howto/configure-excel-source.md)

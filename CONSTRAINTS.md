@@ -37,6 +37,11 @@ Mechanics live in colocated `ARCHITECTURE.md` files (see [docs/DOC_MODEL.md](doc
 
 ## Agent stop criteria
 
-19. MUST NOT declare a task done without a green `make verify` (or equivalent `npm run verify`) for the change set.
+19. MUST NOT declare a task done without green verification for the change set:
+    - Layer 1 (always): `make verify` (lint + typecheck + unit tests).
+    - Layer 2 (when behavior changes): targeted tests for the touched package/path.
+    - Layer 3 (when web UI, API routes under `src/app/api`, workbook I/O, or settings paths change): `make e2e` / `make verify-full`.
 20. MUST NOT invent sheet names, enums, or reserved identifiers; use the glossary and `@patrimo/core` schema.
 21. MUST discuss before coding any change that contradicts this file, a colocated `ARCHITECTURE.md`, an accepted ADR, or a glossary term.
+22. MUST NOT treat the implementing agent's self-assessment as completion proof. For non-trivial product changes, a separate checker pass (fresh session or distinct role — see [docs/howto/maker-checker.md](docs/howto/maker-checker.md)) MUST review against the sprint contract and verification commands before declaring done.
+23. MUST work one [FEATURES.md](FEATURES.md) open item at a time (WIP = 1). MUST NOT start a second open feature until verify is green and [PROGRESS.md](PROGRESS.md) is updated.

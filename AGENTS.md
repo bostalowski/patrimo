@@ -13,15 +13,38 @@ Then read the `ARCHITECTURE.md` for the package you touch (see below).
 ## Run and verify
 
 ```bash
-make setup         # npm ci
-make verify        # lint + typecheck + unit tests
-make verify-full   # verify + Playwright e2e
-make init          # scripts/agent-init.sh (setup + verify + PROGRESS)
+make setup           # npm ci
+make verify          # layer 1: lint + typecheck + unit tests
+make e2e             # layer 3: Playwright workbook smoke
+make verify-full     # layers 1 + 3
+make init            # scripts/agent-init.sh (setup + verify + PROGRESS + open contracts)
+make next-feature    # print the next open FEATURES contract
+make cold-start      # score whether the repo answers the five cold-start questions
 ```
 
-Equivalent: `npm run verify`. Feature-scoped tests: `npm test -- <path>`.
+Equivalent: `npm run verify` / `npm run verify-full`. Feature-scoped tests: `npm test -- <path>`.
 
-**Stop criteria:** do not declare victory without green `make verify` and targeted tests for the feature. One feature at a time — see [FEATURES.md](FEATURES.md). Lint currently gates `packages/core` + `src` (mobile lint debt is out of gate).
+### Definition of Done (three layers)
+
+| Layer | Command | When |
+|---|---|---|
+| 1 Syntax / static | `make verify` | Always before claiming done |
+| 2 Behavior | targeted `npm test -- <path>` | Any behavior change |
+| 3 System | `make e2e` / `make verify-full` | Web UI, `src/app/api`, workbook I/O, settings |
+
+Do not declare victory on layer 1 alone when layer 3 applies. One feature at a time — see [FEATURES.md](FEATURES.md). Lint currently gates `packages/core` + `src` (mobile lint debt is out of gate).
+
+### Maker ≠ checker
+
+The agent that implements MUST NOT be the sole judge of completion. After green verify, run a **checker** pass (fresh session or explicit checker role) against the sprint contract. Procedure: [docs/howto/maker-checker.md](docs/howto/maker-checker.md). Rubric: [docs/agent/scoring-rubric.md](docs/agent/scoring-rubric.md).
+
+### Session artifacts
+
+Before coding a feature: copy [docs/agent/sprint-contract.md](docs/agent/sprint-contract.md) into the run log or paste a short contract into PROGRESS.
+
+After the session: update PROGRESS; optionally add `docs/agent/runs/YYYY-MM-DD-slug.md` from [docs/agent/runs/README.md](docs/agent/runs/README.md).
+
+Autonomous loops (goal/cron): [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
 
 ## When to read what
 
@@ -39,9 +62,11 @@ Equivalent: `npm run verify`. Feature-scoped tests: `npm test -- <path>`.
 ## Session lifecycle
 
 1. **Init:** `make init` (or read PROGRESS.md + run verify baseline).
-2. **Work:** one FEATURES.md item; update colocated ARCHITECTURE / ADR / glossary with the code.
-3. **Verify:** `make verify` (+ targeted tests). Never claim done on failing verify.
-4. **Handoff:** update PROGRESS.md (done / in-progress / blocked / last verify). Optionally add `docs/agent/runs/YYYY-MM-DD-slug.md`.
+2. **Contract:** pick one open FEATURES row (`make next-feature`); write a sprint contract.
+3. **Work:** implement that item only; update colocated ARCHITECTURE / ADR / glossary with the code.
+4. **Verify:** layers required by DoD above. Never claim done on failing verify.
+5. **Check:** maker/checker pass against contract + rubric.
+6. **Handoff:** update PROGRESS.md (done / in-progress / blocked / last verify). Optional run log under `docs/agent/runs/`.
 
 ## Next.js
 

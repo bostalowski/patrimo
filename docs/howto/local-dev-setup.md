@@ -54,11 +54,14 @@ npm run ios
 ## Test and lint
 
 ```bash
-make verify
-# or: npm run verify
+make verify        # layer 1: lint + typecheck + unit tests
+make e2e           # layer 3: Playwright workbook smoke (starts Next on :3000)
+make verify-full   # layers 1 + 3
+make cold-start    # harness map health (5 questions)
+make next-feature  # next open FEATURES contract
 ```
 
-`make verify` runs lint, typecheck, and unit tests.
+Or: `npm run verify` / `npm run verify-full`. Agent session bootstrap: `make init`.
 
 ## Build artifacts
 

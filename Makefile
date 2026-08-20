@@ -1,4 +1,4 @@
-.PHONY: setup test lint typecheck verify verify-full init e2e
+.PHONY: setup test lint typecheck verify verify-full init e2e next-feature cold-start
 
 setup:
 	npm ci
@@ -21,3 +21,9 @@ init:
 
 e2e:
 	npm run e2e
+
+next-feature:
+	bash scripts/next-feature.sh
+
+cold-start:
+	bash scripts/cold-start-check.sh

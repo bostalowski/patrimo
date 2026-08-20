@@ -12,8 +12,13 @@ echo "=== PROGRESS.md ==="
 cat PROGRESS.md
 
 echo ""
-echo "==> FEATURES.md (open items)"
-grep -E '\| (todo|partial|absent|in progress) \|' FEATURES.md || true
+echo "==> Open FEATURES contracts"
+bash scripts/next-feature.sh || true
 
 echo ""
-echo "Ready. One feature at a time. Stop only after green make verify."
+echo "==> Cold-start map"
+bash scripts/cold-start-check.sh || true
+
+echo ""
+echo "Ready. One feature at a time. Sprint contract → implement → DoD layers → checker."
+echo "Stop only after green verify (and e2e when layer 3 applies)."

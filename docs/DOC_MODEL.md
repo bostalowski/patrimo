@@ -9,7 +9,8 @@ Harness-first layout. Diátaxis families are **not** required. Put knowledge whe
 | Entry / router | What is this, how to run/verify, what to read | [AGENTS.md](../AGENTS.md) |
 | Hard constraints | MUST / MUST NOT | [CONSTRAINTS.md](../CONSTRAINTS.md) |
 | Session state | Done / in-progress / blocked | [PROGRESS.md](../PROGRESS.md) |
-| Feature scope | What exists, what is in flight | [FEATURES.md](../FEATURES.md) |
+| Feature scope | What exists, what is in flight | [FEATURES.md](../FEATURES.md) (open-work contracts + verify cmds) |
+| Sprint / score | Scope, exclusions, checker rubric | [docs/agent/sprint-contract.md](agent/sprint-contract.md), [scoring-rubric.md](agent/scoring-rubric.md) |
 | Mechanics | How this package works | Colocated `ARCHITECTURE.md` (+ topic notes beside modules) |
 | Decisions | Why we chose X | [docs/adr/](adr/) |
 | Names | Canonical vocabulary | [docs/reference/glossary.md](reference/glossary.md) |

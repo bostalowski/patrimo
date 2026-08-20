@@ -4,31 +4,34 @@ Session handoff for agents and humans. Update at end of every meaningful session
 
 ## Current focus
 
-- **In progress:** none (harness alignment wave complete)
+- **In progress:** none
 - **Blocked:** none
 
 ## Done (recent)
 
-- [x] CONSTRAINTS.md + AGENTS.md router + docs/DOC_MODEL.md
-- [x] Makefile / npm verify + typecheck + CI workflow
-- [x] PROGRESS.md / FEATURES.md
-- [x] Colocated ARCHITECTURE.md (core / src / mobile / electron) + topic notes + architecture stubs
-- [x] Playwright workbook critical-path e2e (`make e2e`)
-- [x] Agent init script + Cursor harness rule + PR checklist + cold-start howto
-- [x] Lint gate scoped to `packages/core` + `src` (mobile lint debt deferred)
+- [x] Three-layer DoD in CONSTRAINTS + AGENTS + Cursor harness rule
+- [x] CI e2e job (Playwright Chromium) alongside verify
+- [x] Sprint contract + scoring rubric + run-log template
+- [x] Maker/checker + agent-loop howtos
+- [x] FEATURES open-work contracts with verify/evidence columns
+- [x] `make next-feature` / `make cold-start` / richer `make init`
+- [x] Repo skill `.cursor/skills/patrimo-harness`
+- [x] Cold-start map script score 5/5 (`make cold-start`)
+- [x] Fresh-session cold-start logged → [docs/agent/runs/2026-08-20-cold-start.md](docs/agent/runs/2026-08-20-cold-start.md) (5/5)
 
 ## Next
 
 - [ ] Expand mobile lint into the verify gate when debt is paid down
-- [ ] Optionally add `make e2e` to CI (`verify-full`)
-- [ ] Run a cold-start test in a fresh session ([docs/howto/cold-start-test.md](docs/howto/cold-start-test.md))
+- [ ] Optional: schedule a Level-2 agent loop (cron / Cursor `/loop`) per [docs/howto/agent-loop.md](docs/howto/agent-loop.md)
+- [ ] Next product item: `make next-feature` → Sector allocation (mobile UI parity)
 
 ## Last verify
 
-- Command: `make verify` (+ `npm run e2e`)
-- Result: pass
+- Command: `make cold-start` (+ `make next-feature`)
+- Result: pass (5/5)
 - Date: 2026-08-20
 
 ## Notes
 
 Keep this file short. Detailed run notes go under `docs/agent/runs/`.
+Sprint contracts: [docs/agent/sprint-contract.md](docs/agent/sprint-contract.md).

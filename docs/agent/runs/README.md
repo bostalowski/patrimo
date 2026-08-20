@@ -1,6 +1,6 @@
 # Agent run logs
 
-Optional handoff notes for long or multi-session work. Prefer updating root [PROGRESS.md](../../PROGRESS.md) for short sessions.
+Handoff notes for multi-session or non-trivial work. Short sessions may update only root [PROGRESS.md](../../PROGRESS.md).
 
 ## Naming
 
@@ -14,8 +14,22 @@ Optional handoff notes for long or multi-session work. Prefer updating root [PRO
 - Date:
 - Goal:
 - Feature (FEATURES.md):
+- Sprint contract: (inline or link)
+  - Scope:
+  - Verification commands:
+  - Exclusions:
 - Files read:
 - Changes:
-- Verify: `make verify` → pass/fail
+- Verify:
+  - Layer 1 `make verify` → pass/fail
+  - Layer 2 targeted tests → pass/fail / n/a
+  - Layer 3 `make e2e` → pass/fail / n/a
+- Checker: Pass/Fail + rubric notes (cite evidence)
 - Handoff / next:
 ```
+
+## Related
+
+- [Sprint contract](../sprint-contract.md)
+- [Scoring rubric](../scoring-rubric.md)
+- [Maker / checker](../../howto/maker-checker.md)
