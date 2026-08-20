@@ -9,6 +9,10 @@ import type { DiversificationTarget } from "./schema";
 
 export const DIVERSIFICATION_CRYPTO_KEY = "CRYPTO";
 export const DIVERSIFICATION_BAND_TOLERANCE = 1e-3;
+/** Soft drift window outside the band (2 percentage points). */
+export const DIVERSIFICATION_BAND_WATCH = 0.02;
+
+export type DiversificationBandTone = "ok" | "watch" | "breach";
 
 export type DiversificationTargetValidation =
 	| { ok: true }
@@ -126,6 +130,45 @@ export function isValueInDiversificationBand(
 		value >= minPct - DIVERSIFICATION_BAND_TOLERANCE &&
 		value <= maxPct + DIVERSIFICATION_BAND_TOLERANCE
 	);
+}
+
+/**
+ * Signed distance to the nearest band edge (fraction of portfolio).
+ * 0 when in-band (incl. tolerance); negative when below min; positive when above max.
+ */
+export function diversificationBandSignedDelta(
+	value: number,
+	minPct: number,
+	maxPct: number,
+): number {
+	if (isValueInDiversificationBand(value, minPct, maxPct)) return 0;
+	if (value < minPct) return value - minPct;
+	return value - maxPct;
+}
+
+export function assessDiversificationBandTone(
+	value: number,
+	minPct: number,
+	maxPct: number,
+): DiversificationBandTone {
+	if (isValueInDiversificationBand(value, minPct, maxPct)) return "ok";
+	const absDelta = Math.abs(
+		diversificationBandSignedDelta(value, minPct, maxPct),
+	);
+	if (absDelta <= DIVERSIFICATION_BAND_WATCH) return "watch";
+	return "breach";
+}
+
+export function worseDiversificationBandTone(
+	a: DiversificationBandTone,
+	b: DiversificationBandTone,
+): DiversificationBandTone {
+	const rank: Record<DiversificationBandTone, number> = {
+		ok: 0,
+		watch: 1,
+		breach: 2,
+	};
+	return rank[a] >= rank[b] ? a : b;
 }
 
 /** Excel may store 70 (percent points) or 0.7 (percentage format). */

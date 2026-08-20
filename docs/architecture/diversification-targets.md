@@ -47,7 +47,8 @@ Missing sheet ⇒ empty collection. Empty save is allowed (clears the plan).
 | `diversificationKeysOverlap(a, b)` | Same key, or country vs its `regionForCountry` |
 | `validateDiversificationTargets(targets)` | Save gate (empty OK) |
 | `computeFlowMixByAsset(dca)` | Annualized DCA euros per asset |
-| `assessDiversificationCoherence(...)` | Status + `band_drift` / `flow_misalign` |
+| `assessDiversificationCoherence(...)` | Status (`aligned` / `watch` / `misaligned`) + findings with tone |
+| `assessDiversificationBandTone` / `diversificationBandSignedDelta` | Per-value ok / watch (≤ 2 pp) / breach + signed Δ |
 
 Look-through rows follow [geographic allocation](geographic-allocation.md) for
 **all** asset types, including `CRYPTO`. Band percentages and the Diversification
@@ -77,7 +78,9 @@ here). Band coherence axes still overlap (geo bands vs `CRYPTO` band).
 | Investissements | DCA only (no allocation-plan tab) |
 
 FR UI labels: editor « Cibles de diversification »; card « Cohérence diversification »;
-`band_drift` « Stock hors bande »; `flow_misalign` « DCA hors bande ».
+status Aligné / À surveiller / Décalé; findings « Stock|DCA à surveiller » (watch)
+or « Stock|DCA hors bande » (breach). Percents at 1 decimal; signed Δ in pp when
+out of band.
 
 ## Out of scope
 

@@ -22,9 +22,11 @@ import type {
 } from "./schema";
 import {
 	DIVERSIFICATION_CRYPTO_KEY,
+	assessDiversificationBandTone,
 	isValidDiversificationKey,
-	isValueInDiversificationBand,
 	normalizeDiversificationKey,
+	worseDiversificationBandTone,
+	type DiversificationBandTone,
 } from "./diversification-targets";
 
 export type DiversificationFindingKind = "band_drift" | "flow_misalign";
@@ -32,9 +34,10 @@ export type DiversificationFindingKind = "band_drift" | "flow_misalign";
 export type DiversificationFinding = {
 	kind: DiversificationFindingKind;
 	key: string;
+	tone: Exclude<DiversificationBandTone, "ok">;
 };
 
-export type DiversificationCoherenceStatus = "aligned" | "misaligned";
+export type DiversificationCoherenceStatus = "aligned" | "watch" | "misaligned";
 
 export type DiversificationBandResult = {
 	key: string;
@@ -292,6 +295,7 @@ export function assessDiversificationCoherence(params: {
 	const types = assetTypeById(assets);
 	const findings: DiversificationFinding[] = [];
 	const bands: DiversificationBandResult[] = [];
+	let worstTone: DiversificationBandTone = "ok";
 
 	for (const target of targets) {
 		if (!isValidDiversificationKey(target.key)) continue;
@@ -338,21 +342,40 @@ export function assessDiversificationCoherence(params: {
 			flowPct,
 		});
 
-		if (!isValueInDiversificationBand(stockPct, target.minPct, target.maxPct)) {
-			findings.push({ kind: "band_drift", key });
+		const stockTone = assessDiversificationBandTone(
+			stockPct,
+			target.minPct,
+			target.maxPct,
+		);
+		worstTone = worseDiversificationBandTone(worstTone, stockTone);
+		if (stockTone !== "ok") {
+			findings.push({ kind: "band_drift", key, tone: stockTone });
 		}
-		if (
-			flowPct !== null &&
-			!isValueInDiversificationBand(flowPct, target.minPct, target.maxPct)
-		) {
-			findings.push({ kind: "flow_misalign", key });
+
+		if (flowPct !== null) {
+			const flowTone = assessDiversificationBandTone(
+				flowPct,
+				target.minPct,
+				target.maxPct,
+			);
+			worstTone = worseDiversificationBandTone(worstTone, flowTone);
+			if (flowTone !== "ok") {
+				findings.push({ kind: "flow_misalign", key, tone: flowTone });
+			}
 		}
 	}
+
+	const status: DiversificationCoherenceStatus =
+		worstTone === "ok"
+			? "aligned"
+			: worstTone === "watch"
+				? "watch"
+				: "misaligned";
 
 	return {
 		bands,
 		findings,
-		status: findings.length > 0 ? "misaligned" : "aligned",
+		status,
 		liquidInvested,
 		annualDcaTotal,
 	};

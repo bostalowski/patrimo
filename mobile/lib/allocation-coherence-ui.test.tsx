@@ -92,7 +92,7 @@ describe("mobile AllocationCoherenceCard", () => {
 				<AllocationCoherenceCard
 					coherence={coherence({
 						status: "misaligned",
-						findings: [{ kind: "band_drift", key: "US" }],
+						findings: [{ kind: "band_drift", key: "US", tone: "breach" }],
 					})}
 					theme={colors.light}
 				/>,
@@ -103,13 +103,41 @@ describe("mobile AllocationCoherenceCard", () => {
 		expect(text).toMatch(/Stock hors bande/i);
 	});
 
+	it("shows À surveiller and signed delta when watch", () => {
+		const text = visibleText(
+			render(
+				<AllocationCoherenceCard
+					coherence={coherence({
+						status: "watch",
+						findings: [{ kind: "band_drift", key: "CRYPTO", tone: "watch" }],
+						bands: [
+							{
+								key: "CRYPTO",
+								minPct: 0.15,
+								maxPct: 0.15,
+								stockPct: 0.165,
+								flowPct: null,
+							},
+						],
+					})}
+					theme={colors.light}
+				/>,
+			),
+		);
+
+		expect(text).toContain("À surveiller");
+		expect(text).toMatch(/Stock à surveiller/i);
+		expect(text).toMatch(/16,5\s*%/);
+		expect(text).toMatch(/\+1,5\s*pp/);
+	});
+
 	it("shows DCA hors bande when flow_misalign", () => {
 		const text = visibleText(
 			render(
 				<AllocationCoherenceCard
 					coherence={coherence({
 						status: "misaligned",
-						findings: [{ kind: "flow_misalign", key: "US" }],
+						findings: [{ kind: "flow_misalign", key: "US", tone: "breach" }],
 						annualDcaTotal: 4800,
 						bands: [
 							{

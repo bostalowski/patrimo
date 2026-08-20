@@ -50,12 +50,18 @@ describe("AllocationCoherenceCard", () => {
 		expect(screen.getByText("Crypto")).toBeTruthy();
 	});
 
-	it("shows Décalé and Stock hors bande when band_drift", () => {
+	it("shows one decimal on percentages", () => {
+		render(<AllocationCoherenceCard coherence={coherence()} />);
+		expect(screen.getByText("65,0 %")).toBeTruthy();
+		expect(screen.getByText("3,0 %")).toBeTruthy();
+	});
+
+	it("shows Décalé and Stock hors bande when band_drift breach", () => {
 		render(
 			<AllocationCoherenceCard
 				coherence={coherence({
 					status: "misaligned",
-					findings: [{ kind: "band_drift", key: "US" }],
+					findings: [{ kind: "band_drift", key: "US", tone: "breach" }],
 				})}
 			/>,
 		);
@@ -64,12 +70,37 @@ describe("AllocationCoherenceCard", () => {
 		expect(screen.getByText(/Stock hors bande/i)).toBeTruthy();
 	});
 
+	it("shows À surveiller and signed delta when watch", () => {
+		render(
+			<AllocationCoherenceCard
+				coherence={coherence({
+					status: "watch",
+					findings: [{ kind: "band_drift", key: "CRYPTO", tone: "watch" }],
+					bands: [
+						{
+							key: "CRYPTO",
+							minPct: 0.15,
+							maxPct: 0.15,
+							stockPct: 0.165,
+							flowPct: null,
+						},
+					],
+				})}
+			/>,
+		);
+
+		expect(screen.getByText("À surveiller")).toBeTruthy();
+		expect(screen.getByText(/Stock à surveiller/i)).toBeTruthy();
+		expect(screen.getByText("16,5 %")).toBeTruthy();
+		expect(screen.getByText("+1,5 pp")).toBeTruthy();
+	});
+
 	it("shows DCA hors bande when flow_misalign", () => {
 		render(
 			<AllocationCoherenceCard
 				coherence={coherence({
 					status: "misaligned",
-					findings: [{ kind: "flow_misalign", key: "US" }],
+					findings: [{ kind: "flow_misalign", key: "US", tone: "breach" }],
 					annualDcaTotal: 4800,
 					bands: [
 						{

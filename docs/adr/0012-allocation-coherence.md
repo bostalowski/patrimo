@@ -64,16 +64,33 @@ Denominator (flow): sum of annualized DCA by asset (computeFlowMixByAsset).
   WHEN annualDcaTotal === 0 THEN do not emit flow findings.
 
 In-band: value ∈ [minPct − 1e-3, maxPct + 1e-3].
+Band tone (fixed product thresholds in @patrimo/core):
+  ok     : in-band
+  watch  : outside band AND |signedΔ| ≤ 0.02 (2 pp)
+  breach : outside band AND |signedΔ| > 0.02
+Signed Δ: 0 in-band; value − min when below; value − max when above.
+FORBIDDEN: user-editable watch threshold; inventing tone in platform UI.
 
 assessDiversificationCoherence:
   WHEN targets empty OR liquidInvested === 0 THEN return null (hide card).
   WHEN targets non-empty and liquidInvested > 0 THEN per-target stockPct
     and, if annualDcaTotal > 0, flowPct.
   Findings ONLY:
-    band_drift    : stockPct outside band
-    flow_misalign : annualDcaTotal > 0 AND flowPct outside band
-  Status: misaligned if any finding; else aligned.
-  No watch status. No geo_coverage_gap / unmapped_stock / category_drift.
+    band_drift    : stockPct tone ≠ ok  (tone: watch | breach)
+    flow_misalign : annualDcaTotal > 0 AND flowPct tone ≠ ok
+  Status (worst tone across stock + flow):
+    aligned     : all ok
+    watch       : at least one watch, no breach
+    misaligned  : at least one breach
+
+Surfaces:
+  Editor + coherence card on web /geographie (nav Diversification) and mobile
+  Diversification screen. Investissements is DCA only.
+  Web PUT /api/diversification-targets { targets }; mobile serialize.
+  Coherence card: percents at 1 decimal (FR); signed Δ in pp when out of band;
+  colors ok → success, watch → warning, breach → danger;
+  status FR Aligné / À surveiller / Décalé;
+  finding FR Stock|DCA à surveiller (watch) / Stock|DCA hors bande (breach).
 
 Persistence:
   WHEN user saves THEN validate then replace the whole sheet
@@ -84,11 +101,6 @@ Persistence:
   WHEN writing workbooks THEN delete sheet "Allocation cible" if present.
   Missing "Cibles diversification" ⇒ empty collection.
 
-Surfaces:
-  Editor + coherence card on web /geographie (nav Diversification) and mobile
-  Diversification screen. Investissements is DCA only.
-  Web PUT /api/diversification-targets { targets }; mobile serialize.
-
 REMOVED: TargetAllocationCategory / Allocation cible as product intent;
   suggestTargetPlanFromDca; PUT /api/target-allocation; Investissements
   allocation-plan editor / bootstrap.
@@ -98,7 +110,8 @@ FORBIDDEN: inventing country weight from a region-only row; using covered
   treating geo + crypto + unmapped as a single partition that must sum to 100 %;
   counting crypto MV in unmapped; HHI / Top1 / Top3;
   auto-persist without user save; sector bands;
-  "aligned" when a defined band is outside range.
+  "aligned" when a defined band is outside range; inventing platform-local
+  watch thresholds.
 
 OPEN (do not implement this increment): sector look-through / sector bands;
   ETF purchase recommendations; LLM coach.
@@ -115,9 +128,14 @@ is a vehicle, not a geography.
 Look-through geography already exists (`Exposition geo`). Root cause is missing
 **target bands on diversification dimensions**, not missing charts.
 
-This ADR is edited in place (never shipped to production). Canonical terms:
-[glossary](../reference/glossary.md) (**Diversification target**,
+Canonical terms: [glossary](../reference/glossary.md) (**Diversification target**,
 **Allocation coherence**).
+
+**Amendment (2026-08-20):** coherence card was binary green/red with 0-decimal
+percent rounding, so values just outside a point band (e.g. 15,2 % vs max 15 %)
+looked identical to the target yet showed danger. Added fixed `watch` tone
+(≤ 2 pp outside), signed Δ display, and 1-decimal percent formatting. Status is
+now `aligned` | `watch` | `misaligned`.
 
 ## Decision
 

@@ -406,8 +406,25 @@ describe("assessDiversificationCoherence", () => {
 			sectorAllocations: [],
 			assets,
 		});
-		expect(result?.findings).toEqual([{ kind: "band_drift", key: "US" }]);
+		expect(result?.findings).toEqual([
+			{ kind: "band_drift", key: "US", tone: "breach" },
+		]);
 		expect(result?.status).toBe("misaligned");
+	});
+
+	it("emits watch when stock is slightly outside a band", () => {
+		const result = assessDiversificationCoherence({
+			targets: [band("CRYPTO", 0.15, 0.15)],
+			positions: [position("BTC", 165), position("WPEA", 835)],
+			dca: [],
+			geographicAllocations: [],
+			sectorAllocations: [],
+			assets,
+		});
+		expect(result?.findings).toEqual([
+			{ kind: "band_drift", key: "CRYPTO", tone: "watch" },
+		]);
+		expect(result?.status).toBe("watch");
 	});
 
 	it("treats a value on the min/max edge as in-band within 1e-3", () => {

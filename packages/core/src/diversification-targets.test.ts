@@ -3,6 +3,9 @@ import type { DiversificationTarget } from "./schema";
 import {
 	isDiversificationKeySelectable,
 	validateDiversificationTargets,
+	assessDiversificationBandTone,
+	diversificationBandSignedDelta,
+	worseDiversificationBandTone,
 } from "./diversification-targets";
 
 function band(
@@ -126,5 +129,41 @@ describe("isDiversificationKeySelectable", () => {
 
 	it("keeps the row being edited selectable", () => {
 		expect(isDiversificationKeySelectable("US", ["EUROPE"], "US")).toBe(true);
+	});
+});
+
+describe("diversification band tone and delta", () => {
+	it("returns delta 0 and tone ok inside the band", () => {
+		expect(diversificationBandSignedDelta(0.15, 0.1, 0.2)).toBe(0);
+		expect(assessDiversificationBandTone(0.15, 0.1, 0.2)).toBe("ok");
+	});
+
+	it("treats edge within tolerance as ok", () => {
+		expect(assessDiversificationBandTone(0.1505, 0.15, 0.15)).toBe("ok");
+		expect(diversificationBandSignedDelta(0.1505, 0.15, 0.15)).toBe(0);
+	});
+
+	it("returns signed delta and watch when just outside the band", () => {
+		expect(diversificationBandSignedDelta(0.165, 0.15, 0.15)).toBeCloseTo(
+			0.015,
+			5,
+		);
+		expect(assessDiversificationBandTone(0.165, 0.15, 0.15)).toBe("watch");
+		expect(diversificationBandSignedDelta(0.135, 0.15, 0.15)).toBeCloseTo(
+			-0.015,
+			5,
+		);
+		expect(assessDiversificationBandTone(0.135, 0.15, 0.15)).toBe("watch");
+	});
+
+	it("returns breach when abs delta exceeds the watch window", () => {
+		expect(assessDiversificationBandTone(0.18, 0.15, 0.15)).toBe("breach");
+		expect(assessDiversificationBandTone(0.1, 0.15, 0.15)).toBe("breach");
+	});
+
+	it("worseDiversificationBandTone keeps the most severe tone", () => {
+		expect(worseDiversificationBandTone("ok", "watch")).toBe("watch");
+		expect(worseDiversificationBandTone("watch", "breach")).toBe("breach");
+		expect(worseDiversificationBandTone("breach", "ok")).toBe("breach");
 	});
 });
