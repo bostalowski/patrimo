@@ -253,6 +253,25 @@ export const DiversificationTarget = z.object({
 });
 export type DiversificationTarget = z.infer<typeof DiversificationTarget>;
 
+export const FinancialGoalType = z.enum([
+	"RETIREMENT_INCOME",
+	"CAPITAL_AT_DATE",
+]);
+export type FinancialGoalType = z.infer<typeof FinancialGoalType>;
+
+export const FinancialGoal = z.object({
+	id: z.string().min(1),
+	label: z.string().min(1),
+	type: FinancialGoalType,
+	targetAmount: z.number().nonnegative(),
+	targetAge: z.number().int().min(50).max(75).optional(),
+	targetDate: z.coerce.date().optional(),
+	/** When true (default), targetAmount is today's euros; when false, horizon euros. */
+	inflationIncluded: z.boolean().default(true),
+	notes: z.string().optional(),
+});
+export type FinancialGoal = z.infer<typeof FinancialGoal>;
+
 export type Workbook = {
 	transactions: Transaction[];
 	assets: Asset[];
@@ -264,4 +283,5 @@ export type Workbook = {
 	geographicAllocations: GeographicAllocation[];
 	sectorAllocations: SectorAllocation[];
 	diversificationTargets: DiversificationTarget[];
+	financialGoals: FinancialGoal[];
 };

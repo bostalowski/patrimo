@@ -70,6 +70,7 @@ function workbook(overrides: Partial<ManualPriceWorkbook>): ManualPriceWorkbook 
     geographicAllocations: [],
     sectorAllocations: [],
     diversificationTargets: [],
+		financialGoals: [],
     ...overrides,
   };
 }

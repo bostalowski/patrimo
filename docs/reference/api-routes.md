@@ -115,6 +115,14 @@ Validates with `validateDiversificationTargets` (known keys, valid bands, unique
 
 Removed: `PUT /api/target-allocation`.
 
+## Financial goals
+
+### `PUT /api/goals`
+
+Body: `{ goals: FinancialGoal[] }` (`id`, `label`, `type`, `targetAmount`, optional `targetAge` / `targetDate` / `notes`). Empty `goals` clears the plan.
+
+Validates with `validateFinancialGoals`, then `replaceWorkbook` with the new `financialGoals`. Mobile has no Objectifs UI in V1 but round-trips the sheet. See [ADR 0014](../adr/0014-financial-goals.md).
+
 ## Properties
 
 ### `POST /api/properties`

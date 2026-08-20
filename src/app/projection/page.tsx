@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { loadWorkbook, getBudget } from "@/lib/excel";
 import { getInflationRate } from "@/lib/config";
 import { requireExcelConfigured } from "@/lib/page-guards";
@@ -68,13 +69,41 @@ export default async function ProjectionPage() {
       })
     : null;
 
+  const goals = workbook.financialGoals ?? [];
+  const goalsAlignment =
+    goals.length > 0
+      ? {
+          goals: goals.map((goal) => ({
+            id: goal.id,
+            label: goal.label,
+            type: goal.type,
+            targetAmount: goal.targetAmount,
+            targetAge: goal.targetAge,
+            targetDate: goal.targetDate?.toISOString(),
+            inflationIncluded: goal.inflationIncluded !== false,
+            notes: goal.notes,
+          })),
+          profile: {
+            birthDate: retirementProfile.birthDate?.toISOString(),
+            targetRetirementAge: retirementProfile.targetRetirementAge,
+            estimatedPublicPension: retirementProfile.estimatedPublicPension,
+            withdrawalRate: retirementProfile.withdrawalRate,
+          },
+        }
+      : null;
+
   return (
     <div className="space-y-8">
       <header className="space-y-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">Projection</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-          Projection de ton patrimoine financier et immobilier, avec objectif
-          retraite et conseils d&apos;optimisation fiscale.
+          Projection de ton patrimoine financier et immobilier. Les cibles
+          chiffrées se définissent dans{" "}
+          <Link href="/objectifs" className="underline hover:text-zinc-700 dark:hover:text-zinc-200">
+            Objectifs
+          </Link>
+          ; ici l&apos;alignement se lit sur les mêmes taux et versements que tu
+          ajustes.
         </p>
       </header>
 
@@ -94,6 +123,7 @@ export default async function ProjectionPage() {
               }
             : null
         }
+        goalsAlignment={goalsAlignment}
       />
     </div>
   );

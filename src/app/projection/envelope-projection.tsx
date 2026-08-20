@@ -26,6 +26,10 @@ import {
 import type { Envelope } from "@/lib/schema";
 import { cn, formatEuro, formatPercent, signClass } from "@/lib/utils";
 import type { InflationView } from "./projection-client";
+import {
+  GoalsAlignmentPanel,
+  type GoalsAlignmentInput,
+} from "./goals-alignment-panel";
 
 export type EnvelopeProjectionInput = {
   envelope: EnvelopeInfo["envelope"];
@@ -86,6 +90,7 @@ export function EnvelopeProjection({
   setMonthly,
   rates,
   setRates,
+  goalsAlignment,
 }: {
   envelopes: EnvelopeProjectionInput[];
   monthlyRestant: number;
@@ -94,6 +99,7 @@ export function EnvelopeProjection({
   setMonthly: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   rates: Record<string, string>;
   setRates: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  goalsAlignment?: GoalsAlignmentInput | null;
 }) {
   const [years, setYears] = useState("10");
   const [reste, setReste] = useState(
@@ -102,7 +108,7 @@ export function EnvelopeProjection({
   const [perEncours, setPerEncours] = useState("0");
   const [perMonthly, setPerMonthly] = useState("0");
   const [tmiNow, setTmiNow] = useState("0.3");
-  const [tmiExit, setTmiExit] = useState("0.11");
+  const [tmiExit, setTmiExit] = useState("0.3");
 
   const horizonYears = Math.max(0, parseNumber(years));
   const resteValue = Math.max(0, parseNumber(reste));
@@ -213,6 +219,43 @@ export function EnvelopeProjection({
   const projectedReal = allResults.reduce((s, r) => s + r.finalRealValue, 0);
   const currentTotal =
     envelopes.reduce((s, e) => s + e.currentValue, 0) + perEncoursValue;
+
+  const projectRealCapacity = useCallback(
+    (years: number) => {
+      if (years <= 0) return currentTotal;
+      const engaged = envelopes.reduce((sum, envelope) => {
+        const result = projectInvestment({
+          startBalance: envelope.currentValue,
+          contributions: [
+            { amount: monthlyOf(envelope), frequency: "MENSUEL" as const },
+            ...envelope.extraContributions,
+          ],
+          annualRate: rateOf(envelope.envelope),
+          years,
+          inflationRate: inflation.rate,
+          plafond: envelope.plafond,
+        });
+        return sum + result.finalRealValue;
+      }, 0);
+      const per = projectInvestment({
+        startBalance: perEncoursValue,
+        monthlyContribution: perMonthlyValue,
+        annualRate: rateOf("PER"),
+        years,
+        inflationRate: inflation.rate,
+      });
+      return engaged + per.finalRealValue;
+    },
+    [
+      envelopes,
+      monthlyOf,
+      rateOf,
+      inflation.rate,
+      perEncoursValue,
+      perMonthlyValue,
+      currentTotal,
+    ],
+  );
 
   const advice = useMemo(() => {
     if (projections.length === 0) return [];
@@ -493,6 +536,14 @@ export function EnvelopeProjection({
           </CardHeader>
         </Card>
       </div>
+
+      {goalsAlignment && (
+        <GoalsAlignmentPanel
+          input={goalsAlignment}
+          projectRealCapacity={projectRealCapacity}
+          inflationRate={inflation.rate}
+        />
+      )}
 
       <Card>
         <CardHeader>

@@ -6,6 +6,7 @@ import { normalizeSectorAllocations } from "@patrimo/core/sector-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import type {
 	DiversificationTarget,
+	FinancialGoal,
 	GeographicAllocation,
 	SectorAllocation,
 } from "@patrimo/core/schema";
@@ -23,6 +24,7 @@ import {
 	diversificationPctFromExcel,
 	normalizeDiversificationTargets,
 } from "@patrimo/core/diversification-targets";
+import { normalizeFinancialGoals } from "@patrimo/core/financial-goals";
 import {
 	ACTIFS_HEADERS,
 	CIBLES_DIVERSIFICATION_HEADERS,
@@ -30,6 +32,7 @@ import {
 	DCA_HEADERS,
 	EXPOSITION_GEO_HEADERS,
 	EXPOSITION_SECTEUR_HEADERS,
+	OBJECTIFS_HEADERS,
 	PRIX_MANUELS_HEADERS,
 	SHEET_ACTIFS,
 	SHEET_ALLOCATION_CIBLE,
@@ -38,6 +41,7 @@ import {
 	SHEET_DCA,
 	SHEET_EXPOSITION_GEO,
 	SHEET_EXPOSITION_SECTEUR,
+	SHEET_OBJECTIFS,
 	SHEET_PRIX_MANUELS,
 	SHEET_TRANSACTIONS,
 	TRANSACTIONS_HEADERS,
@@ -63,6 +67,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	const rawGeographicAllocations = readSheet(wb, SHEET_EXPOSITION_GEO);
 	const rawSectorAllocations = readSheet(wb, SHEET_EXPOSITION_SECTEUR);
 	const rawDiversificationTargets = readSheet(wb, SHEET_CIBLES_DIVERSIFICATION);
+	const rawFinancialGoals = readSheet(wb, SHEET_OBJECTIFS);
 
 	const { transactions, keys: transactionKeys } =
 		parseTransactions(rawTransactions);
@@ -80,6 +85,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	const diversificationTargets = parseDiversificationTargets(
 		rawDiversificationTargets,
 	);
+	const financialGoals = parseFinancialGoals(rawFinancialGoals);
 
 	console.log("[Parser v2] Results:", {
 		transactions: transactions.length,
@@ -92,6 +98,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 		geographicAllocations: geographicAllocations.length,
 		sectorAllocations: sectorAllocations.length,
 		diversificationTargets: diversificationTargets.length,
+		financialGoals: financialGoals.length,
 	});
 
 	return {
@@ -106,6 +113,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 			geographicAllocations,
 			sectorAllocations,
 			diversificationTargets,
+			financialGoals,
 		},
 		transactionKeys,
 	};
@@ -248,6 +256,22 @@ export function serializeWorkbook(
 			Dimension: entry.key,
 			"Min %": Math.round(entry.minPct * 1000) / 10,
 			"Max %": Math.round(entry.maxPct * 1000) / 10,
+		})),
+	);
+	replaceRows(
+		workbook,
+		SHEET_OBJECTIFS,
+		OBJECTIFS_HEADERS,
+		(workbookData.financialGoals ?? []).map((entry) => ({
+			ID: entry.id,
+			Libellé: entry.label,
+			Type: entry.type,
+			"Montant cible": entry.targetAmount,
+			"Âge cible": entry.targetAge ?? null,
+			"Date cible": entry.targetDate ?? null,
+			"Inflation comprise":
+				entry.inflationIncluded !== false ? "Oui" : "Non",
+			Notes: entry.notes ?? null,
 		})),
 	);
 	deleteSheetIfPresent(workbook, SHEET_ALLOCATION_CIBLE);
@@ -591,6 +615,47 @@ function parseDiversificationTargets(
 		});
 	}
 	return normalizeDiversificationTargets(pending);
+}
+
+function parseFinancialGoals(rows: Record<string, unknown>[]): FinancialGoal[] {
+	const pending: FinancialGoal[] = [];
+	for (const row of rows) {
+		const id = emptyToUndefined(row["ID"]);
+		const label = emptyToUndefined(row["Libellé"]);
+		const type = emptyToUndefined(row["Type"]);
+		if (!id || !label || !type) continue;
+		const targetAmount = toNumber(row["Montant cible"]);
+		if (targetAmount === null) continue;
+		const targetAgeRaw = toNumber(row["Âge cible"]);
+		const targetDateRaw = optionalDate(row["Date cible"]);
+		let targetDate: Date | undefined;
+		if (targetDateRaw instanceof Date) {
+			targetDate = targetDateRaw;
+		} else if (typeof targetDateRaw === "string" && targetDateRaw.length > 0) {
+			const parsed = new Date(targetDateRaw);
+			if (Number.isFinite(parsed.getTime())) targetDate = parsed;
+		}
+		pending.push({
+			id,
+			label,
+			type: type as FinancialGoal["type"],
+			targetAmount,
+			targetAge:
+				targetAgeRaw !== null ? Math.round(targetAgeRaw) : undefined,
+			targetDate,
+			inflationIncluded: parseOuiNon(row["Inflation comprise"], true),
+			notes: emptyToUndefined(row["Notes"]),
+		});
+	}
+	return normalizeFinancialGoals(pending);
+}
+
+function parseOuiNon(value: unknown, defaultValue: boolean): boolean {
+	if (value === null || value === undefined || value === "") return defaultValue;
+	const normalized = String(value).trim().toLowerCase();
+	if (["non", "no", "false", "0", "n"].includes(normalized)) return false;
+	if (["oui", "yes", "true", "1", "y", "o"].includes(normalized)) return true;
+	return defaultValue;
 }
 
 function parseDca(rows: Record<string, unknown>[]): DcaConfig[] {

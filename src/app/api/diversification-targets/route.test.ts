@@ -33,6 +33,7 @@ function workbook(): Workbook {
 		geographicAllocations: [],
 		sectorAllocations: [],
 		diversificationTargets: [],
+		financialGoals: [],
 	};
 }
 
