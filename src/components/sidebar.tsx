@@ -13,6 +13,7 @@ import {
   PiggyBank,
   Receipt,
   Settings,
+  Target,
   TrendingUp,
   Wallet,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/actifs", label: "Actifs", icon: Coins },
   { href: "/comptes", label: "Comptes", icon: Wallet },
   { href: "/diversification", label: "Diversification", icon: Layers },
+  { href: "/objectifs", label: "Objectifs", icon: Target },
   { href: "/transactions", label: "Transactions", icon: ListOrdered },
   { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/investissements", label: "Investissements", icon: Briefcase },

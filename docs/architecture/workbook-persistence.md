@@ -14,6 +14,11 @@ Sheet names and headers are defined in `packages/core/src/workbook-template.ts`.
 | `Budget` | No | Income / expense / savings lines |
 | `Immobilier` | No | Properties |
 | `DCA` | No | Investment plans (baskets + target %) |
+| `Prix manuels` | No | Manual dated valuations |
+| `Exposition geo` | No | Geographic look-through weights |
+| `Exposition secteur` | No | Sector look-through weights |
+| `Cibles diversification` | No | Diversification target bands |
+| `Objectifs` | No | Financial goals (retirement income / capital) |
 
 Zod shapes live in `packages/core/src/schema.ts`.
 

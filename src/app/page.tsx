@@ -2,9 +2,11 @@ import {
 	computeEmergencyFundHealth,
 	sumLivretMarketValue,
 } from "@patrimo/core/emergency-fund";
+import { assessFinancialGoals } from "@patrimo/core/financial-goals";
 import { computeNetWorth } from "@patrimo/core/portfolio";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
+import { GoalsSummaryCard } from "@/components/goals-summary-card";
 import { PerformanceSection } from "@/components/performance-section";
 import { SyncButton } from "@/components/sync-button";
 import {
@@ -27,6 +29,7 @@ import {
 	readManualPrices,
 	readPriceMap,
 	readPrices,
+	readRetirementProfile,
 	readSyncMeta,
 } from "@/lib/store";
 import { formatEuro, formatPercent, signClass } from "@/lib/utils";
@@ -36,13 +39,14 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
 	requireExcelConfigured();
 	const workbook = loadWorkbook();
-	const [priceMap, priceStore, manualStore, benchmarkStore, syncMeta] =
+	const [priceMap, priceStore, manualStore, benchmarkStore, syncMeta, profile] =
 		await Promise.all([
 			readPriceMap(workbook.assets),
 			readPrices(),
 			readManualPrices(),
 			readBenchmarks(),
 			readSyncMeta(),
+			readRetirementProfile(),
 		]);
 	const portfolio = buildPortfolio(workbook, priceMap);
 	const history = buildHistorySeries(workbook, priceStore, manualStore);
@@ -79,6 +83,13 @@ export default async function DashboardPage() {
 		livretBalance,
 		depensesMensuelles,
 	);
+	const goalsAssessment = assessFinancialGoals({
+		goals: workbook.financialGoals ?? [],
+		portfolio,
+		dcaConfigs: workbook.dca,
+		profile,
+		inflationRate,
+	});
 
 	return (
 		<div className="space-y-8">
@@ -150,6 +161,7 @@ export default async function DashboardPage() {
 			</div>
 
 			<EmergencyFundCard health={emergencyFund} />
+			<GoalsSummaryCard assessment={goalsAssessment} />
 
 			<PerformanceSection history={history} benchmarks={benchmarks} />
 

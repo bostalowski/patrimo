@@ -30,6 +30,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Fee monitoring ratios](architecture/fee-monitoring-ratios.md)
 - [Geographic allocation](architecture/geographic-allocation.md)
 - [Diversification targets and coherence](architecture/diversification-targets.md)
+- [Financial goals](architecture/financial-goals.md)
 
 ## Reference
 
@@ -52,6 +53,7 @@ End-user installation and Excel setup remain in the root [README](../README.md).
 - [Implement fee monitoring ratios](howto/implement-fee-monitoring-ratios.md)
 - [Implement geographic allocation](howto/implement-geographic-allocation.md)
 - [Implement diversification targets](howto/implement-diversification-targets.md)
+- [Implement financial goals](howto/implement-financial-goals.md)
 
 ## Decisions
 

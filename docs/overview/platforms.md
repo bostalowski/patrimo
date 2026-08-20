@@ -32,6 +32,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | Fees | Present | Partial |
 | Projection | Present | Partial |
 | Retirement profile | Present | Partial |
+| Financial goals (Objectifs) | Present | Absent — sheet round-trip only; no Objectifs UI |
 | Benchmarks | Present | Absent |
 | Emergency fund health | Present | Present |
 | Portfolio readable risk badges | Present | Present |

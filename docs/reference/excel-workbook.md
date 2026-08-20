@@ -15,8 +15,9 @@ Canonical sheet names and headers come from `packages/core/src/workbook-template
 | `Prix manuels` | No | Dated user-entered valuations for `manual` assets |
 | `Exposition geo` | No | Look-through country or region weights per asset |
 | `Cibles diversification` | No | Diversification target bands (geo keys + crypto) |
+| `Objectifs` | No | Financial goals (retirement income / capital at date) |
 
-A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels`, `Exposition geo`, or `Cibles diversification` remain valid; each sheet is created on the first write that needs it. Legacy sheet `Allocation cible` is ignored on read and deleted on the next workbook write.
+A blank workbook created by the app includes all listed sheets with headers. Existing workbooks without `Prix manuels`, `Exposition geo`, `Cibles diversification`, or `Objectifs` remain valid; each sheet is created on the first write that needs it. Legacy sheet `Allocation cible` is ignored on read and deleted on the next workbook write.
 
 ## `Transactions`
 
@@ -144,6 +145,23 @@ Optional sheet for diversification target bands. See [Diversification targets](.
 | `Max %` | `maxPct` | Same encoding as min; must satisfy `minPct ≤ maxPct` |
 
 Keys on the sheet must not overlap (duplicate key, or country + its parent region). Parse drops invalid rows and later overlapping keys (first row wins). Save paths (`PUT /api/diversification-targets`, mobile editor) reject via `validateDiversificationTargets`. Σ min/max need not equal 1. Missing sheet ⇒ empty collection ⇒ coherence card hidden. Empty save clears the plan. Legacy `Allocation cible` is not parsed.
+
+## `Objectifs`
+
+Optional sheet for financial goals. See [Financial goals](../architecture/financial-goals.md) and [ADR 0014](../adr/0014-financial-goals.md).
+
+| Column | Schema field | Rules |
+|---|---|---|
+| `ID` | `id` | Stable non-empty string |
+| `Libellé` | `label` | Display name |
+| `Type` | `type` | `RETIREMENT_INCOME` or `CAPITAL_AT_DATE` |
+| `Montant cible` | `targetAmount` | Monthly income or capital; semantics depend on `Inflation comprise` |
+| `Âge cible` | `targetAge` | Integer 50–75 for retirement; empty for capital |
+| `Date cible` | `targetDate` | ISO date for capital; empty for retirement |
+| `Inflation comprise` | `inflationIncluded` | `Oui` / `Non`; missing or empty ⇒ `Oui` (`true`) |
+| `Notes` | `notes` | Optional |
+
+Parse drops invalid rows. Save paths (`PUT /api/goals`) reject via `validateFinancialGoals`. Missing sheet ⇒ empty collection. Empty save clears the plan.
 
 ## Validation ownership
 

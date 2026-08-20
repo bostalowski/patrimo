@@ -91,6 +91,7 @@ function workbook(
     geographicAllocations: [],
     sectorAllocations: [],
     diversificationTargets: [],
+		financialGoals: [],
     ...overrides,
   };
 }

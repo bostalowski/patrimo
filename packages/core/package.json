@@ -14,6 +14,7 @@
     "./portfolio-history": "./src/portfolio-history.ts",
     "./performance": "./src/performance.ts",
     "./fees": "./src/fees.ts",
+    "./financial-goals": "./src/financial-goals.ts",
     "./projection": "./src/projection.ts",
     "./dca": "./src/dca.ts",
     "./budget": "./src/budget.ts",

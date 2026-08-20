@@ -27,7 +27,7 @@ Mechanical invariants that remain true across Patrimo platforms. Canonical terms
 ## Invariants
 
 1. **Workbook authority** — Portfolio positions are computed from workbook transactions plus the latest known prices. Removing a price cache entry never removes a transaction.
-2. **Required sheets** — A valid workbook contains at least `Transactions`, `Actifs`, and `Comptes`. `Budget`, `Immobilier`, `DCA`, `Prix manuels`, `Exposition geo`, `Exposition secteur`, and `Cibles diversification` are optional and created when first needed. Legacy `Allocation cible` is ignored on read and removed on write.
+2. **Required sheets** — A valid workbook contains at least `Transactions`, `Actifs`, and `Comptes`. `Budget`, `Immobilier`, `DCA`, `Prix manuels`, `Exposition geo`, `Exposition secteur`, `Cibles diversification`, and `Objectifs` are optional and created when first needed. Legacy `Allocation cible` is ignored on read and removed on write.
 3. **Pure core mutations** — Modules such as `deletion.ts` transform an in-memory `Workbook` and do not perform I/O. Platforms persist the result with one workbook write.
 4. **Config path precedence (web/Electron)** — `data/config.json` `excelPath` wins over `EXCEL_PATH`.
 5. **Production workbook cache** — Web `loadWorkbook()` may reuse an in-memory cache when `mtimeMs` is unchanged and `NODE_ENV === "production"`. Writes clear the cache.

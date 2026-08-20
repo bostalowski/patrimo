@@ -9,6 +9,7 @@ export const SHEET_EXPOSITION_GEO = "Exposition geo";
 export const SHEET_EXPOSITION_SECTEUR = "Exposition secteur";
 export const SHEET_ALLOCATION_CIBLE = "Allocation cible";
 export const SHEET_CIBLES_DIVERSIFICATION = "Cibles diversification";
+export const SHEET_OBJECTIFS = "Objectifs";
 
 export const TRANSACTIONS_HEADERS = [
 	"Date",
@@ -118,6 +119,17 @@ export const CIBLES_DIVERSIFICATION_HEADERS = [
 	"Max %",
 ] as const;
 
+export const OBJECTIFS_HEADERS = [
+	"ID",
+	"Libellé",
+	"Type",
+	"Montant cible",
+	"Âge cible",
+	"Date cible",
+	"Inflation comprise",
+	"Notes",
+] as const;
+
 export const ALL_SHEETS = [
 	{ name: SHEET_TRANSACTIONS, headers: [...TRANSACTIONS_HEADERS] },
 	{ name: SHEET_ACTIFS, headers: [...ACTIFS_HEADERS] },
@@ -132,4 +144,5 @@ export const ALL_SHEETS = [
 		name: SHEET_CIBLES_DIVERSIFICATION,
 		headers: [...CIBLES_DIVERSIFICATION_HEADERS],
 	},
+	{ name: SHEET_OBJECTIFS, headers: [...OBJECTIFS_HEADERS] },
 ] as const;

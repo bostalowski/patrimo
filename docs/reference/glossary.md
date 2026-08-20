@@ -118,6 +118,20 @@ Sum of calendar-year explicit fees and the estimated annual TER euro cost, divid
 
 All-time explicit fees divided by portfolio (or asset) **total return** (unrealized + realized + income as produced by the portfolio engine). Undefined when total return is zero or negative — not a fee-health score in down markets.
 
+## Financial goal
+
+Named capital or income intention persisted in optional workbook sheet
+`Objectifs`. Per-goal flag **Inflation comprise** (`inflationIncluded`,
+default true): when true, `targetAmount` is in today's euros and inflation
+inflates the horizon need; when false, `targetAmount` is already horizon
+euros and is deflated for stock progress. **Stock progress** on Objectifs
+compares liquid wealth to `requiredToday` (always today's euros).
+**Trajectory** on Projection compares projected real capacity to
+`requiredToday`; UI **Besoin** shows `requiredAtHorizon`. Types:
+**retirement income** (monthly income at a target age) and **capital at
+date**. Several goals share the same liquid pool (no exclusive envelope
+assignment in V1). See [ADR 0014](../adr/0014-financial-goals.md).
+
 ## Diversification target
 
 Portfolio-level intent as min–max bands on diversification keys: ISO country, product **Geographic region**, or `CRYPTO`. Persisted in optional workbook sheet `Cibles diversification`. Partial plans are allowed (bands need not sum to 100 %). Empty collection clears the plan. Keys must not overlap (a country and its parent region are overlapping). See [ADR 0012](../adr/0012-allocation-coherence.md).

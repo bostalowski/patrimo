@@ -9,6 +9,7 @@ import {
   EnvelopeProjection,
   type EnvelopeProjectionInput,
 } from "./envelope-projection";
+import type { GoalsAlignmentInput } from "./goals-alignment-panel";
 import {
   RealEstateProjection,
   type SerializedProperty,
@@ -42,6 +43,7 @@ export function ProjectionClient({
   properties,
   inflationRate,
   retirement,
+  goalsAlignment,
 }: {
   monthlyRestant: number;
   envelopeInputs: EnvelopeProjectionInput[];
@@ -49,6 +51,7 @@ export function ProjectionClient({
   properties: SerializedProperty[];
   inflationRate: number;
   retirement: RetirementData | null;
+  goalsAlignment: GoalsAlignmentInput | null;
 }) {
   const [tab, setTab] = useState<Tab>("envelopes");
   const [rateInput, setRateInput] = useState(
@@ -121,6 +124,7 @@ export function ProjectionClient({
             setMonthly={setMonthly}
             rates={rates}
             setRates={setRates}
+            goalsAlignment={goalsAlignment}
           />
 
           {retirement && (
