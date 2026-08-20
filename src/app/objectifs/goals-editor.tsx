@@ -254,7 +254,7 @@ export function GoalsEditor({ initialGoals }: { initialGoals: FinancialGoal[] })
 								<input
 									type="checkbox"
 									className="size-4 rounded border-zinc-300"
-									checked={row.inflationIncluded}
+									checked={row.inflationIncluded ?? true}
 									onChange={(e) =>
 										updateRow(index, {
 											inflationIncluded: e.target.checked,
