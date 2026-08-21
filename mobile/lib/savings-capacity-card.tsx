@@ -1,7 +1,8 @@
 import { Text, View } from "react-native";
-import type {
-	SavingsCapacity,
-	SavingsCapacityStatus,
+import {
+	SAVINGS_CAPACITY_EF_TARGET_MONTHS,
+	type SavingsCapacity,
+	type SavingsCapacityStatus,
 } from "@patrimo/core/savings-capacity";
 import { formatEuro } from "@patrimo/core/format";
 import { shared, type Theme } from "./theme";
@@ -33,6 +34,10 @@ export function SavingsCapacityCard({
 	if (!capacity) return null;
 
 	const tone = statusColor(capacity.status, t);
+	const reserveLine =
+		capacity.monthlyEmergencyReserve > 0
+			? ` · ${formatEuro(capacity.monthlyEmergencyReserve)} / mois pour atteindre ${SAVINGS_CAPACITY_EF_TARGET_MONTHS} mois de dépenses`
+			: "";
 
 	return (
 		<View style={[shared.card, { backgroundColor: t.card, marginBottom: 24 }]}>
@@ -55,10 +60,7 @@ export function SavingsCapacityCard({
 				{formatEuro(capacity.investableSurplus)} / mois
 			</Text>
 			<Text style={{ color: t.textMuted, fontSize: 12 }}>
-				DCA prévu {formatEuro(capacity.plannedDcaMonthly)}
-				{capacity.monthlyEmergencyReserve > 0
-					? ` · réserve FU ${formatEuro(capacity.monthlyEmergencyReserve)}`
-					: ""}
+				{`DCA prévu ${formatEuro(capacity.plannedDcaMonthly)}${reserveLine}`}
 			</Text>
 			{capacity.status === "over_committed" && (
 				<Text style={{ color: t.danger, fontSize: 12, marginTop: 6 }}>

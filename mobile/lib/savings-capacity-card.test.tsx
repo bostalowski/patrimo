@@ -79,6 +79,19 @@ describe("mobile SavingsCapacityCard", () => {
 		expect(t).toMatch(/Écart/);
 	});
 
+	it("explains emergency catch-up reserve in plain language", () => {
+		const root = render(
+			<SavingsCapacityCard
+				capacity={capacity({
+					monthlyEmergencyReserve: 1_308.06,
+					investableSurplus: 691.94,
+				})}
+				theme={colors.light}
+			/>,
+		);
+		expect(texts(root).join(" ")).toMatch(/pour atteindre 6 mois de dépenses/);
+	});
+
 	it("renders nothing when capacity is null", () => {
 		const root = render(
 			<SavingsCapacityCard capacity={null} theme={colors.light} />,

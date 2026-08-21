@@ -4,7 +4,7 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** ready to merge — implementation committed + FEATURES row added
+- **In progress:** copy clarity on savings-capacity card (plain language; no tooltip)
 - **Blocked:** none
 
 ## Done (this branch)
@@ -19,12 +19,13 @@ Branch-local handoff. Do not put other features' focus here.
 - [x] Layer 2 targeted savings-capacity + card/banner tests
 - [x] Layer 3 `make e2e` green
 - [x] Checker pass (2026-08-21)
+- [x] UX copy: replace `réserve FU` with `… / mois pour atteindre 6 mois de dépenses` (no tooltip)
 
 ## Last verify
 
-- Command (maker): `make verify` (450 tests) + `npm test -- packages/core/src/savings-capacity` + `make e2e`
-- Command (checker re-run): `make verify` (450 pass) + targeted savings-capacity / card / banner tests (19 pass) + `make e2e` (2 pass)
-- Result: pass
+- Command: `npm test -- src/components/savings-capacity-card.test.tsx mobile/lib/savings-capacity-card.test.tsx` (8 pass) — copy/tooltip follow-up
+- Prior: `make verify` (450) + `make e2e` (2) on feature implementation
+- Result: pass (card tests)
 - Date: 2026-08-21
 
 ## Checker findings (2026-08-21)

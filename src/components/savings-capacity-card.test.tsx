@@ -47,6 +47,21 @@ describe("SavingsCapacityCard", () => {
 		expect(screen.getByText(/Écart.*500/)).toBeTruthy();
 	});
 
+	it("explains emergency catch-up reserve in plain language", () => {
+		render(
+			<SavingsCapacityCard
+				capacity={capacity({
+					monthlyEmergencyReserve: 1_308.06,
+					investableSurplus: 691.94,
+				})}
+			/>,
+		);
+
+		expect(
+			screen.getByText(/1[\s\u00a0\u202f]?308.*\/\s*mois pour atteindre 6 mois de dépenses/),
+		).toBeTruthy();
+	});
+
 	it("renders nothing when capacity is null", () => {
 		const { container } = render(<SavingsCapacityCard capacity={null} />);
 		expect(container.firstChild).toBeNull();
