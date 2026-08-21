@@ -32,6 +32,14 @@ Note: core `aggregatePortfolioSectorBreakdown.unmapped` is not rendered on eithe
 - Docs: FEATURES mobile `done`; platforms.md sector row added
 
 ## Checker
-- [ ] Fresh session or distinct checker role will score with [scoring-rubric.md](../scoring-rubric.md)
-- Pass bar: no D on correctness; architecture ≥ B; evidence cited
-- Ask: “Checker Pass on sector allocation mobile parity”
+- [x] Fresh session Pass 2026-08-21 (PR #57) — [scoring-rubric.md](../scoring-rubric.md)
+- Result: **Pass** (Correctness A; Architecture A; Scope A; Tests A; Docs A)
+- Evidence:
+  - Diff = docs only (`FEATURES.md`, `platforms.md`, `PROGRESS.md`, this run log) — +46/−6
+  - Layer 1 re-run: `make verify` — 424 passed
+  - Layer 2 re-run: sector-allocation + sector-exposure + justetf-sectors — 13 passed
+  - CI on `5639741`: `verify` + `e2e` pass
+  - UI audit spot-check: mobile `SectorExposureList` on `diversification` + `account-detail`; `AssetSectorEditor` JustETF sync/restore on `edit-asset`; `excel-mobile` `SHEET_EXPOSITION_SECTEUR` round-trip; web mirrors via `SectorExposurePanel` / comptes — parity claim holds
+  - `unmapped` unused in both UIs (shared omission) — out of scope OK
+  - `make next-feature` → Financial goals on mobile
+- Notes (non-blocking): no dedicated mobile RTL for sector list/editor (pre-existing; not required by this docs sprint)

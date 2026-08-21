@@ -4,11 +4,12 @@ Session handoff for agents and humans. Update at end of every meaningful session
 
 ## Current focus
 
-- **In progress:** none — sector mobile parity maker done; awaiting checker
+- **In progress:** none
 - **Blocked:** none
 
 ## Done (recent)
 
+- [x] Checker Pass on sector allocation mobile parity (PR #57) — [run log](docs/agent/runs/2026-08-21-sector-allocation-mobile.md)
 - [x] Sector allocation mobile UI parity (docs confirmation; UI already shipped) — [run log](docs/agent/runs/2026-08-21-sector-allocation-mobile.md)
 - [x] Checker Pass on e2e isolation — [run log](docs/agent/runs/2026-08-21-e2e-isolation.md)
 - [x] E2e isolation: dedicated :3100 + temp `FINGRAPHS_DATA_DIR` + `.next-e2e` distDir (no more overwrite of `./data/config.json`)
@@ -26,15 +27,14 @@ Session handoff for agents and humans. Update at end of every meaningful session
 
 ## Next
 
-- [ ] Checker pass on sector allocation mobile parity (docs-only sprint)
 - [ ] Expand mobile lint into the verify gate when debt is paid down
 - [ ] Optional: schedule a Level-2 agent loop (cron / Cursor `/loop`) per [docs/howto/agent-loop.md](docs/howto/agent-loop.md)
 - [ ] `make next-feature` → Financial goals on mobile
 
 ## Last verify
 
-- Command: `make verify` (424) + sector core tests (13)
-- Result: pass — Sector allocation mobile parity (maker); checker still required
+- Command: checker `make verify` (424) + sector core tests (13); CI verify+e2e green on PR #57
+- Result: **Pass** — Checker Pass on sector allocation mobile parity
 - Date: 2026-08-21
 
 ## Notes
