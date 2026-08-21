@@ -21,7 +21,7 @@ Hard rules: [CONSTRAINTS.md](../../CONSTRAINTS.md). Names: [glossary](../../docs
 | Portfolio risk | `portfolio-risk.ts` — see [portfolio-risk.md](portfolio-risk.md) |
 | Fees | `fees.ts` — see [fee-monitoring.md](fee-monitoring.md) |
 | Tax / fiscal | `tax-rules.ts`, `fiscalite.ts`, `fiscal-advice.ts` |
-| Projection / DCA / budget | `projection.ts`, `dca.ts`, `budget.ts`, `retraite.ts` |
+| Projection / DCA / budget | `projection.ts`, `dca.ts`, `budget.ts`, `retraite.ts` — overflow: [envelope-overflow.md](envelope-overflow.md) |
 | Price schedule helpers | `prices/schedule.ts` |
 | Real estate | `realestate/*` |
 
@@ -62,6 +62,7 @@ Platforms only adapt I/O and UI. See [src/ARCHITECTURE.md](../../src/ARCHITECTUR
 - [sector-allocation.md](sector-allocation.md) — ADR 0013
 - [diversification-targets.md](diversification-targets.md) — ADR 0012
 - [next-euro-plan.md](next-euro-plan.md) — ADR 0015
+- [envelope-overflow.md](envelope-overflow.md) — ADR 0016
 - [financial-goals.md](financial-goals.md) — ADR 0014
 - [emergency-fund.md](emergency-fund.md) — ADR 0005
 - [portfolio-risk.md](portfolio-risk.md) — ADR 0006

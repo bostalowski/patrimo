@@ -28,7 +28,7 @@ Status: `done` | `partial` | `todo` | `absent`
 | Real estate | done | partial | Mobile read-only |
 | Fiscalité | done | partial | Mobile realized only |
 | Fees | done | partial | |
-| Projection | done | partial | |
+| Projection | done | partial | Web: envelope overflow at plafond → fallback (ADR 0016); mobile deferred |
 | Retirement profile | done | partial | |
 | Financial goals (Objectifs) | done | absent | Sheet round-trip only on mobile; ADR 0014 |
 | Benchmarks | done | absent | |
