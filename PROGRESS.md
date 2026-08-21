@@ -9,6 +9,8 @@ Session handoff for agents and humans. Update at end of every meaningful session
 
 ## Done (recent)
 
+- [x] Checker Pass on e2e isolation — [run log](docs/agent/runs/2026-08-21-e2e-isolation.md)
+- [x] E2e isolation: dedicated :3100 + temp `FINGRAPHS_DATA_DIR` + `.next-e2e` distDir (no more overwrite of `./data/config.json`)
 - [x] Checker Pass on next-euro plan (PR #56) — [run log](docs/agent/runs/2026-08-21-next-euro-plan.md)
 - [x] Next-euro plan V1 (variante 2): `buildNextEuroPlan` + Dashboard/Diversification cards — ADR 0015
 - [x] Three-layer DoD in CONSTRAINTS + AGENTS + Cursor harness rule
@@ -29,8 +31,8 @@ Session handoff for agents and humans. Update at end of every meaningful session
 
 ## Last verify
 
-- Command: checker layer 1/2 (424 unit) + `make e2e` (2 passed)
-- Result: pass — Checker Pass on next-euro
+- Command: checker `make verify` (424) + `make e2e` (2 passed); `data/config.json` SHA unchanged
+- Result: pass — Checker Pass on e2e isolation
 - Date: 2026-08-21
 
 ## Notes

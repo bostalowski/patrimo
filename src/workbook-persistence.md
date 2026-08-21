@@ -30,6 +30,8 @@ Zod shapes live in `packages/core/src/schema.ts`.
 2. Default data directory in development: `./data`.
 3. Excel path: `config.json` → `excelPath`, else `EXCEL_PATH`.
 
+Playwright e2e (`playwright.config.ts`) always starts its own Next server on port `3100` with a temp `FINGRAPHS_DATA_DIR` and a separate `distDir` (`.next-e2e`), so smoke tests never rewrite `./data/config.json` and do not collide with a developer `next dev` on `:3000`.
+
 Implementation: `src/lib/config.ts`.
 
 ### Read path
