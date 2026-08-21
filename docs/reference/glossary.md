@@ -148,6 +148,10 @@ Measure of alignment between saved **Diversification target** bands, current liq
 
 Read-only ranked list of **buy** / **hold** / **pause** steps that reallocates the existing monthly DCA envelope toward the emergency-fund LIVRET gap and underweight diversification bands, then residual DCA. Computed by `buildNextEuroPlan` in `@patrimo/core`. Does not write the workbook. Hidden when there is no monthly DCA pool and the emergency fund is not insufficient. See [ADR 0015](../adr/0015-next-euro-plan.md).
 
+## Savings capacity
+
+Derived monthly **investable surplus** after budget cashflow and emergency-fund catch-up, compared to planned DCA. `rawSavings = revenusMensuels − depensesMensuelles` (budget `EPARGNE` lines ignored). Catch-up reserve spreads the gap to **6** months of expenses over **12** months when coverage is below that target (`monthlyEmergencyReserve`); zero when coverage ≥ 6 or expenses ≤ 0. `investableSurplus = rawSavings − reserve` (may be negative). `plannedDcaMonthly` from `computeMonthlyDcaPool`. Status: `comfortable` / `tight` / `over_committed`. Hidden (`null`) when `revenusMensuels ≤ 0`. Computed by `computeSavingsCapacity` in `@patrimo/core`. Dashboard card on web and mobile; soft warnings on web DCA / Projection when over-committed. No workbook field; does not auto-resize DCA. Complementary to **Next-euro plan** (capacity fit vs pool reallocation). See [ADR 0017](../adr/0017-savings-capacity-bridge.md).
+
 ## See also
 
 - [CONSTRAINTS.md](../../CONSTRAINTS.md)
@@ -162,6 +166,7 @@ Read-only ranked list of **buy** / **hold** / **pause** steps that reallocates t
 - [ADR 0012](../adr/0012-allocation-coherence.md)
 - [ADR 0015](../adr/0015-next-euro-plan.md)
 - [ADR 0016](../adr/0016-envelope-overflow-plafond.md)
+- [ADR 0017](../adr/0017-savings-capacity-bridge.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [Diversification targets](../architecture/diversification-targets.md)

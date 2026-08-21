@@ -13,8 +13,8 @@ Complementary to **Next-euro plan** (ADR 0015): next-euro reallocates an *existi
 
 ## Scope
 
-- [ ] **One behavior:** compute an **investable surplus** from budget + emergency-fund catch-up reserve, compare it to the monthlyized DCA plan total, expose status `comfortable` / `tight` / `over_committed`, and surface it on Dashboards (card next to emergency fund) plus soft warnings on web DCA / Projection when over-committed. **No auto-resize of DCA** — show the gap only.
-- [ ] **Core (required):** math lives in `@patrimo/core` (CONSTRAINTS §6) — not duplicated in UI.
+- [x] **One behavior:** compute an **investable surplus** from budget + emergency-fund catch-up reserve, compare it to the monthlyized DCA plan total, expose status `comfortable` / `tight` / `over_committed`, and surface it on Dashboards (card next to emergency fund) plus soft warnings on web DCA / Projection when over-committed. **No auto-resize of DCA** — show the gap only.
+- [x] **Core (required):** math lives in `@patrimo/core` (CONSTRAINTS §6) — not duplicated in UI.
   - New pure function (e.g. `computeSavingsCapacity`) composing:
     - `rawSavings = revenusMensuels − depensesMensuelles` (`summarizeBudget`; **do not** subtract budget `EPARGNE` lines — those are intentional savings labels, not a second capacity source)
     - Emergency catch-up reserve: see product decisions below
@@ -22,10 +22,10 @@ Complementary to **Next-euro plan** (ADR 0015): next-euro reallocates an *existi
     - `plannedDcaMonthly = computeMonthlyDcaPool(dca)` (already monthlyizes `MENSUEL` / `TRIMESTRIEL` / `ANNUEL`)
     - Status from planned vs surplus thresholds
   - Return enough fields for UI: raw savings, reserve, surplus, planned DCA, gap (`planned − surplus`), status; `null` when indicator must hide
-- [ ] **Web:** Dashboard card beside emergency fund; soft warning banner/copy on DCA page and Projection when `over_committed`
-- [ ] **Mobile:** Dashboard card only (parity with emergency-fund card); no DCA/Projection soft warnings in V1
-- [ ] **Docs:** glossary terms; short core topic note; ADR (recommended — lasting thresholds / hide rules)
-- [ ] Files / packages expected to change:
+- [x] **Web:** Dashboard card beside emergency fund; soft warning banner/copy on DCA page and Projection when `over_committed`
+- [x] **Mobile:** Dashboard card only (parity with emergency-fund card); no DCA/Projection soft warnings in V1
+- [x] **Docs:** glossary terms; short core topic note; ADR (recommended — lasting thresholds / hide rules)
+- [x] Files / packages expected to change:
   - `packages/core/src/savings-capacity.ts` (+ tests) — or colocated name if better fit
   - `packages/core/ARCHITECTURE.md` + topic note
   - `src/app/page.tsx` + new card component; soft warnings on DCA + Projection surfaces
@@ -68,10 +68,11 @@ Complementary to **Next-euro plan** (ADR 0015): next-euro reallocates an *existi
 
 ## Checker
 
-- [ ] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md)
+- [x] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md)
 - Pass bar: no D on correctness; architecture ≥ B; evidence cited
+- **Verdict (2026-08-21):** Pass with notes — see PROGRESS checker findings
 
 ## On merge
 
-- [ ] Add / update root [FEATURES.md](../../../../FEATURES.md) row **Savings capacity**
+- [x] Add / update root [FEATURES.md](../../../../FEATURES.md) row **Savings capacity**
 - [ ] Leave this folder as archive (or note PR link in root PROGRESS Done)

@@ -5,11 +5,13 @@ import {
 import { assessFinancialGoals } from "@patrimo/core/financial-goals";
 import { buildNextEuroPlan } from "@patrimo/core/next-euro-plan";
 import { computeNetWorth, portfolioByEnvelope } from "@patrimo/core/portfolio";
+import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { GoalsSummaryCard } from "@/components/goals-summary-card";
 import { NextEuroPlanCard } from "@/components/next-euro-plan-card";
 import { PerformanceSection } from "@/components/performance-section";
+import { SavingsCapacityCard } from "@/components/savings-capacity-card";
 import { SyncButton } from "@/components/sync-button";
 import {
 	Card,
@@ -80,11 +82,19 @@ export default async function DashboardPage() {
 		.map((p) => ({ name: p.asset?.label ?? p.assetId, value: p.marketValue }));
 
 	const livretBalance = sumLivretMarketValue(portfolio.accounts);
-	const { depensesMensuelles } = summarizeBudget(workbook.budget);
+	const { revenusMensuels, depensesMensuelles } = summarizeBudget(
+		workbook.budget,
+	);
 	const emergencyFund = computeEmergencyFundHealth(
 		livretBalance,
 		depensesMensuelles,
 	);
+	const savingsCapacity = computeSavingsCapacity({
+		revenusMensuels,
+		depensesMensuelles,
+		livretBalance,
+		dca: workbook.dca,
+	});
 	const goalsAssessment = assessFinancialGoals({
 		goals: workbook.financialGoals ?? [],
 		portfolio,
@@ -178,6 +188,7 @@ export default async function DashboardPage() {
 
 			<div className="flex flex-wrap gap-4">
 				<EmergencyFundCard health={emergencyFund} />
+				<SavingsCapacityCard capacity={savingsCapacity} />
 				<NextEuroPlanCard
 					plan={nextEuroPlan}
 					variant="summary"
