@@ -54,10 +54,10 @@
 
 ## Checker
 
-- [ ] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md)
+- [x] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md) — **Pass** 2026-08-21 (see branch PROGRESS)
 - Pass bar: no D on correctness; architecture ≥ B; evidence cited
 
 ## On merge
 
 - [x] Update root [FEATURES.md](../../../../FEATURES.md) Projection notes if web behavior deserves a note (status stays `done` / mobile still `partial`)
-- [ ] Leave this folder as archive (or note PR link in root PROGRESS Done)
+- [ ] Leave this folder as archive (or note PR link in root PROGRESS Done) — PR [#59](https://github.com/bostalowski/patrimo/pull/59)

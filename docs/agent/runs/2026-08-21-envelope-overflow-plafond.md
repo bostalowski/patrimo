@@ -1,6 +1,6 @@
 # Run: envelope overflow at plafond (2026-08-21)
 
-Branch: `feat/envelope-overflow-plafond` — maker pass.
+Branch: `feat/envelope-overflow-plafond` — PR [#59](https://github.com/bostalowski/patrimo/pull/59).
 
 ## What shipped
 
@@ -8,7 +8,7 @@ Branch: `feat/envelope-overflow-plafond` — maker pass.
 - Web Projection + retirement card consume overflow-aware totals; selector + French banner.
 - ADR 0016, glossary term, topic note, FEATURES Projection note.
 
-## Verify
+## Verify (maker)
 
 | Layer | Command | Result |
 |---|---|---|
@@ -16,6 +16,13 @@ Branch: `feat/envelope-overflow-plafond` — maker pass.
 | 2 | `npm test -- packages/core/src/projection` | 7 passed |
 | 3 | `make e2e` | 2 passed |
 
-## Next
+## Checker (re-run 2026-08-21)
 
-Checker session against branch CONTRACT + scoring rubric before merge/PR.
+| Layer | Command | Result |
+|---|---|---|
+| 1 | `make verify` | pass (431 tests) |
+| 2 | `npm test -- packages/core/src/projection` | 7 passed |
+| 3 | `make e2e` | 2 passed |
+| CI | PR 59 | `verify` + `e2e` success |
+
+**Verdict: Pass** — scores in `docs/agent/branches/feat-envelope-overflow-plafond/PROGRESS.md`.
