@@ -38,6 +38,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | Next-euro plan | Present — Dashboard top 3 + Diversification list | Absent |
 | Portfolio readable risk badges | Present | Present |
 | Geographic allocation | Present — `/diversification` (legacy `/geographie` redirects), asset detail, account detail; dual country + region views; guided manual pickers | Present — Plus menu, edit asset (guided manual), account detail; dual lists; accounts list without full geo; map later |
+| Sector allocation | Present — `/diversification`, asset detail, account detail; manual picker + JustETF sync/restore; sector keys in diversification targets | Present — Plus → Diversification, edit asset (manual chips + JustETF sync/restore), account detail; sector keys in targets |
 
 ## Shared versus platform-owned
 

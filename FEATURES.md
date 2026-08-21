@@ -32,7 +32,7 @@ Before coding an open row: write a [sprint contract](docs/agent/sprint-contract.
 | Retirement profile | done | partial | |
 | Financial goals (Objectifs) | done | absent | Sheet round-trip only on mobile; ADR 0014 |
 | Benchmarks | done | absent | |
-| Sector allocation | done | todo | Confirm UI parity in platforms.md |
+| Sector allocation | done | done | ADR 0013; Diversification + asset/account views |
 
 ## Open work (contracts)
 
@@ -41,7 +41,7 @@ Executable verification for rows that are not fully `done` on both platforms. Pi
 | Feature | Status | Verify | Evidence when done |
 |---|---|---|---|
 | Next-euro plan (web) | done | `make verify`; `npm test -- packages/core/src/next-euro-plan`; card RTL; `make e2e` | FEATURES web → `done`, mobile `absent`; ADR 0015; PROGRESS |
-| Sector allocation (mobile UI parity) | todo | `make verify`; `npm test -- packages/core`; confirm [platforms.md](docs/overview/platforms.md) matches UI; `make e2e` if web touched | platforms.md + FEATURES both `done`; PROGRESS note |
+| Sector allocation (mobile UI parity) | done | `make verify`; `npm test -- packages/core`; confirm [platforms.md](docs/overview/platforms.md) matches UI; `make e2e` if web touched | platforms.md + FEATURES both `done`; [run log](docs/agent/runs/2026-08-21-sector-allocation-mobile.md) |
 | Financial goals on mobile | absent | Follow [implement-financial-goals.md](docs/howto/implement-financial-goals.md); `make verify`; mobile typecheck already in verify | Mobile status → `done` or honest `partial`; ARCHITECTURE/mobile updated |
 | Benchmarks on mobile | absent | `make verify`; manual smoke on mobile benchmarks screen if added | FEATURES mobile → `done`/`partial`; platforms.md |
 | CSV import on mobile | absent | `make verify`; document gap or ship importer | FEATURES + platforms.md |
