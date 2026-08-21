@@ -8,9 +8,11 @@ Harness-first layout. Diátaxis families are **not** required. Put knowledge whe
 |---|---|---|
 | Entry / router | What is this, how to run/verify, what to read | [AGENTS.md](../AGENTS.md) |
 | Hard constraints | MUST / MUST NOT | [CONSTRAINTS.md](../CONSTRAINTS.md) |
-| Session state | Done / in-progress / blocked | [PROGRESS.md](../PROGRESS.md) |
-| Feature scope | What exists, what is in flight | [FEATURES.md](../FEATURES.md) (open-work contracts + verify cmds) |
-| Sprint / score | Scope, exclusions, checker rubric | [docs/agent/sprint-contract.md](agent/sprint-contract.md), [scoring-rubric.md](agent/scoring-rubric.md) |
+| Session state (`main`) | Merged work / pointers | Root [PROGRESS.md](../PROGRESS.md) |
+| Session state (feature) | Focus / done / blocked on this branch | [Branch folders](agent/branches/README.md) (`PROGRESS.md`) |
+| Capability matrix | What exists on web vs mobile | [FEATURES.md](../FEATURES.md) (`make platform-gaps`) |
+| Branch cadrage | Scope, verify, exclusions | Same folder (`CONTRACT.md`) |
+| Score | Checker rubric | [scoring-rubric.md](agent/scoring-rubric.md) |
 | Mechanics | How this package works | Colocated `ARCHITECTURE.md` (+ topic notes beside modules) |
 | Decisions | Why we chose X | [docs/adr/](adr/) |
 | Names | Canonical vocabulary | [docs/reference/glossary.md](reference/glossary.md) |

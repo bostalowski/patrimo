@@ -6,7 +6,7 @@ Read [DOC_MODEL.md](DOC_MODEL.md) before adding or editing documentation.
 
 1. [CONSTRAINTS.md](../CONSTRAINTS.md)
 2. [Glossary](reference/glossary.md)
-3. [PROGRESS.md](../PROGRESS.md)
+3. Branch handoff: `make branch-status` (or root [PROGRESS.md](../PROGRESS.md) on `main`)
 
 Then the colocated `ARCHITECTURE.md` for the package you change.
 

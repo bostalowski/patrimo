@@ -46,10 +46,18 @@ else
 fi
 
 echo "5. What is the current progress?"
-if [[ -f PROGRESS.md ]] && grep -qE "Current focus|In progress|Last verify" PROGRESS.md; then
-  pass "PROGRESS.md has focus / verify sections"
+# Prefer branch-local PROGRESS when on a feature branch; else root PROGRESS on main.
+# shellcheck source=lib/branch-slug.sh
+source "$(dirname "$0")/lib/branch-slug.sh"
+BRANCH="$(branch_name)"
+SLUG="$(branch_slug "$BRANCH")"
+BRANCH_PROGRESS="docs/agent/branches/$SLUG/PROGRESS.md"
+if ! is_integration_branch "$BRANCH" && [[ -f "$BRANCH_PROGRESS" ]] && grep -qE "Current focus|In progress|Last verify" "$BRANCH_PROGRESS"; then
+  pass "Branch PROGRESS.md ($SLUG) has focus / verify sections"
+elif [[ -f PROGRESS.md ]] && grep -qE "Current focus|In progress|Last verify|Branch contracts" PROGRESS.md; then
+  pass "Root PROGRESS.md has handoff sections (main / pointer)"
 else
-  fail "PROGRESS.md missing or incomplete"
+  fail "No usable PROGRESS (branch docs/agent/branches/<slug>/ or root)"
 fi
 
 echo ""

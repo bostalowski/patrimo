@@ -1,6 +1,6 @@
 # Agent run logs
 
-Handoff notes for multi-session or non-trivial work. Short sessions may update only root [PROGRESS.md](../../PROGRESS.md).
+Optional dated notes for long or multi-session work. **Primary handoff** for a feature is `docs/agent/branches/<slug>/PROGRESS.md` (`make branch-status`). Root [PROGRESS.md](../../PROGRESS.md) is for `main` only.
 
 ## Naming
 
@@ -13,7 +13,7 @@ Handoff notes for multi-session or non-trivial work. Short sessions may update o
 
 - Date:
 - Goal:
-- Feature (FEATURES.md):
+- Branch / CONTRACT: docs/agent/branches/<slug>/CONTRACT.md
 - Sprint contract: (inline or link)
   - Scope:
   - Verification commands:
@@ -30,6 +30,7 @@ Handoff notes for multi-session or non-trivial work. Short sessions may update o
 
 ## Related
 
-- [Sprint contract](../sprint-contract.md)
+- [Branch contracts](../branches/README.md)
+- [Sprint contract pointer](../sprint-contract.md)
 - [Scoring rubric](../scoring-rubric.md)
 - [Maker / checker](../../howto/maker-checker.md)

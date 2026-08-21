@@ -6,20 +6,22 @@ Patrimo is a local wealth-tracking app: an Excel workbook is the portfolio sourc
 
 1. [CONSTRAINTS.md](CONSTRAINTS.md) — hard MUST / MUST NOT
 2. [docs/reference/glossary.md](docs/reference/glossary.md) — canonical names
-3. [PROGRESS.md](PROGRESS.md) — current session state
+3. Branch handoff: `make branch-status` (or `docs/agent/branches/<slug>/PROGRESS.md`). On `main`, root [PROGRESS.md](PROGRESS.md).
 
 Then read the `ARCHITECTURE.md` for the package you touch (see below).
 
 ## Run and verify
 
 ```bash
-make setup           # npm ci
-make verify          # layer 1: lint + typecheck + unit tests
-make e2e             # layer 3: Playwright workbook smoke
-make verify-full     # layers 1 + 3
-make init            # scripts/agent-init.sh (setup + verify + PROGRESS + open contracts)
-make next-feature    # print the next open FEATURES contract
-make cold-start      # score whether the repo answers the five cold-start questions
+make setup              # npm ci
+make verify             # layer 1: lint + typecheck + unit tests
+make e2e                # layer 3: Playwright workbook smoke
+make verify-full        # layers 1 + 3
+make init               # setup + verify + branch status + gaps + cold-start
+make branch-contract    # create CONTRACT + PROGRESS for current feature branch
+make branch-status      # print branch cadrage / handoff
+make platform-gaps      # list FEATURES matrix rows still open
+make cold-start         # score whether the repo answers the five cold-start questions
 ```
 
 Equivalent: `npm run verify` / `npm run verify-full`. Feature-scoped tests: `npm test -- <path>`.
@@ -32,19 +34,19 @@ Equivalent: `npm run verify` / `npm run verify-full`. Feature-scoped tests: `npm
 | 2 Behavior | targeted `npm test -- <path>` | Any behavior change |
 | 3 System | `make e2e` / `make verify-full` | Web UI, `src/app/api`, workbook I/O, settings |
 
-Do not declare victory on layer 1 alone when layer 3 applies. One feature at a time — see [FEATURES.md](FEATURES.md). Lint currently gates `packages/core` + `src` (mobile lint debt is out of gate).
+Do not declare victory on layer 1 alone when layer 3 applies. One CONTRACT per feature branch — see [docs/agent/branches/README.md](docs/agent/branches/README.md). Lint currently gates `packages/core` + `src` (mobile lint debt is out of gate).
 
 ### Maker ≠ checker
 
-The agent that implements MUST NOT be the sole judge of completion. After green verify, run a **checker** pass (fresh session or explicit checker role) against the sprint contract. Procedure: [docs/howto/maker-checker.md](docs/howto/maker-checker.md). Rubric: [docs/agent/scoring-rubric.md](docs/agent/scoring-rubric.md).
+The agent that implements MUST NOT be the sole judge of completion. After green verify, run a **checker** pass (fresh session or explicit checker role) against the branch CONTRACT. Procedure: [docs/howto/maker-checker.md](docs/howto/maker-checker.md). Rubric: [docs/agent/scoring-rubric.md](docs/agent/scoring-rubric.md).
 
 ### Session artifacts
 
-Before coding a feature: copy [docs/agent/sprint-contract.md](docs/agent/sprint-contract.md) into the run log or paste a short contract into PROGRESS.
+Before coding: feature branch → `make branch-contract` → fill CONTRACT. Update branch PROGRESS during the session. Optional dated notes under `docs/agent/runs/`.
 
-After the session: update PROGRESS; optionally add `docs/agent/runs/YYYY-MM-DD-slug.md` from [docs/agent/runs/README.md](docs/agent/runs/README.md).
+On merge: update root [FEATURES.md](FEATURES.md) matrix if platform status changed; root PROGRESS only as a short `main` pointer.
 
-Autonomous loops (goal/cron): [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
+Autonomous loops: [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
 
 ## When to read what
 
@@ -61,12 +63,12 @@ Autonomous loops (goal/cron): [docs/howto/agent-loop.md](docs/howto/agent-loop.m
 
 ## Session lifecycle
 
-1. **Init:** `make init` (or read PROGRESS.md + run verify baseline).
-2. **Contract:** pick one open FEATURES row (`make next-feature`); write a sprint contract.
-3. **Work:** implement that item only; update colocated ARCHITECTURE / ADR / glossary with the code.
+1. **Init:** `make init` (or `make branch-status` + verify baseline).
+2. **Contract:** on a feature branch, `make branch-contract` (or edit existing CONTRACT).
+3. **Work:** implement that contract only; update colocated ARCHITECTURE / ADR / glossary with the code.
 4. **Verify:** layers required by DoD above. Never claim done on failing verify.
-5. **Check:** maker/checker pass against contract + rubric.
-6. **Handoff:** update PROGRESS.md (done / in-progress / blocked / last verify). Optional run log under `docs/agent/runs/`.
+5. **Check:** maker/checker pass against CONTRACT + rubric.
+6. **Handoff:** update `docs/agent/branches/<slug>/PROGRESS.md`. On merge, sync FEATURES matrix + short note on root PROGRESS if useful.
 
 ## Next.js
 
