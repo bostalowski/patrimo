@@ -78,6 +78,10 @@ A DCA configuration containing baskets of asset identifiers and target allocatio
 
 A non-monthly investment-plan stream (`TRIMESTRIEL` or `ANNUEL`) used by Projection alongside the monthly contribution field. Kept as a separate calendar stream (not divided into the monthly input). Web and mobile Projection may show it as a badge (`extraContributions` / `extraStreams`).
 
+## Envelope overflow
+
+Surplus contribution clipped when a projected envelope reaches its plafond, then routed once to a fallback envelope (default `CTO`) by `projectEnvelopesWithOverflow` in `@patrimo/core`. Single hop only; not a workbook field in V1 — UI / session override. See [ADR 0016](../adr/0016-envelope-overflow-plafond.md).
+
 ## Price cache
 
 Derived price history stored locally by each application instance. Price caches are not the source of truth and may be removed lazily after the corresponding asset is deleted on another device.
@@ -157,6 +161,7 @@ Read-only ranked list of **buy** / **hold** / **pause** steps that reallocates t
 - [ADR 0008](../adr/0008-geographic-allocation.md)
 - [ADR 0012](../adr/0012-allocation-coherence.md)
 - [ADR 0015](../adr/0015-next-euro-plan.md)
+- [ADR 0016](../adr/0016-envelope-overflow-plafond.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [Diversification targets](../architecture/diversification-targets.md)

@@ -35,3 +35,4 @@ Then the colocated `ARCHITECTURE.md` for the package you change.
 - [ADR 0012](adr/0012-allocation-coherence.md) — diversification target bands and coherence.
 - [ADR 0014](adr/0014-financial-goals.md) — financial goals in the workbook.
 - [ADR 0015](adr/0015-next-euro-plan.md) — next-euro action plan (variante 2).
+- [ADR 0016](adr/0016-envelope-overflow-plafond.md) — envelope contribution overflow at plafond.
