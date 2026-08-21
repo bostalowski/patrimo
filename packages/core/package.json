@@ -31,6 +31,7 @@
     "./diversification-labels": "./src/diversification-labels.ts",
     "./diversification-targets": "./src/diversification-targets.ts",
     "./manual-prices": "./src/manual-prices.ts",
+    "./next-euro-plan": "./src/next-euro-plan.ts",
     "./geographic-allocation": "./src/geographic-allocation.ts",
     "./geographic-exposure": "./src/geographic-exposure.ts",
     "./justetf-geography": "./src/justetf-geography.ts",

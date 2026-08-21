@@ -140,6 +140,10 @@ Portfolio-level intent as min–max bands on diversification keys: ISO country, 
 
 Measure of alignment between saved **Diversification target** bands, current liquid stock, and annualized DCA flow mix. Computed by `assessDiversificationCoherence`. Geo bands use look-through from `Exposition geo` on **all** asset types (including `CRYPTO`). The `CRYPTO` band uses `AssetType.CRYPTO` at full value. Geo and crypto axes **overlap by design** — the same euro may count toward both a country/region band and the `CRYPTO` band. Per-value tones: `ok` (in-band ±1e-3), `watch` (outside but |Δ| ≤ 2 pp), `breach` (|Δ| > 2 pp). Statuses: `aligned`, `watch`, `misaligned` (worst tone; findings `band_drift` / `flow_misalign` carry the tone). Returns null (card hidden) when no bands are saved or liquid invested is zero. The Diversification menu breakdown (`aggregatePortfolioDiversificationBreakdown`) partitions full liquid MV into geo slices, crypto, and **unmapped** (hors geo et hors crypto — livret, cash, actifs non renseignés). Band coherence axes still overlap. Account and asset geo charts still use covered market value ([ADR 0010](../adr/0010-partial-geographic-allocation-weights.md)). Never uses HHI / Top1 / Top3 ([ADR 0006](../adr/0006-portfolio-risk-readability.md)).
 
+## Next-euro plan
+
+Read-only ranked list of **buy** / **hold** / **pause** steps that reallocates the existing monthly DCA envelope toward the emergency-fund LIVRET gap and underweight diversification bands, then residual DCA. Computed by `buildNextEuroPlan` in `@patrimo/core`. Does not write the workbook. Hidden when there is no monthly DCA pool and the emergency fund is not insufficient. See [ADR 0015](../adr/0015-next-euro-plan.md).
+
 ## See also
 
 - [CONSTRAINTS.md](../../CONSTRAINTS.md)
@@ -152,6 +156,7 @@ Measure of alignment between saved **Diversification target** bands, current liq
 - [ADR 0007](../adr/0007-fee-monitoring-ratios.md)
 - [ADR 0008](../adr/0008-geographic-allocation.md)
 - [ADR 0012](../adr/0012-allocation-coherence.md)
+- [ADR 0015](../adr/0015-next-euro-plan.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [Diversification targets](../architecture/diversification-targets.md)

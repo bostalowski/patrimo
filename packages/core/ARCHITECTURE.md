@@ -15,6 +15,7 @@ Hard rules: [CONSTRAINTS.md](../../CONSTRAINTS.md). Names: [glossary](../../docs
 | Geographic allocation | `geographic-allocation.ts`, `geographic-exposure.ts`, `justetf-geography.ts` — see [geographic-allocation.md](geographic-allocation.md) |
 | Sector allocation | `sector-allocation.ts`, `sector-exposure.ts`, `justetf-sectors.ts` — see [sector-allocation.md](sector-allocation.md) |
 | Diversification | `diversification-targets.ts`, `diversification-coherence.ts` — see [diversification-targets.md](diversification-targets.md) |
+| Next-euro plan | `next-euro-plan.ts` — see [next-euro-plan.md](next-euro-plan.md) |
 | Financial goals | `financial-goals.ts` — see [financial-goals.md](financial-goals.md) |
 | Emergency fund | `emergency-fund.ts` — see [emergency-fund.md](emergency-fund.md) |
 | Portfolio risk | `portfolio-risk.ts` — see [portfolio-risk.md](portfolio-risk.md) |
@@ -60,6 +61,7 @@ Platforms only adapt I/O and UI. See [src/ARCHITECTURE.md](../../src/ARCHITECTUR
 - [geographic-allocation.md](geographic-allocation.md) — ADR 0008–0011
 - [sector-allocation.md](sector-allocation.md) — ADR 0013
 - [diversification-targets.md](diversification-targets.md) — ADR 0012
+- [next-euro-plan.md](next-euro-plan.md) — ADR 0015
 - [financial-goals.md](financial-goals.md) — ADR 0014
 - [emergency-fund.md](emergency-fund.md) — ADR 0005
 - [portfolio-risk.md](portfolio-risk.md) — ADR 0006

@@ -3,10 +3,12 @@ import {
 	sumLivretMarketValue,
 } from "@patrimo/core/emergency-fund";
 import { assessFinancialGoals } from "@patrimo/core/financial-goals";
-import { computeNetWorth } from "@patrimo/core/portfolio";
+import { buildNextEuroPlan } from "@patrimo/core/next-euro-plan";
+import { computeNetWorth, portfolioByEnvelope } from "@patrimo/core/portfolio";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { GoalsSummaryCard } from "@/components/goals-summary-card";
+import { NextEuroPlanCard } from "@/components/next-euro-plan-card";
 import { PerformanceSection } from "@/components/performance-section";
 import { SyncButton } from "@/components/sync-button";
 import {
@@ -90,6 +92,20 @@ export default async function DashboardPage() {
 		profile,
 		inflationRate,
 	});
+	const nextEuroPlan = buildNextEuroPlan({
+		targets: workbook.diversificationTargets ?? [],
+		positions: portfolio.assets,
+		dca: workbook.dca,
+		geographicAllocations: workbook.geographicAllocations ?? [],
+		sectorAllocations: workbook.sectorAllocations ?? [],
+		assets: workbook.assets,
+		accounts: portfolio.accounts,
+		monthlyExpenses: depensesMensuelles,
+		portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
+	});
+	const assetLabels = Object.fromEntries(
+		workbook.assets.map((a) => [a.id, a.label]),
+	);
 
 	return (
 		<div className="space-y-8">
@@ -160,8 +176,15 @@ export default async function DashboardPage() {
 				</Card>
 			</div>
 
-			<EmergencyFundCard health={emergencyFund} />
-			<GoalsSummaryCard assessment={goalsAssessment} />
+			<div className="flex flex-wrap gap-4">
+				<EmergencyFundCard health={emergencyFund} />
+				<NextEuroPlanCard
+					plan={nextEuroPlan}
+					variant="summary"
+					assetLabels={assetLabels}
+				/>
+				<GoalsSummaryCard assessment={goalsAssessment} />
+			</div>
 
 			<PerformanceSection history={history} benchmarks={benchmarks} />
 

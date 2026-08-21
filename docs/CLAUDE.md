@@ -34,3 +34,4 @@ Then the colocated `ARCHITECTURE.md` for the package you change.
 - [ADR 0010](adr/0010-partial-geographic-allocation-weights.md) — partial geographic weights (sum ≤ 1, absolute look-through).
 - [ADR 0012](adr/0012-allocation-coherence.md) — diversification target bands and coherence.
 - [ADR 0014](adr/0014-financial-goals.md) — financial goals in the workbook.
+- [ADR 0015](adr/0015-next-euro-plan.md) — next-euro action plan (variante 2).

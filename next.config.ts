@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   transpilePackages: ["@patrimo/core"],
+  // Playwright e2e uses a separate distDir so a local `next dev` lock does not block smoke.
+  ...(process.env.FINGRAPHS_E2E_DIST_DIR
+    ? { distDir: process.env.FINGRAPHS_E2E_DIST_DIR }
+    : {}),
   async redirects() {
     return [
       {

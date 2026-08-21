@@ -32,6 +32,7 @@ export {
 	projectLivret,
 } from "./livret";
 export * from "./manual-prices";
+export * from "./next-euro-plan";
 export * from "./per";
 export * from "./performance";
 export * from "./portfolio";
