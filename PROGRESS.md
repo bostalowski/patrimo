@@ -5,11 +5,12 @@ Session handoff for agents and humans. Update at end of every meaningful session
 ## Current focus
 
 - **In progress:** none
-- **Blocked:** none — next-euro plan awaiting checker pass ([docs/howto/maker-checker.md](docs/howto/maker-checker.md))
+- **Blocked:** none
 
 ## Done (recent)
 
-- [x] Next-euro plan V1 (variante 2): `buildNextEuroPlan` + Dashboard/Diversification cards — ADR 0015, [run log](docs/agent/runs/2026-08-21-next-euro-plan.md)
+- [x] Checker Pass on next-euro plan (PR #56) — [run log](docs/agent/runs/2026-08-21-next-euro-plan.md)
+- [x] Next-euro plan V1 (variante 2): `buildNextEuroPlan` + Dashboard/Diversification cards — ADR 0015
 - [x] Three-layer DoD in CONSTRAINTS + AGENTS + Cursor harness rule
 - [x] CI e2e job (Playwright Chromium) alongside verify
 - [x] Sprint contract + scoring rubric + run-log template
@@ -22,15 +23,14 @@ Session handoff for agents and humans. Update at end of every meaningful session
 
 ## Next
 
-- [ ] Checker pass on next-euro (fresh session)
 - [ ] Expand mobile lint into the verify gate when debt is paid down
 - [ ] Optional: schedule a Level-2 agent loop (cron / Cursor `/loop`) per [docs/howto/agent-loop.md](docs/howto/agent-loop.md)
 - [ ] `make next-feature` → Sector allocation (mobile UI parity)
 
 ## Last verify
 
-- Command: `make verify` + `npm test -- packages/core/src/next-euro-plan` + card RTL + `make e2e`
-- Result: pass
+- Command: checker layer 1/2 (424 unit) + `make e2e` (2 passed)
+- Result: pass — Checker Pass on next-euro
 - Date: 2026-08-21
 
 ## Notes

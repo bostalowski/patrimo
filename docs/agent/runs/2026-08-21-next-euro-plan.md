@@ -10,9 +10,9 @@
 
 ## Verification
 
-- Layer 1: `make verify` — pass 2026-08-21
-- Layer 2: `npm test -- packages/core/src/next-euro-plan` + card RTL — pass
-- Layer 3: `make e2e` — pass
+- Layer 1: `make verify` — pass 2026-08-21 (maker); checker re-ran lint/typecheck/unit 2026-08-21
+- Layer 2: `npm test -- packages/core/src/next-euro-plan` + card RTL — pass (maker + checker)
+- Layer 3: `make e2e` — pass (maker); checker re-ran 2026-08-21 → 2 passed
 
 ## Exclusions
 
@@ -21,8 +21,9 @@
 
 ## Checker
 
-- [ ] Fresh session or distinct checker role will score with [scoring-rubric.md](../scoring-rubric.md)
-- Pass bar: no D on correctness; architecture ≥ B; evidence cited
+- [x] Fresh session Pass 2026-08-21 — [scoring-rubric.md](../scoring-rubric.md)
+- Result: **Pass** (Correctness B→A after layer-3 re-run; Architecture A; Scope A; Tests B; Docs A)
+- Notes (non-blocking): no dedicated e2e assertion for “Prochain euro”; mixed look-through pause vs P2 catch-up untested; action `hold` unused
 
 ## Maker notes
 
