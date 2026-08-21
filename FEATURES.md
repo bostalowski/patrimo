@@ -20,6 +20,7 @@ Status: `done` | `partial` | `todo` | `absent`
 | Budget | done | done | |
 | DCA plans | done | done | |
 | Emergency fund health | done | done | ADR 0005 |
+| Savings capacity | done | done | ADR 0017; Dashboard cards; soft warnings web-only |
 | Portfolio risk badges | done | done | ADR 0006 |
 | Geographic allocation | done | done | ADR 0008–0011 |
 | Diversification targets | done | done | ADR 0012 |
