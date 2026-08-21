@@ -35,6 +35,7 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | Financial goals (Objectifs) | Present | Absent — sheet round-trip only; no Objectifs UI |
 | Benchmarks | Present | Absent |
 | Emergency fund health | Present | Present |
+| Next-euro plan | Present — Dashboard top 3 + Diversification list | Absent |
 | Portfolio readable risk badges | Present | Present |
 | Geographic allocation | Present — `/diversification` (legacy `/geographie` redirects), asset detail, account detail; dual country + region views; guided manual pickers | Present — Plus menu, edit asset (guided manual), account detail; dual lists; accounts list without full geo; map later |
 

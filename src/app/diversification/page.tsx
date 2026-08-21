@@ -2,7 +2,9 @@ import { Layers } from "lucide-react";
 import { DiversificationTargetsEditor } from "@/app/diversification/diversification-targets-editor";
 import { AllocationCoherenceCard } from "@/components/allocation-coherence-card";
 import { GeographicExposurePanel } from "@/components/geographic-exposure-panel";
+import { NextEuroPlanCard } from "@/components/next-euro-plan-card";
 import { SectorExposurePanel } from "@/components/sector-exposure-panel";
+import { summarizeBudget } from "@/lib/budget";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
@@ -11,6 +13,8 @@ import {
 	aggregatePortfolioDiversificationBreakdown,
 	assessDiversificationCoherence,
 } from "@patrimo/core/diversification-coherence";
+import { buildNextEuroPlan } from "@patrimo/core/next-euro-plan";
+import { portfolioByEnvelope } from "@patrimo/core/portfolio";
 import { aggregatePortfolioSectorBreakdown } from "@patrimo/core/sector-exposure";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +45,21 @@ export default async function DiversificationPage() {
     sectorAllocations: workbook.sectorAllocations ?? [],
     assets: workbook.assets,
   });
+  const { depensesMensuelles } = summarizeBudget(workbook.budget);
+  const nextEuroPlan = buildNextEuroPlan({
+    targets: workbook.diversificationTargets ?? [],
+    positions: portfolio.assets,
+    dca: workbook.dca,
+    geographicAllocations: workbook.geographicAllocations ?? [],
+    sectorAllocations: workbook.sectorAllocations ?? [],
+    assets: workbook.assets,
+    accounts: portfolio.accounts,
+    monthlyExpenses: depensesMensuelles,
+    portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
+  });
+  const assetLabels = Object.fromEntries(
+    workbook.assets.map((a) => [a.id, a.label]),
+  );
 
   return (
     <div className="space-y-6">
@@ -60,6 +79,12 @@ export default async function DiversificationPage() {
       />
 
       <AllocationCoherenceCard coherence={coherence} />
+
+      <NextEuroPlanCard
+        plan={nextEuroPlan}
+        variant="full"
+        assetLabels={assetLabels}
+      />
 
       {breakdown && (
         <GeographicExposurePanel

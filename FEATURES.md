@@ -23,6 +23,7 @@ Before coding an open row: write a [sprint contract](docs/agent/sprint-contract.
 | Portfolio risk badges | done | done | ADR 0006 |
 | Geographic allocation | done | done | ADR 0008–0011 |
 | Diversification targets | done | done | ADR 0012 |
+| Next-euro plan | done | absent | ADR 0015; web Dashboard + Diversification |
 | CSV import | done | absent | |
 | Real estate | done | partial | Mobile read-only |
 | Fiscalité | done | partial | Mobile realized only |
@@ -39,6 +40,7 @@ Executable verification for rows that are not fully `done` on both platforms. Pi
 
 | Feature | Status | Verify | Evidence when done |
 |---|---|---|---|
+| Next-euro plan (web) | done | `make verify`; `npm test -- packages/core/src/next-euro-plan`; card RTL; `make e2e` | FEATURES web → `done`, mobile `absent`; ADR 0015; PROGRESS |
 | Sector allocation (mobile UI parity) | todo | `make verify`; `npm test -- packages/core`; confirm [platforms.md](docs/overview/platforms.md) matches UI; `make e2e` if web touched | platforms.md + FEATURES both `done`; PROGRESS note |
 | Financial goals on mobile | absent | Follow [implement-financial-goals.md](docs/howto/implement-financial-goals.md); `make verify`; mobile typecheck already in verify | Mobile status → `done` or honest `partial`; ARCHITECTURE/mobile updated |
 | Benchmarks on mobile | absent | `make verify`; manual smoke on mobile benchmarks screen if added | FEATURES mobile → `done`/`partial`; platforms.md |

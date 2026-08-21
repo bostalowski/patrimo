@@ -112,7 +112,8 @@ function assetTypeById(assets: Asset[]): Map<string, Asset["type"]> {
 	return types;
 }
 
-function contributionToKey(
+/** Look-through euros of `amount` that land on diversification `key`. */
+export function contributionToKey(
 	amount: number,
 	key: string,
 	assetId: string,
