@@ -19,7 +19,7 @@ Scores 0–5 against file presence and anchors. Fix the map (not agent memory) o
    3. How do I run it?
    4. How do I verify it?
    5. What is the current progress?
-3. Score 0–5. Any miss is a map hole — fix CONSTRAINTS / AGENTS / ARCHITECTURE / PROGRESS / FEATURES.
-4. Log the score and gaps in [PROGRESS.md](../../PROGRESS.md) or `docs/agent/runs/`.
+3. Score 0–5. Any miss is a map hole — fix CONSTRAINTS / AGENTS / ARCHITECTURE / branch or root PROGRESS / FEATURES.
+4. Log the score and gaps in branch `docs/agent/branches/<slug>/PROGRESS.md`, root [PROGRESS.md](../../PROGRESS.md) on `main`, or `docs/agent/runs/`.
 
-Expected anchors: [AGENTS.md](../../AGENTS.md), [CONSTRAINTS.md](../../CONSTRAINTS.md), package `ARCHITECTURE.md` files, [PROGRESS.md](../../PROGRESS.md), three-layer DoD (`make verify` / `make e2e`), [FEATURES.md](../../FEATURES.md) open-work contracts.
+Expected anchors: [AGENTS.md](../../AGENTS.md), [CONSTRAINTS.md](../../CONSTRAINTS.md), package `ARCHITECTURE.md` files, `make branch-status` / root [PROGRESS.md](../../PROGRESS.md), three-layer DoD (`make verify` / `make e2e`), [FEATURES.md](../../FEATURES.md) matrix + [branch contracts](../agent/branches/README.md).

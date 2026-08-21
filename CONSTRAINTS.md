@@ -44,4 +44,4 @@ Mechanics live in colocated `ARCHITECTURE.md` files (see [docs/DOC_MODEL.md](doc
 20. MUST NOT invent sheet names, enums, or reserved identifiers; use the glossary and `@patrimo/core` schema.
 21. MUST discuss before coding any change that contradicts this file, a colocated `ARCHITECTURE.md`, an accepted ADR, or a glossary term.
 22. MUST NOT treat the implementing agent's self-assessment as completion proof. For non-trivial product changes, a separate checker pass (fresh session or distinct role — see [docs/howto/maker-checker.md](docs/howto/maker-checker.md)) MUST review against the sprint contract and verification commands before declaring done.
-23. MUST work one [FEATURES.md](FEATURES.md) open item at a time (WIP = 1). MUST NOT start a second open feature until verify is green and [PROGRESS.md](PROGRESS.md) is updated.
+23. MUST work one branch [CONTRACT](docs/agent/branches/README.md) at a time (WIP = 1 per feature branch). MUST NOT expand scope into a second feature without updating that CONTRACT. Feature focus and handoff live in `docs/agent/branches/<slug>/PROGRESS.md`, not as a global queue in root [PROGRESS.md](PROGRESS.md).

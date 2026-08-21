@@ -1,5 +1,5 @@
 ---
-description: Patrimo harness — load constraints, three-layer DoD, maker≠checker, update PROGRESS
+description: Patrimo harness — load constraints, three-layer DoD, maker≠checker, branch PROGRESS
 alwaysApply: true
 ---
 
@@ -9,19 +9,20 @@ Before changing product behavior:
 
 1. Read [CONSTRAINTS.md](CONSTRAINTS.md)
 2. Read [docs/reference/glossary.md](docs/reference/glossary.md)
-3. Read [PROGRESS.md](PROGRESS.md)
+3. Read branch handoff: `make branch-status` (or `docs/agent/branches/<slug>/PROGRESS.md`); on `main`, root [PROGRESS.md](PROGRESS.md)
 4. Read the colocated `ARCHITECTURE.md` for the package you touch
-5. For a feature: write a short [sprint contract](docs/agent/sprint-contract.md) (scope / verify / exclusions)
+5. For a feature: `make branch-contract`, fill [CONTRACT](docs/agent/branches/README.md), then `make branch-ready` must pass before coding
 
 ## Stop criteria (Definition of Done)
 
 - Layer 1: green `make verify` (lint + typecheck + unit tests) — always.
 - Layer 2: targeted tests for the change — when behavior changes.
 - Layer 3: green `make e2e` / `make verify-full` — when web UI, API routes, workbook I/O, or settings change.
-- Work **one** [FEATURES.md](FEATURES.md) open item at a time (`make next-feature`).
+- Work **one** branch CONTRACT at a time (`make branch-status`).
 - Do not invent sheet names, enums, or reserved IDs — use the glossary and `@patrimo/core`.
 - Do not treat implementer self-assessment as done — run a [maker/checker](docs/howto/maker-checker.md) pass on non-trivial product work.
-- Update PROGRESS.md at session end. Prefer a run log under `docs/agent/runs/` when the sprint contract is non-trivial.
+- Update `docs/agent/branches/<slug>/PROGRESS.md` at session end. Prefer a run log under `docs/agent/runs/` when the contract is non-trivial.
+- On merge: sync root [FEATURES.md](FEATURES.md) matrix if platform status changed.
 
 ## Doc placement
 

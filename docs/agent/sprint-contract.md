@@ -1,22 +1,30 @@
 # Sprint contract template
 
-Copy into `docs/agent/runs/YYYY-MM-DD-slug.md` or paste a short version into [PROGRESS.md](../../PROGRESS.md) **before** coding.
+**Preferred:** on a feature branch, run `make branch-contract` and edit `docs/agent/branches/<slug>/CONTRACT.md` (copied from [branches/_templates/CONTRACT.md](branches/_templates/CONTRACT.md)).
+
+Convention: [branches/README.md](branches/README.md).
+
+Legacy / inline copy (same fields):
 
 ```markdown
-# Sprint contract: <feature name>
+# Contract: <feature name>
+
+- Branch: `<branch>`
+- Slug: `<slug>`
+- Matrix row (FEATURES.md): <feature / platform>
 
 ## Scope
-- [ ] One behavior from FEATURES.md: <row / platform>
+- [ ] One behavior for this branch:
 - [ ] Files / packages expected to change:
 
 ## Verification
 - Layer 1: `make verify`
 - Layer 2: `npm test -- <path>` (if applicable)
 - Layer 3: `make e2e` (required if web UI / API / workbook I/O / settings)
-- Feature-specific command from FEATURES open-work contract:
+- Feature-specific:
 
 ## Exclusions
-- Not in this sprint:
+- Not in this branch:
 - Do not refactor unrelated modules
 
 ## Checker
@@ -26,7 +34,8 @@ Copy into `docs/agent/runs/YYYY-MM-DD-slug.md` or paste a short version into [PR
 
 ## Rules
 
-1. One open FEATURES item only (WIP = 1).
+1. One CONTRACT per feature branch (WIP = 1 on that branch).
 2. Exclusions are as important as scope — they stop drive-by refactors.
 3. Verification commands must be executable; “looks good” is not a criterion.
-4. Update the contract if scope changes mid-session; never silently expand.
+4. Update the contract if scope changes mid-branch; never silently expand.
+5. Do not use root `PROGRESS.md` for feature focus — use `docs/agent/branches/<slug>/PROGRESS.md`.

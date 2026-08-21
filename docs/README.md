@@ -2,7 +2,7 @@
 
 Technical documentation for **Patrimo**, a local wealth-tracking application.
 
-Harness map: [AGENTS.md](../AGENTS.md) · [CONSTRAINTS.md](../CONSTRAINTS.md) · [docs/DOC_MODEL.md](DOC_MODEL.md) · [FEATURES.md](../FEATURES.md) · [PROGRESS.md](../PROGRESS.md).
+Harness map: [AGENTS.md](../AGENTS.md) · [CONSTRAINTS.md](../CONSTRAINTS.md) · [docs/DOC_MODEL.md](DOC_MODEL.md) · [FEATURES.md](../FEATURES.md) · [branch contracts](agent/branches/README.md) · [PROGRESS.md](../PROGRESS.md) (`main`).
 
 End-user installation and Excel setup remain in the root [README](../README.md).
 
@@ -47,7 +47,7 @@ Stubs under [architecture/](architecture/) redirect to the paths above.
 
 ## Agent harness
 
-- [Sprint contract](agent/sprint-contract.md)
+- [Branch contracts](agent/branches/README.md) · [Sprint contract pointer](agent/sprint-contract.md)
 - [Scoring rubric](agent/scoring-rubric.md)
 - [Run logs](agent/runs/README.md)
 - [Maker / checker](howto/maker-checker.md)

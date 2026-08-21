@@ -1,43 +1,33 @@
 # Progress
 
-Session handoff for agents and humans. Update at end of every meaningful session.
+**`main` handoff only.** Feature focus lives on the branch: `docs/agent/branches/<slug>/PROGRESS.md` (`make branch-status`).
 
 ## Current focus
 
-- **In progress:** none
+- **In progress:** none on `main` — see open feature branches / PRs
 - **Blocked:** none
 
 ## Done (recent)
 
 - [x] Checker Pass on sector allocation mobile parity (PR #57) — [run log](docs/agent/runs/2026-08-21-sector-allocation-mobile.md)
-- [x] Sector allocation mobile UI parity (docs confirmation; UI already shipped) — [run log](docs/agent/runs/2026-08-21-sector-allocation-mobile.md)
+- [x] Sector allocation mobile UI parity — [run log](docs/agent/runs/2026-08-21-sector-allocation-mobile.md)
 - [x] Checker Pass on e2e isolation — [run log](docs/agent/runs/2026-08-21-e2e-isolation.md)
-- [x] E2e isolation: dedicated :3100 + temp `FINGRAPHS_DATA_DIR` + `.next-e2e` distDir (no more overwrite of `./data/config.json`)
+- [x] E2e isolation: dedicated :3100 + temp `FINGRAPHS_DATA_DIR` + `.next-e2e` distDir
 - [x] Checker Pass on next-euro plan (PR #56) — [run log](docs/agent/runs/2026-08-21-next-euro-plan.md)
-- [x] Next-euro plan V1 (variante 2): `buildNextEuroPlan` + Dashboard/Diversification cards — ADR 0015
-- [x] Three-layer DoD in CONSTRAINTS + AGENTS + Cursor harness rule
-- [x] CI e2e job (Playwright Chromium) alongside verify
-- [x] Sprint contract + scoring rubric + run-log template
-- [x] Maker/checker + agent-loop howtos
-- [x] FEATURES open-work contracts with verify/evidence columns
-- [x] `make next-feature` / `make cold-start` / richer `make init`
-- [x] Repo skill `.cursor/skills/patrimo-harness`
-- [x] Cold-start map script score 5/5 (`make cold-start`)
-- [x] Fresh-session cold-start logged → [docs/agent/runs/2026-08-20-cold-start.md](docs/agent/runs/2026-08-20-cold-start.md) (5/5)
+- [x] Next-euro plan V1 — ADR 0015
+- [x] Three-layer DoD + CI e2e + harness meta (pre–branch-contract era)
 
-## Next
+## Next (product inventory)
 
-- [ ] Expand mobile lint into the verify gate when debt is paid down
-- [ ] Optional: schedule a Level-2 agent loop (cron / Cursor `/loop`) per [docs/howto/agent-loop.md](docs/howto/agent-loop.md)
-- [ ] `make next-feature` → Financial goals on mobile
+Gaps: `make platform-gaps`. Claim with a feature branch + `make branch-contract` (e.g. Financial goals on mobile).
 
 ## Last verify
 
-- Command: checker `make verify` (424) + sector core tests (13); CI verify+e2e green on PR #57
-- Result: **Pass** — Checker Pass on sector allocation mobile parity
+- See the active branch’s `docs/agent/branches/<slug>/PROGRESS.md`, or the latest merged PR.
 - Date: 2026-08-21
 
 ## Notes
 
-Keep this file short. Detailed run notes go under `docs/agent/runs/`.
-Sprint contracts: [docs/agent/sprint-contract.md](docs/agent/sprint-contract.md).
+- Branch contracts: [docs/agent/branches/README.md](docs/agent/branches/README.md)
+- Optional dated run logs: [docs/agent/runs/](docs/agent/runs/)
+- Template pointer: [docs/agent/sprint-contract.md](docs/agent/sprint-contract.md)
