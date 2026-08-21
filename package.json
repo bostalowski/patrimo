@@ -28,6 +28,7 @@
     "e2e": "playwright test",
     "branch-contract": "bash scripts/branch-contract.sh",
     "branch-status": "bash scripts/branch-status.sh",
+    "branch-ready": "bash scripts/branch-ready.sh",
     "platform-gaps": "bash scripts/platform-gaps.sh",
     "next-feature": "bash scripts/next-feature.sh",
     "cold-start": "bash scripts/cold-start-check.sh",

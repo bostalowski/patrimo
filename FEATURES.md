@@ -45,7 +45,7 @@ Status: `done` | `partial` | `todo` | `absent`
 | Branch CONTRACT + PROGRESS | done | `docs/agent/branches/<slug>/`; `make branch-contract` |
 | Sprint contract template | done | branches `_templates` + [sprint-contract.md](docs/agent/sprint-contract.md) pointer |
 | Maker / checker howto | done | `docs/howto/maker-checker.md` |
-| `make platform-gaps` / `branch-status` | done | replaces global `next-feature` queue |
+| `make platform-gaps` / `branch-status` / `branch-ready` | done | replaces global `next-feature` queue |
 | Agent loop howto | done | level 1–2; branch contract as goal |
 | Root PROGRESS (`main` only) | done | feature focus lives on the branch |
 | Playwright workbook smoke | done | `make e2e` / `make verify-full` |
@@ -58,6 +58,7 @@ Status: `done` | `partial` | `todo` | `absent`
 
 1. Pick a gap (`make platform-gaps` or product intent) → `git checkout -b feat/…`
 2. `make branch-contract` — fill CONTRACT (scope / verify / exclusions)
-3. Implement; update `docs/agent/branches/<slug>/PROGRESS.md`; run required DoD layers
-4. [Checker pass](docs/howto/maker-checker.md) on non-trivial product work
-5. PR: merge; update this matrix if platform status changed
+3. `make branch-ready` must pass
+4. Implement; update `docs/agent/branches/<slug>/PROGRESS.md`; run required DoD layers
+5. [Checker pass](docs/howto/maker-checker.md) on non-trivial product work
+6. PR: merge; update this matrix if platform status changed

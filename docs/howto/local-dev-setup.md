@@ -60,7 +60,8 @@ make verify-full   # layers 1 + 3
 make cold-start         # harness map health (5 questions)
 make branch-contract    # CONTRACT + PROGRESS for current feature branch
 make branch-status      # print branch cadrage
-make platform-gaps      # FEATURES matrix rows still open
+make branch-ready       # cadrage gate before coding
+make platform-gaps      # FEATURES matrix rows still open (inventory)
 ```
 
 Or: `npm run verify` / `npm run verify-full`. Agent session bootstrap: `make init`.

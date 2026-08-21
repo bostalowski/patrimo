@@ -15,15 +15,16 @@ description: >-
 1. Read `CONSTRAINTS.md`, `docs/reference/glossary.md`.
 2. `make branch-status` — read this branch’s CONTRACT + PROGRESS (on `main`, root PROGRESS + matrix only).
 3. If no CONTRACT yet: feature branch → `make branch-contract` → fill scope / verify / exclusions.
-4. Read colocated `ARCHITECTURE.md` for packages you touch.
-5. Implement; never invent sheet names / enums / reserved IDs.
-6. Verify:
+4. `make branch-ready` must pass before implementing.
+5. Read colocated `ARCHITECTURE.md` for packages you touch.
+6. Implement; never invent sheet names / enums / reserved IDs.
+7. Verify:
    - Always: `make verify`
    - Behavior: targeted `npm test -- <path>`
    - Web UI / API / workbook I/O / settings: `make e2e` or `make verify-full`
-7. Checker: fresh session using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md`.
-8. Update `docs/agent/branches/<slug>/PROGRESS.md` (+ optional `docs/agent/runs/YYYY-MM-DD-slug.md`).
-9. On merge: update root `FEATURES.md` matrix if platform status changed.
+8. Checker: fresh session using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md`.
+9. Update `docs/agent/branches/<slug>/PROGRESS.md` (+ optional `docs/agent/runs/YYYY-MM-DD-slug.md`).
+10. On merge: update root `FEATURES.md` matrix if platform status changed.
 
 ## Commands
 
@@ -32,6 +33,7 @@ description: >-
 | Session init | `make init` |
 | Create cadrage | `make branch-contract` |
 | Show cadrage | `make branch-status` |
+| Ready to code? | `make branch-ready` |
 | Matrix gaps | `make platform-gaps` |
 | Map health | `make cold-start` |
 | Layer 1 | `make verify` |

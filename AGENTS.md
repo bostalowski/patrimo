@@ -20,7 +20,8 @@ make verify-full        # layers 1 + 3
 make init               # setup + verify + branch status + gaps + cold-start
 make branch-contract    # create CONTRACT + PROGRESS for current feature branch
 make branch-status      # print branch cadrage / handoff
-make platform-gaps      # list FEATURES matrix rows still open
+make branch-ready       # gate: cadrage filled, no blocker — run before coding
+make platform-gaps      # list FEATURES matrix rows still open (inventory, not a claim)
 make cold-start         # score whether the repo answers the five cold-start questions
 ```
 
@@ -64,7 +65,7 @@ Autonomous loops: [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
 ## Session lifecycle
 
 1. **Init:** `make init` (or `make branch-status` + verify baseline).
-2. **Contract:** on a feature branch, `make branch-contract` (or edit existing CONTRACT).
+2. **Contract:** on a feature branch, `make branch-contract` (or edit existing CONTRACT) → `make branch-ready` must pass.
 3. **Work:** implement that contract only; update colocated ARCHITECTURE / ADR / glossary with the code.
 4. **Verify:** layers required by DoD above. Never claim done on failing verify.
 5. **Check:** maker/checker pass against CONTRACT + rubric.

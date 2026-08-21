@@ -15,7 +15,7 @@ Stop when: Checker Pass on the rubric, OR blocked with reason written in branch 
 Do not expand into a second feature without updating the CONTRACT.
 ```
 
-If there is no CONTRACT yet: create a feature branch, `make branch-contract`, fill scope, then run Level 1.
+If there is no CONTRACT yet: create a feature branch, `make branch-contract`, fill scope, `make branch-ready`, then run Level 1.
 
 Then let the agent run until the stop condition. You stay outside the inner coding loop; you only review Pass/Fail and branch PROGRESS.
 
@@ -44,6 +44,7 @@ Optional later: git worktrees for parallel agents; keep WIP = 1 **per branch** (
 ```bash
 make branch-contract   # create CONTRACT + PROGRESS for current branch
 make branch-status     # print them
+make branch-ready      # cadrage gate (must pass before coding)
 make platform-gaps     # matrix inventory (not a claim lock)
 make cold-start        # map health (five questions)
 make init              # setup + verify + branch status + gaps

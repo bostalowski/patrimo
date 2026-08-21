@@ -14,11 +14,12 @@ Branch-local handoff. Do not put other features' focus here.
 - [x] AGENTS / CONSTRAINTS / DOC_MODEL / howtos / skill / rule
 - [x] This CONTRACT + PROGRESS folder
 - [x] `make verify` + `make cold-start` (5/5)
+- [x] `make branch-ready` (9/9)
 
 ## Last verify
 
-- Command: `make verify`; `make cold-start`; `make platform-gaps`; `make branch-status`
-- Result: pass (verify + cold-start 5/5)
+- Command: `make verify`; `make cold-start`; `make branch-ready`; `make platform-gaps`
+- Result: pass (verify + cold-start 5/5 + branch-ready 9/9)
 - Date: 2026-08-21
 
 ## Notes

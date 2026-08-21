@@ -1,4 +1,4 @@
-.PHONY: setup test lint typecheck verify verify-full init e2e next-feature cold-start branch-contract branch-status platform-gaps
+.PHONY: setup test lint typecheck verify verify-full init e2e next-feature cold-start branch-contract branch-status branch-ready platform-gaps
 
 setup:
 	npm ci
@@ -27,6 +27,9 @@ branch-contract:
 
 branch-status:
 	bash scripts/branch-status.sh
+
+branch-ready:
+	bash scripts/branch-ready.sh
 
 platform-gaps:
 	bash scripts/platform-gaps.sh

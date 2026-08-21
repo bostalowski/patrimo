@@ -9,6 +9,7 @@
 - [x] Replace global Open-work queue + `next-feature` claim with per-branch `docs/agent/branches/<slug>/{CONTRACT,PROGRESS}.md`
 - [x] Root `FEATURES.md` = capability matrix only; root `PROGRESS.md` = `main` handoff / pointers
 - [x] Scripts: `branch-contract`, `branch-status`, `platform-gaps`; deprecate `next-feature`
+- [x] `make branch-ready` cadrage gate
 - [x] Update AGENTS, CONSTRAINTS, DOC_MODEL, howtos, Cursor skill/rule, cold-start
 
 ## Verification
@@ -16,7 +17,7 @@
 - Layer 1: `make verify` (docs/scripts only — expect green)
 - Layer 2: n/a
 - Layer 3: n/a
-- Feature-specific: `make branch-status`; `make platform-gaps`; `make cold-start`
+- Feature-specific: `make branch-ready`; `make branch-status`; `make platform-gaps`; `make cold-start`
 
 ## Exclusions
 

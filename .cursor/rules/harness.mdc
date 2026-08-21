@@ -11,7 +11,7 @@ Before changing product behavior:
 2. Read [docs/reference/glossary.md](docs/reference/glossary.md)
 3. Read branch handoff: `make branch-status` (or `docs/agent/branches/<slug>/PROGRESS.md`); on `main`, root [PROGRESS.md](PROGRESS.md)
 4. Read the colocated `ARCHITECTURE.md` for the package you touch
-5. For a feature: `make branch-contract` and fill [CONTRACT](docs/agent/branches/README.md) (scope / verify / exclusions)
+5. For a feature: `make branch-contract`, fill [CONTRACT](docs/agent/branches/README.md), then `make branch-ready` must pass before coding
 
 ## Stop criteria (Definition of Done)
 
