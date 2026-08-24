@@ -25,6 +25,7 @@ Status: `done` | `partial` | `todo` | `absent`
 | Geographic allocation | done | done | ADR 0008–0011 |
 | Diversification targets | done | done | ADR 0012 |
 | Next-euro plan | done | absent | ADR 0015; web Dashboard + Diversification |
+| Portfolio health cockpit | done | absent | ADR 0018; web Dashboard pills + next-action |
 | CSV import | done | absent | |
 | Real estate | done | partial | Mobile read-only |
 | Fiscalité | done | partial | Mobile realized only |

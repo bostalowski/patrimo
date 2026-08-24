@@ -1,16 +1,20 @@
+import { assessDiversificationCoherence } from "@patrimo/core/diversification-coherence";
 import {
 	computeEmergencyFundHealth,
 	sumLivretMarketValue,
 } from "@patrimo/core/emergency-fund";
 import { assessFinancialGoals } from "@patrimo/core/financial-goals";
 import { buildNextEuroPlan } from "@patrimo/core/next-euro-plan";
+import { annualizedVolatility, maxDrawdown } from "@patrimo/core/performance";
 import { computeNetWorth, portfolioByEnvelope } from "@patrimo/core/portfolio";
+import { buildPortfolioHealthCockpit } from "@patrimo/core/portfolio-health-cockpit";
 import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { GoalsSummaryCard } from "@/components/goals-summary-card";
 import { NextEuroPlanCard } from "@/components/next-euro-plan-card";
 import { PerformanceSection } from "@/components/performance-section";
+import { PortfolioHealthCockpitCard } from "@/components/portfolio-health-cockpit";
 import { SavingsCapacityCard } from "@/components/savings-capacity-card";
 import { SyncButton } from "@/components/sync-button";
 import {
@@ -102,6 +106,14 @@ export default async function DashboardPage() {
 		profile,
 		inflationRate,
 	});
+	const diversification = assessDiversificationCoherence({
+		targets: workbook.diversificationTargets ?? [],
+		positions: portfolio.assets,
+		dca: workbook.dca,
+		geographicAllocations: workbook.geographicAllocations ?? [],
+		sectorAllocations: workbook.sectorAllocations ?? [],
+		assets: workbook.assets,
+	});
 	const nextEuroPlan = buildNextEuroPlan({
 		targets: workbook.diversificationTargets ?? [],
 		positions: portfolio.assets,
@@ -112,6 +124,18 @@ export default async function DashboardPage() {
 		accounts: portfolio.accounts,
 		monthlyExpenses: depensesMensuelles,
 		portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
+	});
+	const historyPoints = aggregateHistory(history);
+	const drawdown = maxDrawdown(historyPoints);
+	const healthCockpit = buildPortfolioHealthCockpit({
+		emergencyFund,
+		savingsCapacity,
+		diversification,
+		volatility: annualizedVolatility(historyPoints),
+		// Empty / insufficient series → peakDate null and value 0; treat as missing.
+		drawdown: drawdown.peakDate === null ? null : drawdown.value,
+		goals: goalsAssessment,
+		nextEuroPlan,
 	});
 	const assetLabels = Object.fromEntries(
 		workbook.assets.map((a) => [a.id, a.label]),
@@ -185,6 +209,8 @@ export default async function DashboardPage() {
 					</CardHeader>
 				</Card>
 			</div>
+
+			<PortfolioHealthCockpitCard cockpit={healthCockpit} />
 
 			<div className="flex flex-wrap gap-4">
 				<EmergencyFundCard health={emergencyFund} />

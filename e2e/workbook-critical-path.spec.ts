@@ -32,6 +32,8 @@ test.describe("workbook critical path", () => {
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
       timeout: 15_000,
     });
+    // Cockpit is derived-only and may be hidden on an empty workbook; page must still render.
+    await expect(page.locator("body")).not.toContainText("Application error");
 
     await page.goto("/comptes");
     await expect(page.getByRole("heading", { name: "Comptes" })).toBeVisible();
