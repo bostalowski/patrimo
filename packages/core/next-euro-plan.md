@@ -48,7 +48,7 @@ Hide when investment `monthlyPool === 0` (EF gap alone does not show this card).
 |---|---|
 | Web Dashboard + Diversification | verdict card + EF banner |
 | Web Investissements / Exécution | tilt toggle + orders |
-| Mobile | absent (capacity card shows EF surplus copy) |
+| Mobile | absent (Next-euro + capacity UI unmounted; core ready) |
 
 ## See also
 

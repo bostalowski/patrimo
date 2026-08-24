@@ -32,7 +32,9 @@ Next-euro (ADR 0015 P1 superseded):
   Attach the same surplus recommendation as a banner ABOVE the DCA step list
   (hors enveloppe DCA). Hide Next-euro WHEN monthlyPool = 0.
 
-UI: Savings capacity card + Next-euro banner (web); mobile capacity card only.
+UI: Next-euro EF banner above DCA steps (web). Savings capacity card / soft
+  banners hidden (2026-08 follow-up on this branch); core + FR copy helpers
+  retained for the banner and future surfaces. Mobile Next-euro still absent.
 FORBIDDEN: workbook writes; auto-resize DCA; changing ADR 0005 health bands;
   mobile Next-euro UI.
 ```
@@ -57,7 +59,8 @@ surplus math that protects investment DCA and aims at their personal target.
 1. Investment DCA is never reduced or reallocated by this recommendation.
 2. Domain math + FR recommendation strings live in `@patrimo/core`.
 3. Advice is read-only (no workbook mutation).
-4. Same euros on capacity card and Next-euro banner when both are shown.
+4. Same euros wherever surfaced (shared copy helpers). Live web surface is the
+   Next-euro EF banner; capacity UI is hidden but core recommendation remains.
 
 ## Options considered
 
@@ -86,6 +89,8 @@ Two surfaces (capacity + banner) instead of one step in the list.
 - New module `emergency-fund-recommendation.ts`; next-euro step kind
   `emergency_fund` removed.
 - ADR 0015 P1 semantics superseded for emergency routing only; P2/P3 unchanged.
+- Savings capacity Dashboard / banner UI hidden same branch; `computeSavingsCapacity`
+  and surplus attach unchanged for future re-enable.
 
 ## Uncovered cases
 
@@ -94,6 +99,8 @@ Two surfaces (capacity + banner) instead of one step in the list.
 ## Follow-up
 
 - Optional mobile Next-euro banner when that surface ships.
+- Re-enable Savings capacity card / soft banners when product wants the second
+  surface again (components + copy already in repo).
 
 ## See also
 

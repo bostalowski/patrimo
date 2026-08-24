@@ -4,7 +4,7 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** none — wording FR + capacity UI removed; ready to commit/push
+- **In progress:** none — re-checker **Pass** (EF surplus + monthly DCA tilt); ready to commit/push/PR
 - **Blocked:** none
 
 ## Done (this branch)
@@ -17,71 +17,79 @@ Branch-local handoff. Do not put other features' focus here.
 - [x] Web: capacity card surplus line; Next-euro EF banner above DCA steps
 - [x] Mobile: capacity card surplus line via shared copy
 - [x] Docs: ADR 0020 accepted; glossary + topic notes; append-only links on 0015 / 0018 / 0019
-- [x] Layer 1 `make verify` green (pre-tilt)
-- [x] Layer 2 targeted core + card tests green (pre-tilt)
-- [x] Layer 3 `make e2e` green (port 3120 — :3100 was occupied by a stale next)
-- [x] Checker Pass (2026-08-24) — see below
+- [x] Layer 1 `make verify` green
+- [x] Layer 2 targeted core + card tests green
+- [x] Layer 3 `make e2e` green (port 3120 — :3100 occupied)
+- [x] Checker Pass (2026-08-24) — ADR 0020 scope
 - [x] **Follow-up (same branch):** `buildMonthlyDcaTilt` + Exécution wiring + ADR 0021; card **Ajustement DCA du mois** (no “tilt” in UI); EF banner kept
 - [x] Removed Savings capacity card/banners from web + mobile Dashboard / Investissements / DCA / Projection
+- [x] Re-checker Pass (2026-08-24) — tilt + capacity hide + full L1/L2/L3
 
 ## Last verify
 
-- Command: targeted vitest after tilt merge onto this branch
-- Result: 25 tests pass (tilt + next-euro + card + investissements client)
+- Command: `make verify` + targeted vitest (8 files) + `FINGRAPHS_E2E_PORT=3120 FINGRAPHS_E2E_DIST_DIR=.next-e2e-3120 make e2e`
+- Result: Layer 1 green (77 files / 512 tests); Layer 2 64/64; Layer 3 2/2 passed
 - Date: 2026-08-24
-- Note: full `make verify` + e2e still needed before push; prior checker Pass covered ADR 0020 only — re-checker needed for tilt
+- Note: do not commit port-specific `.next-e2e-3120` includes if Next auto-edits `tsconfig.json` during e2e
 
-## Checker (2026-08-24)
+## Checker (2026-08-24) — re-pass (tilt + hide capacity)
 
 - Role: distinct checker (not maker)
 - Verdict: **Pass**
-- Evidence re-run: targeted vitest — 8 files / 72 tests pass (`emergency-fund-recommendation`, `next-euro-plan`, `next-euro-copy`, `savings-capacity`, `savings-capacity-copy`, web + mobile capacity / next-euro cards)
-- Layers 1 + 3: accepted from maker Last verify (same day); no contradictions found in code review
+- Evidence re-run (checker):
+  - `make verify` — green (512 tests)
+  - targeted vitest — 8 files / 64 tests (`emergency-fund-recommendation`, `monthly-dca-tilt`, `next-euro-plan`, `next-euro-copy`, `savings-capacity*`, `next-euro-plan-card`, `investissements-client`)
+  - `make e2e` on port 3120 — 2 passed (workbook critical path + settings)
 
 ### Rubric
 
 | Dimension | Score | Evidence |
 |---|---|---|
-| Correctness | A | P1 pool steal removed (`next-euro-plan.ts`); oneshot/monthly/none + cap + LIVRET deduct tested; UI banner/capacity wired; maker L1–L3 green + checker L2 re-run |
-| Architecture | A | Math + FR copy in `@patrimo/core`; platforms render only; ADR 0020 + ARCHITECTURE / glossary / topic notes aligned; no workbook writes |
-| Scope discipline | B | CONTRACT items only; exclusions respected. Hygiene finding fixed (`.next-e2e*` gitignore + tsconfig). |
-| Tests / evidence | A | Unit coverage for core paths + card tests; e2e recorded green |
-| Docs handoff | A | Branch PROGRESS + ADR 0020 + append-only see-also; FEATURES deferred to merge (CONTRACT On merge) |
+| Correctness | A | L1–L3 green under checker. No `emergency_fund` steal; investment pool excludes LIVRET (`monthly-dca-tilt.ts`); EF oneshot/monthly/none + cap tested; Exécution consumes tilt via `computeDcaExecutionFromContributions`; capacity UI unmounted from `src/app` / `mobile/app` |
+| Architecture | B | Math + FR copy in `@patrimo/core`; platforms render. ADR/glossary/topic-note drift fixed 2026-08-24. No workbook writes. |
+| Scope discipline | B | CONTRACT follow-ups only; exclusions respected (no auto-resize DCA, no mobile Next-euro, health bands untouched) |
+| Tests / evidence | A | Checker re-ran L1 + L2 + L3; commands recorded above |
+| Docs handoff | B | This PROGRESS updated; FEATURES.md still deferred to merge (CONTRACT On merge). ADR wording nits below |
 
 ### CONTRACT checklist
 
 | Scope item | Status |
 |---|---|
-| One behavior: surplus LIVRET advice; no investment DCA redirect | Pass |
+| Surplus LIVRET advice; no investment DCA redirect | Pass |
 | Core pure fn + wire next-euro / capacity + unit tests | Pass |
-| Web: capacity reco + Next-euro banner above steps | Pass |
-| Mobile: capacity card via shared copy | Pass |
-| Docs: ADR 0020; glossary; topic notes; append-only 0015/0018/0019 | Pass |
+| Web: Next-euro EF banner above steps (capacity UI later hidden per follow-up) | Pass |
+| Mobile: capacity card via shared copy (then hidden per follow-up; core kept) | Pass |
+| Docs: ADR 0020 + 0021; glossary; topic notes; append-only links | Pass |
+| Follow-up: `buildMonthlyDcaTilt` → Exécution; card **Ajustement DCA du mois** | Pass |
+| Follow-up: Hide Savings capacity UI; core unused for now | Pass |
 
 Feature-specific verify (spot-check):
 
 | Criterion | Status |
 |---|---|
-| No LIVRET steal from investment pool in next-euro steps | Pass (`does not steal investment DCA…` test) |
+| No LIVRET steal from investment pool | Pass (`does not steal…` + investment-only filter) |
 | Oneshot when `gap ≤ availableCash` | Pass |
-| Monthly à ajouter = max(0, need − livretDca) capped | Pass |
-| `livretDca ≥ monthlyNeed` → no mets plus; over → baisse | Pass (mode none + existing livret reco) |
-| Target/horizon from config; defaults 6/12 | Pass (`normalizeEmergencyFundConfig`) |
-| Same core euros capacity + Next-euro banner | Pass (shared `computeEmergencyFundSurplusRecommendation` / copy) |
+| Monthly à ajouter capped | Pass |
+| `livretDca ≥ monthlyNeed` → no mets plus | Pass |
+| Target/horizon from config | Pass |
+| Same core euros for EF copy helpers | Pass |
+| Tilt pool investment-only; verdicts; Exécution toggle | Pass |
 
-### Findings (non-blocking — maker before PR)
+### Findings (non-blocking — maker before / on PR)
 
-1. **Hygiene:** Fixed — `/.next-e2e*/` in `.gitignore`; removed port-specific `.next-e2e-3120` includes from `tsconfig.json` (keep conventional `.next-e2e` only).
-2. **Out of scope note (no fail):** `buildNextEuroPlan` still uses `computeMonthlyDcaPool` (includes LIVRET) for P2/P3. CONTRACT explicitly excludes changing P2/P3 beyond removing EF steal. Optional follow-up: investment-only pool for next-euro.
+1. ~~**ADR 0021 Consequences:** “Tilt DCA du mois” → **Ajustement DCA du mois**~~ — fixed 2026-08-24.
+2. ~~**ADR 0020:** note capacity UI hidden; core kept for Next-euro banner~~ — fixed 2026-08-24 (+ glossary, topic notes).
+3. **e2e hygiene:** `:3100` often occupied — use port 3120; revert any auto-added `.next-e2e-3120` `tsconfig` includes before commit (`.gitignore` already has `/.next-e2e*/`).
+4. **On merge:** FEATURES.md matrix notes for Next-euro / Savings capacity (CONTRACT checkbox).
 
 ### Remaining before merge claim
 
-- [x] Checker pass
-- [x] Maker: gitignore / tsconfig hygiene for `.next-e2e-3120` (finding 1)
-- [ ] On merge: FEATURES.md matrix notes for Next-euro / Savings capacity
+- [x] Re-checker pass (tilt + capacity hide)
+- [x] ADR wording nits (findings 1–2)
+- [ ] On merge: FEATURES.md matrix notes
 
 ## Notes
 
 Contract: [CONTRACT.md](./CONTRACT.md)
 
-Supersedes next-euro P1 pool-steal (ADR 0015) with surplus-based LIVRET advice; health bands (ADR 0005) and EF config sheet (ADR 0018) unchanged.
+Supersedes next-euro P1 pool-steal (ADR 0015) with surplus-based LIVRET advice; health bands (ADR 0005) and EF config sheet (ADR 0018) unchanged. Monthly investment DCA adjustment → Exécution (ADR 0021).

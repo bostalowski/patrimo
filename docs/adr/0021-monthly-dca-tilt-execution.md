@@ -29,6 +29,7 @@ Exécution (web): computeDcaExecutionFromContributions when tilt active;
   toggle vs saved DCA plan. Share counts ONLY on Exécution.
 
 Prochain euro card: verdict + summary + link /investissements?tab=execution.
+  Title: Ajustement DCA du mois (internal code may still say “tilt”).
   No share counts on Dashboard / Diversification.
 
 FORBIDDEN: workbook writes; P1 LIVRET pool steal; free-form budget pool.
@@ -49,7 +50,8 @@ contributions with an opt-out toggle.
 
 - New modules `monthly-dca-tilt.ts`, `monthly-dca-tilt-copy.ts`.
 - `computeDcaExecutionFromContributions` in `dca.ts`.
-- Card renamed “Tilt DCA du mois”; investment pool only.
+- Card title **Ajustement DCA du mois** (`NEXT_EURO_TITLE`); internal modules
+  may still say “tilt”. Investment pool only (LIVRET excluded).
 
 ## See also
 

@@ -1,10 +1,14 @@
 # Savings capacity
 
-How Dashboards (and web DCA / Projection soft warnings) surface investable
-surplus after budget cashflow and emergency-fund outflow, versus planned
-investment DCA — with a separate alert when LIVRET DCA exceeds catch-up need,
-and surplus-based LIVRET catch-up advice when the configured target has a gap
+Core math for investable surplus after budget cashflow and emergency-fund
+outflow, versus planned investment DCA — with a separate alert when LIVRET DCA
+exceeds catch-up need, and surplus-based LIVRET catch-up advice when the
+configured target has a gap
 ([ADR 0020](../../docs/adr/0020-emergency-fund-surplus-recommendation.md)).
+
+**UI (2026-08):** Dashboard cards and web soft banners are **unmounted** on this
+branch; EF surplus advice surfaces on the Next-euro banner instead. Components
+and copy helpers remain for a future re-enable.
 
 ## Intent
 
@@ -46,20 +50,20 @@ computeSavingsCapacity({ revenus, depenses, livret, dca, emergencyFundConfig })
          emergencyOverContribution,
          emergencyFundRecommendation           // ADR 0020 surplus advice
        }
-         → Dashboard card
-         → web soft warning when status === over_committed
-         → web soft warning when emergencyOverContributing (DCA page)
+         → (UI hidden 2026-08; Next-euro banner uses surplus copy)
+         → web soft warning when status === over_committed  (unmounted)
+         → web soft warning when emergencyOverContributing (unmounted)
 ```
 
 ## Surfaces
 
-| Surface | Placement | Notes |
+| Surface | Status | Notes |
 |---|---|---|
-| Web Dashboard (`src/app/page.tsx`) | Card beside emergency fund | `src/components/savings-capacity-card.tsx` |
-| Mobile Dashboard (`mobile/app/index.tsx`) | Card under emergency fund | `mobile/lib/savings-capacity-card.tsx` |
-| Web Investissements / DCA | Soft banner when investment over-committed | `SavingsCapacityOverCommitBanner` |
-| Web Investissements / DCA | Soft banner when LIVRET over-contributes | `SavingsCapacityEmergencyOverBanner` |
-| Web Projection | Soft banner when investment over-committed | same over-commit banner |
+| Web Dashboard card | **Hidden** | `src/components/savings-capacity-card.tsx` (unmounted) |
+| Mobile Dashboard card | **Hidden** | `mobile/lib/savings-capacity-card.tsx` (unmounted) |
+| Web Investissements / DCA soft banners | **Hidden** | over-commit + LIVRET-over components kept |
+| Web Projection soft banner | **Hidden** | same over-commit banner component kept |
+| Next-euro EF banner (web) | **Live** | surplus copy via `next-euro-copy.ts` (ADR 0020) |
 
 ## Status bands (investment DCA only)
 
