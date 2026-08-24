@@ -21,6 +21,8 @@
     "./emergency-fund": "./src/emergency-fund.ts",
     "./emergency-fund-config": "./src/emergency-fund-config.ts",
     "./savings-capacity": "./src/savings-capacity.ts",
+    "./savings-capacity-copy": "./src/savings-capacity-copy.ts",
+    "./next-euro-copy": "./src/next-euro-copy.ts",
     "./portfolio-risk": "./src/portfolio-risk.ts",
     "./fiscalite": "./src/fiscalite.ts",
     "./tax-rules": "./src/tax-rules.ts",

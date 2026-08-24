@@ -4,10 +4,21 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **Ready for merge:** Phase B checker **Pass** (2026-08-24). Commit Phase B working tree if needed; then `FEATURES.md` + PR per On merge checklist.
+- **Phase C implemented** (D21–D25): cards show question + état + reco. Awaiting checker; `make e2e` interrupted locally (hang on webServer) — re-run before claiming Layer 3.
 - **Blocked:** none
 
 ## Done (this branch)
+
+### Phase C — readable state + recommendation copy
+
+- [x] CONTRACT Phase C (D21–D25)
+- [x] Core FR helpers: `savings-capacity-copy.ts`, `next-euro-copy.ts` (+ unit tests)
+- [x] Web + mobile Savings capacity cards: question, surplus caption, **À faire** reco
+- [x] Web Next-euro card: question, **Ce mois-ci** lead, détail des étapes
+- [x] Soft banners aligned wording
+- [x] Layer 1 `make verify` + Layer 2 targeted 31 tests green
+- [ ] Layer 3 `make e2e` — interrupted / hung on Next webServer locally; re-run
+- [ ] Phase C checker
 
 ### Phase A — EF config
 

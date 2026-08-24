@@ -59,22 +59,25 @@ function texts(root: ReactTestRenderer): string[] {
 }
 
 describe("mobile SavingsCapacityCard", () => {
-	it("renders surplus and status", () => {
+	it("renders question, recommendation, and status", () => {
 		const root = render(
 			<SavingsCapacityCard capacity={capacity()} theme={colors.light} />,
 		);
 		const t = texts(root).join(" ");
 		expect(t).toContain("Capacité d'épargne");
+		expect(t).toContain("tient-il avec ton budget");
 		expect(t).toContain("À l'aise");
+		expect(t).toContain("Rien à changer");
 		expect(t).toMatch(/2[\s\u00a0]?000/);
 	});
 
-	it("shows gap when over_committed", () => {
+	it("shows actionable recommendation when over_committed", () => {
 		const root = render(
 			<SavingsCapacityCard
 				capacity={capacity({
 					investableSurplus: 1_000,
 					plannedDcaMonthly: 1_500,
+					plannedInvestmentDcaMonthly: 1_500,
 					gap: 500,
 					status: "over_committed",
 				})}
@@ -83,7 +86,8 @@ describe("mobile SavingsCapacityCard", () => {
 		);
 		const t = texts(root).join(" ");
 		expect(t).toContain("Surengagé");
-		expect(t).toMatch(/Écart/);
+		expect(t).toMatch(/À faire/);
+		expect(t).toMatch(/baisse le DCA investi/);
 	});
 
 	it("explains emergency catch-up reserve in plain language", () => {
@@ -112,7 +116,7 @@ describe("mobile SavingsCapacityCard", () => {
 		expect(texts(root).join(" ")).toMatch(/atteindre 10[\s\u00a0]?000/);
 	});
 
-	it("shows LIVRET over-contribution alert", () => {
+	it("shows LIVRET recommendation when over-contributing", () => {
 		const root = render(
 			<SavingsCapacityCard
 				capacity={capacity({
@@ -126,7 +130,7 @@ describe("mobile SavingsCapacityCard", () => {
 		);
 		const t = texts(root).join(" ");
 		expect(t).toMatch(/LIVRET prévu/);
-		expect(t).toMatch(/LIVRET au-dessus du besoin/);
+		expect(t).toMatch(/À faire.*baisse le dépôt LIVRET/);
 	});
 
 	it("renders nothing when capacity is null", () => {

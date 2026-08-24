@@ -9,6 +9,9 @@ Answer “where should the next euro go?” without mutating the workbook: emerg
 fund first, then underweight diversification bands, then residual DCA; pause
 overweight-band assets.
 
+UI copy (FR) lives in `next-euro-copy.ts`: the card states the **question**, a
+**Ce mois-ci** lead from the primary step, then the ordered step list.
+
 ## Flow
 
 ```text

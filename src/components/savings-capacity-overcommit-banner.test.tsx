@@ -35,8 +35,9 @@ describe("SavingsCapacityOverCommitBanner", () => {
 	it("renders when status is over_committed", () => {
 		render(<SavingsCapacityOverCommitBanner capacity={capacity()} />);
 		expect(
-			screen.getByText(/DCA au-dessus de ta capacité d'épargne/),
+			screen.getByText(/DCA investi au-dessus de ta capacité/),
 		).toBeTruthy();
+		expect(screen.getByText(/À faire.*baisse tes plans/)).toBeTruthy();
 		expect(screen.getByText(/1\s*500/)).toBeTruthy();
 	});
 
@@ -73,6 +74,7 @@ describe("SavingsCapacityEmergencyOverBanner", () => {
 		expect(
 			screen.getByText(/Dépôt LIVRET au-dessus du besoin de rattrapage/),
 		).toBeTruthy();
+		expect(screen.getByText(/À faire.*baisse le plan LIVRET/)).toBeTruthy();
 		expect(screen.getByText(/1[\s\u00a0\u202f]?200/)).toBeTruthy();
 		expect(screen.getByText(/750/)).toBeTruthy();
 	});

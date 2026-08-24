@@ -1,18 +1,17 @@
 import { Text, View } from "react-native";
-import type {
-	SavingsCapacity,
-	SavingsCapacityStatus,
-} from "@patrimo/core/savings-capacity";
+import type { SavingsCapacity } from "@patrimo/core/savings-capacity";
+import {
+	SAVINGS_CAPACITY_QUESTION,
+	SAVINGS_CAPACITY_STATUS_LABEL,
+	SAVINGS_CAPACITY_SURPLUS_CAPTION,
+	SAVINGS_CAPACITY_TITLE,
+	savingsCapacityLivretRecommendation,
+	savingsCapacityRecommendation,
+} from "@patrimo/core/savings-capacity-copy";
 import { formatEuro } from "@patrimo/core/format";
 import { shared, type Theme } from "./theme";
 
-const STATUS_LABEL: Record<SavingsCapacityStatus, string> = {
-	comfortable: "À l'aise",
-	tight: "Serré",
-	over_committed: "Surengagé",
-};
-
-function statusColor(status: SavingsCapacityStatus, theme: Theme): string {
+function statusColor(status: SavingsCapacity["status"], theme: Theme): string {
 	switch (status) {
 		case "comfortable":
 			return theme.success;
@@ -38,8 +37,11 @@ export function SavingsCapacityCard({
 			? formatEuro(capacity.emergencyTargetEuro)
 			: `${capacity.emergencyTargetMonths} mois de dépenses`;
 
+	const recommendation = savingsCapacityRecommendation(capacity, formatEuro);
+	const livretReco = savingsCapacityLivretRecommendation(capacity, formatEuro);
+
 	const detailParts = [
-		`DCA investissement ${formatEuro(capacity.plannedDcaMonthly)}`,
+		`DCA investi ${formatEuro(capacity.plannedDcaMonthly)}`,
 	];
 	if (capacity.plannedLivretDcaMonthly > 0) {
 		detailParts.push(
@@ -54,37 +56,60 @@ export function SavingsCapacityCard({
 
 	return (
 		<View style={[shared.card, { backgroundColor: t.card, marginBottom: 24 }]}>
-			<View style={[shared.row, { marginBottom: 8 }]}>
+			<View style={[shared.row, { marginBottom: 4 }]}>
 				<Text style={[shared.label, { color: t.textSecondary }]}>
-					{"Capacité d'épargne"}
+					{SAVINGS_CAPACITY_TITLE}
 				</Text>
 				<Text style={{ color: tone, fontSize: 13, fontWeight: "600" }}>
-					{STATUS_LABEL[capacity.status]}
+					{SAVINGS_CAPACITY_STATUS_LABEL[capacity.status]}
 				</Text>
 			</View>
+			<Text style={{ color: t.textMuted, fontSize: 12, marginBottom: 8 }}>
+				{SAVINGS_CAPACITY_QUESTION}
+			</Text>
 			<Text
 				style={{
 					fontSize: 22,
 					fontWeight: "600",
 					color: t.text,
-					marginBottom: 6,
+					marginBottom: 2,
 				}}
 			>
-				{formatEuro(capacity.investableSurplus)} / mois
+				{formatEuro(capacity.investableSurplus)}
 			</Text>
+			<Text style={{ color: t.textMuted, fontSize: 12, marginBottom: 8 }}>
+				{SAVINGS_CAPACITY_SURPLUS_CAPTION}
+			</Text>
+			<Text
+				style={{
+					color:
+						capacity.status === "over_committed"
+							? t.danger
+							: capacity.status === "tight"
+								? "#d97706"
+								: t.text,
+					fontSize: 13,
+					marginBottom: 6,
+					fontWeight: "500",
+				}}
+			>
+				{recommendation}
+			</Text>
+			{livretReco && (
+				<Text
+					style={{
+						color: "#d97706",
+						fontSize: 13,
+						marginBottom: 6,
+						fontWeight: "500",
+					}}
+				>
+					{livretReco}
+				</Text>
+			)}
 			<Text style={{ color: t.textMuted, fontSize: 12 }}>
 				{detailParts.join(" · ")}
 			</Text>
-			{capacity.emergencyOverContributing && (
-				<Text style={{ color: "#d97706", fontSize: 12, marginTop: 6 }}>
-					{`LIVRET au-dessus du besoin : +${formatEuro(capacity.emergencyOverContribution)} / mois`}
-				</Text>
-			)}
-			{capacity.status === "over_committed" && (
-				<Text style={{ color: t.danger, fontSize: 12, marginTop: 6 }}>
-					Écart {formatEuro(capacity.gap)} / mois au-dessus de la capacité
-				</Text>
-			)}
 		</View>
 	);
 }

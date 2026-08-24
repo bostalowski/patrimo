@@ -29,21 +29,26 @@ function capacity(
 }
 
 describe("SavingsCapacityCard", () => {
-	it("renders surplus, planned investment DCA, and status when defined", () => {
+	it("renders question, surplus caption, recommendation, and status", () => {
 		render(<SavingsCapacityCard capacity={capacity()} />);
 
 		expect(screen.getByText("Capacité d'épargne")).toBeTruthy();
+		expect(
+			screen.getByText(/Ton plan d'investissement tient-il avec ton budget/),
+		).toBeTruthy();
 		expect(screen.getByText("À l'aise")).toBeTruthy();
-		expect(screen.getByText(/2\s*000.*\/\s*mois/)).toBeTruthy();
-		expect(screen.getByText(/DCA investissement.*500/)).toBeTruthy();
+		expect(screen.getByText(/Surplus investissable/)).toBeTruthy();
+		expect(screen.getByText(/Rien à changer/)).toBeTruthy();
+		expect(screen.getByText(/DCA investi.*500/)).toBeTruthy();
 	});
 
-	it("shows gap hint when over_committed", () => {
+	it("shows actionable recommendation when over_committed", () => {
 		render(
 			<SavingsCapacityCard
 				capacity={capacity({
 					investableSurplus: 1_000,
 					plannedDcaMonthly: 1_500,
+					plannedInvestmentDcaMonthly: 1_500,
 					gap: 500,
 					status: "over_committed",
 				})}
@@ -51,10 +56,10 @@ describe("SavingsCapacityCard", () => {
 		);
 
 		expect(screen.getByText("Surengagé")).toBeTruthy();
-		expect(screen.getByText(/Écart.*500/)).toBeTruthy();
+		expect(screen.getByText(/À faire.*baisse le DCA investi.*500/)).toBeTruthy();
 	});
 
-	it("explains emergency catch-up reserve in plain language", () => {
+	it("explains emergency catch-up reserve in supporting detail", () => {
 		render(
 			<SavingsCapacityCard
 				capacity={capacity({
@@ -81,7 +86,7 @@ describe("SavingsCapacityCard", () => {
 		expect(screen.getByText(/800.*atteindre.*10[\s\u00a0\u202f]?000/)).toBeTruthy();
 	});
 
-	it("shows LIVRET planned vs need and over-contribution alert", () => {
+	it("shows LIVRET recommendation when over-contributing", () => {
 		render(
 			<SavingsCapacityCard
 				capacity={capacity({
@@ -94,7 +99,7 @@ describe("SavingsCapacityCard", () => {
 		);
 		expect(screen.getByText(/LIVRET prévu.*1[\s\u00a0\u202f]?200/)).toBeTruthy();
 		expect(
-			screen.getByText(/LIVRET au-dessus du besoin.*450/),
+			screen.getByText(/À faire.*baisse le dépôt LIVRET.*450/),
 		).toBeTruthy();
 	});
 

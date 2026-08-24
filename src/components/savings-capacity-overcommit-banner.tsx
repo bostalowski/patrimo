@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import type { SavingsCapacity } from "@patrimo/core/savings-capacity";
+import {
+	SAVINGS_CAPACITY_LIVRET_OVER_BANNER_TITLE,
+	SAVINGS_CAPACITY_OVERCOMMIT_BANNER_TITLE,
+	savingsCapacityLivretOverBannerBody,
+	savingsCapacityOverCommitBannerBody,
+} from "@patrimo/core/savings-capacity-copy";
 import { formatEuro } from "@/lib/utils";
 
 /**
@@ -18,13 +24,10 @@ export function SavingsCapacityOverCommitBanner({
 		<div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
 			<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
 			<div className="space-y-1">
-				<p className="font-medium">DCA au-dessus de ta capacité d&apos;épargne</p>
+				<p className="font-medium">{SAVINGS_CAPACITY_OVERCOMMIT_BANNER_TITLE}</p>
 				<p className="text-xs leading-relaxed">
-					Tes plans d&apos;investissement totalisent{" "}
-					{formatEuro(capacity.plannedDcaMonthly)} / mois pour une capacité
-					investissable de {formatEuro(capacity.investableSurplus)} / mois
-					(écart {formatEuro(capacity.gap)}). Aucun plan n&apos;est modifié —
-					vois le détail sur le{" "}
+					{savingsCapacityOverCommitBannerBody(capacity, formatEuro)} Voir le
+					détail sur le{" "}
 					<Link
 						href="/"
 						className="font-medium underline underline-offset-2"
@@ -54,14 +57,11 @@ export function SavingsCapacityEmergencyOverBanner({
 			<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
 			<div className="space-y-1">
 				<p className="font-medium">
-					Dépôt LIVRET au-dessus du besoin de rattrapage
+					{SAVINGS_CAPACITY_LIVRET_OVER_BANNER_TITLE}
 				</p>
 				<p className="text-xs leading-relaxed">
-					Ton plan LIVRET totalise{" "}
-					{formatEuro(capacity.plannedLivretDcaMonthly)} / mois pour un besoin
-					de {formatEuro(capacity.monthlyEmergencyReserve)} / mois (surplus{" "}
-					{formatEuro(capacity.emergencyOverContribution)}). Aucun plan
-					n&apos;est modifié — vois le détail sur le{" "}
+					{savingsCapacityLivretOverBannerBody(capacity, formatEuro)} Voir le
+					détail sur le{" "}
 					<Link
 						href="/"
 						className="font-medium underline underline-offset-2"
