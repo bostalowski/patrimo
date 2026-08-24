@@ -99,8 +99,9 @@ Derived only — **no** workbook sheet / field.
 
 ## Checker
 
-- [ ] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md)
+- [x] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md)
 - Pass bar: no D on correctness; architecture ≥ B; evidence cited
+- **Pass** 2026-08-24 — see branch [PROGRESS.md](./PROGRESS.md) checker table
 
 ## On merge
 
