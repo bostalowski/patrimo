@@ -104,7 +104,7 @@ export function NextEuroPlanCard({
 	);
 
 	return (
-		<Card className={variant === "summary" ? "max-w-md" : undefined}>
+		<Card className={variant === "summary" ? "w-full" : undefined}>
 			<CardHeader>
 				<CardTitle>
 					{variant === "summary" ? (

@@ -180,15 +180,16 @@ export default async function DashboardPage() {
 				</Card>
 			</div>
 
-			<div className="flex flex-wrap items-start gap-4">
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<EmergencyFundCard health={emergencyFund} />
-				<NextEuroPlanCard
-					plan={nextEuroPlan}
-					variant="summary"
-					assetLabels={assetLabels}
-				/>
 				<GoalsSummaryCard assessment={goalsAssessment} />
 			</div>
+
+			<NextEuroPlanCard
+				plan={nextEuroPlan}
+				variant="summary"
+				assetLabels={assetLabels}
+			/>
 
 			<PerformanceSection history={history} benchmarks={benchmarks} />
 
