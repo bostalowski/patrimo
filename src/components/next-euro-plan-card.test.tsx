@@ -59,7 +59,7 @@ describe("NextEuroPlanCard", () => {
 		expect(container.firstChild).toBeNull();
 	});
 
-	it("renders summary with top 3 and link to Diversification", () => {
+	it("renders summary with lead recommendation, top 3, and link", () => {
 		render(
 			<NextEuroPlanCard
 				plan={plan()}
@@ -68,6 +68,13 @@ describe("NextEuroPlanCard", () => {
 			/>,
 		);
 		expect(screen.getByText(/Prochain euro/i)).toBeTruthy();
+		expect(
+			screen.getByText(/Où prioriser l'enveloppe DCA déjà prévue/),
+		).toBeTruthy();
+		expect(
+			screen.getByText(/Ce mois-ci : priorise.*Livret \(fonds d'urgence\)/),
+		).toBeTruthy();
+		expect(screen.getByText(/Détail des étapes/)).toBeTruthy();
 		expect(screen.getAllByText(/Acheter/i).length).toBeGreaterThan(0);
 		expect(screen.getByText("Amundi Europe")).toBeTruthy();
 		expect(screen.queryByText("Bitcoin")).toBeNull();

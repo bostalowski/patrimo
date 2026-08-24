@@ -3,6 +3,13 @@ import type {
 	NextEuroPlan,
 	NextEuroStep,
 } from "@patrimo/core/next-euro-plan";
+import {
+	NEXT_EURO_QUESTION,
+	NEXT_EURO_TITLE,
+	nextEuroLeadRecommendation,
+	nextEuroPoolCaption,
+	nextEuroPrimaryStep,
+} from "@patrimo/core/next-euro-copy";
 import { diversificationKeyLabel } from "@patrimo/core/diversification-labels";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +84,10 @@ export function NextEuroPlanCard({
 	if (!plan || plan.steps.length === 0) return null;
 
 	const labelOf = (id: string) => assetLabels[id] ?? id;
+	const primary = nextEuroPrimaryStep(plan);
+	const lead =
+		primary &&
+		nextEuroLeadRecommendation(primary, stepTitle(primary, labelOf), formatEuro);
 	const visible =
 		variant === "summary" ? plan.steps.slice(0, 3) : plan.steps;
 
@@ -86,18 +97,26 @@ export function NextEuroPlanCard({
 				<CardTitle>
 					{variant === "summary" ? (
 						<Link href="/diversification" className="hover:underline">
-							Prochain euro
+							{NEXT_EURO_TITLE}
 						</Link>
 					) : (
-						"Prochain euro"
+						NEXT_EURO_TITLE
 					)}
 				</CardTitle>
+				<p className="text-xs text-zinc-500">{NEXT_EURO_QUESTION}</p>
+				{lead && (
+					<p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+						{lead}
+					</p>
+				)}
 				<p className="text-xs text-zinc-500">
-					Enveloppe DCA mensuelle {formatEuro(plan.monthlyPool)} · lecture
-					seule
+					{nextEuroPoolCaption(plan.monthlyPool, formatEuro)}
 				</p>
 			</CardHeader>
 			<CardBody className="pt-0">
+				<p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+					Détail des étapes
+				</p>
 				<ol className="list-none">
 					{visible.map((step) => (
 						<StepRow

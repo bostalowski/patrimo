@@ -33,6 +33,7 @@ export {
 	projectLivret,
 } from "./livret";
 export * from "./manual-prices";
+export * from "./next-euro-copy";
 export * from "./next-euro-plan";
 export * from "./per";
 export * from "./performance";
@@ -46,6 +47,7 @@ export * as realestateProperty from "./realestate/property";
 export * as realestateTax from "./realestate/tax";
 export * from "./retraite";
 export * from "./savings-capacity";
+export * from "./savings-capacity-copy";
 export * from "./schema";
 export * from "./tax-rules";
 export * from "./workbook-template";

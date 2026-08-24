@@ -87,6 +87,23 @@ Status legend: **LOCKED** = cadrage for V1 · **OPEN** = must answer before codi
   - `plannedLivret ≤ need` → no over-contribution alert; investment status unchanged in meaning
   - No LIVRET DCA → same numbers as Phase A (implied need only)
 
+### Phase C — readable state + recommendation copy (todo)
+
+- [x] **One behavior:** make Dashboard (web + mobile) **Savings capacity** and web **Next-euro** cards state the question, the current state, and an explicit recommendation in plain French — without changing domain math or workbook writes.
+- [x] Shared FR copy helpers in `@patrimo/core` (web + mobile consume the same strings).
+- [x] Soft banners on web DCA / Investissements / Projection use the same recommendation wording when over-committed / LIVRET over-contributing.
+- [x] Tests for card / banner copy updated; no new ADR (UX only; ADRs 0015 / 0017 / 0019 semantics unchanged).
+
+## Product decisions (Phase C)
+
+| # | Decision | Status | Choice |
+|---|---|---|---|
+| D21 | Stay on branch | **LOCKED** | Extend this CONTRACT; UX polish on the same cards, not a second feature branch. |
+| D22 | Domain math | **LOCKED** | Unchanged. Copy / layout only. |
+| D23 | Card pattern | **LOCKED** | Each card shows: (1) short question, (2) status / lead figure, (3) explicit **À faire** recommendation sentence, (4) supporting numbers secondary. |
+| D24 | Next-euro lead | **LOCKED** | Lead sentence from the first actionable step (buy with € > 0, else first step); full step list remains. |
+| D25 | Titles | **LOCKED** | Keep titles « Capacité d'épargne » and « Prochain euro »; clarify via subtitle + recommendation, not rename. |
+
 ## Exclusions
 
 - Not in this branch: **auto-create / resize** DCA or budget `EPARGNE` rows from Reglages / implied reserve
@@ -95,11 +112,14 @@ Status legend: **LOCKED** = cadrage for V1 · **OPEN** = must answer before codi
 - Not in this branch: Livret A vs LDDS split; push/OS notifications; EF history chart
 - Not in this branch: treating EF config as a **Financial goal** in `Objectifs`
 - Not in this branch: forcing investment `over_committed` solely because LIVRET over-contributes (separate alert — D16)
+- Not in this branch: renaming glossary terms or changing next-euro priorities
+- Not in this branch: mobile Next-euro UI (still absent per ADR 0015)
 - Do not refactor unrelated modules
 
 ## Checker
 
-- [ ] Fresh session or distinct checker role will score **Phase B** with [scoring-rubric.md](../../scoring-rubric.md) after implementation (Phase A checker pass 2026-08-24 remains historical)
+- [x] Phase B scored Pass (2026-08-24) — historical
+- [ ] Fresh session or distinct checker role will score **Phase C** with [scoring-rubric.md](../../scoring-rubric.md) after implementation
 - Pass bar: no D on correctness; architecture ≥ B; evidence cited
 
 ## On merge
@@ -110,4 +130,4 @@ Status legend: **LOCKED** = cadrage for V1 · **OPEN** = must answer before codi
 
 ## Cadrage gate
 
-Phase A locked 2026-08-24. Phase B decisions D11–D20 locked after user confirmation (stay on branch; real LIVRET DCA; alert when planned exceeds need). `make branch-ready` must pass before Phase B coding.
+Phase A locked 2026-08-24. Phase B decisions D11–D20 locked. Phase C decisions D21–D25 locked (UX copy: question + état + reco; math unchanged). `make branch-ready` must pass before Phase C coding.

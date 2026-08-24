@@ -12,6 +12,10 @@ LIVRET DCA), and whether current **investment** DCA overshoots that capacity —
 without auto-resizing plans. Over-funding LIVRET vs the implied need is a
 distinct soft alert.
 
+UI copy (FR) lives in `savings-capacity-copy.ts`: each surface states the
+**question**, the **surplus / status**, an explicit **À faire** recommendation,
+then supporting numbers.
+
 ## Flow
 
 ```text
