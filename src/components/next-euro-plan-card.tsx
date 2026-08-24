@@ -4,8 +4,10 @@ import type {
 	NextEuroStep,
 } from "@patrimo/core/next-euro-plan";
 import {
+	NEXT_EURO_EF_BANNER_TITLE,
 	NEXT_EURO_QUESTION,
 	NEXT_EURO_TITLE,
+	nextEuroEmergencyFundBannerBody,
 	nextEuroLeadRecommendation,
 	nextEuroPoolCaption,
 	nextEuroPrimaryStep,
@@ -35,7 +37,6 @@ function stepTitle(
 	step: NextEuroStep,
 	assetLabel: (id: string) => string,
 ): string {
-	if (step.kind === "emergency_fund") return "Livret (fonds d'urgence)";
 	if (step.assetId) return assetLabel(step.assetId);
 	if (step.bandKey) return diversificationKeyLabel(step.bandKey);
 	return step.envelope ?? "—";
@@ -58,7 +59,7 @@ function StepRow({
 					<span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
 						{stepTitle(step, assetLabel)}
 					</span>
-					{step.envelope && step.kind !== "emergency_fund" && (
+					{step.envelope && (
 						<span className="text-xs text-zinc-500">{step.envelope}</span>
 					)}
 				</div>
@@ -90,6 +91,10 @@ export function NextEuroPlanCard({
 		nextEuroLeadRecommendation(primary, stepTitle(primary, labelOf), formatEuro);
 	const visible =
 		variant === "summary" ? plan.steps.slice(0, 3) : plan.steps;
+	const efBanner = nextEuroEmergencyFundBannerBody(
+		plan.emergencyFundRecommendation,
+		formatEuro,
+	);
 
 	return (
 		<Card className={variant === "summary" ? "max-w-md" : undefined}>
@@ -104,6 +109,16 @@ export function NextEuroPlanCard({
 					)}
 				</CardTitle>
 				<p className="text-xs text-zinc-500">{NEXT_EURO_QUESTION}</p>
+				{efBanner && (
+					<div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/60 dark:bg-amber-950/40">
+						<p className="text-xs font-medium text-amber-900 dark:text-amber-100">
+							{NEXT_EURO_EF_BANNER_TITLE}
+						</p>
+						<p className="mt-1 text-sm text-amber-950 dark:text-amber-50">
+							{efBanner}
+						</p>
+					</div>
+				)}
 				{lead && (
 					<p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
 						{lead}

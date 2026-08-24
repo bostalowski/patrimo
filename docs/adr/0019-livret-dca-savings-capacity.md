@@ -113,5 +113,6 @@ Requires cash-mode DCA UX and serializer round-trip for empty lines.
 - [ADR 0015](0015-next-euro-plan.md)
 - [ADR 0017](0017-savings-capacity-bridge.md)
 - [ADR 0018](0018-configurable-emergency-fund-target.md)
+- [ADR 0020](0020-emergency-fund-surplus-recommendation.md) — surplus LIVRET oneshot/monthly advice; deducts planned LIVRET DCA
 - [Savings capacity](../../packages/core/savings-capacity.md)
 - [Glossary](../reference/glossary.md)

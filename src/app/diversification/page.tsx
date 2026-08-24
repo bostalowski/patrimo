@@ -45,21 +45,25 @@ export default async function DiversificationPage() {
     sectorAllocations: workbook.sectorAllocations ?? [],
     assets: workbook.assets,
   });
-  const { depensesMensuelles } = summarizeBudget(workbook.budget);
-  const nextEuroPlan = buildNextEuroPlan({
-    targets: workbook.diversificationTargets ?? [],
-    positions: portfolio.assets,
-    dca: workbook.dca,
-    geographicAllocations: workbook.geographicAllocations ?? [],
-    sectorAllocations: workbook.sectorAllocations ?? [],
-    assets: workbook.assets,
-    accounts: portfolio.accounts,
-    monthlyExpenses: depensesMensuelles,
-    portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
-  });
-  const assetLabels = Object.fromEntries(
-    workbook.assets.map((a) => [a.id, a.label]),
-  );
+	const { revenusMensuels, depensesMensuelles } = summarizeBudget(
+		workbook.budget,
+	);
+	const nextEuroPlan = buildNextEuroPlan({
+		targets: workbook.diversificationTargets ?? [],
+		positions: portfolio.assets,
+		dca: workbook.dca,
+		geographicAllocations: workbook.geographicAllocations ?? [],
+		sectorAllocations: workbook.sectorAllocations ?? [],
+		assets: workbook.assets,
+		accounts: portfolio.accounts,
+		monthlyExpenses: depensesMensuelles,
+		revenusMensuels,
+		emergencyFundConfig: workbook.emergencyFundConfig,
+		portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
+	});
+	const assetLabels = Object.fromEntries(
+		workbook.assets.map((a) => [a.id, a.label]),
+	);
 
   return (
     <div className="space-y-6">

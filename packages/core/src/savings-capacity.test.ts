@@ -32,6 +32,7 @@ function capacityDefaults(overrides: Partial<ReturnType<typeof computeSavingsCap
 		emergencyMonthlyOutflow: 0,
 		emergencyOverContributing: false,
 		emergencyOverContribution: 0,
+		emergencyFundRecommendation: null,
 		...overrides,
 	};
 }
@@ -101,6 +102,19 @@ describe("computeSavingsCapacity", () => {
 				emergencyTargetMonths: 6,
 				emergencyCatchUpHorizonMonths: 12,
 				status: "comfortable",
+				emergencyFundRecommendation: {
+					mode: "none",
+					gapEuro: 0,
+					targetEuro: 12_000,
+					livretBalance: 12_000,
+					availableCashMonthly: 2_500,
+					rawSavings: 3_000,
+					plannedInvestmentDcaMonthly: 500,
+					plannedLivretDcaMonthly: 0,
+					catchUpHorizonMonths: 12,
+					monthlyNeed: 0,
+					amountToAdd: 0,
+				},
 			}),
 		);
 	});
@@ -124,6 +138,11 @@ describe("computeSavingsCapacity", () => {
 		expect(result?.gap).toBe(-250);
 		expect(result?.status).toBe("comfortable");
 		expect(result?.emergencyOverContributing).toBe(false);
+		expect(result?.emergencyFundRecommendation).toMatchObject({
+			mode: "monthly",
+			gapEuro: 9_000,
+			amountToAdd: 750,
+		});
 	});
 
 	it("skips EF reserve when depensesMensuelles ≤ 0 but still shows capacity", () => {

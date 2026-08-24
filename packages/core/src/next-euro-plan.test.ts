@@ -118,20 +118,21 @@ describe("LIVRET vs investment DCA pool helpers", () => {
 });
 
 describe("buildNextEuroPlan", () => {
-	it("returns null when no pool and emergency fund is ok", () => {
+	it("returns null when no pool", () => {
 		const plan = buildNextEuroPlan({
 			targets: [band("US", 0.5, 0.7)],
 			positions: [position("WPEA", 10_000)],
 			dca: [],
 			geographicAllocations: [geo("WPEA", "US", 1)],
 			assets,
-			accounts: [{ envelope: "LIVRET", marketValue: 20_000 }],
+			accounts: [{ envelope: "LIVRET", marketValue: 1_000 }],
 			monthlyExpenses: 2_000,
+			revenusMensuels: 5_000,
 		});
 		expect(plan).toBeNull();
 	});
 
-	it("EF takes the full monthly pool when gap is larger", () => {
+	it("does not steal investment DCA for LIVRET when EF gap exists", () => {
 		const plan = buildNextEuroPlan({
 			targets: [],
 			positions: [position("WPEA", 10_000)],
@@ -140,19 +141,21 @@ describe("buildNextEuroPlan", () => {
 			assets,
 			accounts: [{ envelope: "LIVRET", marketValue: 1_000 }],
 			monthlyExpenses: 2_000,
+			revenusMensuels: 5_000,
+			emergencyFundConfig: { targetMonths: 6, catchUpHorizonMonths: 12 },
 		});
 		expect(plan).not.toBeNull();
 		expect(plan!.monthlyPool).toBe(400);
-		expect(plan!.steps[0]).toMatchObject({
-			kind: "emergency_fund",
-			action: "buy",
-			envelope: "LIVRET",
-			euros: 400,
-		});
+		expect(plan!.steps.some((s) => s.envelope === "LIVRET")).toBe(false);
 		const buyEuros = plan!.steps
 			.filter((s) => s.action === "buy")
 			.reduce((s, step) => s + step.euros, 0);
 		expect(buyEuros).toBe(400);
+		expect(plan!.emergencyFundRecommendation).toMatchObject({
+			mode: "monthly",
+			gapEuro: 11_000,
+		});
+		expect(plan!.emergencyFundRecommendation!.amountToAdd).toBeGreaterThan(0);
 	});
 
 	it("routes underweight band catch-up to the mapped DCA asset", () => {
@@ -178,6 +181,7 @@ describe("buildNextEuroPlan", () => {
 			assets,
 			accounts: [{ envelope: "LIVRET", marketValue: 30_000 }],
 			monthlyExpenses: 2_000,
+			revenusMensuels: 5_000,
 		});
 		expect(plan).not.toBeNull();
 		const catchup = plan!.steps.filter((s) => s.kind === "band_catchup");
@@ -195,6 +199,7 @@ describe("buildNextEuroPlan", () => {
 			assets,
 			accounts: [{ envelope: "LIVRET", marketValue: 30_000 }],
 			monthlyExpenses: 2_000,
+			revenusMensuels: 5_000,
 		});
 		expect(plan).not.toBeNull();
 		const unmapped = plan!.steps.find(
@@ -215,6 +220,7 @@ describe("buildNextEuroPlan", () => {
 			assets,
 			accounts: [{ envelope: "LIVRET", marketValue: 30_000 }],
 			monthlyExpenses: 2_000,
+			revenusMensuels: 5_000,
 		});
 		expect(plan).not.toBeNull();
 		expect(
@@ -258,6 +264,7 @@ describe("buildNextEuroPlan", () => {
 			assets,
 			accounts: [{ envelope: "LIVRET", marketValue: 30_000 }],
 			monthlyExpenses: 2_000,
+			revenusMensuels: 5_000,
 		});
 		expect(plan).not.toBeNull();
 		const buyEuros = plan!.steps
@@ -267,7 +274,7 @@ describe("buildNextEuroPlan", () => {
 		expect(plan!.monthlyPool).toBe(400);
 	});
 
-	it("still returns a plan when pool is 0 but EF is insufficient", () => {
+	it("returns null when pool is 0 even if EF gap exists", () => {
 		const plan = buildNextEuroPlan({
 			targets: [],
 			positions: [],
@@ -276,13 +283,8 @@ describe("buildNextEuroPlan", () => {
 			assets,
 			accounts: [{ envelope: "LIVRET", marketValue: 1_000 }],
 			monthlyExpenses: 2_000,
+			revenusMensuels: 5_000,
 		});
-		expect(plan).not.toBeNull();
-		expect(plan!.monthlyPool).toBe(0);
-		expect(plan!.steps[0]).toMatchObject({
-			kind: "emergency_fund",
-			euros: 5_000,
-			envelope: "LIVRET",
-		});
+		expect(plan).toBeNull();
 	});
 });

@@ -1,4 +1,6 @@
 import type { NextEuroPlan, NextEuroStep } from "./next-euro-plan";
+import type { EmergencyFundSurplusRecommendation } from "./emergency-fund-recommendation";
+import { emergencyFundSurplusRecommendationCopy } from "./emergency-fund-recommendation";
 import type { EuroFormatter } from "./savings-capacity-copy";
 
 /** Dashboard / Diversification card title (FR). */
@@ -11,6 +13,9 @@ export const NEXT_EURO_QUESTION =
 /** Reminder that the plan is advisory only. */
 export const NEXT_EURO_READONLY_NOTE =
 	"Lecture seule — rien n'est modifié dans le classeur.";
+
+/** Banner title for EF surplus advice above the DCA step list. */
+export const NEXT_EURO_EF_BANNER_TITLE = "Fonds d'urgence (hors enveloppe DCA)";
 
 /**
  * Prefer the first buy step with euros, else the first step.
@@ -50,4 +55,15 @@ export function nextEuroPoolCaption(
 	formatEuro: EuroFormatter,
 ): string {
 	return `Enveloppe DCA mensuelle ${formatEuro(monthlyPool)} · ${NEXT_EURO_READONLY_NOTE}`;
+}
+
+/**
+ * Body for the EF surplus banner above Next-euro DCA steps.
+ * Null when there is no actionable LIVRET recommendation.
+ */
+export function nextEuroEmergencyFundBannerBody(
+	recommendation: EmergencyFundSurplusRecommendation | null | undefined,
+	formatEuro: EuroFormatter,
+): string | null {
+	return emergencyFundSurplusRecommendationCopy(recommendation, formatEuro);
 }

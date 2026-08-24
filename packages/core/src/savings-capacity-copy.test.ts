@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SavingsCapacity } from "./savings-capacity";
 import {
+	savingsCapacityEmergencyFundSurplusRecommendation,
 	savingsCapacityLivretRecommendation,
 	savingsCapacityRecommendation,
 } from "./savings-capacity-copy";
@@ -24,6 +25,7 @@ function capacity(
 		emergencyTargetMonths: 6,
 		emergencyCatchUpHorizonMonths: 12,
 		status: "comfortable",
+		emergencyFundRecommendation: null,
 		...overrides,
 	};
 }
@@ -85,5 +87,36 @@ describe("savingsCapacityLivretRecommendation", () => {
 				formatEuro,
 			),
 		).toMatch(/À faire.*450 €/);
+	});
+});
+
+describe("savingsCapacityEmergencyFundSurplusRecommendation", () => {
+	it("returns null when no surplus recommendation", () => {
+		expect(
+			savingsCapacityEmergencyFundSurplusRecommendation(capacity(), formatEuro),
+		).toBeNull();
+	});
+
+	it("formats oneshot catch-up from attached recommendation", () => {
+		expect(
+			savingsCapacityEmergencyFundSurplusRecommendation(
+				capacity({
+					emergencyFundRecommendation: {
+						mode: "oneshot",
+						gapEuro: 2_000,
+						targetEuro: 12_000,
+						livretBalance: 10_000,
+						availableCashMonthly: 2_500,
+						rawSavings: 3_000,
+						plannedInvestmentDcaMonthly: 500,
+						plannedLivretDcaMonthly: 0,
+						catchUpHorizonMonths: 12,
+						monthlyNeed: 166.67,
+						amountToAdd: 2_000,
+					},
+				}),
+				formatEuro,
+			),
+		).toMatch(/dépose 2000 €/);
 	});
 });

@@ -39,3 +39,4 @@ Then the colocated `ARCHITECTURE.md` for the package you change.
 - [ADR 0017](adr/0017-savings-capacity-bridge.md) — savings capacity bridge.
 - [ADR 0018](adr/0018-configurable-emergency-fund-target.md) — configurable emergency-fund target.
 - [ADR 0019](adr/0019-livret-dca-savings-capacity.md) — LIVRET DCA in savings capacity.
+- [ADR 0020](adr/0020-emergency-fund-surplus-recommendation.md) — EF surplus recommendation; supersedes next-euro P1.

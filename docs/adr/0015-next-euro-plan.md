@@ -106,4 +106,5 @@ Needs budget semantics and product copy; deferred.
 
 - [ADR 0005](0005-emergency-fund-health-indicator.md)
 - [ADR 0012](0012-allocation-coherence.md)
+- [ADR 0020](0020-emergency-fund-surplus-recommendation.md) — supersedes P1 LIVRET pool steal; surplus recommendation outside the DCA envelope
 - [packages/core/next-euro-plan.md](../../packages/core/next-euro-plan.md)

@@ -20,6 +20,7 @@
     "./budget": "./src/budget.ts",
     "./emergency-fund": "./src/emergency-fund.ts",
     "./emergency-fund-config": "./src/emergency-fund-config.ts",
+    "./emergency-fund-recommendation": "./src/emergency-fund-recommendation.ts",
     "./savings-capacity": "./src/savings-capacity.ts",
     "./savings-capacity-copy": "./src/savings-capacity-copy.ts",
     "./next-euro-copy": "./src/next-euro-copy.ts",

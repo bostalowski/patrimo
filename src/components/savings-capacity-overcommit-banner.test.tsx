@@ -27,6 +27,7 @@ function capacity(
 		emergencyTargetMonths: 6,
 		emergencyCatchUpHorizonMonths: 12,
 		status: "over_committed",
+		emergencyFundRecommendation: null,
 		...overrides,
 	};
 }

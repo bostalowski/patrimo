@@ -1,4 +1,8 @@
 import {
+	computeEmergencyFundSurplusRecommendation,
+	type EmergencyFundSurplusRecommendation,
+} from "./emergency-fund-recommendation";
+import {
 	computeMonthlyInvestmentDcaPool,
 	computeMonthlyLivretDcaPool,
 } from "./next-euro-plan";
@@ -64,6 +68,11 @@ export type SavingsCapacity = {
 	/** Catch-up spread horizon in months. */
 	emergencyCatchUpHorizonMonths: number;
 	status: SavingsCapacityStatus;
+	/**
+	 * Surplus-based LIVRET recommendation (ADR 0020). Null when the configured
+	 * target euro is not computable.
+	 */
+	emergencyFundRecommendation: EmergencyFundSurplusRecommendation | null;
 };
 
 export type SavingsCapacityInput = {
@@ -116,6 +125,14 @@ export function computeSavingsCapacity(
 		monthlyExpenses: depensesMensuelles,
 		config: normalizedConfig,
 	});
+	const emergencyFundRecommendation = computeEmergencyFundSurplusRecommendation({
+		revenusMensuels,
+		depensesMensuelles,
+		livretBalance,
+		plannedLivretDcaMonthly,
+		plannedInvestmentDcaMonthly,
+		emergencyFundConfig: normalizedConfig,
+	});
 
 	return {
 		rawSavings,
@@ -132,6 +149,7 @@ export function computeSavingsCapacity(
 		emergencyTargetMonths: normalizedConfig.targetMonths,
 		emergencyCatchUpHorizonMonths: normalizedConfig.catchUpHorizonMonths,
 		status: statusFor(plannedDcaMonthly, investableSurplus),
+		emergencyFundRecommendation,
 	};
 }
 

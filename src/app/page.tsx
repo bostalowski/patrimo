@@ -112,6 +112,8 @@ export default async function DashboardPage() {
 		assets: workbook.assets,
 		accounts: portfolio.accounts,
 		monthlyExpenses: depensesMensuelles,
+		revenusMensuels,
+		emergencyFundConfig: workbook.emergencyFundConfig,
 		portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
 	});
 	const assetLabels = Object.fromEntries(

@@ -24,6 +24,7 @@ function capacity(
 		emergencyTargetMonths: 6,
 		emergencyCatchUpHorizonMonths: 12,
 		status: "comfortable",
+		emergencyFundRecommendation: null,
 		...overrides,
 	};
 }
@@ -101,6 +102,30 @@ describe("SavingsCapacityCard", () => {
 		expect(
 			screen.getByText(/À faire.*baisse le dépôt LIVRET.*450/),
 		).toBeTruthy();
+	});
+
+	it("shows EF surplus recommendation when attached", () => {
+		render(
+			<SavingsCapacityCard
+				capacity={capacity({
+					emergencyFundRecommendation: {
+						mode: "monthly",
+						gapEuro: 11_000,
+						targetEuro: 12_000,
+						livretBalance: 1_000,
+						availableCashMonthly: 2_500,
+						rawSavings: 3_000,
+						plannedInvestmentDcaMonthly: 500,
+						plannedLivretDcaMonthly: 0,
+						catchUpHorizonMonths: 12,
+						monthlyNeed: 916.67,
+						amountToAdd: 916.67,
+					},
+				})}
+			/>,
+		);
+		expect(screen.getByText(/ajoute.*916/)).toBeTruthy();
+		expect(screen.getByText(/Hors enveloppe DCA/)).toBeTruthy();
 	});
 
 	it("renders nothing when capacity is null", () => {

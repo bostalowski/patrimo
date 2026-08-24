@@ -12,14 +12,16 @@ import {
 	type DiversificationBandTone,
 } from "./diversification-targets";
 import {
-	computeEmergencyFundHealth,
-	sumLivretMarketValue,
-} from "./emergency-fund";
+	computeEmergencyFundSurplusRecommendation,
+	type EmergencyFundSurplusRecommendation,
+} from "./emergency-fund-recommendation";
+import { sumLivretMarketValue } from "./emergency-fund";
 import type { AssetPosition } from "./portfolio";
 import type {
 	Asset,
 	DcaConfig,
 	DiversificationTarget,
+	EmergencyFundConfig,
 	GeographicAllocation,
 	SectorAllocation,
 } from "./schema";
@@ -27,7 +29,6 @@ import type {
 export type NextEuroAction = "buy" | "hold" | "pause";
 
 export type NextEuroStepKind =
-	| "emergency_fund"
 	| "band_catchup"
 	| "dca_continue"
 	| "band_pause";
@@ -47,6 +48,11 @@ export type NextEuroPlan = {
 	monthlyPool: number;
 	steps: NextEuroStep[];
 	coherence: DiversificationCoherenceResult | null;
+	/**
+	 * Surplus-based LIVRET advice (outside the DCA envelope). Null when the
+	 * configured EF target is not computable.
+	 */
+	emergencyFundRecommendation: EmergencyFundSurplusRecommendation | null;
 };
 
 export type NextEuroPlanInput = {
@@ -59,6 +65,9 @@ export type NextEuroPlanInput = {
 	/** Accounts with envelope + marketValue (for livret / emergency fund). */
 	accounts: Array<{ envelope: string; marketValue: number }>;
 	monthlyExpenses: number;
+	/** Budget revenus for EF surplus recommendation (optional). */
+	revenusMensuels?: number;
+	emergencyFundConfig?: EmergencyFundConfig;
 	/**
 	 * Current market values by envelope then assetId (same shape as
 	 * `portfolioByEnvelope`). Used for residual DCA catch-up.
@@ -236,8 +245,9 @@ function buildEnvelopeValuesFromPositions(
 }
 
 /**
- * Read-only next-euro action plan (ADR 0015). Returns null when there is
- * nothing to show (no monthly DCA pool and emergency fund not insufficient).
+ * Read-only next-euro action plan (ADR 0015, P1 superseded by ADR 0020).
+ * Returns null when there is no monthly DCA pool. LIVRET surplus advice is
+ * attached as `emergencyFundRecommendation` (outside the DCA envelope).
  */
 export function buildNextEuroPlan(
 	input: NextEuroPlanInput,
@@ -251,15 +261,28 @@ export function buildNextEuroPlan(
 		assets,
 		accounts,
 		monthlyExpenses,
+		revenusMensuels,
+		emergencyFundConfig,
 		portfolioByEnvelope: portfolioByEnvelopeInput,
 	} = input;
 
 	const monthlyPool = computeMonthlyDcaPool(dca);
-	const livretBalance = sumLivretMarketValue(accounts);
-	const emergency = computeEmergencyFundHealth(livretBalance, monthlyExpenses);
-	const efInsufficient = emergency?.status === "insufficient";
+	if (monthlyPool <= 0) return null;
 
-	if (monthlyPool <= 0 && !efInsufficient) return null;
+	const livretBalance = sumLivretMarketValue(accounts);
+	const plannedLivretDcaMonthly = computeMonthlyLivretDcaPool(dca);
+	const plannedInvestmentDcaMonthly = computeMonthlyInvestmentDcaPool(dca);
+	const emergencyFundRecommendation =
+		revenusMensuels === undefined
+			? null
+			: computeEmergencyFundSurplusRecommendation({
+					revenusMensuels,
+					depensesMensuelles: monthlyExpenses,
+					livretBalance,
+					plannedLivretDcaMonthly,
+					plannedInvestmentDcaMonthly,
+					emergencyFundConfig,
+				});
 
 	const coherence =
 		targets.length > 0
@@ -276,29 +299,6 @@ export function buildNextEuroPlan(
 	const steps: NextEuroStep[] = [];
 	let remaining = monthlyPool;
 	let priority = 1;
-
-	// P1 — emergency fund
-	if (efInsufficient && emergency) {
-		const gap = Math.max(
-			0,
-			3 * emergency.monthlyExpenses - emergency.livretBalance,
-		);
-		const euros =
-			monthlyPool > 0 ? roundCents(Math.min(remaining, gap)) : roundCents(gap);
-		if (euros > 0 || monthlyPool <= 0) {
-			steps.push({
-				priority: priority++,
-				action: "buy",
-				euros,
-				kind: "emergency_fund",
-				envelope: "LIVRET",
-				reason: "Fonds d'urgence sous 3 mois de dépenses",
-			});
-			if (monthlyPool > 0) {
-				remaining = roundCents(Math.max(0, remaining - euros));
-			}
-		}
-	}
 
 	const geoByAsset = allocationsByAsset(geographicAllocations);
 	const sectorByAsset = sectorAllocationsByAsset(sectorAllocations);
@@ -468,5 +468,6 @@ export function buildNextEuroPlan(
 		monthlyPool,
 		steps,
 		coherence,
+		emergencyFundRecommendation,
 	};
 }

@@ -154,7 +154,23 @@ Measure of alignment between saved **Diversification target** bands, current liq
 
 ## Next-euro plan
 
-Read-only ranked list of **buy** / **hold** / **pause** steps that reallocates the existing monthly DCA envelope toward the emergency-fund LIVRET gap and underweight diversification bands, then residual DCA. Computed by `buildNextEuroPlan` in `@patrimo/core`. Does not write the workbook. Hidden when there is no monthly DCA pool and the emergency fund is not insufficient. See [ADR 0015](../adr/0015-next-euro-plan.md).
+Read-only ranked list of **buy** / **hold** / **pause** steps that reallocates
+the existing monthly DCA envelope toward underweight diversification bands,
+then residual DCA. Computed by `buildNextEuroPlan` in `@patrimo/core`. Does not
+write the workbook. Hidden when there is no monthly DCA pool. Emergency-fund
+LIVRET advice is **not** taken from this pool — see **Emergency fund surplus
+recommendation**. See [ADR 0015](../adr/0015-next-euro-plan.md),
+[ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md).
+
+## Emergency fund surplus recommendation
+
+Advisory LIVRET oneshot or monthly catch-up toward the configured
+**Emergency fund config** target, using cash left after planned investment DCA
+(`max(0, rawSavings − plannedInvestmentDcaMonthly)`). Deducts planned LIVRET
+DCA on the monthly path. Does not reallocate investment DCA. Computed by
+`computeEmergencyFundSurplusRecommendation` in `@patrimo/core`; shown on
+Savings capacity and as a banner above Next-euro steps. See
+[ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md).
 
 ## Savings capacity
 
@@ -170,10 +186,13 @@ are split: EF outflow = `max(need, plannedLivret)`;
 to surplus. When `plannedLivret > need`, core sets
 `emergencyOverContributing` / `emergencyOverContribution` (alert on Dashboard
 capacity card + soft warning on web DCA) without forcing investment
-`over_committed`. Hidden (`null`) when `revenusMensuels ≤ 0`. Computed by
-`computeSavingsCapacity` in `@patrimo/core`. Complementary to **Next-euro plan**
-(capacity fit vs pool reallocation). See [ADR 0017](../adr/0017-savings-capacity-bridge.md),
-[ADR 0019](../adr/0019-livret-dca-savings-capacity.md).
+`over_committed`. Also attaches **Emergency fund surplus recommendation** when
+the target gap still needs extra LIVRET. Hidden (`null`) when `revenusMensuels ≤ 0`.
+Computed by `computeSavingsCapacity` in `@patrimo/core`. Complementary to
+**Next-euro plan** (capacity fit vs pool reallocation). See
+[ADR 0017](../adr/0017-savings-capacity-bridge.md),
+[ADR 0019](../adr/0019-livret-dca-savings-capacity.md),
+[ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md).
 
 ## See also
 
@@ -192,6 +211,7 @@ capacity card + soft warning on web DCA) without forcing investment
 - [ADR 0017](../adr/0017-savings-capacity-bridge.md)
 - [ADR 0018](../adr/0018-configurable-emergency-fund-target.md)
 - [ADR 0019](../adr/0019-livret-dca-savings-capacity.md)
+- [ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [Diversification targets](../architecture/diversification-targets.md)

@@ -2,6 +2,7 @@ import type {
 	SavingsCapacity,
 	SavingsCapacityStatus,
 } from "./savings-capacity";
+import { emergencyFundSurplusRecommendationCopy } from "./emergency-fund-recommendation";
 
 /** Dashboard / capacity card title (FR). */
 export const SAVINGS_CAPACITY_TITLE = "Capacité d'épargne";
@@ -27,7 +28,8 @@ export type EuroFormatter = (value: number) => string;
 /**
  * Explicit recommendation for the investment-DCA vs surplus status.
  * Does not mention LIVRET over-contribution (use
- * {@link savingsCapacityLivretRecommendation}).
+ * {@link savingsCapacityLivretRecommendation}) or EF surplus catch-up (use
+ * {@link savingsCapacityEmergencyFundSurplusRecommendation}).
  */
 export function savingsCapacityRecommendation(
 	capacity: SavingsCapacity,
@@ -56,6 +58,20 @@ export function savingsCapacityLivretRecommendation(
 ): string | null {
 	if (!capacity.emergencyOverContributing) return null;
 	return `À faire : baisse le dépôt LIVRET d'environ ${formatEuro(capacity.emergencyOverContribution)} / mois (au-dessus du besoin de rattrapage).`;
+}
+
+/**
+ * Surplus-based LIVRET catch-up recommendation (oneshot or monthly).
+ * Returns null when there is nothing to add.
+ */
+export function savingsCapacityEmergencyFundSurplusRecommendation(
+	capacity: SavingsCapacity,
+	formatEuro: EuroFormatter,
+): string | null {
+	return emergencyFundSurplusRecommendationCopy(
+		capacity.emergencyFundRecommendation,
+		formatEuro,
+	);
 }
 
 /** Soft-banner title when investment DCA is over-committed. */

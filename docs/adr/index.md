@@ -19,5 +19,6 @@
 - [ADR 0017: Savings capacity bridge (budget → DCA)](0017-savings-capacity-bridge.md) — accepted
 - [ADR 0018: Configurable emergency-fund target and catch-up horizon](0018-configurable-emergency-fund-target.md) — accepted
 - [ADR 0019: LIVRET DCA in savings capacity + over-contribution alert](0019-livret-dca-savings-capacity.md) — accepted
+- [ADR 0020: Emergency-fund surplus recommendation (keep investment DCA)](0020-emergency-fund-surplus-recommendation.md) — accepted
 
 Template: [_template.md](_template.md)
