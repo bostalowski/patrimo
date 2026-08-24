@@ -17,5 +17,6 @@
 - [ADR 0015: Next-euro action plan (variante 2)](0015-next-euro-plan.md) — accepted
 - [ADR 0016: Envelope contribution overflow at plafond](0016-envelope-overflow-plafond.md) — accepted
 - [ADR 0017: Savings capacity bridge (budget → DCA)](0017-savings-capacity-bridge.md) — accepted
+- [ADR 0018: Portfolio health cockpit](0018-portfolio-health-cockpit.md) — accepted
 
 Template: [_template.md](_template.md)

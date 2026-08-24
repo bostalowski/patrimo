@@ -12,6 +12,7 @@
     "./livret": "./src/livret.ts",
     "./portfolio": "./src/portfolio.ts",
     "./portfolio-history": "./src/portfolio-history.ts",
+    "./portfolio-health-cockpit": "./src/portfolio-health-cockpit.ts",
     "./performance": "./src/performance.ts",
     "./fees": "./src/fees.ts",
     "./financial-goals": "./src/financial-goals.ts",

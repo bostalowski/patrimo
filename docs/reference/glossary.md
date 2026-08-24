@@ -152,6 +152,10 @@ Read-only ranked list of **buy** / **hold** / **pause** steps that reallocates t
 
 Derived monthly **investable surplus** after budget cashflow and emergency-fund catch-up, compared to planned DCA. `rawSavings = revenusMensuels − depensesMensuelles` (budget `EPARGNE` lines ignored). Catch-up reserve spreads the gap to **6** months of expenses over **12** months when coverage is below that target (`monthlyEmergencyReserve`); zero when coverage ≥ 6 or expenses ≤ 0. `investableSurplus = rawSavings − reserve` (may be negative). `plannedDcaMonthly` from `computeMonthlyDcaPool`. Status: `comfortable` / `tight` / `over_committed`. Hidden (`null`) when `revenusMensuels ≤ 0`. Computed by `computeSavingsCapacity` in `@patrimo/core`. Dashboard card on web and mobile; soft warnings on web DCA / Projection when over-committed. No workbook field; does not auto-resize DCA. Complementary to **Next-euro plan** (capacity fit vs pool reallocation). See [ADR 0017](../adr/0017-savings-capacity-bridge.md).
 
+## Portfolio health cockpit
+
+Dashboard composition of existing health signals (emergency fund, savings capacity, diversification coherence, risk vol/drawdown bands, financial goals) into traffic-light tones (`ok` / `watch` / `breach`) plus **one** recommended next-action sentence. Computed by `buildPortfolioHealthCockpit` in `@patrimo/core`. Prefers the first **Next-euro plan** step when present; otherwise the worst visible pill; otherwise a calm all-ok sentence. No proprietary score `/100`. Fees excluded while [ADR 0007](../adr/0007-fee-monitoring-ratios.md) forbids fee color bands. Web Dashboard only in V1; derived only (no workbook field). See [ADR 0018](../adr/0018-portfolio-health-cockpit.md).
+
 ## See also
 
 - [CONSTRAINTS.md](../../CONSTRAINTS.md)
@@ -167,6 +171,7 @@ Derived monthly **investable surplus** after budget cashflow and emergency-fund 
 - [ADR 0015](../adr/0015-next-euro-plan.md)
 - [ADR 0016](../adr/0016-envelope-overflow-plafond.md)
 - [ADR 0017](../adr/0017-savings-capacity-bridge.md)
+- [ADR 0018](../adr/0018-portfolio-health-cockpit.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [Diversification targets](../architecture/diversification-targets.md)

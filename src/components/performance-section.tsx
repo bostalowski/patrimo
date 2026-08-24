@@ -128,7 +128,7 @@ export function PerformanceSection({
   })();
 
   return (
-    <section className="space-y-4">
+    <section id="performance" className="space-y-4 scroll-mt-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Performance</h2>

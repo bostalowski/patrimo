@@ -37,6 +37,7 @@ export * from "./per";
 export * from "./performance";
 export * from "./portfolio";
 export * from "./portfolio-history";
+export * from "./portfolio-health-cockpit";
 export * from "./portfolio-risk";
 export * from "./projection";
 export * as realestateLoan from "./realestate/loan";
