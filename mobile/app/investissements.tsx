@@ -188,6 +188,17 @@ function draftToConfig(draft: DcaDraft): DcaConfig | null {
   const amount = Number(draft.amount.replace(",", "."));
   if (!draft.label.trim() || !Number.isFinite(amount) || amount < 0) return null;
 
+  if (draft.envelope === "LIVRET") {
+    return {
+      id: draft.id,
+      label: draft.label.trim(),
+      envelope: "LIVRET",
+      amount,
+      frequency: draft.frequency,
+      lines: [],
+    };
+  }
+
   const lines: DcaLine[] = [];
   for (const line of draft.lines) {
     const assetIds = line.assetIds
@@ -381,7 +392,12 @@ function DcaCard({
           {FREQUENCY_LABELS[config.frequency] ?? config.frequency}
         </Text>
       </View>
-      {config.lines.map((line, lineIdx) => (
+      {config.lines.length === 0 && config.envelope === "LIVRET" ? (
+        <Text style={{ color: t.textSecondary, fontSize: 14, marginBottom: 8 }}>
+          Dépôt mensuel (cash)
+        </Text>
+      ) : (
+        config.lines.map((line, lineIdx) => (
         <View
           key={line.label ?? line.assetIds.join("-")}
           style={[
@@ -403,7 +419,8 @@ function DcaCard({
             {formatPercent(line.targetPct)}
           </Text>
         </View>
-      ))}
+      ))
+      )}
       <View
         style={{
           flexDirection: "row",

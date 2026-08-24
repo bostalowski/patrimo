@@ -33,14 +33,24 @@ export function SavingsCapacityCard({
 	if (!capacity) return null;
 
 	const tone = statusColor(capacity.status, t);
-	const reserveLine =
-		capacity.monthlyEmergencyReserve > 0
-			? ` · ${formatEuro(capacity.monthlyEmergencyReserve)} / mois pour atteindre ${
-					capacity.emergencyTargetEuro !== undefined
-						? formatEuro(capacity.emergencyTargetEuro)
-						: `${capacity.emergencyTargetMonths} mois de dépenses`
-				}`
-			: "";
+	const targetLabel =
+		capacity.emergencyTargetEuro !== undefined
+			? formatEuro(capacity.emergencyTargetEuro)
+			: `${capacity.emergencyTargetMonths} mois de dépenses`;
+
+	const detailParts = [
+		`DCA investissement ${formatEuro(capacity.plannedDcaMonthly)}`,
+	];
+	if (capacity.plannedLivretDcaMonthly > 0) {
+		detailParts.push(
+			`LIVRET prévu ${formatEuro(capacity.plannedLivretDcaMonthly)}`,
+		);
+	}
+	if (capacity.monthlyEmergencyReserve > 0) {
+		detailParts.push(
+			`besoin rattrapage ${formatEuro(capacity.monthlyEmergencyReserve)} / mois pour atteindre ${targetLabel}`,
+		);
+	}
 
 	return (
 		<View style={[shared.card, { backgroundColor: t.card, marginBottom: 24 }]}>
@@ -63,8 +73,13 @@ export function SavingsCapacityCard({
 				{formatEuro(capacity.investableSurplus)} / mois
 			</Text>
 			<Text style={{ color: t.textMuted, fontSize: 12 }}>
-				{`DCA prévu ${formatEuro(capacity.plannedDcaMonthly)}${reserveLine}`}
+				{detailParts.join(" · ")}
 			</Text>
+			{capacity.emergencyOverContributing && (
+				<Text style={{ color: "#d97706", fontSize: 12, marginTop: 6 }}>
+					{`LIVRET au-dessus du besoin : +${formatEuro(capacity.emergencyOverContribution)} / mois`}
+				</Text>
+			)}
 			{capacity.status === "over_committed" && (
 				<Text style={{ color: t.danger, fontSize: 12, marginTop: 6 }}>
 					Écart {formatEuro(capacity.gap)} / mois au-dessus de la capacité

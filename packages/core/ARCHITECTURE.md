@@ -64,7 +64,7 @@ Platforms only adapt I/O and UI. See [src/ARCHITECTURE.md](../../src/ARCHITECTUR
 - [sector-allocation.md](sector-allocation.md) — ADR 0013
 - [diversification-targets.md](diversification-targets.md) — ADR 0012
 - [next-euro-plan.md](next-euro-plan.md) — ADR 0015
-- [savings-capacity.md](savings-capacity.md) — ADR 0017
+- [savings-capacity.md](savings-capacity.md) — ADR 0017 / 0019
 - [envelope-overflow.md](envelope-overflow.md) — ADR 0016
 - [financial-goals.md](financial-goals.md) — ADR 0014
 - [emergency-fund.md](emergency-fund.md) — ADR 0005

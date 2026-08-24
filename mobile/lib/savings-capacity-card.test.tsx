@@ -18,9 +18,14 @@ function capacity(
 	return {
 		rawSavings: 2_000,
 		monthlyEmergencyReserve: 0,
+		plannedLivretDcaMonthly: 0,
+		plannedInvestmentDcaMonthly: 500,
+		emergencyMonthlyOutflow: 0,
 		investableSurplus: 2_000,
 		plannedDcaMonthly: 500,
 		gap: -1_500,
+		emergencyOverContributing: false,
+		emergencyOverContribution: 0,
 		emergencyTargetMonths: 6,
 		emergencyCatchUpHorizonMonths: 12,
 		status: "comfortable",
@@ -105,6 +110,23 @@ describe("mobile SavingsCapacityCard", () => {
 			/>,
 		);
 		expect(texts(root).join(" ")).toMatch(/atteindre 10[\s\u00a0]?000/);
+	});
+
+	it("shows LIVRET over-contribution alert", () => {
+		const root = render(
+			<SavingsCapacityCard
+				capacity={capacity({
+					plannedLivretDcaMonthly: 400,
+					monthlyEmergencyReserve: 200,
+					emergencyOverContributing: true,
+					emergencyOverContribution: 200,
+				})}
+				theme={colors.light}
+			/>,
+		);
+		const t = texts(root).join(" ");
+		expect(t).toMatch(/LIVRET prévu/);
+		expect(t).toMatch(/LIVRET au-dessus du besoin/);
 	});
 
 	it("renders nothing when capacity is null", () => {

@@ -109,5 +109,6 @@ Surplus can look “high” when the user already labels large `EPARGNE` lines
 
 - [ADR 0005](0005-emergency-fund-health-indicator.md)
 - [ADR 0015](0015-next-euro-plan.md)
+- [ADR 0019](0019-livret-dca-savings-capacity.md) — LIVRET vs investment DCA split for capacity; supersedes the “all DCA = investment pool” reading of this ADR for savings capacity only
 - [Savings capacity](../../packages/core/savings-capacity.md)
 - Issue [#51](https://github.com/bostalowski/patrimo/issues/51)

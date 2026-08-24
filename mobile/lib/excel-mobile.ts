@@ -213,8 +213,23 @@ export function serializeWorkbook(
 		workbook,
 		SHEET_DCA,
 		DCA_HEADERS,
-		workbookData.dca.flatMap((config) =>
-			config.lines.map((line) => ({
+		workbookData.dca.flatMap((config) => {
+			if (config.lines.length === 0) {
+				return [
+					{
+						ID: config.id,
+						Libellé: config.label,
+						Enveloppe: config.envelope,
+						Montant: config.amount,
+						Fréquence: config.frequency,
+						"Mois versement": config.paymentMonth ?? null,
+						Panier: null as string | null,
+						Actifs: "",
+						"Cible %": 0,
+					},
+				];
+			}
+			return config.lines.map((line) => ({
 				ID: config.id,
 				Libellé: config.label,
 				Enveloppe: config.envelope,
@@ -224,8 +239,8 @@ export function serializeWorkbook(
 				Panier: line.label ?? null,
 				Actifs: line.assetIds.join(", "),
 				"Cible %": Math.round(line.targetPct * 1000) / 10,
-			})),
-		),
+			}));
+		}),
 	);
 	replaceRows(
 		workbook,
@@ -743,7 +758,30 @@ function parseDca(rows: Record<string, unknown>[]): DcaConfig[] {
 			.split(",")
 			.map((s) => s.trim())
 			.filter(Boolean);
-		if (assetIds.length === 0) continue;
+
+		const existing = byId.get(id);
+		if (assetIds.length === 0) {
+			if (existing) continue;
+			const monthStr = emptyToUndefined(row["Mois versement"]);
+			const paymentMonth = monthStr
+				? Math.round(Number(monthStr.replace(",", ".")))
+				: undefined;
+			byId.set(id, {
+				id,
+				label: emptyToUndefined(row["Libellé"]) ?? id,
+				envelope: row["Enveloppe"] as string,
+				amount: toNumber(row["Montant"]) ?? 0,
+				frequency:
+					emptyToUndefined(row["Fréquence"])?.toUpperCase() ?? "MENSUEL",
+				paymentMonth:
+					paymentMonth && paymentMonth >= 1 && paymentMonth <= 12
+						? paymentMonth
+						: undefined,
+				lines: [],
+			});
+			order.push(id);
+			continue;
+		}
 
 		const rawCible = toNumber(row["Cible %"]) ?? 0;
 		const line = {
@@ -752,7 +790,6 @@ function parseDca(rows: Record<string, unknown>[]): DcaConfig[] {
 			targetPct: rawCible / 100,
 		};
 
-		const existing = byId.get(id);
 		if (existing) {
 			existing.lines.push(line);
 			continue;

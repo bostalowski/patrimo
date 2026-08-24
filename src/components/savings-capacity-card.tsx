@@ -33,6 +33,11 @@ export function SavingsCapacityCard({
 }) {
 	if (!capacity) return null;
 
+	const targetLabel =
+		capacity.emergencyTargetEuro !== undefined
+			? formatEuro(capacity.emergencyTargetEuro)
+			: `${capacity.emergencyTargetMonths} mois de dépenses`;
+
 	return (
 		<Card className="max-w-md">
 			<CardHeader>
@@ -44,18 +49,32 @@ export function SavingsCapacityCard({
 				</div>
 				<CardValue>{formatEuro(capacity.investableSurplus)} / mois</CardValue>
 				<p className="text-xs text-zinc-500">
-					DCA prévu {formatEuro(capacity.plannedDcaMonthly)}
+					DCA investissement {formatEuro(capacity.plannedDcaMonthly)}
+					{capacity.plannedLivretDcaMonthly > 0 && (
+						<>
+							{" "}
+							· LIVRET prévu {formatEuro(capacity.plannedLivretDcaMonthly)}
+						</>
+					)}
 					{capacity.monthlyEmergencyReserve > 0 && (
 						<>
 							{" "}
-							· {formatEuro(capacity.monthlyEmergencyReserve)} / mois pour
-							atteindre{" "}
-							{capacity.emergencyTargetEuro !== undefined
-								? formatEuro(capacity.emergencyTargetEuro)
-								: `${capacity.emergencyTargetMonths} mois de dépenses`}
+							· besoin rattrapage {formatEuro(capacity.monthlyEmergencyReserve)}{" "}
+							/ mois pour atteindre {targetLabel}
 						</>
 					)}
+					{capacity.monthlyEmergencyReserve === 0 &&
+						capacity.plannedLivretDcaMonthly === 0 &&
+						capacity.emergencyTargetEuro !== undefined && (
+							<> · cible {targetLabel}</>
+						)}
 				</p>
+				{capacity.emergencyOverContributing && (
+					<p className="text-xs text-amber-700 dark:text-amber-300">
+						LIVRET au-dessus du besoin : +
+						{formatEuro(capacity.emergencyOverContribution)} / mois
+					</p>
+				)}
 				{capacity.status === "over_committed" && (
 					<p className="text-xs text-rose-700 dark:text-rose-300">
 						Écart {formatEuro(capacity.gap)} / mois au-dessus de la capacité

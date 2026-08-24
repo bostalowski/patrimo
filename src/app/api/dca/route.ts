@@ -21,24 +21,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
   const config = parsed.data;
-  const targetSum = config.lines.reduce((s, l) => s + l.targetPct, 0);
-  if (Math.abs(targetSum - 1) > TARGET_SUM_TOLERANCE) {
-    return NextResponse.json(
-      { error: `Sum of target percentages must equal 1 (got ${targetSum.toFixed(4)}).` },
-      { status: 400 },
-    );
-  }
 
-  const seenAssets = new Set<string>();
-  for (const line of config.lines) {
-    for (const assetId of line.assetIds) {
-      if (seenAssets.has(assetId)) {
-        return NextResponse.json(
-          { error: `Asset ${assetId} appears in multiple baskets.` },
-          { status: 400 },
-        );
+  // LIVRET cash dépôt: empty lines OK; skip basket target-sum / asset checks.
+  if (config.envelope !== "LIVRET" || config.lines.length > 0) {
+    const targetSum = config.lines.reduce((s, l) => s + l.targetPct, 0);
+    if (Math.abs(targetSum - 1) > TARGET_SUM_TOLERANCE) {
+      return NextResponse.json(
+        { error: `Sum of target percentages must equal 1 (got ${targetSum.toFixed(4)}).` },
+        { status: 400 },
+      );
+    }
+
+    const seenAssets = new Set<string>();
+    for (const line of config.lines) {
+      for (const assetId of line.assetIds) {
+        if (seenAssets.has(assetId)) {
+          return NextResponse.json(
+            { error: `Asset ${assetId} appears in multiple baskets.` },
+            { status: 400 },
+          );
+        }
+        seenAssets.add(assetId);
       }
-      seenAssets.add(assetId);
     }
   }
 

@@ -1,7 +1,7 @@
 import { portfolioByEnvelope } from "@patrimo/core/portfolio";
 import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
 import { sumLivretMarketValue } from "@patrimo/core/emergency-fund";
-import { SavingsCapacityOverCommitBanner } from "@/components/savings-capacity-overcommit-banner";
+import { SavingsCapacityOverCommitBanner, SavingsCapacityEmergencyOverBanner } from "@/components/savings-capacity-overcommit-banner";
 import { summarizeBudget } from "@/lib/budget";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
@@ -72,6 +72,7 @@ export default async function InvestissementsPage() {
 			</header>
 
 			<SavingsCapacityOverCommitBanner capacity={savingsCapacity} />
+			<SavingsCapacityEmergencyOverBanner capacity={savingsCapacity} />
 
 			<InvestissementsClient
 				configs={configs}

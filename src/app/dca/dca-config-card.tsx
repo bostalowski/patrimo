@@ -9,7 +9,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { computeDcaPlan } from "@/lib/dca";
 import { cn, formatEuro, formatPercent } from "@/lib/utils";
 
-const ENVELOPES = ["CTO", "PEA", "PEE", "AV", "PER"] as const;
+const ENVELOPES = ["CTO", "PEA", "PEE", "AV", "LIVRET", "PER"] as const;
 type Envelope = (typeof ENVELOPES)[number];
 
 const FREQUENCIES: DcaFrequency[] = ["MENSUEL", "TRIMESTRIEL", "ANNUEL"];
@@ -107,13 +107,15 @@ export function DcaConfigCard({
     [portfolioByEnvelope, config.envelope],
   );
 
+  const isLivretCash = config.envelope === "LIVRET";
+
   const plan = useMemo(
     () => computeDcaPlan(persistableConfig, currentValues),
     [persistableConfig, currentValues],
   );
 
   const targetSumPct = plan.targetSum;
-  const targetValid = plan.targetValid;
+  const targetValid = isLivretCash || plan.targetValid;
   const dirty =
     savedConfig === null ||
     JSON.stringify(savedConfig) !== JSON.stringify(persistableConfig);
@@ -187,23 +189,28 @@ export function DcaConfigCard({
 
   async function save() {
     setError(null);
-    if (!targetValid) {
-      setError(`Σ cibles doit valoir 100% (actuellement ${formatPercent(targetSumPct)}).`);
-      return;
+    const toPersist: DcaConfig = isLivretCash
+      ? { ...persistableConfig, lines: [] }
+      : persistableConfig;
+
+    if (!isLivretCash) {
+      if (!targetValid) {
+        setError(
+          `Σ cibles doit valoir 100% (actuellement ${formatPercent(targetSumPct)}).`,
+        );
+        return;
+      }
+      if (toPersist.lines.some((l) => l.assetIds.length === 0)) {
+        setError("Chaque panier doit contenir au moins un actif.");
+        return;
+      }
+      const flatAssets = toPersist.lines.flatMap((l) => l.assetIds);
+      if (new Set(flatAssets).size !== flatAssets.length) {
+        setError("Un actif ne peut apparaître que dans un seul panier.");
+        return;
+      }
     }
-    if (persistableConfig.lines.some((l) => l.assetIds.length === 0)) {
-      setError("Chaque panier doit contenir au moins un actif.");
-      return;
-    }
-    const flatAssets = persistableConfig.lines.flatMap((l) => l.assetIds);
-    if (new Set(flatAssets).size !== flatAssets.length) {
-      setError("Un actif ne peut apparaître que dans un seul panier.");
-      return;
-    }
-    if (
-      persistableConfig.amount < 0 ||
-      !Number.isFinite(persistableConfig.amount)
-    ) {
+    if (toPersist.amount < 0 || !Number.isFinite(toPersist.amount)) {
       setError("Montant invalide.");
       return;
     }
@@ -213,13 +220,16 @@ export function DcaConfigCard({
       const res = await fetch("/api/dca", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(persistableConfig),
+        body: JSON.stringify(toPersist),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(body?.error ?? "Échec de la sauvegarde");
       }
-      setSavedConfig(persistableConfig);
+      setSavedConfig(toPersist);
+      if (isLivretCash) {
+        setConfig((c) => ({ ...c, lines: [] }));
+      }
       startTransition(() => router.refresh());
       if (isDraft) onDraftSaved?.();
     } catch (err) {
@@ -269,9 +279,29 @@ export function DcaConfigCard({
           />
           <select
             value={config.envelope}
-            onChange={(e) =>
-              setConfig((c) => ({ ...c, envelope: e.target.value as Envelope }))
-            }
+            onChange={(e) => {
+              const nextEnvelope = e.target.value as Envelope;
+              setConfig((c) => {
+                if (nextEnvelope === "LIVRET") {
+                  return { ...c, envelope: nextEnvelope, lines: [] };
+                }
+                if (c.envelope === "LIVRET" && c.lines.length === 0) {
+                  return {
+                    ...c,
+                    envelope: nextEnvelope,
+                    lines: [
+                      {
+                        label: undefined,
+                        assetIds: [],
+                        targetPct: 1,
+                        _uid: nextUid(),
+                      },
+                    ],
+                  };
+                }
+                return { ...c, envelope: nextEnvelope };
+              });
+            }}
             className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
           >
             {ENVELOPES.map((env) => (
@@ -298,7 +328,9 @@ export function DcaConfigCard({
               className="w-32 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
             />
             <span className="text-sm text-zinc-500">
-              {AMOUNT_SUFFIX[config.frequency]}
+              {isLivretCash
+                ? `${AMOUNT_SUFFIX[config.frequency]} (dépôt)`
+                : AMOUNT_SUFFIX[config.frequency]}
             </span>
           </div>
           <select
@@ -344,91 +376,111 @@ export function DcaConfigCard({
           )}
         </div>
 
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-3 text-zinc-500">
-            <span>
-              Total actuel ({config.envelope}):{" "}
-              <span className="font-mono text-zinc-700 dark:text-zinc-300">
-                {formatEuro(plan.totalCurrent)}
+        {!isLivretCash && (
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-3 text-zinc-500">
+              <span>
+                Total actuel ({config.envelope}):{" "}
+                <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                  {formatEuro(plan.totalCurrent)}
+                </span>
               </span>
-            </span>
-            <span>•</span>
-            <span>
-              Après DCA:{" "}
-              <span className="font-mono text-zinc-700 dark:text-zinc-300">
-                {formatEuro(plan.totalAfter)}
+              <span>•</span>
+              <span>
+                Après DCA:{" "}
+                <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                  {formatEuro(plan.totalAfter)}
+                </span>
               </span>
+            </div>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 font-mono",
+                targetValid
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
+              )}
+            >
+              Σ cibles: {formatPercent(targetSumPct)}
             </span>
           </div>
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 font-mono",
-              targetValid
-                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
-            )}
-          >
-            Σ cibles: {formatPercent(targetSumPct)}
-          </span>
-        </div>
+        )}
+        {isLivretCash && (
+          <p className="text-xs text-zinc-500">
+            Dépôt cash vers l&apos;épargne de sécurité (LIVRET) — pas de panier
+            d&apos;actifs. Compte dans la capacité d&apos;épargne face au besoin
+            de rattrapage.
+          </p>
+        )}
       </CardHeader>
 
       <CardBody className="space-y-4">
-        <Table>
-          <THead>
-            <TR>
-              <TH>Panier</TH>
-              <TH className="text-right">Cible</TH>
-              <TH className="text-right">Valeur actuelle</TH>
-              <TH className="text-right">% actuel</TH>
-              <TH className="text-right">À investir</TH>
-              <TH className="text-right">Valeur après</TH>
-              <TH className="text-right">% après</TH>
-              <TH className="w-8"></TH>
-            </TR>
-          </THead>
-          <TBody>
-            {config.lines.map((line, i) => {
-              const allocation = plan.allocations[i];
-              const drift = allocation.postPct - line.targetPct;
-              const showSubRows = line.assetIds.length > 1;
-              const availableAssets = compatibleAssets.filter(
-                (a) => !usedAssetIds.has(a.id) || line.assetIds.includes(a.id),
-              );
-              return (
-                <BasketRowGroup
-                  key={line._uid}
-                  line={line}
-                  allocation={allocation}
-                  drift={drift}
-                  showSubRows={showSubRows}
-                  availableAssets={availableAssets}
-                  assetMap={assetMap}
-                  canRemoveLine={config.lines.length > 1}
-                  onLabelChange={(label) => updateLine(line._uid, { label })}
-                  onTargetChange={(targetPct) =>
-                    updateLine(line._uid, { targetPct })
-                  }
-                  onTargetDoubleClick={() => distributeRemaining(line._uid)}
-                  onAddAsset={(assetId) => addAssetToBasket(line._uid, assetId)}
-                  onRemoveAsset={(assetId) =>
-                    removeAssetFromBasket(line._uid, assetId)
-                  }
-                  onRemoveLine={() => removeLine(line._uid)}
-                />
-              );
-            })}
-          </TBody>
-        </Table>
+        {!isLivretCash && (
+          <>
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Panier</TH>
+                  <TH className="text-right">Cible</TH>
+                  <TH className="text-right">Valeur actuelle</TH>
+                  <TH className="text-right">% actuel</TH>
+                  <TH className="text-right">À investir</TH>
+                  <TH className="text-right">Valeur après</TH>
+                  <TH className="text-right">% après</TH>
+                  <TH className="w-8"></TH>
+                </TR>
+              </THead>
+              <TBody>
+                {config.lines.map((line, i) => {
+                  const allocation = plan.allocations[i];
+                  const drift = allocation.postPct - line.targetPct;
+                  const showSubRows = line.assetIds.length > 1;
+                  const availableAssets = compatibleAssets.filter(
+                    (a) =>
+                      !usedAssetIds.has(a.id) || line.assetIds.includes(a.id),
+                  );
+                  return (
+                    <BasketRowGroup
+                      key={line._uid}
+                      line={line}
+                      allocation={allocation}
+                      drift={drift}
+                      showSubRows={showSubRows}
+                      availableAssets={availableAssets}
+                      assetMap={assetMap}
+                      canRemoveLine={config.lines.length > 1}
+                      onLabelChange={(label) =>
+                        updateLine(line._uid, { label })
+                      }
+                      onTargetChange={(targetPct) =>
+                        updateLine(line._uid, { targetPct })
+                      }
+                      onTargetDoubleClick={() =>
+                        distributeRemaining(line._uid)
+                      }
+                      onAddAsset={(assetId) =>
+                        addAssetToBasket(line._uid, assetId)
+                      }
+                      onRemoveAsset={(assetId) =>
+                        removeAssetFromBasket(line._uid, assetId)
+                      }
+                      onRemoveLine={() => removeLine(line._uid)}
+                    />
+                  );
+                })}
+              </TBody>
+            </Table>
 
-        <button
-          type="button"
-          onClick={addLine}
-          className="inline-flex items-center gap-2 rounded-md border border-dashed border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-emerald-400 hover:text-emerald-600 dark:border-zinc-700 dark:text-zinc-400"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Ajouter un panier
-        </button>
+            <button
+              type="button"
+              onClick={addLine}
+              className="inline-flex items-center gap-2 rounded-md border border-dashed border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-emerald-400 hover:text-emerald-600 dark:border-zinc-700 dark:text-zinc-400"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Ajouter un panier
+            </button>
+          </>
+        )}
 
         {error && (
           <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">

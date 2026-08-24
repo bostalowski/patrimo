@@ -87,6 +87,20 @@ export function computeMonthlyDcaPool(dca: DcaConfig[]): number {
 	);
 }
 
+/** Monthlyized sum of LIVRET envelope DCA configs (cash emergency path). */
+export function computeMonthlyLivretDcaPool(dca: DcaConfig[]): number {
+	return computeMonthlyDcaPool(
+		dca.filter((config) => config.envelope === "LIVRET"),
+	);
+}
+
+/** Monthlyized sum of non-LIVRET DCA configs (investment path). */
+export function computeMonthlyInvestmentDcaPool(dca: DcaConfig[]): number {
+	return computeMonthlyDcaPool(
+		dca.filter((config) => config.envelope !== "LIVRET"),
+	);
+}
+
 function allocationsByAsset(
 	allocations: GeographicAllocation[],
 ): Map<string, GeographicAllocation[]> {

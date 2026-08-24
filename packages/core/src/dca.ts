@@ -59,6 +59,18 @@ export function computeDcaPlan(
   const lines = config.lines;
   const monthly = Math.max(0, config.amount);
 
+  if (lines.length === 0) {
+    return {
+      configId: config.id,
+      amount: monthly,
+      totalCurrent: 0,
+      totalAfter: monthly,
+      targetSum: 0,
+      targetValid: config.envelope === "LIVRET",
+      allocations: [],
+    };
+  }
+
   const targetSum = lines.reduce((sum, line) => sum + line.targetPct, 0);
   const targetValid = Math.abs(targetSum - 1) < TARGET_SUM_TOLERANCE;
 

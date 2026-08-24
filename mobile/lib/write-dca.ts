@@ -15,6 +15,20 @@ function dcaConfigsToRows(
 ): Record<string, unknown>[] {
   const rows: Record<string, unknown>[] = [];
   for (const config of configs) {
+    if (config.lines.length === 0) {
+      rows.push({
+        ID: config.id,
+        Libellé: config.label,
+        Enveloppe: config.envelope,
+        Montant: config.amount,
+        Fréquence: config.frequency,
+        "Mois versement": config.paymentMonth ?? null,
+        Panier: null,
+        Actifs: "",
+        "Cible %": null,
+      });
+      continue;
+    }
     for (const line of config.lines) {
       rows.push({
         ID: config.id,

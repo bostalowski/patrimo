@@ -30,19 +30,35 @@ function toPaymentMonth(value: unknown): number | undefined {
   return month >= 1 && month <= 12 ? month : undefined;
 }
 
+function planRowBase(config: DcaConfig): Record<string, unknown> {
+  return {
+    ID: config.id,
+    "Libellé": config.label,
+    Enveloppe: config.envelope,
+    Montant: config.amount,
+    "Fréquence": config.frequency,
+    "Mois versement": config.paymentMonth ?? null,
+  };
+}
+
 export function dcaConfigsToRows(
   configs: DcaConfig[],
 ): Record<string, unknown>[] {
   const rows: Record<string, unknown>[] = [];
   for (const config of configs) {
+    if (config.lines.length === 0) {
+      // LIVRET cash dépôt: one header row with empty Actifs.
+      rows.push({
+        ...planRowBase(config),
+        Panier: null,
+        Actifs: "",
+        "Cible %": null,
+      });
+      continue;
+    }
     for (const line of config.lines) {
       rows.push({
-        ID: config.id,
-        "Libellé": config.label,
-        Enveloppe: config.envelope,
-        Montant: config.amount,
-        "Fréquence": config.frequency,
-        "Mois versement": config.paymentMonth ?? null,
+        ...planRowBase(config),
         Panier: line.label ?? null,
         Actifs: line.assetIds.join(", "),
         "Cible %": Math.round(line.targetPct * 1000) / 10,
@@ -66,7 +82,23 @@ export function parseDcaConfigs(
       .split(",")
       .map((token) => token.trim())
       .filter((token) => token.length > 0);
-    if (assetIds.length === 0) continue;
+
+    const existing = byId.get(id);
+    if (assetIds.length === 0) {
+      // Empty-Actifs row: create a cash (empty-lines) plan if first sight.
+      if (existing) continue;
+      byId.set(id, {
+        id,
+        label: toCleanString(row["Libellé"]) ?? id,
+        envelope: row["Enveloppe"] as DcaConfig["envelope"],
+        amount: toNumber(row["Montant"] ?? row["Montant mensuel"]),
+        frequency: toFrequency(row["Fréquence"]),
+        paymentMonth: toPaymentMonth(row["Mois versement"]),
+        lines: [],
+      });
+      order.push(id);
+      continue;
+    }
 
     const line = {
       label: toCleanString(row["Panier"]),
@@ -74,7 +106,6 @@ export function parseDcaConfigs(
       targetPct: toNumber(row["Cible %"]) / 100,
     };
 
-    const existing = byId.get(id);
     if (existing) {
       existing.lines.push(line);
       continue;

@@ -80,7 +80,7 @@ Delete an entity and every dependent record required to prevent invalid referenc
 
 ## Investment plan
 
-A DCA configuration containing baskets of asset identifiers and target allocations. Persisted in the `DCA` sheet.
+A DCA configuration containing baskets of asset identifiers and target allocations. Persisted in the `DCA` sheet. When `envelope` is `LIVRET`, the plan is a cash dépôt stream: empty baskets are allowed (no broker assets). See [ADR 0019](../adr/0019-livret-dca-savings-capacity.md).
 
 ## Extra contribution
 
@@ -158,7 +158,22 @@ Read-only ranked list of **buy** / **hold** / **pause** steps that reallocates t
 
 ## Savings capacity
 
-Derived monthly **investable surplus** after budget cashflow and emergency-fund catch-up, compared to planned DCA. `rawSavings = revenusMensuels − depensesMensuelles` (budget `EPARGNE` lines ignored). Catch-up reserve spreads the gap to **6** months of expenses over **12** months when coverage is below that target (`monthlyEmergencyReserve`); zero when coverage ≥ 6 or expenses ≤ 0. `investableSurplus = rawSavings − reserve` (may be negative). `plannedDcaMonthly` from `computeMonthlyDcaPool`. Status: `comfortable` / `tight` / `over_committed`. Hidden (`null`) when `revenusMensuels ≤ 0`. Computed by `computeSavingsCapacity` in `@patrimo/core`. Dashboard card on web and mobile; soft warnings on web DCA / Projection when over-committed. No workbook field; does not auto-resize DCA. Complementary to **Next-euro plan** (capacity fit vs pool reallocation). See [ADR 0017](../adr/0017-savings-capacity-bridge.md).
+Derived monthly **investable surplus** after budget cashflow and emergency-fund
+outflow, compared to planned **investment** DCA. `rawSavings = revenusMensuels −
+depensesMensuelles` (budget `EPARGNE` lines ignored). Implied catch-up **need**
+(`monthlyEmergencyReserve`) spreads the gap to the configured emergency-fund
+target over the catch-up horizon (ADR 0018). Real LIVRET DCA
+(`plannedLivretDcaMonthly`) and non-LIVRET DCA (`plannedInvestmentDcaMonthly`)
+are split: EF outflow = `max(need, plannedLivret)`;
+`investableSurplus = rawSavings − outflow`. Status
+(`comfortable` / `tight` / `over_committed`) compares **investment** DCA only
+to surplus. When `plannedLivret > need`, core sets
+`emergencyOverContributing` / `emergencyOverContribution` (alert on Dashboard
+capacity card + soft warning on web DCA) without forcing investment
+`over_committed`. Hidden (`null`) when `revenusMensuels ≤ 0`. Computed by
+`computeSavingsCapacity` in `@patrimo/core`. Complementary to **Next-euro plan**
+(capacity fit vs pool reallocation). See [ADR 0017](../adr/0017-savings-capacity-bridge.md),
+[ADR 0019](../adr/0019-livret-dca-savings-capacity.md).
 
 ## See also
 
@@ -175,6 +190,8 @@ Derived monthly **investable surplus** after budget cashflow and emergency-fund 
 - [ADR 0015](../adr/0015-next-euro-plan.md)
 - [ADR 0016](../adr/0016-envelope-overflow-plafond.md)
 - [ADR 0017](../adr/0017-savings-capacity-bridge.md)
+- [ADR 0018](../adr/0018-configurable-emergency-fund-target.md)
+- [ADR 0019](../adr/0019-livret-dca-savings-capacity.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [Diversification targets](../architecture/diversification-targets.md)
