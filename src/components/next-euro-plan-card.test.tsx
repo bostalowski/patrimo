@@ -11,7 +11,6 @@ function plan(overrides: Partial<NextEuroPlan> = {}): NextEuroPlan {
 	return {
 		monthlyPool: 500,
 		coherence: null,
-		emergencyFundRecommendation: null,
 		steps: [
 			{
 				priority: 1,
@@ -30,27 +29,31 @@ function plan(overrides: Partial<NextEuroPlan> = {}): NextEuroPlan {
 				kind: "band_pause",
 				assetId: "WPEA",
 				bandKey: "US",
-				reason: "Surpondération US",
-			},
-			{
-				priority: 3,
-				action: "buy",
-				euros: 50,
-				kind: "dca_continue",
-				assetId: "BTC",
-				envelope: "CTO",
-				reason: "Poursuite du plan DCA",
-			},
-			{
-				priority: 4,
-				action: "buy",
-				euros: 100,
-				kind: "dca_continue",
-				assetId: "CASH",
-				envelope: "CTO",
-				reason: "Poursuite du plan DCA",
+				reason: "Surpondération — pause ce mois-ci",
 			},
 		],
+		tilt: {
+			verdict: "tilt",
+			monthlyPool: 500,
+			contributions: { EU: 200, BTC: 300 },
+			catchupContributions: { EU: 200 },
+			bandAssetCatchup: [{ bandKey: "EUROPE", assetId: "EU", euros: 200 }],
+			baselineContributions: { WPEA: 375, EU: 125 },
+			pausedAssetIds: ["WPEA"],
+			bands: [
+				{
+					key: "EUROPE",
+					stockPct: 0.1,
+					minPct: 0.2,
+					maxPct: 0.3,
+					gapEuros: 2000,
+					thisMonthEuros: 200,
+					mappable: true,
+				},
+			],
+			coherence: null,
+		},
+		emergencyFundRecommendation: null,
 		...overrides,
 	};
 }
@@ -61,64 +64,62 @@ describe("NextEuroPlanCard", () => {
 		expect(container.firstChild).toBeNull();
 	});
 
-	it("renders summary with lead recommendation, top 3, and link", () => {
+	it("renders verdict, lead, and execution link", () => {
 		render(
 			<NextEuroPlanCard
 				plan={plan()}
 				variant="summary"
-				assetLabels={{ EU: "Amundi Europe", WPEA: "World", BTC: "Bitcoin" }}
+				assetLabels={{ EU: "Amundi Europe", WPEA: "World" }}
 			/>,
 		);
-		expect(screen.getByText(/Prochain euro/i)).toBeTruthy();
+		expect(screen.getByText(/Tilt DCA du mois/i)).toBeTruthy();
 		expect(
-			screen.getByText(/Où prioriser l'enveloppe DCA déjà prévue/),
+			screen.getByText(/Faut-il dévier de ton plan DCA investi/),
 		).toBeTruthy();
-		expect(
-			screen.getByText(/Ce mois-ci : priorise.*Amundi Europe/),
-		).toBeTruthy();
-		expect(screen.getByText(/Détail des étapes/)).toBeTruthy();
-		expect(screen.getAllByText(/Acheter/i).length).toBeGreaterThan(0);
-		expect(screen.getByText("Amundi Europe")).toBeTruthy();
-		expect(screen.queryByText("CASH")).toBeNull();
-		expect(screen.getByText(/Voir les 4 étapes/i)).toBeTruthy();
+		expect(screen.getByText(/Tilt ce mois-ci/i)).toBeTruthy();
+		expect(screen.getByText(/Voir les ordres \(Exécution\)/i)).toBeTruthy();
 	});
 
-	it("renders EF surplus banner above DCA steps", () => {
+	it("shows EF banner when surplus recommendation is present", () => {
 		render(
 			<NextEuroPlanCard
 				plan={plan({
 					emergencyFundRecommendation: {
-						mode: "oneshot",
-						gapEuro: 2_000,
+						mode: "monthly",
+						gapEuro: 6_000,
 						targetEuro: 12_000,
-						livretBalance: 10_000,
-						availableCashMonthly: 2_500,
-						rawSavings: 3_000,
+						livretBalance: 6_000,
+						availableCashMonthly: 1_500,
+						rawSavings: 2_000,
 						plannedInvestmentDcaMonthly: 500,
 						plannedLivretDcaMonthly: 0,
 						catchUpHorizonMonths: 12,
-						monthlyNeed: 166.67,
-						amountToAdd: 2_000,
+						monthlyNeed: 500,
+						amountToAdd: 500,
 					},
 				})}
-				variant="full"
-				assetLabels={{ EU: "Amundi Europe" }}
+				variant="summary"
 			/>,
 		);
-		expect(screen.getByText(/Fonds d'urgence \(hors enveloppe DCA\)/)).toBeTruthy();
-		expect(screen.getByText(/dépose/)).toBeTruthy();
-		expect(screen.getByText(/Hors enveloppe DCA/)).toBeTruthy();
+		expect(screen.getByText(/Fonds d'urgence \(hors enveloppe DCA\)/i)).toBeTruthy();
 	});
 
-	it("renders full list on Diversification variant", () => {
+	it("shows aligned verdict without step detail in summary", () => {
 		render(
 			<NextEuroPlanCard
-				plan={plan()}
-				variant="full"
-				assetLabels={{ EU: "Amundi Europe", WPEA: "World", BTC: "Bitcoin" }}
+				plan={plan({
+					tilt: {
+						...plan().tilt,
+						verdict: "aligned",
+						pausedAssetIds: [],
+						bands: [],
+					},
+					steps: [],
+				})}
+				variant="summary"
 			/>,
 		);
-		expect(screen.getByText("Bitcoin")).toBeTruthy();
-		expect(screen.getByText("Pause")).toBeTruthy();
+		expect(screen.getByText(/Aligné/i)).toBeTruthy();
+		expect(screen.queryByText(/Détail du tilt/i)).toBeNull();
 	});
 });

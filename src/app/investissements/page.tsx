@@ -1,4 +1,5 @@
 import { portfolioByEnvelope } from "@patrimo/core/portfolio";
+import { buildMonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
 import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
 import { sumLivretMarketValue } from "@patrimo/core/emergency-fund";
 import { SavingsCapacityOverCommitBanner, SavingsCapacityEmergencyOverBanner } from "@/components/savings-capacity-overcommit-banner";
@@ -51,6 +52,16 @@ export default async function InvestissementsPage() {
 		emergencyFundConfig: workbook.emergencyFundConfig,
 	});
 
+	const monthlyTilt = buildMonthlyDcaTilt({
+		targets: workbook.diversificationTargets ?? [],
+		positions: portfolio.assets,
+		dca: configs,
+		geographicAllocations: workbook.geographicAllocations ?? [],
+		sectorAllocations: workbook.sectorAllocations ?? [],
+		assets: workbook.assets,
+		portfolioByEnvelope: envelopeBreakdown,
+	});
+
 	const peaSeed =
 		workbook.assets.some((a) => a.id === "WPEA") &&
 		workbook.assets.some((a) => a.id === "PLEM")
@@ -80,6 +91,7 @@ export default async function InvestissementsPage() {
 				assets={workbook.assets}
 				seedConfig={peaSeed}
 				priceMap={priceMapRecord}
+				monthlyTilt={monthlyTilt}
 				initialProfile={{
 					birthDate: profile.birthDate?.toISOString().slice(0, 10),
 					targetRetirementAge: profile.targetRetirementAge,

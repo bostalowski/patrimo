@@ -23,12 +23,13 @@ Users want an **advisory** recommendation that:
 - [x] **Web:** capacity card explicit recommendation; Next-euro **separate banner** above DCA steps (not “réallouer le pool” for LIVRET).
 - [x] **Mobile:** capacity card recommendation via shared copy (Next-euro UI still absent).
 - [x] **Docs:** new ADR (proposed → accepted on ship) superseding ADR 0015 P1 only; glossary + `next-euro-plan.md` / `savings-capacity.md`; append-only see-also on 0015 / 0018 / 0019.
+- [x] **Follow-up same PR:** Monthly DCA tilt → Exécution (`buildMonthlyDcaTilt`, ADR 0021): investment pool only, verdicts, capped catch-up, Exécution consumes tilt contributions; card = Tilt DCA du mois + link to Exécution.
 - [x] Files / packages expected to change (indicative):
   - `packages/core` — new or extended module (e.g. `emergency-fund-recommendation.ts`), `next-euro-plan.ts`, `savings-capacity*.ts`, `next-euro-copy.ts`, tests
   - `src/components` — `savings-capacity-card.tsx`, `next-euro-plan-card.tsx` (+ tests)
   - `mobile/lib` — capacity card copy wiring
   - `docs/adr/00xx-…`, glossary, topic notes; `FEATURES.md` on merge
-
+  - (tilt) `monthly-dca-tilt.ts`, `dca-execution.tsx`, `investissements/*`
 ## Product decisions
 
 Status legend: **LOCKED** = cadrage for V1 · **OPEN** = must answer before coding.

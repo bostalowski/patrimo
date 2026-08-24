@@ -37,6 +37,8 @@
     "./diversification-targets": "./src/diversification-targets.ts",
     "./manual-prices": "./src/manual-prices.ts",
     "./next-euro-plan": "./src/next-euro-plan.ts",
+    "./monthly-dca-tilt": "./src/monthly-dca-tilt.ts",
+    "./monthly-dca-tilt-copy": "./src/monthly-dca-tilt-copy.ts",
     "./geographic-allocation": "./src/geographic-allocation.ts",
     "./geographic-exposure": "./src/geographic-exposure.ts",
     "./justetf-geography": "./src/justetf-geography.ts",

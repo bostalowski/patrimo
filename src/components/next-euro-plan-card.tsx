@@ -4,13 +4,14 @@ import type {
 	NextEuroStep,
 } from "@patrimo/core/next-euro-plan";
 import {
+	monthlyDcaTiltVerdictLabel,
 	NEXT_EURO_EF_BANNER_TITLE,
+	NEXT_EURO_EXECUTION_LINK,
 	NEXT_EURO_QUESTION,
 	NEXT_EURO_TITLE,
 	nextEuroEmergencyFundBannerBody,
-	nextEuroLeadRecommendation,
+	nextEuroLeadFromTilt,
 	nextEuroPoolCaption,
-	nextEuroPrimaryStep,
 } from "@patrimo/core/next-euro-copy";
 import { diversificationKeyLabel } from "@patrimo/core/diversification-labels";
 import Link from "next/link";
@@ -31,6 +32,12 @@ const ACTION_BADGE: Record<
 	buy: "success",
 	hold: "info",
 	pause: "warning",
+};
+
+const VERDICT_BADGE: Record<string, "success" | "info" | "warning"> = {
+	aligned: "success",
+	tilt: "warning",
+	adjust_plan: "warning",
 };
 
 function stepTitle(
@@ -79,16 +86,16 @@ export function NextEuroPlanCard({
 }: {
 	plan: NextEuroPlan | null;
 	assetLabels?: Record<string, string>;
-	/** Dashboard shows top 3 + link; Diversification shows the full list. */
 	variant?: "summary" | "full";
 }) {
-	if (!plan || plan.steps.length === 0) return null;
+	if (!plan) return null;
 
+	const { tilt } = plan;
 	const labelOf = (id: string) => assetLabels[id] ?? id;
-	const primary = nextEuroPrimaryStep(plan);
-	const lead =
-		primary &&
-		nextEuroLeadRecommendation(primary, stepTitle(primary, labelOf), formatEuro);
+	const lead = nextEuroLeadFromTilt(tilt, formatEuro);
+	const showSteps =
+		variant === "full" ||
+		(tilt.verdict !== "aligned" && plan.steps.length > 0);
 	const visible =
 		variant === "summary" ? plan.steps.slice(0, 3) : plan.steps;
 	const efBanner = nextEuroEmergencyFundBannerBody(
@@ -119,48 +126,53 @@ export function NextEuroPlanCard({
 						</p>
 					</div>
 				)}
-				{lead && (
-					<p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-						{lead}
-					</p>
-				)}
+				<div className="flex flex-wrap items-center gap-2">
+					<Badge variant={VERDICT_BADGE[tilt.verdict] ?? "info"}>
+						{monthlyDcaTiltVerdictLabel(tilt.verdict)}
+					</Badge>
+				</div>
+				<p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+					{lead}
+				</p>
 				<p className="text-xs text-zinc-500">
 					{nextEuroPoolCaption(plan.monthlyPool, formatEuro)}
 				</p>
 			</CardHeader>
-			<CardBody className="pt-0">
-				<p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
-					Détail des étapes
+			<CardBody className="space-y-3 pt-0">
+				{showSteps && plan.steps.length > 0 && (
+					<>
+						<p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+							Détail du tilt
+						</p>
+						<ol className="list-none">
+							{visible.map((step) => (
+								<StepRow
+									key={`${step.priority}-${step.kind}-${step.assetId ?? ""}-${step.bandKey ?? ""}`}
+									step={step}
+									assetLabel={labelOf}
+								/>
+							))}
+						</ol>
+						{variant === "summary" && plan.steps.length > 3 && (
+							<p className="text-xs text-zinc-500">
+								<Link
+									href="/diversification"
+									className="underline hover:text-zinc-700 dark:hover:text-zinc-200"
+								>
+									Voir les {plan.steps.length} étapes
+								</Link>
+							</p>
+						)}
+					</>
+				)}
+				<p className="text-xs">
+					<Link
+						href={NEXT_EURO_EXECUTION_LINK}
+						className="font-medium text-sky-600 underline hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300"
+					>
+						Voir les ordres (Exécution) →
+					</Link>
 				</p>
-				<ol className="list-none">
-					{visible.map((step) => (
-						<StepRow
-							key={`${step.priority}-${step.kind}-${step.assetId ?? ""}-${step.bandKey ?? ""}`}
-							step={step}
-							assetLabel={labelOf}
-						/>
-					))}
-				</ol>
-				{variant === "summary" && plan.steps.length > 3 && (
-					<p className="mt-2 text-xs text-zinc-500">
-						<Link
-							href="/diversification"
-							className="underline hover:text-zinc-700 dark:hover:text-zinc-200"
-						>
-							Voir les {plan.steps.length} étapes
-						</Link>
-					</p>
-				)}
-				{variant === "summary" && plan.steps.length <= 3 && (
-					<p className="mt-2 text-xs text-zinc-500">
-						<Link
-							href="/diversification"
-							className="underline hover:text-zinc-700 dark:hover:text-zinc-200"
-						>
-							Détail sur Diversification
-						</Link>
-					</p>
-				)}
 			</CardBody>
 		</Card>
 	);

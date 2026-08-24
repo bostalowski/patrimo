@@ -4,7 +4,7 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** none — checker **Pass** (ready for PR after hygiene cleanup)
+- **In progress:** Monthly DCA tilt → Exécution (ADR 0021) stacked on this PR
 - **Blocked:** none
 
 ## Done (this branch)
@@ -17,16 +17,18 @@ Branch-local handoff. Do not put other features' focus here.
 - [x] Web: capacity card surplus line; Next-euro EF banner above DCA steps
 - [x] Mobile: capacity card surplus line via shared copy
 - [x] Docs: ADR 0020 accepted; glossary + topic notes; append-only links on 0015 / 0018 / 0019
-- [x] Layer 1 `make verify` green
-- [x] Layer 2 targeted core + card tests green
+- [x] Layer 1 `make verify` green (pre-tilt)
+- [x] Layer 2 targeted core + card tests green (pre-tilt)
 - [x] Layer 3 `make e2e` green (port 3120 — :3100 was occupied by a stale next)
 - [x] Checker Pass (2026-08-24) — see below
+- [x] **Follow-up (same branch):** `buildMonthlyDcaTilt` + Exécution wiring + ADR 0021; card renamed Tilt DCA du mois; EF banner kept
 
 ## Last verify
 
-- Command: `make verify` + targeted vitest + `FINGRAPHS_E2E_PORT=3120 make e2e`
-- Result: pass (layers 1–3)
+- Command: targeted vitest after tilt merge onto this branch
+- Result: 25 tests pass (tilt + next-euro + card + investissements client)
 - Date: 2026-08-24
+- Note: full `make verify` + e2e still needed before push; prior checker Pass covered ADR 0020 only — re-checker needed for tilt
 
 ## Checker (2026-08-24)
 

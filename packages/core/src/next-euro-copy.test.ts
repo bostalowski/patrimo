@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { NextEuroPlan, NextEuroStep } from "./next-euro-plan";
 import {
-	NEXT_EURO_EF_BANNER_TITLE,
 	nextEuroEmergencyFundBannerBody,
 	nextEuroLeadRecommendation,
 	nextEuroPrimaryStep,
 } from "./next-euro-copy";
-import type { EmergencyFundSurplusRecommendation } from "./emergency-fund-recommendation";
 
 const formatEuro = (n: number) => `${n} €`;
 
@@ -16,18 +14,31 @@ function step(overrides: Partial<NextEuroStep> = {}): NextEuroStep {
 		action: "buy",
 		euros: 300,
 		kind: "band_catchup",
+		assetId: "EU",
 		envelope: "PEA",
-		bandKey: "EUROPE",
 		reason: "test",
 		...overrides,
 	};
 }
+
+const emptyTilt = {
+	verdict: "tilt" as const,
+	monthlyPool: 500,
+	contributions: {},
+	catchupContributions: {},
+	bandAssetCatchup: [],
+	baselineContributions: {},
+	pausedAssetIds: [],
+	bands: [],
+	coherence: null,
+};
 
 function plan(steps: NextEuroStep[]): NextEuroPlan {
 	return {
 		monthlyPool: 500,
 		coherence: null,
 		steps,
+		tilt: emptyTilt,
 		emergencyFundRecommendation: null,
 	};
 }
@@ -77,27 +88,25 @@ describe("nextEuroLeadRecommendation", () => {
 });
 
 describe("nextEuroEmergencyFundBannerBody", () => {
-	it("returns null when no actionable recommendation", () => {
+	it("returns null for none / missing", () => {
 		expect(nextEuroEmergencyFundBannerBody(null, formatEuro)).toBeNull();
-	});
-
-	it("reuses surplus copy for the banner", () => {
-		const recommendation: EmergencyFundSurplusRecommendation = {
-			mode: "oneshot",
-			gapEuro: 2_000,
-			targetEuro: 12_000,
-			livretBalance: 10_000,
-			availableCashMonthly: 2_500,
-			rawSavings: 3_000,
-			plannedInvestmentDcaMonthly: 500,
-			plannedLivretDcaMonthly: 0,
-			catchUpHorizonMonths: 12,
-			monthlyNeed: 166.67,
-			amountToAdd: 2_000,
-		};
-		expect(NEXT_EURO_EF_BANNER_TITLE).toMatch(/Fonds d'urgence/);
-		expect(nextEuroEmergencyFundBannerBody(recommendation, formatEuro)).toMatch(
-			/dépose 2000 €/,
-		);
+		expect(
+			nextEuroEmergencyFundBannerBody(
+				{
+					mode: "none",
+					gapEuro: 0,
+					targetEuro: 12_000,
+					livretBalance: 12_000,
+					availableCashMonthly: 1_500,
+					rawSavings: 2_000,
+					plannedInvestmentDcaMonthly: 500,
+					plannedLivretDcaMonthly: 0,
+					catchUpHorizonMonths: 12,
+					monthlyNeed: 0,
+					amountToAdd: 0,
+				},
+				formatEuro,
+			),
+		).toBeNull();
 	});
 });

@@ -154,13 +154,22 @@ Measure of alignment between saved **Diversification target** bands, current liq
 
 ## Next-euro plan
 
-Read-only ranked list of **buy** / **hold** / **pause** steps that reallocates
-the existing monthly DCA envelope toward underweight diversification bands,
-then residual DCA. Computed by `buildNextEuroPlan` in `@patrimo/core`. Does not
-write the workbook. Hidden when there is no monthly DCA pool. Emergency-fund
-LIVRET advice is **not** taken from this pool — see **Emergency fund surplus
-recommendation**. See [ADR 0015](../adr/0015-next-euro-plan.md),
-[ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md).
+Read-only **monthly investment DCA tilt**: verdict (`aligned` / `tilt` /
+`adjust_plan`) and per-asset euro contributions feeding **Exécution**. Computed
+by `buildMonthlyDcaTilt` / `buildNextEuroPlan` in `@patrimo/core`. Investment
+pool only (LIVRET excluded from the tilt envelope). Emergency-fund LIVRET
+advice is **not** taken from this pool — see **Emergency fund surplus
+recommendation**. Hidden when investment monthly pool is zero. See
+[ADR 0015](../adr/0015-next-euro-plan.md),
+[ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md),
+[ADR 0021](../adr/0021-monthly-dca-tilt-execution.md).
+
+## Monthly DCA tilt
+
+Per-asset euro split for the current month’s investment DCA, with capped band
+catch-up (`min(gap/3, gap, pool×50%)`) and DCA-line executable universe. Feeds
+Exécution via `computeDcaExecutionFromContributions`. See
+[ADR 0021](../adr/0021-monthly-dca-tilt-execution.md).
 
 ## Emergency fund surplus recommendation
 

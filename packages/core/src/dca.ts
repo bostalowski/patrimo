@@ -339,3 +339,56 @@ export function computeDcaExecution(
     rotation,
   };
 }
+
+/**
+ * Build execution lines from explicit per-asset euro contributions (monthly tilt).
+ */
+export function computeDcaExecutionFromContributions(
+  configId: string,
+  contributions: Record<string, number>,
+  priceMap: Map<string, number>,
+  minOrderAmount: number,
+): DcaExecution {
+  const assetIds = Object.keys(contributions).filter((id) => contributions[id] > 0);
+  const totalBudget = roundCents(
+    assetIds.reduce((sum, id) => sum + contributions[id], 0),
+  );
+
+  const subs = assetIds.map((assetId) => ({
+    assetId,
+    contribution: contributions[assetId],
+  }));
+
+  const plan: DcaPlan = {
+    configId,
+    amount: totalBudget,
+    totalCurrent: 0,
+    totalAfter: totalBudget,
+    targetSum: 1,
+    targetValid: true,
+    allocations:
+      subs.length > 0
+        ? [
+            {
+              assetIds: subs.map((s) => s.assetId),
+              targetPct: 1,
+              currentValue: 0,
+              currentPct: 0,
+              contribution: totalBudget,
+              postValue: totalBudget,
+              postPct: 1,
+              sub: subs.map((s) => ({
+                assetId: s.assetId,
+                currentValue: 0,
+                currentPct: 0,
+                contribution: s.contribution,
+                postValue: s.contribution,
+                postPct: totalBudget > 0 ? s.contribution / totalBudget : 0,
+              })),
+            },
+          ]
+        : [],
+  };
+
+  return computeDcaExecution(plan, priceMap, minOrderAmount);
+}
