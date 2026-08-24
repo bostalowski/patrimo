@@ -1,9 +1,5 @@
 import { portfolioByEnvelope } from "@patrimo/core/portfolio";
 import { buildMonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
-import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
-import { sumLivretMarketValue } from "@patrimo/core/emergency-fund";
-import { SavingsCapacityOverCommitBanner, SavingsCapacityEmergencyOverBanner } from "@/components/savings-capacity-overcommit-banner";
-import { summarizeBudget } from "@/lib/budget";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
@@ -40,17 +36,6 @@ export default async function InvestissementsPage() {
 	]);
 	const portfolio = buildPortfolio(workbook, priceMap);
 	const envelopeBreakdown = portfolioByEnvelope(portfolio.accounts);
-	const livretBalance = sumLivretMarketValue(portfolio.accounts);
-	const { revenusMensuels, depensesMensuelles } = summarizeBudget(
-		workbook.budget,
-	);
-	const savingsCapacity = computeSavingsCapacity({
-		revenusMensuels,
-		depensesMensuelles,
-		livretBalance,
-		dca: configs,
-		emergencyFundConfig: workbook.emergencyFundConfig,
-	});
 
 	const monthlyTilt = buildMonthlyDcaTilt({
 		targets: workbook.diversificationTargets ?? [],
@@ -81,9 +66,6 @@ export default async function InvestissementsPage() {
 					et tes biens immobiliers.
 				</p>
 			</header>
-
-			<SavingsCapacityOverCommitBanner capacity={savingsCapacity} />
-			<SavingsCapacityEmergencyOverBanner capacity={savingsCapacity} />
 
 			<InvestissementsClient
 				configs={configs}

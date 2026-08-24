@@ -4,7 +4,7 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** Monthly DCA tilt → Exécution (ADR 0021) stacked on this PR
+- **In progress:** none — wording FR + capacity UI removed; ready to commit/push
 - **Blocked:** none
 
 ## Done (this branch)
@@ -21,7 +21,8 @@ Branch-local handoff. Do not put other features' focus here.
 - [x] Layer 2 targeted core + card tests green (pre-tilt)
 - [x] Layer 3 `make e2e` green (port 3120 — :3100 was occupied by a stale next)
 - [x] Checker Pass (2026-08-24) — see below
-- [x] **Follow-up (same branch):** `buildMonthlyDcaTilt` + Exécution wiring + ADR 0021; card renamed Tilt DCA du mois; EF banner kept
+- [x] **Follow-up (same branch):** `buildMonthlyDcaTilt` + Exécution wiring + ADR 0021; card **Ajustement DCA du mois** (no “tilt” in UI); EF banner kept
+- [x] Removed Savings capacity card/banners from web + mobile Dashboard / Investissements / DCA / Projection
 
 ## Last verify
 

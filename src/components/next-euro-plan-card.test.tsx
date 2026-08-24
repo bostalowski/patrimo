@@ -72,11 +72,11 @@ describe("NextEuroPlanCard", () => {
 				assetLabels={{ EU: "Amundi Europe", WPEA: "World" }}
 			/>,
 		);
-		expect(screen.getByText(/Tilt DCA du mois/i)).toBeTruthy();
+		expect(screen.getByText(/Ajustement DCA du mois/i)).toBeTruthy();
 		expect(
 			screen.getByText(/Faut-il dévier de ton plan DCA investi/),
 		).toBeTruthy();
-		expect(screen.getByText(/Tilt ce mois-ci/i)).toBeTruthy();
+		expect(screen.getByText(/Ajustement ce mois-ci/i)).toBeTruthy();
 		expect(screen.getByText(/Voir les ordres \(Exécution\)/i)).toBeTruthy();
 	});
 
@@ -120,6 +120,6 @@ describe("NextEuroPlanCard", () => {
 			/>,
 		);
 		expect(screen.getByText(/Aligné/i)).toBeTruthy();
-		expect(screen.queryByText(/Détail du tilt/i)).toBeNull();
+		expect(screen.queryByText(/Détail de l'ajustement/i)).toBeNull();
 	});
 });

@@ -142,7 +142,7 @@ export function NextEuroPlanCard({
 				{showSteps && plan.steps.length > 0 && (
 					<>
 						<p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-							Détail du tilt
+							Détail de l&apos;ajustement
 						</p>
 						<ol className="list-none">
 							{visible.map((step) => (

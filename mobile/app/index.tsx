@@ -15,11 +15,9 @@ import {
 	aggregateHistory,
 	buildHistorySeries,
 } from "@patrimo/core/portfolio-history";
-import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
 import { ScrollView, Text, useColorScheme, View } from "react-native";
 import { EmergencyFundCard } from "../lib/emergency-fund-card";
 import { RiskBadges } from "../lib/risk-badges";
-import { SavingsCapacityCard } from "../lib/savings-capacity-card";
 import { shared, useThemeColors } from "../lib/theme";
 import { useWorkbook } from "../lib/use-workbook";
 
@@ -72,20 +70,11 @@ export default function DashboardScreen() {
 	);
 	const hasRealEstate = realEstateEquity > 0;
 	const livretBalance = sumLivretMarketValue(portfolio.accounts);
-	const { revenusMensuels, depensesMensuelles } = summarizeBudget(
-		workbook.budget,
-	);
+	const { depensesMensuelles } = summarizeBudget(workbook.budget);
 	const emergencyFund = computeEmergencyFundHealth(
 		livretBalance,
 		depensesMensuelles,
 	);
-	const savingsCapacity = computeSavingsCapacity({
-		revenusMensuels,
-		depensesMensuelles,
-		livretBalance,
-		dca: workbook.dca,
-		emergencyFundConfig: workbook.emergencyFundConfig,
-	});
 
 	const history = buildHistorySeries(
 		workbook,
@@ -155,7 +144,6 @@ export default function DashboardScreen() {
 			</View>
 
 			<EmergencyFundCard health={emergencyFund} theme={t} />
-			<SavingsCapacityCard capacity={savingsCapacity} theme={t} />
 
 			<RiskBadges
 				volatility={volatility}

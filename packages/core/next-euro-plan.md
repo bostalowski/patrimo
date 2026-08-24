@@ -15,7 +15,7 @@ banner may appear above the tilt summary when the configured emergency-fund
 target has a gap.
 
 UI copy (FR): `monthly-dca-tilt-copy.ts` + `next-euro-copy.ts`. Card title
-**Tilt DCA du mois**.
+**Ajustement DCA du mois** (internal code may still say “tilt”).
 
 ## Flow
 

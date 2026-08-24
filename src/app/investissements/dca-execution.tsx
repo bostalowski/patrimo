@@ -163,10 +163,10 @@ export function DcaExecutionCalculator({
 			{monthlyTilt && (
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-base">Plan du mois</CardTitle>
+						<CardTitle className="text-base">Plan d&apos;achat du mois</CardTitle>
 						<p className="text-xs text-zinc-500 dark:text-zinc-400">
 							{useTilt && tiltAvailable
-								? "Ordres calculés depuis le tilt diversification (Prochain euro)."
+								? "Ordres calculés depuis l'ajustement diversification (Ajustement DCA du mois)."
 								: "Ordres calculés depuis ton plan DCA sauvegardé."}
 						</p>
 					</CardHeader>
@@ -188,13 +188,13 @@ export function DcaExecutionCalculator({
 									onChange={(e) => setUseTilt(e.target.checked)}
 									className="rounded border-zinc-300"
 								/>
-								Appliquer le tilt du mois (
+								Appliquer l&apos;ajustement du mois (
 								{formatEuro(monthlyTilt.monthlyPool)} investi)
 							</label>
 						)}
 						{monthlyTilt.verdict === "aligned" && (
 							<span className="text-sm text-zinc-600 dark:text-zinc-400">
-								Aucun tilt — le plan sauvegardé suffit ce mois-ci.
+								Aucun ajustement — le plan sauvegardé suffit ce mois-ci.
 							</span>
 						)}
 					</CardBody>
@@ -291,7 +291,7 @@ export function DcaExecutionCalculator({
 								)}
 								{isTiltRow && monthlyTilt && (
 									<span>
-										Budget tilt :{" "}
+										Budget ajusté :{" "}
 										<span className="font-mono font-medium text-amber-700 dark:text-amber-300">
 											{formatEuro(
 												Object.values(

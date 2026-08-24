@@ -4,7 +4,7 @@ import type { EuroFormatter } from "./savings-capacity-copy";
 import { diversificationKeyLabel } from "./diversification-labels";
 
 /** Dashboard / Diversification card title (FR). */
-export const NEXT_EURO_TITLE = "Tilt DCA du mois";
+export const NEXT_EURO_TITLE = "Ajustement DCA du mois";
 
 /** Short question the card answers. */
 export const NEXT_EURO_QUESTION =
@@ -18,8 +18,8 @@ export const NEXT_EURO_EXECUTION_LINK = "/investissements?tab=execution";
 
 const VERDICT_LABEL: Record<MonthlyDcaTiltVerdict, string> = {
 	aligned: "Aligné",
-	tilt: "Tilt ce mois-ci",
-	adjust_plan: "Ajuster le plan DCA",
+	tilt: "Ajustement ce mois-ci",
+	adjust_plan: "Revoir le plan DCA",
 };
 
 export function monthlyDcaTiltVerdictLabel(
@@ -29,14 +29,14 @@ export function monthlyDcaTiltVerdictLabel(
 }
 
 /**
- * Lead sentence for the Prochain euro / tilt card.
+ * Lead sentence for the monthly DCA adjustment card.
  */
 export function nextEuroLeadFromTilt(
 	tilt: MonthlyDcaTilt,
 	formatEuro: EuroFormatter,
 ): string {
 	if (tilt.verdict === "aligned") {
-		return `Aucun tilt — suis ton plan DCA (${formatEuro(tilt.monthlyPool)}/mois). Passe tes ordres dans Exécution.`;
+		return `Aucun ajustement — suis ton plan DCA (${formatEuro(tilt.monthlyPool)}/mois). Passe tes ordres dans Exécution.`;
 	}
 	if (tilt.verdict === "adjust_plan") {
 		const unmapped = tilt.bands.filter((b) => !b.mappable && b.gapEuros > 0);
@@ -44,18 +44,18 @@ export function nextEuroLeadFromTilt(
 			const labels = unmapped
 				.map((b) => diversificationKeyLabel(b.key))
 				.join(", ");
-			return `Bande(s) ${labels} hors cible sans actif DCA mappable — ajoute une ligne au plan ou revois la cible.`;
+			return `Bande(s) ${labels} hors cible sans actif dans ton plan DCA — ajoute une ligne au plan ou revois la cible.`;
 		}
-		return "Le drift persiste — revois les % de ton plan DCA ou les cibles de diversification.";
+		return "Le plan DCA ne rattrape pas la cible — revois les % des paniers ou les cibles de diversification.";
 	}
 	const primary = tilt.bands.find((b) => b.thisMonthEuros > 0 && b.mappable);
 	if (primary) {
-		return `Tilt : jusqu'à ${formatEuro(primary.thisMonthEuros)} vers ${diversificationKeyLabel(primary.key)} (trou ${formatEuro(primary.gapEuros)}, enveloppe ${formatEuro(tilt.monthlyPool)}).`;
+		return `Ce mois-ci : oriente jusqu'à ${formatEuro(primary.thisMonthEuros)} vers ${diversificationKeyLabel(primary.key)} (écart restant ${formatEuro(primary.gapEuros)}, enveloppe ${formatEuro(tilt.monthlyPool)}).`;
 	}
 	if (tilt.pausedAssetIds.length > 0) {
-		return `Tilt : mets en pause ${tilt.pausedAssetIds.length} actif(s) surpondéré(s) ce mois-ci.`;
+		return `Ce mois-ci : mets en pause ${tilt.pausedAssetIds.length} actif(s) surpondéré(s).`;
 	}
-	return `Tilt actif sur l'enveloppe ${formatEuro(tilt.monthlyPool)} — voir Exécution pour les ordres.`;
+	return `Ajustement sur l'enveloppe ${formatEuro(tilt.monthlyPool)} — voir Exécution pour les ordres.`;
 }
 
 export function nextEuroPoolCaption(
