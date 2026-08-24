@@ -1,6 +1,6 @@
 import { sumLivretMarketValue } from "@patrimo/core/emergency-fund";
 import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
-import { SavingsCapacityOverCommitBanner } from "@/components/savings-capacity-overcommit-banner";
+import { SavingsCapacityOverCommitBanner, SavingsCapacityEmergencyOverBanner } from "@/components/savings-capacity-overcommit-banner";
 import { summarizeBudget } from "@/lib/budget";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
@@ -57,6 +57,7 @@ export default async function DcaPage() {
     depensesMensuelles,
     livretBalance,
     dca: configs,
+    emergencyFundConfig: workbook.emergencyFundConfig,
   });
 
   const peaSeed =
@@ -76,6 +77,7 @@ export default async function DcaPage() {
       </header>
 
       <SavingsCapacityOverCommitBanner capacity={savingsCapacity} />
+      <SavingsCapacityEmergencyOverBanner capacity={savingsCapacity} />
 
       <DcaPlanner
         configs={configs}

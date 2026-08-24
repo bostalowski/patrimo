@@ -1,11 +1,23 @@
-import { computeMonthlyDcaPool } from "./next-euro-plan";
-import type { DcaConfig } from "./schema";
+import {
+	computeMonthlyInvestmentDcaPool,
+	computeMonthlyLivretDcaPool,
+} from "./next-euro-plan";
+import {
+	DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS,
+	DEFAULT_EMERGENCY_FUND_TARGET_MONTHS,
+	effectiveEmergencyFundTargetEuro,
+	monthlyEmergencyCatchUpReserve,
+	normalizeEmergencyFundConfig,
+} from "./emergency-fund-config";
+import type { DcaConfig, EmergencyFundConfig } from "./schema";
 
 /** Lower bound of ADR 0005 `acceptable` / start of `healthy`. */
-export const SAVINGS_CAPACITY_EF_TARGET_MONTHS = 6;
+export const SAVINGS_CAPACITY_EF_TARGET_MONTHS =
+	DEFAULT_EMERGENCY_FUND_TARGET_MONTHS;
 
 /** Months over which to spread the emergency-fund catch-up reserve. */
-export const SAVINGS_CAPACITY_CATCH_UP_HORIZON_MONTHS = 12;
+export const SAVINGS_CAPACITY_CATCH_UP_HORIZON_MONTHS =
+	DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS;
 
 /** Planned DCA is comfortable when ≤ this fraction of investable surplus. */
 export const SAVINGS_CAPACITY_COMFORTABLE_RATIO = 0.8;
@@ -18,14 +30,39 @@ export type SavingsCapacityStatus =
 export type SavingsCapacity = {
 	/** `revenusMensuels − depensesMensuelles` (budget ÉPARGNE ignored). */
 	rawSavings: number;
-	/** Monthly catch-up toward 6 months of expenses over 12 months; 0 when coverage ≥ 6 or no expenses. */
+	/**
+	 * Implied monthly catch-up need toward configured emergency-fund target
+	 * over catch-up horizon; 0 when gap is zero or target not computable.
+	 */
 	monthlyEmergencyReserve: number;
-	/** `rawSavings − monthlyEmergencyReserve` (may be negative). */
+	/** Monthlyized LIVRET DCA from workbook configs. */
+	plannedLivretDcaMonthly: number;
+	/** Monthlyized non-LIVRET (investment) DCA from workbook configs. */
+	plannedInvestmentDcaMonthly: number;
+	/**
+	 * Effective EF monthly outflow subtracted from raw savings:
+	 * `max(monthlyEmergencyReserve, plannedLivretDcaMonthly)`.
+	 */
+	emergencyMonthlyOutflow: number;
+	/** `rawSavings − emergencyMonthlyOutflow` (may be negative). */
 	investableSurplus: number;
-	/** Monthlyized DCA pool from workbook configs. */
+	/**
+	 * Monthlyized investment DCA pool (alias of `plannedInvestmentDcaMonthly`
+	 * for status / gap / investment soft warnings).
+	 */
 	plannedDcaMonthly: number;
 	/** `plannedDcaMonthly − investableSurplus`. */
 	gap: number;
+	/** True when planned LIVRET DCA exceeds implied catch-up need (incl. need = 0). */
+	emergencyOverContributing: boolean;
+	/** `max(0, plannedLivretDcaMonthly − monthlyEmergencyReserve)`. */
+	emergencyOverContribution: number;
+	/** Effective emergency-fund target used for catch-up (if computable). */
+	emergencyTargetEuro?: number;
+	/** Target months used when target euro is derived from expenses. */
+	emergencyTargetMonths: number;
+	/** Catch-up spread horizon in months. */
+	emergencyCatchUpHorizonMonths: number;
 	status: SavingsCapacityStatus;
 };
 
@@ -34,6 +71,7 @@ export type SavingsCapacityInput = {
 	depensesMensuelles: number;
 	livretBalance: number;
 	dca: DcaConfig[];
+	emergencyFundConfig?: EmergencyFundConfig;
 };
 
 function roundCents(value: number): number {
@@ -43,43 +81,58 @@ function roundCents(value: number): number {
 export function computeSavingsCapacity(
 	input: SavingsCapacityInput,
 ): SavingsCapacity | null {
-	const { revenusMensuels, depensesMensuelles, livretBalance, dca } = input;
+	const {
+		revenusMensuels,
+		depensesMensuelles,
+		livretBalance,
+		dca,
+		emergencyFundConfig,
+	} = input;
 
 	if (revenusMensuels <= 0) return null;
+	const normalizedConfig = normalizeEmergencyFundConfig(emergencyFundConfig);
 
 	const rawSavings = roundCents(revenusMensuels - depensesMensuelles);
 	const monthlyEmergencyReserve = roundCents(
-		monthlyEmergencyCatchUpReserve(livretBalance, depensesMensuelles),
+		monthlyEmergencyCatchUpReserve({
+			livretBalance,
+			monthlyExpenses: depensesMensuelles,
+			config: normalizedConfig,
+		}),
 	);
-	const investableSurplus = roundCents(rawSavings - monthlyEmergencyReserve);
-	const plannedDcaMonthly = computeMonthlyDcaPool(dca);
+	const plannedLivretDcaMonthly = computeMonthlyLivretDcaPool(dca);
+	const plannedInvestmentDcaMonthly = computeMonthlyInvestmentDcaPool(dca);
+	const emergencyMonthlyOutflow = roundCents(
+		Math.max(monthlyEmergencyReserve, plannedLivretDcaMonthly),
+	);
+	const investableSurplus = roundCents(rawSavings - emergencyMonthlyOutflow);
+	const plannedDcaMonthly = plannedInvestmentDcaMonthly;
 	const gap = roundCents(plannedDcaMonthly - investableSurplus);
+	const emergencyOverContribution = roundCents(
+		Math.max(0, plannedLivretDcaMonthly - monthlyEmergencyReserve),
+	);
+	const emergencyOverContributing = plannedLivretDcaMonthly > monthlyEmergencyReserve;
+	const emergencyTargetEuro = effectiveEmergencyFundTargetEuro({
+		monthlyExpenses: depensesMensuelles,
+		config: normalizedConfig,
+	});
 
 	return {
 		rawSavings,
 		monthlyEmergencyReserve,
+		plannedLivretDcaMonthly,
+		plannedInvestmentDcaMonthly,
+		emergencyMonthlyOutflow,
 		investableSurplus,
 		plannedDcaMonthly,
 		gap,
+		emergencyOverContributing,
+		emergencyOverContribution,
+		emergencyTargetEuro,
+		emergencyTargetMonths: normalizedConfig.targetMonths,
+		emergencyCatchUpHorizonMonths: normalizedConfig.catchUpHorizonMonths,
 		status: statusFor(plannedDcaMonthly, investableSurplus),
 	};
-}
-
-function monthlyEmergencyCatchUpReserve(
-	livretBalance: number,
-	depensesMensuelles: number,
-): number {
-	if (depensesMensuelles <= 0) return 0;
-
-	const coverageMonths = livretBalance / depensesMensuelles;
-	if (coverageMonths >= SAVINGS_CAPACITY_EF_TARGET_MONTHS) return 0;
-
-	return Math.max(
-		0,
-		((SAVINGS_CAPACITY_EF_TARGET_MONTHS - coverageMonths) *
-			depensesMensuelles) /
-			SAVINGS_CAPACITY_CATCH_UP_HORIZON_MONTHS,
-	);
 }
 
 function statusFor(

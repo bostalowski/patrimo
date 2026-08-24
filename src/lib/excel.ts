@@ -16,14 +16,16 @@ import { normalizeSectorAllocations } from "@patrimo/core/sector-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import type {
 	DiversificationTarget,
+	EmergencyFundConfig,
 	FinancialGoal,
 	GeographicAllocation,
 	SectorAllocation,
 } from "@patrimo/core/schema";
+import { diversificationPctFromExcel, normalizeDiversificationTargets } from "@patrimo/core/diversification-targets";
 import {
-	diversificationPctFromExcel,
-	normalizeDiversificationTargets,
-} from "@patrimo/core/diversification-targets";
+	DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS,
+	DEFAULT_EMERGENCY_FUND_TARGET_MONTHS,
+} from "@patrimo/core/emergency-fund-config";
 import { normalizeFinancialGoals } from "@patrimo/core/financial-goals";
 import {
 	ALL_SHEETS,
@@ -33,6 +35,7 @@ import {
 	DCA_HEADERS,
 	EXPOSITION_GEO_HEADERS,
 	EXPOSITION_SECTEUR_HEADERS,
+	FONDS_URGENCE_HEADERS,
 	IMMOBILIER_HEADERS,
 	PRIX_MANUELS_HEADERS,
 	SHEET_ACTIFS,
@@ -43,6 +46,7 @@ import {
 	SHEET_DCA,
 	SHEET_EXPOSITION_GEO,
 	SHEET_EXPOSITION_SECTEUR,
+	SHEET_FONDS_URGENCE,
 	SHEET_IMMOBILIER,
 	SHEET_OBJECTIFS,
 	SHEET_PRIX_MANUELS,
@@ -553,6 +557,41 @@ function parseFinancialGoals(rows: Record<string, unknown>[]): FinancialGoal[] {
 	return normalizeFinancialGoals(pending);
 }
 
+function parseEmergencyFundConfig(
+	rows: Record<string, unknown>[],
+): EmergencyFundConfig | undefined {
+	const row = rows.find((entry) =>
+		["Cible (mois)", "Cible (€)", "Horizon rattrapage (mois)"].some(
+			(column) => toNumber(entry[column]) !== null,
+		),
+	);
+	if (!row) return undefined;
+
+	const targetMonths = toNumber(row["Cible (mois)"]);
+	const targetAmountOverride = toNumber(row["Cible (€)"]);
+	const catchUpHorizonMonths = toNumber(row["Horizon rattrapage (mois)"]);
+
+	if (
+		targetMonths === null &&
+		targetAmountOverride === null &&
+		catchUpHorizonMonths === null
+	) {
+		return undefined;
+	}
+
+	return {
+		targetMonths: targetMonths ?? DEFAULT_EMERGENCY_FUND_TARGET_MONTHS,
+		targetAmountOverride: targetAmountOverride ?? undefined,
+		catchUpHorizonMonths: Math.max(
+			1,
+			Math.round(
+				catchUpHorizonMonths ??
+					DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS,
+			),
+		),
+	};
+}
+
 function parseOuiNon(value: unknown, defaultValue: boolean): boolean {
 	if (value === null || value === undefined || value === "") return defaultValue;
 	const normalized = String(value).trim().toLowerCase();
@@ -620,6 +659,9 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 	const financialGoals = parseFinancialGoals(
 		readSheetOptional(sheet, SHEET_OBJECTIFS),
 	);
+	const emergencyFundConfig = parseEmergencyFundConfig(
+		readSheetOptional(sheet, SHEET_FONDS_URGENCE),
+	);
 
 	const transactions = [...parsedTransactions].sort(
 		(a, b) => a.date.getTime() - b.date.getTime(),
@@ -638,6 +680,7 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 			sectorAllocations,
 			diversificationTargets,
 			financialGoals,
+			emergencyFundConfig,
 		},
 		transactionRows,
 	};
@@ -1071,6 +1114,22 @@ export function replaceWorkbook(nextWorkbook: Workbook): void {
 			Notes: entry.notes ?? null,
 		})),
 		OBJECTIFS_HEADERS,
+	);
+	replaceSheetRows(
+		workbook,
+		SHEET_FONDS_URGENCE,
+		nextWorkbook.emergencyFundConfig
+			? [
+					{
+						"Cible (mois)": nextWorkbook.emergencyFundConfig.targetMonths,
+						"Cible (€)":
+							nextWorkbook.emergencyFundConfig.targetAmountOverride ?? null,
+						"Horizon rattrapage (mois)":
+							nextWorkbook.emergencyFundConfig.catchUpHorizonMonths,
+					},
+				]
+			: [],
+		FONDS_URGENCE_HEADERS,
 	);
 	deleteSheetIfPresent(workbook, SHEET_ALLOCATION_CIBLE);
 

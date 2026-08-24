@@ -44,7 +44,7 @@ Governed by [ADR 0005](../../docs/adr/0005-emergency-fund-health-indicator.md).
 ## Out of scope
 
 - Livret A vs LDDS split
-- Editable targets
+- Editable health thresholds
 - Dedicated page / history / alerts
 
 ## See also
@@ -52,3 +52,4 @@ Governed by [ADR 0005](../../docs/adr/0005-emergency-fund-health-indicator.md).
 - [ADR 0005](../../docs/adr/0005-emergency-fund-health-indicator.md)
 - [Implement emergency fund health](../../docs/howto/implement-emergency-fund-health.md)
 - [Platforms](../../docs/overview/platforms.md)
+- [ADR 0018](../../docs/adr/0018-configurable-emergency-fund-target.md)

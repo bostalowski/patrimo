@@ -51,6 +51,7 @@ export default async function ProjectionPage() {
     depensesMensuelles,
     livretBalance,
     dca: dcaConfigs,
+    emergencyFundConfig: workbook.emergencyFundConfig,
   });
 
   const properties: SerializedProperty[] = workbook.properties.map((p) => ({

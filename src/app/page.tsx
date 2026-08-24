@@ -94,6 +94,7 @@ export default async function DashboardPage() {
 		depensesMensuelles,
 		livretBalance,
 		dca: workbook.dca,
+		emergencyFundConfig: workbook.emergencyFundConfig,
 	});
 	const goalsAssessment = assessFinancialGoals({
 		goals: workbook.financialGoals ?? [],

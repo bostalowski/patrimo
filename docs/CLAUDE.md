@@ -37,3 +37,5 @@ Then the colocated `ARCHITECTURE.md` for the package you change.
 - [ADR 0015](adr/0015-next-euro-plan.md) — next-euro action plan (variante 2).
 - [ADR 0016](adr/0016-envelope-overflow-plafond.md) — envelope contribution overflow at plafond.
 - [ADR 0017](adr/0017-savings-capacity-bridge.md) — savings capacity bridge.
+- [ADR 0018](adr/0018-configurable-emergency-fund-target.md) — configurable emergency-fund target.
+- [ADR 0019](adr/0019-livret-dca-savings-capacity.md) — LIVRET DCA in savings capacity.

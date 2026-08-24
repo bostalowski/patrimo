@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useSyncExternalStore } from "react";
+import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -13,6 +13,12 @@ import {
   Upload,
 } from "lucide-react";
 import { clampInflationRate } from "@/lib/inflation";
+import {
+  effectiveEmergencyFundTargetEuro,
+  monthlyEmergencyCatchUpReserve,
+  normalizeEmergencyFundConfig,
+} from "@patrimo/core/emergency-fund-config";
+import type { EmergencyFundConfig } from "@patrimo/core/schema";
 import {
   clampSyncIntervalMinutes,
   SYNC_INTERVAL_PRESETS,
@@ -430,6 +436,202 @@ export function SyncIntervalSettings({
           Enregistrer
         </button>
       </div>
+      {error && (
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
+          {error}
+        </p>
+      )}
+      {success && !error && (
+        <p className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4" />
+          {success}
+        </p>
+      )}
+    </div>
+  );
+}
+
+type EmergencyFundSettingsProps = {
+  initialConfig?: EmergencyFundConfig;
+  monthlyExpenses: number;
+  livretBalance: number;
+};
+
+export function EmergencyFundSettings({
+  initialConfig,
+  monthlyExpenses,
+  livretBalance,
+}: EmergencyFundSettingsProps) {
+  const router = useRouter();
+  const monthsId = useId();
+  const targetEuroId = useId();
+  const horizonId = useId();
+  const initial = useMemo(
+    () => normalizeEmergencyFundConfig(initialConfig),
+    [initialConfig],
+  );
+  const [targetMonths, setTargetMonths] = useState(String(initial.targetMonths));
+  const [targetEuro, setTargetEuro] = useState(
+    initial.targetAmountOverride !== undefined ? String(initial.targetAmountOverride) : "",
+  );
+  const [horizonMonths, setHorizonMonths] = useState(
+    String(initial.catchUpHorizonMonths),
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const parsedTargetMonths = Number(targetMonths.replace(",", ".").replace(/\s/g, ""));
+  const parsedHorizon = Number(horizonMonths.replace(",", ".").replace(/\s/g, ""));
+  const parsedTargetEuro = targetEuro.trim()
+    ? Number(targetEuro.replace(",", ".").replace(/\s/g, ""))
+    : undefined;
+  const previewConfig = normalizeEmergencyFundConfig({
+    targetMonths: Number.isFinite(parsedTargetMonths) && parsedTargetMonths > 0 ? parsedTargetMonths : initial.targetMonths,
+    catchUpHorizonMonths:
+      Number.isFinite(parsedHorizon) && parsedHorizon >= 1
+        ? Math.round(parsedHorizon)
+        : initial.catchUpHorizonMonths,
+    targetAmountOverride:
+      parsedTargetEuro !== undefined &&
+      Number.isFinite(parsedTargetEuro) &&
+      parsedTargetEuro > 0
+        ? parsedTargetEuro
+        : undefined,
+  });
+  const effectiveTarget = effectiveEmergencyFundTargetEuro({
+    monthlyExpenses,
+    config: previewConfig,
+  });
+  const monthlyReserve = monthlyEmergencyCatchUpReserve({
+    livretBalance,
+    monthlyExpenses,
+    config: previewConfig,
+  });
+
+  async function save() {
+    setError(null);
+    setSuccess(null);
+    if (!Number.isFinite(parsedTargetMonths) || parsedTargetMonths <= 0) {
+      setError("Indique une cible en mois strictement positive.");
+      return;
+    }
+    if (!Number.isFinite(parsedHorizon) || parsedHorizon < 1) {
+      setError("Indique un horizon (mois) supérieur ou égal à 1.");
+      return;
+    }
+    if (
+      parsedTargetEuro !== undefined &&
+      (!Number.isFinite(parsedTargetEuro) || parsedTargetEuro <= 0)
+    ) {
+      setError("La cible absolue (€) doit être strictement positive.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const res = await fetch("/api/emergency-fund-config", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          targetMonths: parsedTargetMonths,
+          catchUpHorizonMonths: Math.round(parsedHorizon),
+          targetAmountOverride: parsedTargetEuro ?? null,
+        }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(body?.error ?? "Une erreur est survenue.");
+      }
+      setSuccess("Paramètres du fonds d'urgence mis à jour.");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-zinc-600 dark:text-zinc-300">
+        Définis ta cible de réserve et l&apos;horizon de rattrapage. La santé
+        du fonds d&apos;urgence conserve les seuils fixes 3 / 6 / 12 mois.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="space-y-1">
+          <label
+            htmlFor={monthsId}
+            className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+          >
+            Cible (mois)
+          </label>
+          <input
+            id={monthsId}
+            type="text"
+            inputMode="decimal"
+            value={targetMonths}
+            onChange={(e) => setTargetMonths(e.target.value)}
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+          />
+        </div>
+        <div className="space-y-1">
+          <label
+            htmlFor={targetEuroId}
+            className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+          >
+            Cible absolue (€)
+          </label>
+          <input
+            id={targetEuroId}
+            type="text"
+            inputMode="decimal"
+            value={targetEuro}
+            onChange={(e) => setTargetEuro(e.target.value)}
+            placeholder="Optionnel"
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+          />
+        </div>
+        <div className="space-y-1">
+          <label
+            htmlFor={horizonId}
+            className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+          >
+            Horizon rattrapage (mois)
+          </label>
+          <input
+            id={horizonId}
+            type="text"
+            inputMode="numeric"
+            value={horizonMonths}
+            onChange={(e) => setHorizonMonths(e.target.value)}
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+          />
+        </div>
+      </div>
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        Cible effective:{" "}
+        {effectiveTarget !== undefined
+          ? `${Math.round(effectiveTarget).toLocaleString("fr-FR")} €`
+          : "indéfinie (ajoute une cible € ou des dépenses mensuelles)"}{" "}
+        · réserve mensuelle estimée:{" "}
+        {`${Math.round(monthlyReserve).toLocaleString("fr-FR")} € / mois`}
+      </p>
+      <button
+        type="button"
+        onClick={save}
+        disabled={busy}
+        className={primaryButton}
+      >
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <CheckCircle2 className="h-4 w-4" />
+        )}
+        Enregistrer
+      </button>
       {error && (
         <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
           {error}

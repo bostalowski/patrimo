@@ -10,6 +10,7 @@ export const SHEET_EXPOSITION_SECTEUR = "Exposition secteur";
 export const SHEET_ALLOCATION_CIBLE = "Allocation cible";
 export const SHEET_CIBLES_DIVERSIFICATION = "Cibles diversification";
 export const SHEET_OBJECTIFS = "Objectifs";
+export const SHEET_FONDS_URGENCE = "Fonds urgence";
 
 export const TRANSACTIONS_HEADERS = [
 	"Date",
@@ -130,6 +131,12 @@ export const OBJECTIFS_HEADERS = [
 	"Notes",
 ] as const;
 
+export const FONDS_URGENCE_HEADERS = [
+	"Cible (mois)",
+	"Cible (€)",
+	"Horizon rattrapage (mois)",
+] as const;
+
 export const ALL_SHEETS = [
 	{ name: SHEET_TRANSACTIONS, headers: [...TRANSACTIONS_HEADERS] },
 	{ name: SHEET_ACTIFS, headers: [...ACTIFS_HEADERS] },
@@ -145,4 +152,5 @@ export const ALL_SHEETS = [
 		headers: [...CIBLES_DIVERSIFICATION_HEADERS],
 	},
 	{ name: SHEET_OBJECTIFS, headers: [...OBJECTIFS_HEADERS] },
+	{ name: SHEET_FONDS_URGENCE, headers: [...FONDS_URGENCE_HEADERS] },
 ] as const;

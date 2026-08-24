@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
 	buildNextEuroPlan,
 	computeMonthlyDcaPool,
+	computeMonthlyInvestmentDcaPool,
+	computeMonthlyLivretDcaPool,
 } from "./next-euro-plan";
 import type { AssetPosition } from "./portfolio";
 import type {
@@ -85,6 +87,33 @@ describe("computeMonthlyDcaPool", () => {
 				},
 			]),
 		).toBe(300);
+	});
+});
+
+describe("LIVRET vs investment DCA pool helpers", () => {
+	it("splits LIVRET cash configs from investment envelopes", () => {
+		const configs: DcaConfig[] = [
+			monthly("WPEA", 400),
+			{
+				id: "livret",
+				label: "Sécurité",
+				envelope: "LIVRET",
+				amount: 200,
+				frequency: "MENSUEL",
+				lines: [],
+			},
+			{
+				id: "livret-q",
+				label: "Sécurité T",
+				envelope: "LIVRET",
+				amount: 300,
+				frequency: "TRIMESTRIEL",
+				lines: [],
+			},
+		];
+		expect(computeMonthlyLivretDcaPool(configs)).toBe(300);
+		expect(computeMonthlyInvestmentDcaPool(configs)).toBe(400);
+		expect(computeMonthlyDcaPool(configs)).toBe(700);
 	});
 });
 

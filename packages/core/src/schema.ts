@@ -119,15 +119,27 @@ export type DcaLine = z.infer<typeof DcaLine>;
 export const DcaFrequency = z.enum(["MENSUEL", "TRIMESTRIEL", "ANNUEL"]);
 export type DcaFrequency = z.infer<typeof DcaFrequency>;
 
-export const DcaConfig = z.object({
-	id: z.string().min(1),
-	label: z.string().min(1),
-	envelope: Envelope,
-	amount: z.number().nonnegative(),
-	frequency: DcaFrequency.default("MENSUEL"),
-	paymentMonth: z.number().int().min(1).max(12).optional(),
-	lines: z.array(DcaLine).min(1),
-});
+export const DcaConfig = z
+	.object({
+		id: z.string().min(1),
+		label: z.string().min(1),
+		envelope: Envelope,
+		amount: z.number().nonnegative(),
+		frequency: DcaFrequency.default("MENSUEL"),
+		paymentMonth: z.number().int().min(1).max(12).optional(),
+		/** Empty only when `envelope === LIVRET` (cash dépôt; no broker basket). */
+		lines: z.array(DcaLine),
+	})
+	.superRefine((config, ctx) => {
+		if (config.envelope !== "LIVRET" && config.lines.length < 1) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message:
+					"Non-LIVRET DCA configs require at least one basket line",
+				path: ["lines"],
+			});
+		}
+	});
 export type DcaConfig = z.infer<typeof DcaConfig>;
 
 export const ExpectedReturns = z.object({
@@ -272,6 +284,13 @@ export const FinancialGoal = z.object({
 });
 export type FinancialGoal = z.infer<typeof FinancialGoal>;
 
+export const EmergencyFundConfig = z.object({
+	targetMonths: z.number().positive(),
+	targetAmountOverride: z.number().positive().optional(),
+	catchUpHorizonMonths: z.number().int().min(1),
+});
+export type EmergencyFundConfig = z.infer<typeof EmergencyFundConfig>;
+
 export type Workbook = {
 	transactions: Transaction[];
 	assets: Asset[];
@@ -284,4 +303,5 @@ export type Workbook = {
 	sectorAllocations: SectorAllocation[];
 	diversificationTargets: DiversificationTarget[];
 	financialGoals: FinancialGoal[];
+	emergencyFundConfig?: EmergencyFundConfig;
 };

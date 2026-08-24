@@ -165,4 +165,17 @@ describe("DCA Excel round-trip", () => {
     const restored = parseDcaConfigs(dcaConfigsToRows([sampleConfig]));
     expect(restored).toEqual([sampleConfig]);
   });
+
+  it("round-trips a LIVRET cash plan with empty lines", () => {
+    const livret: DcaConfig = {
+      id: "livret-ef",
+      label: "Épargne sécurité",
+      envelope: "LIVRET",
+      amount: 250,
+      frequency: "MENSUEL",
+      lines: [],
+    };
+    const restored = parseDcaConfigs(dcaConfigsToRows([livret]));
+    expect(restored).toEqual([livret]);
+  });
 });
