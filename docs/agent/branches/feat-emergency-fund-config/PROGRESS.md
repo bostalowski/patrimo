@@ -4,7 +4,7 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** ready for PR (commit pending)
+- **In progress:** ready for PR
 - **Blocked:** none
 
 ## Done (this branch)
