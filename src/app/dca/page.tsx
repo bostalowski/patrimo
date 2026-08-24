@@ -1,7 +1,3 @@
-import { sumLivretMarketValue } from "@patrimo/core/emergency-fund";
-import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
-import { SavingsCapacityOverCommitBanner, SavingsCapacityEmergencyOverBanner } from "@/components/savings-capacity-overcommit-banner";
-import { summarizeBudget } from "@/lib/budget";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
@@ -48,17 +44,6 @@ export default async function DcaPage() {
   ]);
   const portfolio = buildPortfolio(workbook, priceMap);
   const portfolioByEnvelope = buildPortfolioByEnvelope(portfolio.accounts);
-  const livretBalance = sumLivretMarketValue(portfolio.accounts);
-  const { revenusMensuels, depensesMensuelles } = summarizeBudget(
-    workbook.budget,
-  );
-  const savingsCapacity = computeSavingsCapacity({
-    revenusMensuels,
-    depensesMensuelles,
-    livretBalance,
-    dca: configs,
-    emergencyFundConfig: workbook.emergencyFundConfig,
-  });
 
   const peaSeed =
     workbook.assets.some((a) => a.id === "WPEA") &&
@@ -75,9 +60,6 @@ export default async function DcaPage() {
           rester proche de ta cible (rebalance sans vente).
         </p>
       </header>
-
-      <SavingsCapacityOverCommitBanner capacity={savingsCapacity} />
-      <SavingsCapacityEmergencyOverBanner capacity={savingsCapacity} />
 
       <DcaPlanner
         configs={configs}

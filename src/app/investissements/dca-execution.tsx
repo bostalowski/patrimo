@@ -2,314 +2,435 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { AlertCircle, RotateCcw } from "lucide-react";
+import { contributionsForConfig } from "@patrimo/core/monthly-dca-tilt";
+import type { MonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
+import { monthlyDcaTiltVerdictLabel } from "@patrimo/core/next-euro-copy";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { computeDcaExecution, computeDcaPlan, type DcaExecution } from "@/lib/dca";
+import {
+	computeDcaExecution,
+	computeDcaExecutionFromContributions,
+	computeDcaPlan,
+	type DcaExecution,
+} from "@/lib/dca";
 import type { Asset, DcaConfig, Envelope } from "@/lib/schema";
 import { formatEuro } from "@/lib/utils";
 
 const DEFAULT_MIN_ORDERS: Partial<Record<Envelope, number>> = {
-  PEA: 200,
+	PEA: 200,
 };
 
 const ENVELOPE_LABELS: Record<Envelope, string> = {
-  CTO: "CTO",
-  PEA: "PEA",
-  PEE: "PEE",
-  AV: "Assurance-vie",
-  LIVRET: "Livret",
-  PER: "PER",
+	CTO: "CTO",
+	PEA: "PEA",
+	PEE: "PEE",
+	AV: "Assurance-vie",
+	LIVRET: "Livret",
+	PER: "PER",
 };
 
 const inputClasses =
-  "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
+	"rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
 
 type Props = {
-  configs: DcaConfig[];
-  priceMap: Record<string, number>;
-  portfolioByEnvelope: Record<string, Record<string, number>>;
-  assets: Asset[];
+	configs: DcaConfig[];
+	priceMap: Record<string, number>;
+	portfolioByEnvelope: Record<string, Record<string, number>>;
+	assets: Asset[];
+	monthlyTilt: MonthlyDcaTilt | null;
 };
 
 export function DcaExecutionCalculator({
-  configs,
-  priceMap,
-  portfolioByEnvelope,
-  assets,
+	configs,
+	priceMap,
+	portfolioByEnvelope,
+	assets,
+	monthlyTilt,
 }: Props) {
-  const [minOrders, setMinOrders] = useState<Record<string, string>>(() => {
-    const initial: Record<string, string> = {};
-    for (const [env, value] of Object.entries(DEFAULT_MIN_ORDERS)) {
-      initial[env] = String(value);
-    }
-    return initial;
-  });
+	const tiltAvailable =
+		monthlyTilt !== null &&
+		(monthlyTilt.verdict === "tilt" || monthlyTilt.verdict === "adjust_plan");
 
-  const [amountOverrides, setAmountOverrides] = useState<Record<string, string>>({});
+	const [useTilt, setUseTilt] = useState(tiltAvailable);
 
-  const setAmountOverride = useCallback((configId: string, value: string) => {
-    setAmountOverrides((prev) => ({ ...prev, [configId]: value }));
-  }, []);
+	const [minOrders, setMinOrders] = useState<Record<string, string>>(() => {
+		const initial: Record<string, string> = {};
+		for (const [env, value] of Object.entries(DEFAULT_MIN_ORDERS)) {
+			initial[env] = String(value);
+		}
+		return initial;
+	});
 
-  const resetAmountOverride = useCallback((configId: string) => {
-    setAmountOverrides((prev) => {
-      const next = { ...prev };
-      delete next[configId];
-      return next;
-    });
-  }, []);
+	const [amountOverrides, setAmountOverrides] = useState<Record<string, string>>(
+		{},
+	);
 
-  const priceMapObj = useMemo(
-    () => new Map(Object.entries(priceMap)),
-    [priceMap],
-  );
+	const setAmountOverride = useCallback((configId: string, value: string) => {
+		setAmountOverrides((prev) => ({ ...prev, [configId]: value }));
+	}, []);
 
-  const assetMap = useMemo(
-    () => new Map(assets.map((a) => [a.id, a])),
-    [assets],
-  );
+	const resetAmountOverride = useCallback((configId: string) => {
+		setAmountOverrides((prev) => {
+			const next = { ...prev };
+			delete next[configId];
+			return next;
+		});
+	}, []);
 
-  const envelopesUsed = useMemo(
-    () => [...new Set(configs.map((c) => c.envelope))],
-    [configs],
-  );
+	const priceMapObj = useMemo(
+		() => new Map(Object.entries(priceMap)),
+		[priceMap],
+	);
 
-  const parsedMinOrders = useMemo(() => {
-    const result: Partial<Record<Envelope, number>> = {};
-    for (const [env, raw] of Object.entries(minOrders)) {
-      const n = Number(raw.replace(",", "."));
-      if (Number.isFinite(n) && n > 0) result[env as Envelope] = n;
-    }
-    return result;
-  }, [minOrders]);
+	const assetMap = useMemo(
+		() => new Map(assets.map((a) => [a.id, a])),
+		[assets],
+	);
 
-  function getMinOrder(envelope: Envelope): number {
-    return parsedMinOrders[envelope] ?? 0;
-  }
+	const envelopesUsed = useMemo(
+		() => [...new Set(configs.map((c) => c.envelope))],
+		[configs],
+	);
 
-  const parsedAmountOverrides = useMemo(() => {
-    const result: Record<string, number> = {};
-    for (const [id, raw] of Object.entries(amountOverrides)) {
-      const n = Number(raw.replace(",", "."));
-      if (Number.isFinite(n) && n >= 0) result[id] = n;
-    }
-    return result;
-  }, [amountOverrides]);
+	const parsedMinOrders = useMemo(() => {
+		const result: Partial<Record<Envelope, number>> = {};
+		for (const [env, raw] of Object.entries(minOrders)) {
+			const n = Number(raw.replace(",", "."));
+			if (Number.isFinite(n) && n > 0) result[env as Envelope] = n;
+		}
+		return result;
+	}, [minOrders]);
 
-  const executions = useMemo<DcaExecution[]>(() => {
-    return configs.map((config) => {
-      const currentValues = portfolioByEnvelope[config.envelope] ?? {};
-      const effectiveConfig =
-        config.id in parsedAmountOverrides
-          ? { ...config, amount: parsedAmountOverrides[config.id] }
-          : config;
-      const plan = computeDcaPlan(effectiveConfig, currentValues);
-      return computeDcaExecution(plan, priceMapObj, parsedMinOrders[config.envelope] ?? 0);
-    });
-  }, [configs, portfolioByEnvelope, priceMapObj, parsedMinOrders, parsedAmountOverrides]);
+	function getMinOrder(envelope: Envelope): number {
+		return parsedMinOrders[envelope] ?? 0;
+	}
 
-  if (configs.length === 0) return null;
+	const parsedAmountOverrides = useMemo(() => {
+		const result: Record<string, number> = {};
+		for (const [id, raw] of Object.entries(amountOverrides)) {
+			const n = Number(raw.replace(",", "."));
+			if (Number.isFinite(n) && n >= 0) result[id] = n;
+		}
+		return result;
+	}, [amountOverrides]);
 
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Minimum par ordre</CardTitle>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Montant minimum exigé par ton courtier pour passer un ordre, par
-            enveloppe. Laisse vide ou à 0 si pas de contrainte.
-          </p>
-        </CardHeader>
-        <CardBody>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {envelopesUsed.map((envelope) => (
-              <label
-                key={envelope}
-                className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wider text-zinc-500"
-              >
-                {ENVELOPE_LABELS[envelope]}
-                <div className="flex items-center gap-1">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={minOrders[envelope] ?? ""}
-                    onChange={(e) =>
-                      setMinOrders((prev) => ({
-                        ...prev,
-                        [envelope]: e.target.value,
-                      }))
-                    }
-                    placeholder="0"
-                    className={`w-20 ${inputClasses}`}
-                  />
-                  <span className="text-xs text-zinc-400">€</span>
-                </div>
-              </label>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
+	const executions = useMemo<DcaExecution[]>(() => {
+		return configs.map((config) => {
+			const minOrder = parsedMinOrders[config.envelope] ?? 0;
 
-      {executions.map((execution, i) => {
-        const config = configs[i];
-        const minOrder = getMinOrder(config.envelope);
-        const hasOverride = config.id in parsedAmountOverrides;
-        return (
-          <Card key={execution.configId}>
-            <CardHeader>
-              <CardTitle className="text-base">{config.label}</CardTitle>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
-                <label className="flex items-center gap-1.5">
-                  Budget :
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={amountOverrides[config.id] ?? String(config.amount)}
-                      onChange={(e) => setAmountOverride(config.id, e.target.value)}
-                      className={`w-24 font-mono font-medium ${inputClasses} ${
-                        hasOverride
-                          ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
-                          : "text-zinc-700 dark:text-zinc-300"
-                      }`}
-                    />
-                    <span className="text-xs text-zinc-400">€</span>
-                    {hasOverride && (
-                      <button
-                        type="button"
-                        onClick={() => resetAmountOverride(config.id)}
-                        className="rounded p-0.5 text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900/40 dark:hover:text-blue-300"
-                        title={`Revenir au montant du plan (${formatEuro(config.amount)})`}
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </label>
-                <span>
-                  Total ordres:{" "}
-                  <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">
-                    {formatEuro(execution.totalOrderAmount)}
-                  </span>
-                </span>
-                {execution.totalRemainder > 0 && (
-                  <span>
-                    Reste:{" "}
-                    <span className="font-mono font-medium text-amber-600 dark:text-amber-400">
-                      {formatEuro(execution.totalRemainder)}
-                    </span>
-                  </span>
-                )}
-              </div>
-            </CardHeader>
-            <CardBody className="space-y-4 px-0">
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Actif</TH>
-                    <TH className="text-right">Prix</TH>
-                    <TH className="text-right">Cible</TH>
-                    <TH className="text-right">Parts</TH>
-                    <TH className="text-right">Ordre</TH>
-                    <TH>Statut</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {execution.lines.map((line) => {
-                    const asset = assetMap.get(line.assetId);
-                    return (
-                      <TR key={line.assetId}>
-                        <TD>
-                          <span className="font-medium text-zinc-900 dark:text-zinc-50">
-                            {asset?.label ?? line.assetId}
-                          </span>
-                        </TD>
-                        <TD className="text-right font-mono tabular-nums">
-                          {line.sharePrice > 0
-                            ? formatEuro(line.sharePrice)
-                            : "—"}
-                        </TD>
-                        <TD className="text-right font-mono tabular-nums">
-                          {formatEuro(line.targetAmount)}
-                        </TD>
-                        <TD className="text-right font-mono tabular-nums font-semibold">
-                          {line.shares > 0
-                            ? line.shares
-                            : line.fractionalShares
-                              ? line.fractionalShares.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")
-                              : "—"}
-                        </TD>
-                        <TD className="text-right font-mono tabular-nums">
-                          {line.orderAmount > 0
-                            ? formatEuro(line.orderAmount)
-                            : "—"}
-                        </TD>
-                        <TD>
-                          {line.status === "BUY" && (
-                            <Badge variant="success">Acheter</Badge>
-                          )}
-                          {line.status === "BUY_FRACTIONAL" && (
-                            <Badge variant="success">Fractionné</Badge>
-                          )}
-                          {line.status === "BELOW_MIN" && (
-                            <Badge variant="warning">
-                              Sous le minimum
-                            </Badge>
-                          )}
-                        </TD>
-                      </TR>
-                    );
-                  })}
-                </TBody>
-              </Table>
+			if (
+				useTilt &&
+				monthlyTilt &&
+				config.envelope !== "LIVRET"
+			) {
+				const perConfig = contributionsForConfig(
+					config,
+					monthlyTilt.contributions,
+				);
+				if (Object.keys(perConfig).length > 0) {
+					return computeDcaExecutionFromContributions(
+						config.id,
+						perConfig,
+						priceMapObj,
+						minOrder,
+					);
+				}
+			}
 
-              {execution.rotation && (
-                <div className="mx-6 flex items-start gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900 dark:bg-sky-950/30">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
-                  <div className="space-y-1 text-sm">
-                    <p className="font-medium text-sky-900 dark:text-sky-100">
-                      Conseil : rotation sur {execution.rotation.rotationMonths}{" "}
-                      mois
-                    </p>
-                    <p className="text-sky-700 dark:text-sky-300">
-                      {execution.rotation.rotationMonths > 1 ? (
-                        <>
-                          Concentre tout le budget sur{" "}
-                          <strong>
-                            {assetMap.get(execution.rotation.focusAssetId)?.label ??
-                              execution.rotation.focusAssetId}
-                          </strong>{" "}
-                          ce mois-ci ({execution.rotation.focusShares} part
-                          {execution.rotation.focusShares > 1 ? "s" : ""} ={" "}
-                          {formatEuro(execution.rotation.focusOrderAmount)}), puis
-                          alterne avec les autres actifs le mois suivant.
-                        </>
-                      ) : (
-                        <>
-                          Accumule pendant{" "}
-                          {execution.rotation.rotationMonths} mois pour{" "}
-                          <strong>
-                            {assetMap.get(execution.rotation.focusAssetId)?.label ??
-                              execution.rotation.focusAssetId}
-                          </strong>{" "}
-                          ({execution.rotation.focusShares} part
-                          {execution.rotation.focusShares > 1 ? "s" : ""} ={" "}
-                          {formatEuro(execution.rotation.focusOrderAmount)}).
-                        </>
-                      )}
-                      {minOrder > 0 && (
-                        <>{" "}Minimum de {formatEuro(minOrder)} respecté
-                        sur {ENVELOPE_LABELS[config.envelope]}.</>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardBody>
-          </Card>
-        );
-      })}
-    </div>
-  );
+			const currentValues = portfolioByEnvelope[config.envelope] ?? {};
+			const effectiveConfig =
+				config.id in parsedAmountOverrides
+					? { ...config, amount: parsedAmountOverrides[config.id] }
+					: config;
+			const plan = computeDcaPlan(effectiveConfig, currentValues);
+			return computeDcaExecution(plan, priceMapObj, minOrder);
+		});
+	}, [
+		configs,
+		portfolioByEnvelope,
+		priceMapObj,
+		parsedMinOrders,
+		parsedAmountOverrides,
+		useTilt,
+		monthlyTilt,
+	]);
+
+	if (configs.length === 0) return null;
+
+	return (
+		<div className="space-y-6">
+			{monthlyTilt && (
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-base">Plan d&apos;achat du mois</CardTitle>
+						<p className="text-xs text-zinc-500 dark:text-zinc-400">
+							{useTilt && tiltAvailable
+								? "Ordres calculés depuis l'ajustement diversification (Ajustement DCA du mois)."
+								: "Ordres calculés depuis ton plan DCA sauvegardé."}
+						</p>
+					</CardHeader>
+					<CardBody className="flex flex-wrap items-center gap-3">
+						<Badge
+							variant={
+								useTilt && tiltAvailable ? "warning" : "success"
+							}
+						>
+							{useTilt && tiltAvailable
+								? monthlyDcaTiltVerdictLabel(monthlyTilt.verdict)
+								: "Plan DCA sauvegardé"}
+						</Badge>
+						{tiltAvailable && (
+							<label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+								<input
+									type="checkbox"
+									checked={useTilt}
+									onChange={(e) => setUseTilt(e.target.checked)}
+									className="rounded border-zinc-300"
+								/>
+								Appliquer l&apos;ajustement du mois (
+								{formatEuro(monthlyTilt.monthlyPool)} investi)
+							</label>
+						)}
+						{monthlyTilt.verdict === "aligned" && (
+							<span className="text-sm text-zinc-600 dark:text-zinc-400">
+								Aucun ajustement — le plan sauvegardé suffit ce mois-ci.
+							</span>
+						)}
+					</CardBody>
+				</Card>
+			)}
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Minimum par ordre</CardTitle>
+					<p className="text-xs text-zinc-500 dark:text-zinc-400">
+						Montant minimum exigé par ton courtier pour passer un ordre, par
+						enveloppe. Laisse vide ou à 0 si pas de contrainte.
+					</p>
+				</CardHeader>
+				<CardBody>
+					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+						{envelopesUsed.map((envelope) => (
+							<label
+								key={envelope}
+								className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wider text-zinc-500"
+							>
+								{ENVELOPE_LABELS[envelope]}
+								<div className="flex items-center gap-1">
+									<input
+										type="text"
+										inputMode="decimal"
+										value={minOrders[envelope] ?? ""}
+										onChange={(e) =>
+											setMinOrders((prev) => ({
+												...prev,
+												[envelope]: e.target.value,
+											}))
+										}
+										placeholder="0"
+										className={`w-20 ${inputClasses}`}
+									/>
+									<span className="text-xs text-zinc-400">€</span>
+								</div>
+							</label>
+						))}
+					</div>
+				</CardBody>
+			</Card>
+
+			{executions.map((execution, i) => {
+				const config = configs[i];
+				const minOrder = getMinOrder(config.envelope);
+				const hasOverride = config.id in parsedAmountOverrides;
+				const isTiltRow =
+					useTilt &&
+					monthlyTilt &&
+					config.envelope !== "LIVRET" &&
+					Object.keys(
+						contributionsForConfig(config, monthlyTilt.contributions),
+					).length > 0;
+
+				return (
+					<Card key={execution.configId}>
+						<CardHeader>
+							<CardTitle className="text-base">{config.label}</CardTitle>
+							<div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
+								{!isTiltRow && (
+									<label className="flex items-center gap-1.5">
+										Budget :
+										<div className="flex items-center gap-1">
+											<input
+												type="text"
+												inputMode="decimal"
+												value={
+													amountOverrides[config.id] ?? String(config.amount)
+												}
+												onChange={(e) =>
+													setAmountOverride(config.id, e.target.value)
+												}
+												className={`w-24 font-mono font-medium ${inputClasses} ${
+													hasOverride
+														? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+														: "text-zinc-700 dark:text-zinc-300"
+												}`}
+											/>
+											<span className="text-xs text-zinc-400">€</span>
+											{hasOverride && (
+												<button
+													type="button"
+													onClick={() => resetAmountOverride(config.id)}
+													className="rounded p-0.5 text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900/40 dark:hover:text-blue-300"
+													title={`Revenir au montant du plan (${formatEuro(config.amount)})`}
+												>
+													<RotateCcw className="h-3.5 w-3.5" />
+												</button>
+											)}
+										</div>
+									</label>
+								)}
+								{isTiltRow && monthlyTilt && (
+									<span>
+										Budget ajusté :{" "}
+										<span className="font-mono font-medium text-amber-700 dark:text-amber-300">
+											{formatEuro(
+												Object.values(
+													contributionsForConfig(
+														config,
+														monthlyTilt.contributions,
+													),
+												).reduce((s, v) => s + v, 0),
+											)}
+										</span>
+									</span>
+								)}
+								<span>
+									Total ordres:{" "}
+									<span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">
+										{formatEuro(execution.totalOrderAmount)}
+									</span>
+								</span>
+								{execution.totalRemainder > 0 && (
+									<span>
+										Reste:{" "}
+										<span className="font-mono font-medium text-amber-600 dark:text-amber-400">
+											{formatEuro(execution.totalRemainder)}
+										</span>
+									</span>
+								)}
+							</div>
+						</CardHeader>
+						<CardBody className="space-y-4 px-0">
+							<Table>
+								<THead>
+									<TR>
+										<TH>Actif</TH>
+										<TH className="text-right">Prix</TH>
+										<TH className="text-right">Cible</TH>
+										<TH className="text-right">Parts</TH>
+										<TH className="text-right">Ordre</TH>
+										<TH>Statut</TH>
+									</TR>
+								</THead>
+								<TBody>
+									{execution.lines.map((line) => {
+										const asset = assetMap.get(line.assetId);
+										return (
+											<TR key={line.assetId}>
+												<TD>
+													<span className="font-medium text-zinc-900 dark:text-zinc-50">
+														{asset?.label ?? line.assetId}
+													</span>
+												</TD>
+												<TD className="text-right font-mono tabular-nums">
+													{line.sharePrice > 0
+														? formatEuro(line.sharePrice)
+														: "—"}
+												</TD>
+												<TD className="text-right font-mono tabular-nums">
+													{formatEuro(line.targetAmount)}
+												</TD>
+												<TD className="text-right font-mono tabular-nums font-semibold">
+													{line.shares > 0
+														? line.shares
+														: line.fractionalShares
+															? line.fractionalShares
+																	.toFixed(6)
+																	.replace(/0+$/, "")
+																	.replace(/\.$/, "")
+															: "—"}
+												</TD>
+												<TD className="text-right font-mono tabular-nums">
+													{line.orderAmount > 0
+														? formatEuro(line.orderAmount)
+														: "—"}
+												</TD>
+												<TD>
+													{line.status === "BUY" && (
+														<Badge variant="success">Acheter</Badge>
+													)}
+													{line.status === "BUY_FRACTIONAL" && (
+														<Badge variant="success">Fractionné</Badge>
+													)}
+													{line.status === "BELOW_MIN" && (
+														<Badge variant="warning">Sous le minimum</Badge>
+													)}
+												</TD>
+											</TR>
+										);
+									})}
+								</TBody>
+							</Table>
+
+							{execution.rotation && (
+								<div className="mx-6 flex items-start gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900 dark:bg-sky-950/30">
+									<AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
+									<div className="space-y-1 text-sm">
+										<p className="font-medium text-sky-900 dark:text-sky-100">
+											Conseil : rotation sur{" "}
+											{execution.rotation.rotationMonths} mois
+										</p>
+										<p className="text-sky-700 dark:text-sky-300">
+											{execution.rotation.rotationMonths > 1 ? (
+												<>
+													Concentre tout le budget sur{" "}
+													<strong>
+														{assetMap.get(execution.rotation.focusAssetId)
+															?.label ?? execution.rotation.focusAssetId}
+													</strong>{" "}
+													ce mois-ci ({execution.rotation.focusShares} part
+													{execution.rotation.focusShares > 1 ? "s" : ""} ={" "}
+													{formatEuro(execution.rotation.focusOrderAmount)}),
+													puis alterne avec les autres actifs le mois suivant.
+												</>
+											) : (
+												<>
+													Accumule pendant {execution.rotation.rotationMonths}{" "}
+													mois pour{" "}
+													<strong>
+														{assetMap.get(execution.rotation.focusAssetId)
+															?.label ?? execution.rotation.focusAssetId}
+													</strong>{" "}
+													({execution.rotation.focusShares} part
+													{execution.rotation.focusShares > 1 ? "s" : ""} ={" "}
+													{formatEuro(execution.rotation.focusOrderAmount)}).
+												</>
+											)}
+											{minOrder > 0 && (
+												<>
+													{" "}
+													Minimum de {formatEuro(minOrder)} respecté sur{" "}
+													{ENVELOPE_LABELS[config.envelope]}.
+												</>
+											)}
+										</p>
+									</div>
+								</div>
+							)}
+						</CardBody>
+					</Card>
+				);
+			})}
+		</div>
+	);
 }

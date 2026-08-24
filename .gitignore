@@ -19,7 +19,8 @@
 
 # next.js
 /.next/
-/.next-e2e/
+# Default e2e distDir (`.next-e2e`) and port variants (e.g. `.next-e2e-3120`).
+/.next-e2e*/
 /out/
 
 # misc

@@ -1,7 +1,4 @@
 import Link from "next/link";
-import { sumLivretMarketValue } from "@patrimo/core/emergency-fund";
-import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
-import { SavingsCapacityOverCommitBanner } from "@/components/savings-capacity-overcommit-banner";
 import { loadWorkbook, getBudget } from "@/lib/excel";
 import { getInflationRate } from "@/lib/config";
 import { requireExcelConfigured } from "@/lib/page-guards";
@@ -27,7 +24,7 @@ export default async function ProjectionPage() {
   const inflationRate = getInflationRate();
 
   const budgetSummary = summarizeBudget(getBudget());
-  const { restant, revenusMensuels, depensesMensuelles } = budgetSummary;
+  const { restant } = budgetSummary;
 
   const [priceMap, dcaConfigs, expectedReturns, retirementProfile] = await Promise.all([
     readPriceMap(workbook.assets),
@@ -45,14 +42,6 @@ export default async function ProjectionPage() {
     workbook.accounts,
     dcaConfigs,
   );
-  const livretBalance = sumLivretMarketValue(portfolio.accounts);
-  const savingsCapacity = computeSavingsCapacity({
-    revenusMensuels,
-    depensesMensuelles,
-    livretBalance,
-    dca: dcaConfigs,
-    emergencyFundConfig: workbook.emergencyFundConfig,
-  });
 
   const properties: SerializedProperty[] = workbook.properties.map((p) => ({
     ...p,
@@ -118,8 +107,6 @@ export default async function ProjectionPage() {
           ajustes.
         </p>
       </header>
-
-      <SavingsCapacityOverCommitBanner capacity={savingsCapacity} />
 
       <ProjectionClient
         monthlyRestant={restant}

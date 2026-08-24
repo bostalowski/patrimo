@@ -41,7 +41,7 @@ export function EmergencyFundCard({
   if (!health) return null;
 
   return (
-    <Card className="max-w-md">
+    <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Fonds d&apos;urgence</CardTitle>

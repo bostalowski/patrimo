@@ -1,41 +1,58 @@
 # Next-euro plan
 
-Read-only ranked buy / hold / pause steps that reallocate the existing monthly
-DCA envelope. Decision: [ADR 0015](../../docs/adr/0015-next-euro-plan.md).
+Read-only monthly **investment DCA tilt** (ADR 0021): verdict + per-asset euros
+that feed Exécution. Emergency-fund LIVRET advice remains **outside** this
+envelope ([ADR 0020](../../docs/adr/0020-emergency-fund-surplus-recommendation.md)).
+Original decision: [ADR 0015](../../docs/adr/0015-next-euro-plan.md)
+(P1 pool steal superseded).
 
 ## Intent
 
-Answer “where should the next euro go?” without mutating the workbook: emergency
-fund first, then underweight diversification bands, then residual DCA; pause
-overweight-band assets.
+Answer “should I deviate from my saved investment DCA this month?” without
+mutating the workbook. Share counts live only on **Exécution**
+(`computeDcaExecutionFromContributions`). A separate surplus-based LIVRET
+banner may appear above the tilt summary when the configured emergency-fund
+target has a gap.
 
-UI copy (FR) lives in `next-euro-copy.ts`: the card states the **question**, a
-**Ce mois-ci** lead from the primary step, then the ordered step list.
+UI copy (FR): `monthly-dca-tilt-copy.ts` + `next-euro-copy.ts`. Card title
+**Ajustement DCA du mois** (internal code may still say “tilt”).
 
 ## Flow
 
 ```text
-DCA configs + positions + targets + livret / expenses
+DCA configs (investment) + positions + diversification targets
         │
         ▼
-buildNextEuroPlan ──► Dashboard (top 3) / Diversification (full list)
+buildMonthlyDcaTilt ──► tilt.contributions (€/actif)
+        │                      │
+buildNextEuroPlan ─────────────┘──► Dashboard / Diversification (verdict)
+        │                           + emergencyFundRecommendation banner
+        │                           └──► Investissements / Exécution (parts)
+        └─ computeEmergencyFundSurplusRecommendation (attached, not in steps)
 ```
-
-No API route: same server-render pattern as allocation coherence.
 
 ## Core
 
 | Function | Role |
 |---|---|
-| `computeMonthlyDcaPool(dca)` | Σ annualize / 12 |
-| `buildNextEuroPlan(input)` | Ranked steps or `null` (hide card) |
-| `contributionToKey` (coherence) | Look-through weight for band routing |
+| `buildMonthlyDcaTilt(input)` | Verdict + contributions; null when no investment pool |
+| `buildNextEuroPlan(input)` | Wraps tilt + display steps + EF surplus attach |
+| `computeDcaExecutionFromContributions` | Broker-ready lines from tilt |
+| `computeEmergencyFundSurplusRecommendation` | Attached LIVRET advice (ADR 0020) |
 
-Hide when `monthlyPool === 0` and emergency fund is not `insufficient`.
+Hide when investment `monthlyPool === 0` (EF gap alone does not show this card).
 
 ## Platforms
 
 | Surface | Status |
 |---|---|
-| Web / Electron Dashboard + Diversification | done |
-| Mobile | absent (same core API later) |
+| Web Dashboard + Diversification | verdict card + EF banner |
+| Web Investissements / Exécution | tilt toggle + orders |
+| Mobile | absent (Next-euro + capacity UI unmounted; core ready) |
+
+## See also
+
+- [ADR 0021](../../docs/adr/0021-monthly-dca-tilt-execution.md)
+- [ADR 0020](../../docs/adr/0020-emergency-fund-surplus-recommendation.md)
+- [ADR 0015](../../docs/adr/0015-next-euro-plan.md)
+- [monthly-dca-tilt.ts](../src/monthly-dca-tilt.ts)

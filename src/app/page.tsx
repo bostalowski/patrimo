@@ -5,13 +5,11 @@ import {
 import { assessFinancialGoals } from "@patrimo/core/financial-goals";
 import { buildNextEuroPlan } from "@patrimo/core/next-euro-plan";
 import { computeNetWorth, portfolioByEnvelope } from "@patrimo/core/portfolio";
-import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { GoalsSummaryCard } from "@/components/goals-summary-card";
 import { NextEuroPlanCard } from "@/components/next-euro-plan-card";
 import { PerformanceSection } from "@/components/performance-section";
-import { SavingsCapacityCard } from "@/components/savings-capacity-card";
 import { SyncButton } from "@/components/sync-button";
 import {
 	Card,
@@ -89,13 +87,6 @@ export default async function DashboardPage() {
 		livretBalance,
 		depensesMensuelles,
 	);
-	const savingsCapacity = computeSavingsCapacity({
-		revenusMensuels,
-		depensesMensuelles,
-		livretBalance,
-		dca: workbook.dca,
-		emergencyFundConfig: workbook.emergencyFundConfig,
-	});
 	const goalsAssessment = assessFinancialGoals({
 		goals: workbook.financialGoals ?? [],
 		portfolio,
@@ -112,6 +103,8 @@ export default async function DashboardPage() {
 		assets: workbook.assets,
 		accounts: portfolio.accounts,
 		monthlyExpenses: depensesMensuelles,
+		revenusMensuels,
+		emergencyFundConfig: workbook.emergencyFundConfig,
 		portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
 	});
 	const assetLabels = Object.fromEntries(
@@ -187,16 +180,16 @@ export default async function DashboardPage() {
 				</Card>
 			</div>
 
-			<div className="flex flex-wrap gap-4">
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<EmergencyFundCard health={emergencyFund} />
-				<SavingsCapacityCard capacity={savingsCapacity} />
-				<NextEuroPlanCard
-					plan={nextEuroPlan}
-					variant="summary"
-					assetLabels={assetLabels}
-				/>
 				<GoalsSummaryCard assessment={goalsAssessment} />
 			</div>
+
+			<NextEuroPlanCard
+				plan={nextEuroPlan}
+				variant="summary"
+				assetLabels={assetLabels}
+			/>
 
 			<PerformanceSection history={history} benchmarks={benchmarks} />
 

@@ -128,4 +128,5 @@ Adds a new optional sheet and serializer coverage to maintain.
 - [ADR 0015](0015-next-euro-plan.md)
 - [ADR 0017](0017-savings-capacity-bridge.md)
 - [ADR 0019](0019-livret-dca-savings-capacity.md) — real LIVRET `DcaConfig` counted in capacity; over-contribution alert when planned exceeds implied need
+- [ADR 0020](0020-emergency-fund-surplus-recommendation.md) — surplus LIVRET advice uses this target / horizon; supersedes next-euro P1 steal
 - [Glossary](../reference/glossary.md)

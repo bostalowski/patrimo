@@ -16,7 +16,7 @@ export function GoalsSummaryCard({
 	if (!assessment) return null;
 
 	return (
-		<Card className="max-w-md">
+		<Card className="h-full">
 			<CardHeader>
 				<CardTitle>
 					<Link href="/objectifs" className="hover:underline">

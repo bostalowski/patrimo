@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useTransition, useEffect } from "react";
+import type { MonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
 import { DcaPlanner } from "@/app/dca/dca-planner";
 import { DeletePropertyButton } from "@/app/immobilier/delete-property-button";
 import { PropertyForm } from "@/app/immobilier/property-form";
@@ -63,6 +64,7 @@ type Props = {
 	assets: Asset[];
 	seedConfig: DcaConfig | null;
 	priceMap: Record<string, number>;
+	monthlyTilt: MonthlyDcaTilt | null;
 	initialProfile: RetraiteProfileForm;
 	properties: SerializedProperty[];
 };
@@ -82,10 +84,29 @@ export function InvestissementsClient({
 	assets,
 	seedConfig,
 	priceMap,
+	monthlyTilt,
 	initialProfile,
 	properties,
 }: Props) {
-	const [tab, setTab] = useState<Tab>("dca");
+	const searchParams = useSearchParams();
+	const initialTab = searchParams.get("tab");
+	const [tab, setTab] = useState<Tab>(
+		initialTab === "execution" ||
+			initialTab === "retraite" ||
+			initialTab === "immobilier"
+			? initialTab
+			: "dca",
+	);
+
+	useEffect(() => {
+		if (
+			initialTab === "execution" ||
+			initialTab === "retraite" ||
+			initialTab === "immobilier"
+		) {
+			setTab(initialTab);
+		}
+	}, [initialTab]);
 
 	return (
 		<div className="space-y-6">
@@ -122,6 +143,7 @@ export function InvestissementsClient({
 					priceMap={priceMap}
 					portfolioByEnvelope={portfolioByEnvelope}
 					assets={assets}
+					monthlyTilt={monthlyTilt}
 				/>
 			)}
 

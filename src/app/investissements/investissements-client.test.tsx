@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+	useSearchParams: () => new URLSearchParams(),
 }));
 
 import { InvestissementsClient } from "@/app/investissements/investissements-client";
@@ -20,6 +21,7 @@ describe("InvestissementsClient", () => {
 				assets={[]}
 				seedConfig={null}
 				priceMap={{}}
+				monthlyTilt={null}
 				initialProfile={{ targetRetirementAge: 65 }}
 				properties={[]}
 			/>,

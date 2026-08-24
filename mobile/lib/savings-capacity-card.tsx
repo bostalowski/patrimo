@@ -5,6 +5,7 @@ import {
 	SAVINGS_CAPACITY_STATUS_LABEL,
 	SAVINGS_CAPACITY_SURPLUS_CAPTION,
 	SAVINGS_CAPACITY_TITLE,
+	savingsCapacityEmergencyFundSurplusRecommendation,
 	savingsCapacityLivretRecommendation,
 	savingsCapacityRecommendation,
 } from "@patrimo/core/savings-capacity-copy";
@@ -39,6 +40,10 @@ export function SavingsCapacityCard({
 
 	const recommendation = savingsCapacityRecommendation(capacity, formatEuro);
 	const livretReco = savingsCapacityLivretRecommendation(capacity, formatEuro);
+	const efSurplusReco = savingsCapacityEmergencyFundSurplusRecommendation(
+		capacity,
+		formatEuro,
+	);
 
 	const detailParts = [
 		`DCA investi ${formatEuro(capacity.plannedDcaMonthly)}`,
@@ -95,6 +100,18 @@ export function SavingsCapacityCard({
 			>
 				{recommendation}
 			</Text>
+			{efSurplusReco && (
+				<Text
+					style={{
+						color: "#d97706",
+						fontSize: 13,
+						marginBottom: 6,
+						fontWeight: "500",
+					}}
+				>
+					{efSurplusReco}
+				</Text>
+			)}
 			{livretReco && (
 				<Text
 					style={{

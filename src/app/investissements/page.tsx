@@ -1,8 +1,5 @@
 import { portfolioByEnvelope } from "@patrimo/core/portfolio";
-import { computeSavingsCapacity } from "@patrimo/core/savings-capacity";
-import { sumLivretMarketValue } from "@patrimo/core/emergency-fund";
-import { SavingsCapacityOverCommitBanner, SavingsCapacityEmergencyOverBanner } from "@/components/savings-capacity-overcommit-banner";
-import { summarizeBudget } from "@/lib/budget";
+import { buildMonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
@@ -39,16 +36,15 @@ export default async function InvestissementsPage() {
 	]);
 	const portfolio = buildPortfolio(workbook, priceMap);
 	const envelopeBreakdown = portfolioByEnvelope(portfolio.accounts);
-	const livretBalance = sumLivretMarketValue(portfolio.accounts);
-	const { revenusMensuels, depensesMensuelles } = summarizeBudget(
-		workbook.budget,
-	);
-	const savingsCapacity = computeSavingsCapacity({
-		revenusMensuels,
-		depensesMensuelles,
-		livretBalance,
+
+	const monthlyTilt = buildMonthlyDcaTilt({
+		targets: workbook.diversificationTargets ?? [],
+		positions: portfolio.assets,
 		dca: configs,
-		emergencyFundConfig: workbook.emergencyFundConfig,
+		geographicAllocations: workbook.geographicAllocations ?? [],
+		sectorAllocations: workbook.sectorAllocations ?? [],
+		assets: workbook.assets,
+		portfolioByEnvelope: envelopeBreakdown,
 	});
 
 	const peaSeed =
@@ -71,15 +67,13 @@ export default async function InvestissementsPage() {
 				</p>
 			</header>
 
-			<SavingsCapacityOverCommitBanner capacity={savingsCapacity} />
-			<SavingsCapacityEmergencyOverBanner capacity={savingsCapacity} />
-
 			<InvestissementsClient
 				configs={configs}
 				portfolioByEnvelope={envelopeBreakdown}
 				assets={workbook.assets}
 				seedConfig={peaSeed}
 				priceMap={priceMapRecord}
+				monthlyTilt={monthlyTilt}
 				initialProfile={{
 					birthDate: profile.birthDate?.toISOString().slice(0, 10),
 					targetRetirementAge: profile.targetRetirementAge,
