@@ -180,7 +180,7 @@ export default async function DashboardPage() {
 				</Card>
 			</div>
 
-			<div className="flex flex-wrap gap-4">
+			<div className="flex flex-wrap items-start gap-4">
 				<EmergencyFundCard health={emergencyFund} />
 				<NextEuroPlanCard
 					plan={nextEuroPlan}
