@@ -19,6 +19,7 @@
     "./dca": "./src/dca.ts",
     "./budget": "./src/budget.ts",
     "./emergency-fund": "./src/emergency-fund.ts",
+    "./emergency-fund-config": "./src/emergency-fund-config.ts",
     "./savings-capacity": "./src/savings-capacity.ts",
     "./portfolio-risk": "./src/portfolio-risk.ts",
     "./fiscalite": "./src/fiscalite.ts",

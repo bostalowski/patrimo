@@ -6,8 +6,8 @@ surplus after budget cashflow and emergency-fund catch-up, versus planned DCA.
 ## Intent
 
 Users see how much they can actually invest each month after expenses and a
-path to a 6-month emergency fund, and whether current DCA overshoots that
-capacity — without auto-resizing plans.
+path to their configured emergency-fund target, and whether current DCA
+overshoots that capacity — without auto-resizing plans.
 
 ## Flow
 
@@ -19,7 +19,7 @@ Workbook
    +--> workbook.dca
    |
    v
-computeSavingsCapacity({ revenus, depenses, livret, dca })
+computeSavingsCapacity({ revenus, depenses, livret, dca, emergencyFundConfig })
    |
    +--> null  → hide card / no soft warning
    +--> { rawSavings, reserve, surplus, planned, gap, status }
@@ -47,17 +47,18 @@ computeSavingsCapacity({ revenus, depenses, livret, dca })
 
 ## Invariants
 
-Governed by [ADR 0017](../../docs/adr/0017-savings-capacity-bridge.md).
+Governed by [ADR 0017](../../docs/adr/0017-savings-capacity-bridge.md) and
+[ADR 0018](../../docs/adr/0018-configurable-emergency-fund-target.md).
 
 ## Out of scope
 
 - Auto-resize / rewrite of DCA or budget `EPARGNE`
-- Editable EF target / catch-up horizon
 - Mobile DCA / Projection soft warnings
 - Changing next-euro pool source (ADR 0015)
 
 ## See also
 
 - [ADR 0017](../../docs/adr/0017-savings-capacity-bridge.md)
+- [ADR 0018](../../docs/adr/0018-configurable-emergency-fund-target.md)
 - [Emergency fund](emergency-fund.md)
 - [Next-euro plan](next-euro-plan.md)

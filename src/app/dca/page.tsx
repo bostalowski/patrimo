@@ -57,6 +57,7 @@ export default async function DcaPage() {
     depensesMensuelles,
     livretBalance,
     dca: configs,
+    emergencyFundConfig: workbook.emergencyFundConfig,
   });
 
   const peaSeed =

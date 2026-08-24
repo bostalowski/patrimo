@@ -48,6 +48,7 @@ export default async function InvestissementsPage() {
 		depensesMensuelles,
 		livretBalance,
 		dca: configs,
+		emergencyFundConfig: workbook.emergencyFundConfig,
 	});
 
 	const peaSeed =

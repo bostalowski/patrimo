@@ -16,6 +16,8 @@ function capacity(
 		investableSurplus: 2_000,
 		plannedDcaMonthly: 500,
 		gap: -1_500,
+		emergencyTargetMonths: 6,
+		emergencyCatchUpHorizonMonths: 12,
 		status: "comfortable",
 		...overrides,
 	};
@@ -60,6 +62,18 @@ describe("SavingsCapacityCard", () => {
 		expect(
 			screen.getByText(/1[\s\u00a0\u202f]?308.*\/\s*mois pour atteindre 6 mois de dépenses/),
 		).toBeTruthy();
+	});
+
+	it("shows absolute target label when override is used", () => {
+		render(
+			<SavingsCapacityCard
+				capacity={capacity({
+					monthlyEmergencyReserve: 800,
+					emergencyTargetEuro: 10_000,
+				})}
+			/>,
+		);
+		expect(screen.getByText(/800.*atteindre.*10[\s\u00a0\u202f]?000/)).toBeTruthy();
 	});
 
 	it("renders nothing when capacity is null", () => {

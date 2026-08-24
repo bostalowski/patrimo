@@ -1,8 +1,7 @@
 import { Text, View } from "react-native";
-import {
-	SAVINGS_CAPACITY_EF_TARGET_MONTHS,
-	type SavingsCapacity,
-	type SavingsCapacityStatus,
+import type {
+	SavingsCapacity,
+	SavingsCapacityStatus,
 } from "@patrimo/core/savings-capacity";
 import { formatEuro } from "@patrimo/core/format";
 import { shared, type Theme } from "./theme";
@@ -36,7 +35,11 @@ export function SavingsCapacityCard({
 	const tone = statusColor(capacity.status, t);
 	const reserveLine =
 		capacity.monthlyEmergencyReserve > 0
-			? ` · ${formatEuro(capacity.monthlyEmergencyReserve)} / mois pour atteindre ${SAVINGS_CAPACITY_EF_TARGET_MONTHS} mois de dépenses`
+			? ` · ${formatEuro(capacity.monthlyEmergencyReserve)} / mois pour atteindre ${
+					capacity.emergencyTargetEuro !== undefined
+						? formatEuro(capacity.emergencyTargetEuro)
+						: `${capacity.emergencyTargetMonths} mois de dépenses`
+				}`
 			: "";
 
 	return (

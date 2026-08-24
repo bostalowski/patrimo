@@ -6,6 +6,7 @@ import { normalizeSectorAllocations } from "@patrimo/core/sector-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import type {
 	DiversificationTarget,
+	EmergencyFundConfig,
 	FinancialGoal,
 	GeographicAllocation,
 	SectorAllocation,
@@ -21,6 +22,10 @@ import {
 	type Workbook,
 } from "@patrimo/core/schema";
 import {
+	DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS,
+	DEFAULT_EMERGENCY_FUND_TARGET_MONTHS,
+} from "@patrimo/core/emergency-fund-config";
+import {
 	diversificationPctFromExcel,
 	normalizeDiversificationTargets,
 } from "@patrimo/core/diversification-targets";
@@ -32,6 +37,7 @@ import {
 	DCA_HEADERS,
 	EXPOSITION_GEO_HEADERS,
 	EXPOSITION_SECTEUR_HEADERS,
+	FONDS_URGENCE_HEADERS,
 	OBJECTIFS_HEADERS,
 	PRIX_MANUELS_HEADERS,
 	SHEET_ACTIFS,
@@ -41,6 +47,7 @@ import {
 	SHEET_DCA,
 	SHEET_EXPOSITION_GEO,
 	SHEET_EXPOSITION_SECTEUR,
+	SHEET_FONDS_URGENCE,
 	SHEET_OBJECTIFS,
 	SHEET_PRIX_MANUELS,
 	SHEET_TRANSACTIONS,
@@ -68,6 +75,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	const rawSectorAllocations = readSheet(wb, SHEET_EXPOSITION_SECTEUR);
 	const rawDiversificationTargets = readSheet(wb, SHEET_CIBLES_DIVERSIFICATION);
 	const rawFinancialGoals = readSheet(wb, SHEET_OBJECTIFS);
+	const rawEmergencyFundConfig = readSheet(wb, SHEET_FONDS_URGENCE);
 
 	const { transactions, keys: transactionKeys } =
 		parseTransactions(rawTransactions);
@@ -86,6 +94,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 		rawDiversificationTargets,
 	);
 	const financialGoals = parseFinancialGoals(rawFinancialGoals);
+	const emergencyFundConfig = parseEmergencyFundConfig(rawEmergencyFundConfig);
 
 	console.log("[Parser v2] Results:", {
 		transactions: transactions.length,
@@ -99,6 +108,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 		sectorAllocations: sectorAllocations.length,
 		diversificationTargets: diversificationTargets.length,
 		financialGoals: financialGoals.length,
+		emergencyFundConfig: emergencyFundConfig ? 1 : 0,
 	});
 
 	return {
@@ -114,6 +124,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 			sectorAllocations,
 			diversificationTargets,
 			financialGoals,
+			emergencyFundConfig,
 		},
 		transactionKeys,
 	};
@@ -273,6 +284,22 @@ export function serializeWorkbook(
 				entry.inflationIncluded !== false ? "Oui" : "Non",
 			Notes: entry.notes ?? null,
 		})),
+	);
+	replaceRows(
+		workbook,
+		SHEET_FONDS_URGENCE,
+		FONDS_URGENCE_HEADERS,
+		workbookData.emergencyFundConfig
+			? [
+					{
+						"Cible (mois)": workbookData.emergencyFundConfig.targetMonths,
+						"Cible (€)":
+							workbookData.emergencyFundConfig.targetAmountOverride ?? null,
+						"Horizon rattrapage (mois)":
+							workbookData.emergencyFundConfig.catchUpHorizonMonths,
+					},
+				]
+			: [],
 	);
 	deleteSheetIfPresent(workbook, SHEET_ALLOCATION_CIBLE);
 
@@ -650,6 +677,41 @@ function parseFinancialGoals(rows: Record<string, unknown>[]): FinancialGoal[] {
 	return normalizeFinancialGoals(pending);
 }
 
+function parseEmergencyFundConfig(
+	rows: Record<string, unknown>[],
+): EmergencyFundConfig | undefined {
+	const row = rows.find((entry) =>
+		["Cible (mois)", "Cible (€)", "Horizon rattrapage (mois)"].some(
+			(column) => toNumber(entry[column]) !== null,
+		),
+	);
+	if (!row) return undefined;
+
+	const targetMonths = toNumber(row["Cible (mois)"]);
+	const targetAmountOverride = toNumber(row["Cible (€)"]);
+	const catchUpHorizonMonths = toNumber(row["Horizon rattrapage (mois)"]);
+
+	if (
+		targetMonths === null &&
+		targetAmountOverride === null &&
+		catchUpHorizonMonths === null
+	) {
+		return undefined;
+	}
+
+	return {
+		targetMonths: targetMonths ?? DEFAULT_EMERGENCY_FUND_TARGET_MONTHS,
+		targetAmountOverride: targetAmountOverride ?? undefined,
+		catchUpHorizonMonths: Math.max(
+			1,
+			Math.round(
+				catchUpHorizonMonths ??
+					DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS,
+			),
+		),
+	};
+}
+
 function parseOuiNon(value: unknown, defaultValue: boolean): boolean {
 	if (value === null || value === undefined || value === "") return defaultValue;
 	const normalized = String(value).trim().toLowerCase();
@@ -739,7 +801,7 @@ function trimStr(value: unknown): string {
 
 function coerceDate(value: unknown): Date | string {
 	if (value instanceof Date) {
-		if (isNaN(value.getTime())) return new Date(0);
+		if (Number.isNaN(value.getTime())) return new Date(0);
 		return value;
 	}
 	if (typeof value === "number") {
@@ -752,7 +814,7 @@ function coerceDate(value: unknown): Date | string {
 	}
 	if (typeof value === "string" && value.length > 0) {
 		const d = new Date(value);
-		if (!isNaN(d.getTime())) return d;
+		if (!Number.isNaN(d.getTime())) return d;
 	}
 	return new Date(0);
 }

@@ -1,11 +1,17 @@
+import { sumLivretMarketValue } from "@patrimo/core/emergency-fund";
+import type { EmergencyFundConfig } from "@patrimo/core/schema";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getConfiguredExcelPath,
   getInflationRate,
   getSyncIntervalMinutes,
 } from "@/lib/config";
-import { validateExcelFile } from "@/lib/excel";
+import { loadWorkbook, validateExcelFile } from "@/lib/excel";
+import { buildPortfolio } from "@/lib/portfolio";
+import { summarizeBudget } from "@/lib/budget";
+import { readPriceMap } from "@/lib/store";
 import {
+  EmergencyFundSettings,
   InflationSettings,
   SettingsClient,
   SyncIntervalSettings,
@@ -14,10 +20,13 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default function ReglagesPage() {
+export default async function ReglagesPage() {
   const excelPath = getConfiguredExcelPath();
   const inflationRate = getInflationRate();
   const syncIntervalMinutes = getSyncIntervalMinutes();
+  let monthlyExpenses = 0;
+  let livretBalance = 0;
+  let emergencyFundConfig: EmergencyFundConfig | undefined;
   const initialStatus: SettingsStatus = excelPath
     ? (() => {
         const validation = validateExcelFile(excelPath);
@@ -32,6 +41,15 @@ export default function ReglagesPage() {
             };
       })()
     : { excelPath: null, configured: false, valid: false };
+
+  if (initialStatus.valid) {
+    const workbook = loadWorkbook();
+    const priceMap = await readPriceMap(workbook.assets);
+    const portfolio = buildPortfolio(workbook, priceMap);
+    monthlyExpenses = summarizeBudget(workbook.budget).depensesMensuelles;
+    livretBalance = sumLivretMarketValue(portfolio.accounts);
+    emergencyFundConfig = workbook.emergencyFundConfig;
+  }
 
   return (
     <div className="space-y-6">
@@ -68,6 +86,21 @@ export default function ReglagesPage() {
           <InflationSettings initialRate={inflationRate} />
         </CardBody>
       </Card>
+
+      {initialStatus.valid && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Fonds d&apos;urgence</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <EmergencyFundSettings
+              initialConfig={emergencyFundConfig}
+              monthlyExpenses={monthlyExpenses}
+              livretBalance={livretBalance}
+            />
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

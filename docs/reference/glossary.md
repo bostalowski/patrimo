@@ -50,6 +50,14 @@ Months of monthly expenses covered by total livret market value: `livretBalance 
 
 Status band derived from **Emergency fund coverage**: `insufficient` (&lt; 3 months), `acceptable` ([3, 6)), `healthy` ([6, 12)), `over_allocated` (≥ 12). Shown on web and mobile Dashboards when coverage is defined.
 
+## Emergency fund config
+
+Workbook-backed settings persisted in optional sheet `Fonds urgence`: reserve
+target in months (`Cible (mois)`), optional absolute euro target override
+(`Cible (€)`), and catch-up horizon (`Horizon rattrapage (mois)`). Used by
+`computeSavingsCapacity`; does not change Emergency fund health status
+thresholds.
+
 ## Risk status band
 
 Qualitative judgement attached to a performance risk metric (annualized volatility, Sharpe ratio, or max drawdown) using fixed product thresholds in `@patrimo/core`. Used so Dashboards can show a human label and color without redefining cutoffs in the UI. When the underlying metric is null (insufficient history), no band is produced.

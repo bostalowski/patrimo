@@ -1,11 +1,20 @@
 import { computeMonthlyDcaPool } from "./next-euro-plan";
-import type { DcaConfig } from "./schema";
+import {
+	DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS,
+	DEFAULT_EMERGENCY_FUND_TARGET_MONTHS,
+	effectiveEmergencyFundTargetEuro,
+	monthlyEmergencyCatchUpReserve,
+	normalizeEmergencyFundConfig,
+} from "./emergency-fund-config";
+import type { DcaConfig, EmergencyFundConfig } from "./schema";
 
 /** Lower bound of ADR 0005 `acceptable` / start of `healthy`. */
-export const SAVINGS_CAPACITY_EF_TARGET_MONTHS = 6;
+export const SAVINGS_CAPACITY_EF_TARGET_MONTHS =
+	DEFAULT_EMERGENCY_FUND_TARGET_MONTHS;
 
 /** Months over which to spread the emergency-fund catch-up reserve. */
-export const SAVINGS_CAPACITY_CATCH_UP_HORIZON_MONTHS = 12;
+export const SAVINGS_CAPACITY_CATCH_UP_HORIZON_MONTHS =
+	DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS;
 
 /** Planned DCA is comfortable when ≤ this fraction of investable surplus. */
 export const SAVINGS_CAPACITY_COMFORTABLE_RATIO = 0.8;
@@ -18,7 +27,7 @@ export type SavingsCapacityStatus =
 export type SavingsCapacity = {
 	/** `revenusMensuels − depensesMensuelles` (budget ÉPARGNE ignored). */
 	rawSavings: number;
-	/** Monthly catch-up toward 6 months of expenses over 12 months; 0 when coverage ≥ 6 or no expenses. */
+	/** Monthly catch-up toward configured emergency-fund target over catch-up horizon; 0 when gap is zero or target not computable. */
 	monthlyEmergencyReserve: number;
 	/** `rawSavings − monthlyEmergencyReserve` (may be negative). */
 	investableSurplus: number;
@@ -26,6 +35,12 @@ export type SavingsCapacity = {
 	plannedDcaMonthly: number;
 	/** `plannedDcaMonthly − investableSurplus`. */
 	gap: number;
+	/** Effective emergency-fund target used for catch-up (if computable). */
+	emergencyTargetEuro?: number;
+	/** Target months used when target euro is derived from expenses. */
+	emergencyTargetMonths: number;
+	/** Catch-up spread horizon in months. */
+	emergencyCatchUpHorizonMonths: number;
 	status: SavingsCapacityStatus;
 };
 
@@ -34,6 +49,7 @@ export type SavingsCapacityInput = {
 	depensesMensuelles: number;
 	livretBalance: number;
 	dca: DcaConfig[];
+	emergencyFundConfig?: EmergencyFundConfig;
 };
 
 function roundCents(value: number): number {
@@ -43,17 +59,32 @@ function roundCents(value: number): number {
 export function computeSavingsCapacity(
 	input: SavingsCapacityInput,
 ): SavingsCapacity | null {
-	const { revenusMensuels, depensesMensuelles, livretBalance, dca } = input;
+	const {
+		revenusMensuels,
+		depensesMensuelles,
+		livretBalance,
+		dca,
+		emergencyFundConfig,
+	} = input;
 
 	if (revenusMensuels <= 0) return null;
+	const normalizedConfig = normalizeEmergencyFundConfig(emergencyFundConfig);
 
 	const rawSavings = roundCents(revenusMensuels - depensesMensuelles);
 	const monthlyEmergencyReserve = roundCents(
-		monthlyEmergencyCatchUpReserve(livretBalance, depensesMensuelles),
+		monthlyEmergencyCatchUpReserve({
+			livretBalance,
+			monthlyExpenses: depensesMensuelles,
+			config: normalizedConfig,
+		}),
 	);
 	const investableSurplus = roundCents(rawSavings - monthlyEmergencyReserve);
 	const plannedDcaMonthly = computeMonthlyDcaPool(dca);
 	const gap = roundCents(plannedDcaMonthly - investableSurplus);
+	const emergencyTargetEuro = effectiveEmergencyFundTargetEuro({
+		monthlyExpenses: depensesMensuelles,
+		config: normalizedConfig,
+	});
 
 	return {
 		rawSavings,
@@ -61,25 +92,11 @@ export function computeSavingsCapacity(
 		investableSurplus,
 		plannedDcaMonthly,
 		gap,
+		emergencyTargetEuro,
+		emergencyTargetMonths: normalizedConfig.targetMonths,
+		emergencyCatchUpHorizonMonths: normalizedConfig.catchUpHorizonMonths,
 		status: statusFor(plannedDcaMonthly, investableSurplus),
 	};
-}
-
-function monthlyEmergencyCatchUpReserve(
-	livretBalance: number,
-	depensesMensuelles: number,
-): number {
-	if (depensesMensuelles <= 0) return 0;
-
-	const coverageMonths = livretBalance / depensesMensuelles;
-	if (coverageMonths >= SAVINGS_CAPACITY_EF_TARGET_MONTHS) return 0;
-
-	return Math.max(
-		0,
-		((SAVINGS_CAPACITY_EF_TARGET_MONTHS - coverageMonths) *
-			depensesMensuelles) /
-			SAVINGS_CAPACITY_CATCH_UP_HORIZON_MONTHS,
-	);
 }
 
 function statusFor(

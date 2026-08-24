@@ -5,10 +5,9 @@ import {
 	CardTitle,
 	CardValue,
 } from "@/components/ui/card";
-import {
-	SAVINGS_CAPACITY_EF_TARGET_MONTHS,
-	type SavingsCapacity,
-	type SavingsCapacityStatus,
+import type {
+	SavingsCapacity,
+	SavingsCapacityStatus,
 } from "@patrimo/core/savings-capacity";
 import { formatEuro } from "@/lib/utils";
 
@@ -50,7 +49,10 @@ export function SavingsCapacityCard({
 						<>
 							{" "}
 							· {formatEuro(capacity.monthlyEmergencyReserve)} / mois pour
-							atteindre {SAVINGS_CAPACITY_EF_TARGET_MONTHS} mois de dépenses
+							atteindre{" "}
+							{capacity.emergencyTargetEuro !== undefined
+								? formatEuro(capacity.emergencyTargetEuro)
+								: `${capacity.emergencyTargetMonths} mois de dépenses`}
 						</>
 					)}
 				</p>

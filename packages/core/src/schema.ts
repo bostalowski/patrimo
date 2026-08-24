@@ -272,6 +272,13 @@ export const FinancialGoal = z.object({
 });
 export type FinancialGoal = z.infer<typeof FinancialGoal>;
 
+export const EmergencyFundConfig = z.object({
+	targetMonths: z.number().positive(),
+	targetAmountOverride: z.number().positive().optional(),
+	catchUpHorizonMonths: z.number().int().min(1),
+});
+export type EmergencyFundConfig = z.infer<typeof EmergencyFundConfig>;
+
 export type Workbook = {
 	transactions: Transaction[];
 	assets: Asset[];
@@ -284,4 +291,5 @@ export type Workbook = {
 	sectorAllocations: SectorAllocation[];
 	diversificationTargets: DiversificationTarget[];
 	financialGoals: FinancialGoal[];
+	emergencyFundConfig?: EmergencyFundConfig;
 };

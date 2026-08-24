@@ -7,6 +7,7 @@ export * from "./diversification-coherence";
 export * from "./diversification-labels";
 export * from "./diversification-targets";
 export * from "./emergency-fund";
+export * from "./emergency-fund-config";
 export * from "./fees";
 export * from "./financial-goals";
 export * from "./fiscal-advice";

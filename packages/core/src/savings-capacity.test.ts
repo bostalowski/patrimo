@@ -53,6 +53,9 @@ describe("computeSavingsCapacity", () => {
 			investableSurplus: 3_000,
 			plannedDcaMonthly: 500,
 			gap: -2_500,
+			emergencyTargetEuro: 12_000,
+			emergencyTargetMonths: 6,
+			emergencyCatchUpHorizonMonths: 12,
 			status: "comfortable",
 		});
 	});
@@ -87,6 +90,9 @@ describe("computeSavingsCapacity", () => {
 			investableSurplus: 3_000,
 			plannedDcaMonthly: 500,
 			gap: -2_500,
+			emergencyTargetEuro: undefined,
+			emergencyTargetMonths: 6,
+			emergencyCatchUpHorizonMonths: 12,
 			status: "comfortable",
 		});
 	});
@@ -187,5 +193,41 @@ describe("computeSavingsCapacity", () => {
 		});
 		expect(result?.rawSavings).toBe(2_000);
 		expect(result?.investableSurplus).toBe(2_000);
+	});
+
+	it("uses custom target months and custom horizon when provided", () => {
+		const result = computeSavingsCapacity({
+			revenusMensuels: 4_000,
+			depensesMensuelles: 2_000,
+			livretBalance: 3_000,
+			dca: [dca(1_000)],
+			emergencyFundConfig: {
+				targetMonths: 9,
+				catchUpHorizonMonths: 18,
+			},
+		});
+		// target = 9 * 2_000 = 18_000; gap = 15_000; reserve = 15_000 / 18
+		expect(result?.monthlyEmergencyReserve).toBe(833.33);
+		expect(result?.emergencyTargetEuro).toBe(18_000);
+		expect(result?.emergencyTargetMonths).toBe(9);
+		expect(result?.emergencyCatchUpHorizonMonths).toBe(18);
+	});
+
+	it("uses absolute target override even when monthly expenses are zero", () => {
+		const result = computeSavingsCapacity({
+			revenusMensuels: 2_500,
+			depensesMensuelles: 0,
+			livretBalance: 2_000,
+			dca: [dca(200)],
+			emergencyFundConfig: {
+				targetMonths: 6,
+				targetAmountOverride: 10_000,
+				catchUpHorizonMonths: 10,
+			},
+		});
+		expect(result?.monthlyEmergencyReserve).toBe(800);
+		expect(result?.emergencyTargetEuro).toBe(10_000);
+		expect(result?.emergencyTargetMonths).toBe(6);
+		expect(result?.emergencyCatchUpHorizonMonths).toBe(10);
 	});
 });

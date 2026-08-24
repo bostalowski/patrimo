@@ -84,6 +84,7 @@ export default function DashboardScreen() {
 		depensesMensuelles,
 		livretBalance,
 		dca: workbook.dca,
+		emergencyFundConfig: workbook.emergencyFundConfig,
 	});
 
 	const history = buildHistorySeries(

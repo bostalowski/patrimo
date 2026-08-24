@@ -16,6 +16,8 @@ function capacity(
 		investableSurplus: 1_000,
 		plannedDcaMonthly: 1_500,
 		gap: 500,
+		emergencyTargetMonths: 6,
+		emergencyCatchUpHorizonMonths: 12,
 		status: "over_committed",
 		...overrides,
 	};

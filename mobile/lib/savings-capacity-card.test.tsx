@@ -21,6 +21,8 @@ function capacity(
 		investableSurplus: 2_000,
 		plannedDcaMonthly: 500,
 		gap: -1_500,
+		emergencyTargetMonths: 6,
+		emergencyCatchUpHorizonMonths: 12,
 		status: "comfortable",
 		...overrides,
 	};
@@ -90,6 +92,19 @@ describe("mobile SavingsCapacityCard", () => {
 			/>,
 		);
 		expect(texts(root).join(" ")).toMatch(/pour atteindre 6 mois de dépenses/);
+	});
+
+	it("shows absolute target when override is defined", () => {
+		const root = render(
+			<SavingsCapacityCard
+				capacity={capacity({
+					monthlyEmergencyReserve: 800,
+					emergencyTargetEuro: 10_000,
+				})}
+				theme={colors.light}
+			/>,
+		);
+		expect(texts(root).join(" ")).toMatch(/atteindre 10[\s\u00a0]?000/);
 	});
 
 	it("renders nothing when capacity is null", () => {

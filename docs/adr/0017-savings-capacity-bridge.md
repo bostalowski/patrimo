@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-08-21
 - implementation_ready: yes
+- Superseded-by: [ADR 0018](0018-configurable-emergency-fund-target.md) for configurable emergency-fund target and catch-up horizon.
 
 ```text
 Contract (do not invent):
