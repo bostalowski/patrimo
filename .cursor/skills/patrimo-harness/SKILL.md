@@ -14,15 +14,15 @@ description: >-
 
 1. Read `CONSTRAINTS.md`, `docs/reference/glossary.md`.
 2. `make branch-status` — read this branch’s CONTRACT + PROGRESS (on `main`, root PROGRESS + matrix only).
-3. If no CONTRACT yet: feature branch → `make branch-contract` → fill scope / verify / exclusions.
-4. `make branch-ready` must pass before implementing.
+3. If no CONTRACT yet: feature branch → `make branch-contract` → **Framer** fills Intent / behavior cases / decisions (Tier B) or marks `n/a` (Tier A). See `docs/howto/cadrage-lock.md`.
+4. Tier B: Challenger if `Challenger: required`; human teach-back accepted in PROGRESS; then `make branch-ready` must pass before Maker.
 5. Read colocated `ARCHITECTURE.md` for packages you touch.
-6. Implement that CONTRACT only. When Layer 2 applies: per case **RED → GREEN** (`docs/howto/tdd-red-green.md`) — failing targeted test for the missing behavior, record RED evidence in PROGRESS, then minimal production code. Never invent sheet names / enums / reserved IDs.
+6. Implement that CONTRACT only. When Layer 2 applies: per case **RED → GREEN** (`docs/howto/tdd-red-green.md`) — failing targeted test for the right reason before production code, record RED evidence in PROGRESS, then minimal production code. Never invent sheet names / enums / reserved IDs; never invent behavior absent from CONTRACT cases.
 7. Verify:
    - Always: `make verify`
    - Behavior: targeted `npm test -- <path>` (after RED → GREEN when Layer 2 applies)
    - Web UI / API / workbook I/O / settings: `make e2e` or `make verify-full`
-8. Checker: fresh session using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing).
+8. Checker: fresh session using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof).
 9. Update `docs/agent/branches/<slug>/PROGRESS.md` (+ optional `docs/agent/runs/YYYY-MM-DD-slug.md`).
 10. On merge: update root `FEATURES.md` matrix if platform status changed.
 
@@ -43,10 +43,11 @@ description: >-
 ## Do not
 
 - Declare done on lint/unit alone when layer 3 applies.
+- Start Maker work on Tier B before Intent / LOCKED decisions / teach-back / `branch-ready`.
 - Write production code for a Layer 2 behavior case before a real RED for that case.
 - Expand into a second feature without updating the branch CONTRACT.
 - Put feature focus in root `PROGRESS.md` (that file is for `main` only).
 - Grade your own non-trivial work without a checker pass.
 - Duplicate domain rules outside `@patrimo/core`.
 - Treat `make next-feature` as a claim queue (deprecated → `platform-gaps` + branch contract).
-- Treat full Spec-Driven Development as required (opt-in only; harness embeds RED → GREEN alone).
+- Treat full Spec-Driven Development as required (opt-in only; harness embeds cadrage-lock + RED → GREEN).

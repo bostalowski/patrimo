@@ -32,6 +32,8 @@ Optional dated notes for long or multi-session work. **Primary handoff** for a f
 ## Related
 
 - [Branch contracts](../branches/README.md)
+- [Cadrage lock](../../howto/cadrage-lock.md)
 - [Sprint contract pointer](../sprint-contract.md)
 - [Scoring rubric](../scoring-rubric.md)
 - [Maker / checker](../../howto/maker-checker.md)
+- [RED → GREEN](../../howto/tdd-red-green.md)

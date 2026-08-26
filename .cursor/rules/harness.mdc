@@ -11,12 +11,12 @@ Before changing product behavior:
 2. Read [docs/reference/glossary.md](docs/reference/glossary.md)
 3. Read branch handoff: `make branch-status` (or `docs/agent/branches/<slug>/PROGRESS.md`); on `main`, root [PROGRESS.md](PROGRESS.md)
 4. Read the colocated `ARCHITECTURE.md` for the package you touch
-5. For a feature: `make branch-contract`, fill [CONTRACT](docs/agent/branches/README.md), then `make branch-ready` must pass before coding
+5. For a feature: `make branch-contract`, Framer fills [CONTRACT](docs/agent/branches/README.md) (Tier B: Intent / decisions / teach-back per [cadrage-lock](docs/howto/cadrage-lock.md)), then `make branch-ready` must pass before coding
 
 ## Stop criteria (Definition of Done)
 
 - Layer 1: green `make verify` (lint + typecheck + unit tests) — always.
-- Layer 2: targeted tests for the change — when behavior changes. When Layer 2 applies: **RED → GREEN** per CONTRACT case before production code ([docs/howto/tdd-red-green.md](docs/howto/tdd-red-green.md)); record RED evidence in branch PROGRESS.
+- Layer 2: targeted tests for the change — when behavior changes. When Layer 2 applies: **cadrage lock** then **RED → GREEN** per CONTRACT case before production code ([docs/howto/cadrage-lock.md](docs/howto/cadrage-lock.md), [docs/howto/tdd-red-green.md](docs/howto/tdd-red-green.md)); record RED evidence in branch PROGRESS.
 - Layer 3: green `make e2e` / `make verify-full` — when web UI, API routes, workbook I/O, or settings change.
 - Work **one** branch CONTRACT at a time (`make branch-status`).
 - Do not invent sheet names, enums, or reserved IDs — use the glossary and `@patrimo/core`.

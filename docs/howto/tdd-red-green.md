@@ -4,16 +4,16 @@ When Layer 2 applies, implement each CONTRACT behavior case as **RED then GREEN*
 
 Hard rule: [CONSTRAINTS.md](../../CONSTRAINTS.md) §24. Session entry: [AGENTS.md](../../AGENTS.md).
 
-This is **not** full Spec-Driven Development. No SPEC LOCK, Diátaxis package, or autonomous commit/push/PR is required. Full SDD remains an explicit opt-in skill outside this harness.
+This is **not** full Spec-Driven Development. No SPEC LOCK, Diátaxis package, or autonomous commit/push/PR is required. Full SDD remains an explicit opt-in skill outside this harness. Cadrage before RED is [cadrage-lock.md](cadrage-lock.md) (CONSTRAINTS §25).
 
 ## When it applies
 
 | CONTRACT says | Do |
 |---|---|
-| Layer 2 lists targeted `npm test -- <path>` and behavior cases | RED → GREEN per case before production code for that case |
+| Layer 2 lists targeted `npm test -- <path>` and behavior cases | After cadrage lock + `branch-ready`, RED → GREEN per case before production code for that case |
 | Layer 2: `n/a` | Skip RED → GREEN (docs, harness tooling, pure refactor, config, styling, spikes) |
 
-Derive test titles from the **CONTRACT Layer 2 cases** (and Scope bullets). Do not invent behavior absent from the CONTRACT — reopen the CONTRACT instead.
+Derive test titles from the **CONTRACT Behavior cases** (and Layer 2 / Scope bullets). Do not invent behavior absent from the CONTRACT — reopen the CONTRACT (and teach-back) instead.
 
 ## Gate RED (hard)
 
@@ -50,6 +50,7 @@ The checker may **Fail** when Layer 2 applied and RED evidence is missing. See [
 
 ## Related
 
+- [Cadrage lock](cadrage-lock.md) — Intent / teach-back before Maker
 - [Agent loop](agent-loop.md) — outer goal / stop conditions
 - [Branch contracts](../agent/branches/README.md)
 - [Maker / checker](maker-checker.md)

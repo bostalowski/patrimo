@@ -7,6 +7,16 @@ Branch-local handoff. Do not put other features' focus here.
 - **In progress:**
 - **Blocked:** none
 
+## Cadrage lock
+
+Per [cadrage-lock.md](../../howto/cadrage-lock.md). Tier A: mark teach-back / Challenger `n/a`.
+
+- Tier: A | B
+- Framer session / date:
+- Challenger: n/a | Pass (date) | skipped (reason):
+- Teach-back: n/a | pending | accepted (YYYY-MM-DD)
+- `make branch-ready`:
+
 ## Done (this branch)
 
 - [ ]
