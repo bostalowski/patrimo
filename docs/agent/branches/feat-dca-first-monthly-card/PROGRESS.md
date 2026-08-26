@@ -4,80 +4,105 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** none — checker **Pass** (2026-08-26); ready to merge
+- **In progress:** none — maker follow-ups done; re-checker requested
 - **Blocked:** none
 
-## Cadrage lock
+## Cadrage lock (amendment 2026-08-26)
 
-Per [cadrage-lock.md](../../howto/cadrage-lock.md).
+Human accepted UX follow-up on same branch (post-checker):
 
-- Tier: B
-- Framer session / date: 2026-08-26
-- Challenger: Pass (2026-08-26) — re-review after Fail fixes
-- Teach-back: accepted (2026-08-26) — scenarios 1–6
-- `make branch-ready`: Pass (2026-08-26) — 14/14
+- EF surplus copy moves from ThisMonthCard → EmergencyFundCard
+- ThisMonthCard / « Ce mois-ci » removed from Dashboard (Exécution = DCA action)
+- Stock breach alert → DashboardExposureAlert (only when breach)
+- EF surplus visible when investment pool === 0 (fixes prior accepted gap)
+
+Teach-back: amendment scenarios (CONTRACT 1–2, 5 rewritten) accepted with the UX follow-up above.
 
 ## Done (this branch)
 
 - [x] Branch + `make branch-contract`
-- [x] CONTRACT Intent / cases / decisions LOCKED
-- [x] Teach-back accepted (human confirm scenarios 1–5; scenario 6 accepted 2026-08-26 — same intent, covered by D3/D8 tests)
-- [x] Challenger Fail → CONTRACT fixes → Challenger Pass
-- [x] ThisMonthCard + `this-month-copy` (EF / saved DCA / breach D8 / hide pool=0)
+- [x] Initial cadrage + teach-back + Challenger Pass
 - [x] Diversification: stop mounting NextEuroPlanCard
 - [x] Exécution: `useTilt` default false, not persisted (D9)
-- [x] ADR 0022 + glossary + next-euro-plan.md + FEATURES Notes
-- [x] Layer 1 `make verify` green
-- [x] Layer 3 `make e2e` green (2 passed)
+- [x] ADR 0022 + glossary + next-euro-plan.md + FEATURES Notes (updated twice)
+- [x] **Follow-up:** EmergencyFundCard surplus + DashboardExposureAlert; ThisMonthCard removed
+- [x] CONTRACT synced to amendment (cases / D2 D7 D10 / teach-back / out-of-scope)
+- [x] Dashboard page wiring test (`src/app/dashboard-page.test.ts`)
+- [x] Layer 1 `make verify` green (528 tests)
+- [x] Layer 3 `make e2e` green (2 passed) after Playwright Chromium install
 
 ## RED evidence (when Layer 2 applies)
 
 Per [tdd-red-green.md](../../howto/tdd-red-green.md).
 
-### ThisMonthCard + this-month-copy (2026-08-26)
+### Dashboard IA follow-up (2026-08-26)
+
+- Case: EF surplus on EmergencyFundCard; DashboardExposureAlert breach D8; no Ce mois-ci
+- Command: `npm test -- src/components/emergency-fund-card.test.tsx src/components/dashboard-exposure-alert.test.tsx packages/core/src/this-month-copy.test.ts`
+- Failure reason: ThisMonthCard still owned EF banner; EmergencyFundCard had no surplus prop
+- GREEN: same command — 14 passed; `make verify` green
+
+### Dashboard page wiring (2026-08-26)
+
+- Case: page mounts EmergencyFundCard + DashboardExposureAlert; omits ThisMonthCard / NextEuroPlanCard
+- Command: `npm test -- src/app/dashboard-page.test.ts`
+- GREEN: 1 passed (source assertion added with follow-up commit)
+
+### ThisMonthCard + this-month-copy (2026-08-26, superseded by follow-up)
 
 - Case: Ce mois-ci title / saved DCA lead / EF banner / stock breach D8 / hide pool=0
 - Command: `npm test -- packages/core/src/this-month-copy.test.ts src/components/this-month-card.test.tsx`
-- Failure reason: stubs returned PLACEHOLDER / empty lead / empty breach keys / card null — missing DCA-first monthly guidance (not compile noise)
-- GREEN: same command — 13 passed
+- Failure reason: stubs returned PLACEHOLDER / empty lead / empty breach keys / card null
+- GREEN: same command — 13 passed (ThisMonthCard since removed)
 
 ### Exécution tilt default (2026-08-26)
 
 - Case: useTilt off when tilt/adjust_plan; remount resets (D9)
 - Command: `npm test -- src/app/investissements/dca-execution.test.tsx`
-- Failure reason: `useState(tiltAvailable)` left checkbox checked (expected false)
-- GREEN: same command — 3 passed
+- GREEN: 3 passed
 
 ### Diversification no NextEuroPlanCard (2026-08-26)
 
-- Case: D1 — page does not mount NextEuroPlanCard; AllocationCoherenceCard remains
+- Case: D1 — page does not mount NextEuroPlanCard
 - Command: `npm test -- src/app/diversification/diversification-page.test.ts`
-- Failure reason: page.tsx still imported/mounted NextEuroPlanCard
-- GREEN: same command — 1 passed
+- GREEN: 1 passed
 
 ## Last verify
 
 - Command: `make verify` + `make e2e`
-- Result: verify green (529 tests); e2e 2 passed
-- Date: 2026-08-26 (checker re-run same day)
+- Result: verify green (528 tests); e2e green (2 passed)
+- Date: 2026-08-26 (CONTRACT sync + follow-up commit prep)
+- Layer 2 targeted: 19 passed (`dashboard-page` + EF + exposure + this-month-copy + dca-execution + diversification)
 
-## Checker (2026-08-26)
+## Checker (2026-08-26, initial — pre follow-up)
 
 Role: checker (distinct session). Rubric: [scoring-rubric.md](../../scoring-rubric.md).
 
-| Dimension | Score | Evidence |
-|---|---|---|
-| Correctness | A | Layer 1 `make verify` 529 passed; Layer 2 targeted 17/17; Layer 3 `make e2e` 2 passed. Cases covered: EF banner, saved-DCA lead (no tilt/oriente), D3/D8 breach filter, hide pool=0 via null plan, Diversification no NextEuroPlanCard, Exécution useTilt false + remount. |
-| Architecture | A | FR/copy + breach key selection in `@patrimo/core` (`this-month-copy.ts`); UI mounts only; ADR 0022 accepted; tilt math kept (D5). |
-| Scope discipline | A | Diff matches CONTRACT scope; exclusions respected (no mobile, no tilt delete, no capacity UI, no ADR 0012 tone change). |
-| Tests / evidence | A | RED evidence recorded for three Layer 2 paths; checker re-ran green targeted suite + verify + e2e. Scenario 6 behavior covered by `ignores watch…flow_misalign` + card D8 test. |
-| Docs handoff | A | ADR 0022 + glossary + next-euro-plan + FEATURES Notes done; cadrage lock / teach-back scenarios 1–6 recorded. |
+**Verdict: Pass** on initial ThisMonthCard scope. Re-checker needed after Dashboard IA follow-up.
 
-**Verdict: Pass** (no D; all dimensions A).
+## Checker (2026-08-26, re-checker — post follow-up)
+
+Role: checker (fresh session). Rubric: [scoring-rubric.md](../../scoring-rubric.md). Evaluated working tree (follow-up uncommitted vs `HEAD`).
+
+| Dimension | Grade | Evidence |
+|---|---|---|
+| Correctness | **B** | `make verify` green (528 tests). Layer 2 targeted: 18/18. Working tree matched amendment; `HEAD` still had ThisMonthCard. Layer 3 missing at review time. |
+| Architecture | **A** | Breach D8 + alert copy in `@patrimo/core`; thin UI adapters. |
+| Scope discipline | **C** | CONTRACT cases/decisions/teach-back still described removed « Ce mois-ci ». |
+| Tests / evidence | **B** | RED → GREEN recorded; no page-level wiring test yet. |
+| Docs handoff | **C** | CONTRACT stale; follow-up uncommitted. |
+
+**Verdict: Fail** — see maker follow-ups below (addressed same day).
+
+**Maker follow-ups (done 2026-08-26):**
+
+1. [x] Commit Dashboard IA follow-up
+2. [x] Rewrite CONTRACT behavior cases + D2/D7/D10 + teach-back + out-of-scope
+3. [x] Re-run `make e2e` (green after Playwright install)
+4. [ ] Re-request checker
 
 ## Notes
 
 Contract: [CONTRACT.md](./CONTRACT.md)
 
-Maker session 2026-08-26: RED → GREEN for card / Exécution / Diversification; ADR 0022.
-Checker Pass 2026-08-26 — merge when ready (FEATURES Notes already updated).
+Maker session 2026-08-26: initial RED → GREEN; follow-up same day per human UX feedback; CONTRACT sync + e2e after checker Fail.

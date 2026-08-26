@@ -159,9 +159,10 @@ Read-only **monthly investment DCA tilt**: verdict (`aligned` / `tilt` /
 Computed by `buildMonthlyDcaTilt` / `buildNextEuroPlan` in `@patrimo/core`.
 Investment pool only (LIVRET excluded from the tilt envelope). Emergency-fund
 LIVRET advice is **not** taken from this pool — see **Emergency fund surplus
-recommendation**. Hidden when investment monthly pool is zero. Web Dashboard
-monthly surface is **Ce mois-ci** (saved DCA + EF banner + stock breach alert),
-not the tilt catch-up card — see [ADR 0022](../adr/0022-dca-first-monthly-card.md).
+recommendation**. Hidden when investment monthly pool is zero. Web Dashboard:
+EF surplus on **Emergency fund** card; stock breach ping via
+**DashboardExposureAlert**; no tilt catch-up card — see
+[ADR 0022](../adr/0022-dca-first-monthly-card.md).
 See also [ADR 0015](../adr/0015-next-euro-plan.md),
 [ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md),
 [ADR 0021](../adr/0021-monthly-dca-tilt-execution.md).
@@ -171,17 +172,16 @@ See also [ADR 0015](../adr/0015-next-euro-plan.md),
 Per-asset euro split for the current month’s investment DCA, with capped band
 catch-up (`min(gap/3, gap, pool×50%)`) and DCA-line executable universe. Feeds
 Exécution via `computeDcaExecutionFromContributions` when the user opts in.
-Dashboard title for the monthly reminder: **Ce mois-ci** (ADR 0022). Legacy UI
-title **Ajustement DCA du mois** may remain in tilt copy helpers for Exécution.
+Legacy UI title **Ajustement DCA du mois** may remain in tilt copy helpers for
+Exécution. Monthly investment action is **Exécution** (saved DCA default).
 See [ADR 0021](../adr/0021-monthly-dca-tilt-execution.md),
 [ADR 0022](../adr/0022-dca-first-monthly-card.md).
 
-## Ce mois-ci (Dashboard)
+## Dashboard exposure alert
 
-Web Dashboard monthly card: EF surplus banner (when actionable) + saved-DCA lead
-+ link to Exécution + optional exposure alert for stock `band_drift` **breach**
-only (up to 3 keys by \|signedΔ\|). Hidden when investment pool is zero. Copy
-helpers in `this-month-copy.ts`. See [ADR 0022](../adr/0022-dca-first-monthly-card.md).
+Web Dashboard optional block when stock `band_drift` **breach** (up to 3 keys by
+\|signedΔ\|) + link Diversification. Copy helpers in `this-month-copy.ts`.
+Hidden when no breach. See [ADR 0022](../adr/0022-dca-first-monthly-card.md).
 
 ## Emergency fund surplus recommendation
 
@@ -189,8 +189,8 @@ Advisory LIVRET oneshot or monthly catch-up toward the configured
 **Emergency fund config** target, using cash left after planned investment DCA
 (`max(0, rawSavings − plannedInvestmentDcaMonthly)`). Deducts planned LIVRET
 DCA on the monthly path. Does not reallocate investment DCA. Computed by
-`computeEmergencyFundSurplusRecommendation` in `@patrimo/core`; shown as a
-banner on Dashboard **Ce mois-ci** (web). Savings capacity UI is hidden; core and
+`computeEmergencyFundSurplusRecommendation` in `@patrimo/core`; shown on web
+Dashboard **Emergency fund** card (when actionable). Savings capacity UI is hidden; core and
 copy helpers retained. See
 [ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md),
 [ADR 0022](../adr/0022-dca-first-monthly-card.md).

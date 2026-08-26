@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { DiversificationCoherenceResult } from "./diversification-coherence";
 import {
-	THIS_MONTH_TITLE,
 	stockBandDriftBreachKeys,
 	thisMonthExposureAlertBody,
-	thisMonthSavedDcaLead,
 } from "./this-month-copy";
-
-const formatEuro = (n: number) => `${n} €`;
 
 function coherence(
 	overrides: Partial<DiversificationCoherenceResult> = {},
@@ -23,17 +19,6 @@ function coherence(
 }
 
 describe("this-month-copy", () => {
-	it("exports Ce mois-ci title", () => {
-		expect(THIS_MONTH_TITLE).toBe("Ce mois-ci");
-	});
-
-	it("saved DCA lead states follow the saved plan with pool amount", () => {
-		expect(thisMonthSavedDcaLead(500, formatEuro)).toMatch(
-			/suis ton plan DCA.*500 €/,
-		);
-		expect(thisMonthSavedDcaLead(500, formatEuro)).not.toMatch(/oriente/);
-	});
-
 	it("returns no breach keys when coherence is null", () => {
 		expect(stockBandDriftBreachKeys(null)).toEqual([]);
 	});

@@ -110,6 +110,6 @@ Two surfaces (capacity + banner) instead of one step in the list.
 - [ADR 0019](0019-livret-dca-savings-capacity.md)
 - [ADR 0005](0005-emergency-fund-health-indicator.md)
 - [ADR 0021](0021-monthly-dca-tilt-execution.md)
-- [ADR 0022](0022-dca-first-monthly-card.md) — Dashboard EF banner host is « Ce mois-ci »
+- [ADR 0022](0022-dca-first-monthly-card.md) — Dashboard EF surplus on Emergency fund card
 - [packages/core/next-euro-plan.md](../../packages/core/next-euro-plan.md)
 - [packages/core/savings-capacity.md](../../packages/core/savings-capacity.md)

@@ -57,5 +57,5 @@ contributions with an opt-out toggle.
 
 - [ADR 0012](0012-allocation-coherence.md)
 - [ADR 0015](0015-next-euro-plan.md)
-- [ADR 0022](0022-dca-first-monthly-card.md) — Dashboard « Ce mois-ci »; Exécution tilt opt-in default
+- [ADR 0022](0022-dca-first-monthly-card.md) — Dashboard EF surplus + breach alert; Exécution tilt opt-in default
 - [packages/core/next-euro-plan.md](../../packages/core/next-euro-plan.md)
