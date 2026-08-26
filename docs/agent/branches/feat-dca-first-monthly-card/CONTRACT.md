@@ -103,7 +103,7 @@ Human accepted 2026-08-26 (scenarios 1–5). Scenario 6 added post-Challenger an
 
 ## Checker
 
-- [ ] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md) — re-check after CONTRACT sync + commit + e2e (prior Pass was pre-follow-up; re-checker Fail 2026-08-26)
+- [x] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md) — Pass on HEAD `41940d3` 2026-08-26 (re-checker #2)
 - Pass bar: no D on correctness; architecture ≥ B; evidence cited; RED evidence when Layer 2 applied; Tier B teach-back / cadrage lock recorded when Layer 2 applied
 
 ## On merge

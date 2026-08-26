@@ -4,7 +4,7 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** none — maker follow-ups done; re-checker requested
+- **In progress:** none — checker Pass; branch ready for merge
 - **Blocked:** none
 
 ## Cadrage lock (amendment 2026-08-26)
@@ -99,7 +99,23 @@ Role: checker (fresh session). Rubric: [scoring-rubric.md](../../scoring-rubric.
 1. [x] Commit Dashboard IA follow-up
 2. [x] Rewrite CONTRACT behavior cases + D2/D7/D10 + teach-back + out-of-scope
 3. [x] Re-run `make e2e` (green after Playwright install)
-4. [ ] Re-request checker
+4. [x] Re-request checker
+
+## Checker (2026-08-26, re-checker #2 — post follow-up commit)
+
+Role: checker (fresh session). Rubric: [scoring-rubric.md](../../scoring-rubric.md). Evaluated **HEAD** `41940d3` (stashed dirty working tree for verify/e2e).
+
+| Dimension | Grade | Evidence |
+|---|---|---|
+| Correctness | **A** | `make verify` green (528 tests on HEAD). Layer 2 targeted: 19/19 (EF + exposure + this-month-copy + dashboard-page + dca-execution + diversification). `make e2e` green (2 passed). |
+| Architecture | **A** | Breach D8 + alert copy in `@patrimo/core/this-month-copy`; `DashboardExposureAlert` + `EmergencyFundCard` thin adapters; Exécution opt-in only (D9). |
+| Scope discipline | **A** | CONTRACT amendment cases / D1–D10 / out-of-scope respected on HEAD; no mobile / no tilt core deletion. |
+| Tests / evidence | **A** | RED → GREEN recorded per case cluster; page wiring test asserts `EmergencyFundCard` + `DashboardExposureAlert`, omits `ThisMonthCard` / `NextEuroPlanCard`. |
+| Docs handoff | **A** | CONTRACT synced to amendment; teach-back + cadrage lock in PROGRESS; ADR 0022 + glossary + FEATURES Notes updated. |
+
+**Verdict: Pass** on HEAD `41940d3`.
+
+**Working-tree warning (not part of Pass):** unstaged changes delete `DashboardExposureAlert` (+ tests) and invert `dashboard-page.test.ts` — violates CONTRACT nominal case 3 / D2 / D3 / D8. Run `git restore src/app/page.tsx src/app/dashboard-page.test.ts src/components/dashboard-exposure-alert.tsx src/components/dashboard-exposure-alert.test.tsx` before merge.
 
 ## Notes
 
