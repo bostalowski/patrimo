@@ -11,12 +11,12 @@ Harness-first layout. Diátaxis families are **not** required. Put knowledge whe
 | Session state (`main`) | Merged work / pointers | Root [PROGRESS.md](../PROGRESS.md) |
 | Session state (feature) | Focus / done / blocked on this branch | [Branch folders](agent/branches/README.md) (`PROGRESS.md`) |
 | Capability matrix | What exists on web vs mobile | [FEATURES.md](../FEATURES.md) (`make platform-gaps`) |
-| Branch cadrage | Scope, verify, exclusions | Same folder (`CONTRACT.md`) |
+| Branch cadrage | Intent, behavior cases, decisions, teach-back, scope, verify, exclusions | Same folder (`CONTRACT.md`); procedure [howto/cadrage-lock.md](howto/cadrage-lock.md) |
 | Score | Checker rubric | [scoring-rubric.md](agent/scoring-rubric.md) |
 | Mechanics | How this package works | Colocated `ARCHITECTURE.md` (+ topic notes beside modules) |
 | Decisions | Why we chose X | [docs/adr/](adr/) |
 | Names | Canonical vocabulary | [docs/reference/glossary.md](reference/glossary.md) |
-| Procedures | How do I perform X | [docs/howto/](howto/) (incl. [tdd-red-green](howto/tdd-red-green.md) when Layer 2 applies) |
+| Procedures | How do I perform X | [docs/howto/](howto/) (incl. [cadrage-lock](howto/cadrage-lock.md), [tdd-red-green](howto/tdd-red-green.md) when Layer 2 applies) |
 | Platform gaps | Current web vs mobile | [docs/overview/platforms.md](overview/platforms.md) |
 
 ## Language
