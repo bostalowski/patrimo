@@ -151,17 +151,24 @@ echo "4. Cadrage lock (Tier $TIER)"
 if [[ "$TIER" == "A" ]]; then
   pass "Tier A — Intent / decisions / teach-back deep checks skipped"
 else
-  # Intent section present and not empty stubs
+  # Intent: skip empty template stubs; count filled label bullets (text after ':')
   if awk '
     /^## Intent/ { section=1; next }
     /^## / { if (section) exit }
     section {
       line=$0
       gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
-      if (line == "" || line ~ /^- Symptom \(who/ || line ~ /^- Suspected cause/ \
-          || line ~ /^- Lever \(where/ || line ~ /^- Success signal/ \
-          || line ~ /^- Band-aid risk/) next
-      if (line ~ /^Tier A:/) next
+      if (line == "") next
+      if (line ~ /^Tier [AB]:/) next
+      # Template Intent labels — empty after colon = stub; ≥8 chars after = filled
+      if (line ~ /^- (Symptom \(who|Suspected cause|Lever \(where|Success signal|Band-aid risk)/) {
+        idx = index(line, ":")
+        if (idx == 0) next
+        rest = substr(line, idx + 1)
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", rest)
+        if (length(rest) >= 8) { found=1; exit }
+        next
+      }
       if (length(line) >= 8) { found=1; exit }
     }
     END { exit found ? 0 : 1 }

@@ -21,7 +21,7 @@
 | D1 | Where cadrage lives | **LOCKED** | Enrich branch `CONTRACT.md` (+ PROGRESS lock lines); no parallel SPEC.md | Separate SPEC.md (rejected: dual source of truth) |
 | D2 | Tiering | **LOCKED** | Tier A = Layer 2 `n/a` → skip Intent/decisions/teach-back; Tier B = behavior → require them | Always require full cadrage (rejected: too heavy for docs/spikes) |
 | D3 | Challenger gate | **LOCKED** | Required only when CONTRACT says `Challenger: required` (ADR / new sheet / structuring core math); else recommended | Always require Challenger (rejected: overhead on simple UI parity) |
-| D4 | Teach-back proof | **LOCKED** | Human accepts 3–5 scenarios; record in PROGRESS `Teach-back: accepted` (or CONTRACT section); `branch-ready` fails Tier B without it | Agent self-confirm (rejected: no alignment proof) |
+| D4 | Teach-back proof | **LOCKED** | Human accepts 3–5 scenarios; record in PROGRESS only as `- Teach-back: accepted`; `branch-ready` fails Tier B without it | Agent self-confirm (rejected: no alignment proof); CONTRACT-only record (rejected: gate greps PROGRESS) |
 | D5 | Full SDD | **LOCKED** | Remains opt-in outside harness; howto points at SDD but does not require Diátaxis package or autonomous commit/push | Adopt full SDD as default (rejected: DOC_MODEL + commit rules friction) |
 
 ## Teach-back
@@ -38,6 +38,7 @@
   - `CONSTRAINTS.md` §25; `AGENTS.md`; `.cursor/rules/harness.mdc`; `.cursor/skills/patrimo-harness/SKILL.md`
   - `docs/agent/branches/README.md`; `docs/howto/maker-checker.md`; `docs/howto/agent-loop.md`; `docs/howto/tdd-red-green.md`
   - `docs/DOC_MODEL.md`; `docs/agent/scoring-rubric.md`
+  - `docs/agent/runs/README.md` — link to cadrage-lock
 
 ## Verification
 
@@ -46,7 +47,10 @@
 - Layer 3: n/a
 - Feature-specific:
   - `make branch-ready` Pass on this Tier A CONTRACT
-  - Tier B smoke: temporary CONTRACT missing teach-back / with OPEN decision → `branch-ready` Fail; restore after
+  - Tier B smoke (temporary; restore after):
+    - missing teach-back → `branch-ready` Fail
+    - OPEN decision → `branch-ready` Fail
+    - template-style filled Intent + `Teach-back: accepted` + LOCKED → `branch-ready` Pass
   - Links from AGENTS → `cadrage-lock.md` resolve
 
 ## Exclusions
@@ -58,7 +62,8 @@
 
 ## Checker
 
-- [ ] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md)
+- [x] Distinct checker role scored with [scoring-rubric.md](../../scoring-rubric.md) — **Fail** 2026-08-26 (see PROGRESS); maker follow-up applied
+- [x] Re-checker after Intent stub fix + smokes — **Pass** 2026-08-26 (see PROGRESS)
 - Pass bar: no D on correctness; architecture ≥ B; evidence cited; CONSTRAINTS + howto + mirrors consistent
 
 ## On merge

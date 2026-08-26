@@ -47,7 +47,7 @@ See [CONTRACT template](../agent/branches/_templates/CONTRACT.md).
 1. **Intent** — symptom; suspected cause (`fact` | `hypothesis`); lever; success signal; band-aid risk if treating symptom only.
 2. **Behavior cases** — nominal / edge / out-of-scope as observable `If … then …` lines. These become Layer 2 RED → GREEN slices.
 3. **Product decisions** — table with Status `OPEN` | `LOCKED`, Choice, and **Alternatives considered** (at least one rejected option on structuring decisions, or `n/a — trivial`).
-4. **Teach-back** — scenarios listed; status ends as accepted in PROGRESS (or CONTRACT).
+4. **Teach-back** — scenarios listed in CONTRACT; acceptance recorded only in PROGRESS (`- Teach-back: accepted`).
 5. **Cadrage roles** — Framer / Challenger / teach-back dates; `Challenger: required | n/a | skipped (reason)`.
 
 ## Teach-back (alignment gate)
