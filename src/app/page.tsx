@@ -5,13 +5,11 @@ import {
 import { computeEmergencyFundSurplusRecommendation } from "@patrimo/core/emergency-fund-recommendation";
 import { assessFinancialGoals } from "@patrimo/core/financial-goals";
 import {
-	buildNextEuroPlan,
 	computeMonthlyInvestmentDcaPool,
 	computeMonthlyLivretDcaPool,
 } from "@patrimo/core/next-euro-plan";
-import { computeNetWorth, portfolioByEnvelope } from "@patrimo/core/portfolio";
+import { computeNetWorth } from "@patrimo/core/portfolio";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
-import { DashboardExposureAlert } from "@/components/dashboard-exposure-alert";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { GoalsSummaryCard } from "@/components/goals-summary-card";
 import { PerformanceSection } from "@/components/performance-section";
@@ -112,19 +110,6 @@ export default async function DashboardPage() {
 			plannedInvestmentDcaMonthly,
 			emergencyFundConfig: workbook.emergencyFundConfig,
 		});
-	const nextEuroPlan = buildNextEuroPlan({
-		targets: workbook.diversificationTargets ?? [],
-		positions: portfolio.assets,
-		dca: workbook.dca,
-		geographicAllocations: workbook.geographicAllocations ?? [],
-		sectorAllocations: workbook.sectorAllocations ?? [],
-		assets: workbook.assets,
-		accounts: portfolio.accounts,
-		monthlyExpenses: depensesMensuelles,
-		revenusMensuels,
-		emergencyFundConfig: workbook.emergencyFundConfig,
-		portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
-	});
 	return (
 		<div className="space-y-8">
 			<header className="flex flex-wrap items-end justify-between gap-4">
@@ -201,8 +186,6 @@ export default async function DashboardPage() {
 				/>
 				<GoalsSummaryCard assessment={goalsAssessment} />
 			</div>
-
-			<DashboardExposureAlert coherence={nextEuroPlan?.coherence ?? null} />
 
 			<PerformanceSection history={history} benchmarks={benchmarks} />
 

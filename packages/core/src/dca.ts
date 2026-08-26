@@ -33,6 +33,10 @@ export type DcaPlan = {
 
 const TARGET_SUM_TOLERANCE = 0.001;
 
+export type ComputeDcaPlanOptions = {
+  enabledAssetIds?: ReadonlySet<string>;
+};
+
 function roundCents(value: number): number {
   return Math.round(value * 100) / 100;
 }
@@ -41,21 +45,39 @@ function splitWithinBasket(
   assetIds: string[],
   basketContribution: number,
   currentValues: Record<string, number>,
+  enabledAssetIds?: ReadonlySet<string>,
 ): number[] {
-  const subValues = assetIds.map((id) => currentValues[id] ?? 0);
-  const sumSub = subValues.reduce((s, v) => s + v, 0);
-  if (basketContribution <= 0) return assetIds.map(() => 0);
-  if (sumSub <= 0) {
-    const each = basketContribution / assetIds.length;
-    return assetIds.map(() => each);
+  const activeIds =
+    enabledAssetIds === undefined
+      ? assetIds
+      : assetIds.filter((id) => enabledAssetIds.has(id));
+
+  if (activeIds.length === 0) {
+    return assetIds.map(() => 0);
   }
-  return subValues.map((v) => basketContribution * (v / sumSub));
+
+  const subValues = activeIds.map((id) => currentValues[id] ?? 0);
+  const sumSub = subValues.reduce((s, v) => s + v, 0);
+  let contributions: number[];
+  if (basketContribution <= 0) {
+    contributions = activeIds.map(() => 0);
+  } else if (sumSub <= 0) {
+    const each = basketContribution / activeIds.length;
+    contributions = activeIds.map(() => each);
+  } else {
+    contributions = subValues.map((v) => basketContribution * (v / sumSub));
+  }
+
+  const byId = new Map(activeIds.map((id, i) => [id, contributions[i]]));
+  return assetIds.map((id) => byId.get(id) ?? 0);
 }
 
 export function computeDcaPlan(
   config: DcaConfig,
   currentValues: Record<string, number>,
+  options?: ComputeDcaPlanOptions,
 ): DcaPlan {
+  const enabledAssetIds = options?.enabledAssetIds;
   const lines = config.lines;
   const monthly = Math.max(0, config.amount);
 
@@ -100,19 +122,38 @@ export function computeDcaPlan(
     );
   }
 
+  const effectiveBasketContributions =
+    enabledAssetIds === undefined
+      ? basketContributions
+      : basketContributions.map((contrib, i) => {
+          const hasEnabled = lines[i].assetIds.some((id) =>
+            enabledAssetIds.has(id),
+          );
+          return hasEnabled ? contrib : 0;
+        });
+
   const subContributionsRaw: number[][] = lines.map((line, i) =>
-    splitWithinBasket(line.assetIds, basketContributions[i], currentValues),
+    splitWithinBasket(
+      line.assetIds,
+      effectiveBasketContributions[i],
+      currentValues,
+      enabledAssetIds,
+    ),
   );
 
   const subContributionsRounded: number[][] = subContributionsRaw.map((arr) =>
     arr.map(roundCents),
   );
-  if (monthly > 0) {
+  const allocatableBudget = effectiveBasketContributions.reduce(
+    (s, v) => s + v,
+    0,
+  );
+  if (allocatableBudget > 0) {
     const flatTotal = subContributionsRounded.reduce(
       (s, arr) => s + arr.reduce((a, b) => a + b, 0),
       0,
     );
-    const drift = roundCents(monthly - flatTotal);
+    const drift = roundCents(allocatableBudget - flatTotal);
     if (Math.abs(drift) >= 0.01) {
       let bestI = 0;
       let bestJ = 0;
@@ -391,4 +432,85 @@ export function computeDcaExecutionFromContributions(
   };
 
   return computeDcaExecution(plan, priceMap, minOrderAmount);
+}
+
+export type LumpSumSplitInput = {
+  totalAmount: number;
+  configs: Array<{ id: string; amount: number }>;
+  selectedIds: readonly string[];
+};
+
+export type LumpSumSplitResult = {
+  byConfigId: Record<string, number>;
+  zeroAmountSelectedIds: string[];
+  hasEligiblePlans: boolean;
+};
+
+/**
+ * Pro-rata lump-sum split across selected DCA plans by saved monthly amount.
+ */
+export function splitLumpSumAcrossDcaPlans(
+  input: LumpSumSplitInput,
+): LumpSumSplitResult {
+  const { totalAmount, configs, selectedIds } = input;
+  const selectedSet = new Set(selectedIds);
+
+  if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+    return { byConfigId: {}, zeroAmountSelectedIds: [], hasEligiblePlans: false };
+  }
+
+  const selectedConfigs = configs.filter((c) => selectedSet.has(c.id));
+  const zeroAmountSelectedIds = selectedConfigs
+    .filter((c) => c.amount <= 0)
+    .map((c) => c.id);
+  const eligible = selectedConfigs.filter((c) => c.amount > 0);
+
+  if (eligible.length === 0) {
+    return { byConfigId: {}, zeroAmountSelectedIds, hasEligiblePlans: false };
+  }
+
+  const sumMonthly = eligible.reduce((sum, c) => sum + c.amount, 0);
+  const raw = eligible.map((c) => ({
+    id: c.id,
+    amount: totalAmount * (c.amount / sumMonthly),
+  }));
+
+  const byConfigId: Record<string, number> = {};
+  let roundedSum = 0;
+  for (const { id, amount } of raw) {
+    const rounded = roundCents(amount);
+    byConfigId[id] = rounded;
+    roundedSum += rounded;
+  }
+
+  const drift = roundCents(totalAmount - roundedSum);
+  if (Math.abs(drift) >= 0.01) {
+    let bestId = raw[0].id;
+    let bestRaw = -Infinity;
+    for (const entry of raw) {
+      if (entry.amount > bestRaw) {
+        bestRaw = entry.amount;
+        bestId = entry.id;
+      }
+    }
+    byConfigId[bestId] = roundCents(byConfigId[bestId] + drift);
+  }
+
+  return { byConfigId, zeroAmountSelectedIds, hasEligiblePlans: true };
+}
+
+/**
+ * Basket labels where every asset is disabled for this execution.
+ */
+export function getEmptyBasketLabels(
+  config: DcaConfig,
+  enabledAssetIds: ReadonlySet<string>,
+): string[] {
+  return config.lines
+    .filter(
+      (line) =>
+        line.assetIds.length > 0 &&
+        line.assetIds.every((id) => !enabledAssetIds.has(id)),
+    )
+    .map((line) => line.label ?? line.assetIds.join(", "));
 }
