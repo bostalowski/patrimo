@@ -18,13 +18,13 @@ Status: `done` | `partial` | `todo` | `absent`
 | Historical price sync | done | done | |
 | Manual prices (workbook) | done | done | ADR 0002 |
 | Budget | done | done | |
-| DCA plans | done | done | |
+| DCA plans | done | done | Web Exécution: Versement ponctuel + Actifs à alimenter (advisory) |
 | Emergency fund health | done | done | ADR 0005 |
 | Savings capacity | done | done | ADR 0017; Dashboard cards; soft warnings web-only |
 | Portfolio risk badges | done | done | ADR 0006 |
 | Geographic allocation | done | done | ADR 0008–0011 |
 | Diversification targets | done | done | ADR 0012 |
-| Next-euro plan | done | absent | ADR 0015/0020/0021 + 0022; web EF surplus on Emergency fund card; Dashboard breach alert; Diversification card absent; Exécution tilt opt-in |
+| Next-euro plan | done | absent | ADR 0015/0020/0021 + 0022; web EF surplus on Emergency fund card; Diversification card absent; Exécution tilt opt-in |
 | CSV import | done | absent | |
 | Real estate | done | partial | Mobile read-only |
 | Fiscalité | done | partial | Mobile realized only |

@@ -5,6 +5,10 @@ import { AlertCircle, RotateCcw } from "lucide-react";
 import { contributionsForConfig } from "@patrimo/core/monthly-dca-tilt";
 import type { MonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
 import { monthlyDcaTiltVerdictLabel } from "@patrimo/core/next-euro-copy";
+import {
+	getEmptyBasketLabels,
+	splitLumpSumAcrossDcaPlans,
+} from "@patrimo/core/dca";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -33,6 +37,18 @@ const ENVELOPE_LABELS: Record<Envelope, string> = {
 const inputClasses =
 	"rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
 
+function allAssetIdsFromConfigs(configs: DcaConfig[]): Set<string> {
+	const ids = new Set<string>();
+	for (const config of configs) {
+		for (const line of config.lines) {
+			for (const id of line.assetIds) {
+				ids.add(id);
+			}
+		}
+	}
+	return ids;
+}
+
 type Props = {
 	configs: DcaConfig[];
 	priceMap: Record<string, number>;
@@ -40,6 +56,12 @@ type Props = {
 	assets: Asset[];
 	monthlyTilt: MonthlyDcaTilt | null;
 };
+
+function defaultSelectedPlanIds(configs: DcaConfig[]): Set<string> {
+	return new Set(
+		configs.filter((config) => config.envelope !== "LIVRET").map((config) => config.id),
+	);
+}
 
 export function DcaExecutionCalculator({
 	configs,
@@ -55,6 +77,12 @@ export function DcaExecutionCalculator({
 	// D9 / ADR 0022: always start on saved DCA; tilt is opt-in and not persisted.
 	const [useTilt, setUseTilt] = useState(false);
 
+	const [lumpSumEnabled, setLumpSumEnabled] = useState(false);
+	const [lumpSumTotal, setLumpSumTotal] = useState("");
+	const [selectedPlanIds, setSelectedPlanIds] = useState<Set<string>>(() =>
+		defaultSelectedPlanIds(configs),
+	);
+
 	const [minOrders, setMinOrders] = useState<Record<string, string>>(() => {
 		const initial: Record<string, string> = {};
 		for (const [env, value] of Object.entries(DEFAULT_MIN_ORDERS)) {
@@ -67,6 +95,22 @@ export function DcaExecutionCalculator({
 		{},
 	);
 
+	const [enabledAssetIds, setEnabledAssetIds] = useState<Set<string>>(() =>
+		allAssetIdsFromConfigs(configs),
+	);
+
+	const toggleAssetEnabled = useCallback((assetId: string) => {
+		setEnabledAssetIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(assetId)) {
+				next.delete(assetId);
+			} else {
+				next.add(assetId);
+			}
+			return next;
+		});
+	}, []);
+
 	const setAmountOverride = useCallback((configId: string, value: string) => {
 		setAmountOverrides((prev) => ({ ...prev, [configId]: value }));
 	}, []);
@@ -75,6 +119,25 @@ export function DcaExecutionCalculator({
 		setAmountOverrides((prev) => {
 			const next = { ...prev };
 			delete next[configId];
+			return next;
+		});
+	}, []);
+
+	const handleLumpSumToggle = useCallback((enabled: boolean) => {
+		setLumpSumEnabled(enabled);
+		if (!enabled) {
+			setAmountOverrides({});
+		}
+	}, []);
+
+	const togglePlanSelection = useCallback((configId: string) => {
+		setSelectedPlanIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(configId)) {
+				next.delete(configId);
+			} else {
+				next.add(configId);
+			}
 			return next;
 		});
 	}, []);
@@ -116,11 +179,50 @@ export function DcaExecutionCalculator({
 		return result;
 	}, [amountOverrides]);
 
+	const parsedLumpSumTotal = useMemo(() => {
+		const n = Number(lumpSumTotal.replace(",", "."));
+		return Number.isFinite(n) && n > 0 ? n : null;
+	}, [lumpSumTotal]);
+
+	const lumpSumActive = lumpSumEnabled && parsedLumpSumTotal !== null;
+
+	const lumpSumSplit = useMemo(() => {
+		if (!lumpSumActive) return null;
+		return splitLumpSumAcrossDcaPlans({
+			totalAmount: parsedLumpSumTotal,
+			configs: configs.map((config) => ({
+				id: config.id,
+				amount: config.amount,
+			})),
+			selectedIds: [...selectedPlanIds],
+		});
+	}, [lumpSumActive, parsedLumpSumTotal, configs, selectedPlanIds]);
+
+	const visibleConfigs = useMemo(() => {
+		if (!lumpSumActive) return configs;
+		if (selectedPlanIds.size === 0) return [];
+		return configs.filter((config) => selectedPlanIds.has(config.id));
+	}, [configs, lumpSumActive, selectedPlanIds]);
+
+	const getEffectiveAmount = useCallback(
+		(config: DcaConfig): number => {
+			if (config.id in parsedAmountOverrides) {
+				return parsedAmountOverrides[config.id];
+			}
+			if (lumpSumActive && selectedPlanIds.has(config.id)) {
+				return lumpSumSplit?.byConfigId[config.id] ?? 0;
+			}
+			return config.amount;
+		},
+		[lumpSumActive, lumpSumSplit, parsedAmountOverrides, selectedPlanIds],
+	);
+
 	const executions = useMemo<DcaExecution[]>(() => {
-		return configs.map((config) => {
+		return visibleConfigs.map((config) => {
 			const minOrder = parsedMinOrders[config.envelope] ?? 0;
 
 			if (
+				!lumpSumActive &&
 				useTilt &&
 				monthlyTilt &&
 				config.envelope !== "LIVRET"
@@ -140,28 +242,124 @@ export function DcaExecutionCalculator({
 			}
 
 			const currentValues = portfolioByEnvelope[config.envelope] ?? {};
-			const effectiveConfig =
-				config.id in parsedAmountOverrides
-					? { ...config, amount: parsedAmountOverrides[config.id] }
-					: config;
-			const plan = computeDcaPlan(effectiveConfig, currentValues);
+			const effectiveConfig = {
+				...config,
+				amount: getEffectiveAmount(config),
+			};
+			const plan = computeDcaPlan(effectiveConfig, currentValues, {
+				enabledAssetIds,
+			});
 			return computeDcaExecution(plan, priceMapObj, minOrder);
 		});
 	}, [
-		configs,
+		visibleConfigs,
 		portfolioByEnvelope,
 		priceMapObj,
 		parsedMinOrders,
-		parsedAmountOverrides,
+		lumpSumActive,
 		useTilt,
 		monthlyTilt,
+		getEffectiveAmount,
+		enabledAssetIds,
 	]);
+
+	const soleZeroAmountWarning =
+		lumpSumActive &&
+		selectedPlanIds.size > 0 &&
+		lumpSumSplit !== null &&
+		!lumpSumSplit.hasEligiblePlans &&
+		lumpSumSplit.zeroAmountSelectedIds.length > 0;
 
 	if (configs.length === 0) return null;
 
 	return (
 		<div className="space-y-6">
-			{monthlyTilt && (
+			<Card>
+				<CardHeader>
+					<CardTitle className="text-base">Versement ponctuel</CardTitle>
+					<p className="text-xs text-zinc-500 dark:text-zinc-400">
+						Investis une somme unique en la répartissant entre tes plans DCA
+						sélectionnés (pro-rata des montants mensuels sauvegardés).
+					</p>
+				</CardHeader>
+				<CardBody className="space-y-4">
+					<label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+						<input
+							type="checkbox"
+							checked={lumpSumEnabled}
+							onChange={(e) => handleLumpSumToggle(e.target.checked)}
+							className="rounded border-zinc-300"
+						/>
+						Activer le versement ponctuel
+					</label>
+					{lumpSumEnabled && (
+						<>
+							<label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wider text-zinc-500">
+								Montant total
+								<div className="flex items-center gap-1">
+									<input
+										type="text"
+										inputMode="decimal"
+										value={lumpSumTotal}
+										onChange={(e) => setLumpSumTotal(e.target.value)}
+										placeholder="0"
+										className={`w-32 font-mono ${inputClasses}`}
+									/>
+									<span className="text-xs text-zinc-400">€</span>
+								</div>
+							</label>
+							<fieldset className="space-y-2">
+								<legend className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+									Plans à alimenter
+								</legend>
+								{configs.map((config) => (
+									<label
+										key={config.id}
+										className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300"
+									>
+										<input
+											type="checkbox"
+											checked={selectedPlanIds.has(config.id)}
+											onChange={() => togglePlanSelection(config.id)}
+											className="rounded border-zinc-300"
+										/>
+										{config.label}
+										<span className="text-xs text-zinc-400">
+											({formatEuro(config.amount)}/mois)
+										</span>
+									</label>
+								))}
+							</fieldset>
+							{soleZeroAmountWarning && (
+								<div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+									<AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+									<p>
+										Les plans sélectionnés ont un montant mensuel à 0 € — aucun
+										ordre calculé. Ajuste le plan DCA ou désélectionne-les.
+									</p>
+								</div>
+							)}
+							{lumpSumActive && lumpSumSplit?.hasEligiblePlans && (
+								<p className="text-xs text-zinc-500 dark:text-zinc-400">
+									Répartition automatique — tu peux ajuster le budget par plan
+									après ventilation.
+								</p>
+							)}
+						</>
+					)}
+				</CardBody>
+			</Card>
+
+			{lumpSumActive && selectedPlanIds.size === 0 && (
+				<Card>
+					<CardBody className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+						Sélectionne au moins un plan DCA pour ventiler le versement
+						ponctuel.
+					</CardBody>
+				</Card>
+			)}
+
+			{monthlyTilt && !lumpSumActive && (
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-base">Plan d&apos;achat du mois</CardTitle>
@@ -241,16 +439,29 @@ export function DcaExecutionCalculator({
 			</Card>
 
 			{executions.map((execution, i) => {
-				const config = configs[i];
+				const config = visibleConfigs[i];
 				const minOrder = getMinOrder(config.envelope);
 				const hasOverride = config.id in parsedAmountOverrides;
+				const effectiveAmount = getEffectiveAmount(config);
 				const isTiltRow =
+					!lumpSumActive &&
 					useTilt &&
 					monthlyTilt &&
 					config.envelope !== "LIVRET" &&
 					Object.keys(
 						contributionsForConfig(config, monthlyTilt.contributions),
 					).length > 0;
+				const budgetDisplayValue =
+					config.id in amountOverrides
+						? amountOverrides[config.id]
+						: String(effectiveAmount);
+				const resetBudgetLabel = lumpSumActive
+					? `Revenir à la répartition automatique (${formatEuro(lumpSumSplit?.byConfigId[config.id] ?? config.amount)})`
+					: `Revenir au montant du plan (${formatEuro(config.amount)})`;
+				const showAssetSelection = !isTiltRow;
+				const emptyBasketLabels = showAssetSelection
+					? getEmptyBasketLabels(config, enabledAssetIds)
+					: [];
 
 				return (
 					<Card key={execution.configId}>
@@ -264,9 +475,7 @@ export function DcaExecutionCalculator({
 											<input
 												type="text"
 												inputMode="decimal"
-												value={
-													amountOverrides[config.id] ?? String(config.amount)
-												}
+												value={budgetDisplayValue}
 												onChange={(e) =>
 													setAmountOverride(config.id, e.target.value)
 												}
@@ -282,7 +491,7 @@ export function DcaExecutionCalculator({
 													type="button"
 													onClick={() => resetAmountOverride(config.id)}
 													className="rounded p-0.5 text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900/40 dark:hover:text-blue-300"
-													title={`Revenir au montant du plan (${formatEuro(config.amount)})`}
+													title={resetBudgetLabel}
 												>
 													<RotateCcw className="h-3.5 w-3.5" />
 												</button>
@@ -322,9 +531,23 @@ export function DcaExecutionCalculator({
 							</div>
 						</CardHeader>
 						<CardBody className="space-y-4 px-0">
+							{emptyBasketLabels.length > 0 && (
+								<div className="mx-6 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+									<AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+									<p>
+										Panier(s) sans actif coché ({emptyBasketLabels.join(", ")})
+										— budget non alloué pour ce(s) panier(s).
+									</p>
+								</div>
+							)}
 							<Table>
 								<THead>
 									<TR>
+										{showAssetSelection && (
+											<TH className="w-10">
+												<span className="sr-only">Alimenter ce mois-ci</span>
+											</TH>
+										)}
 										<TH>Actif</TH>
 										<TH className="text-right">Prix</TH>
 										<TH className="text-right">Cible</TH>
@@ -336,8 +559,24 @@ export function DcaExecutionCalculator({
 								<TBody>
 									{execution.lines.map((line) => {
 										const asset = assetMap.get(line.assetId);
+										const assetEnabled = enabledAssetIds.has(line.assetId);
 										return (
 											<TR key={line.assetId}>
+												{showAssetSelection && (
+													<TD>
+														<label className="flex cursor-pointer items-center justify-center">
+															<input
+																type="checkbox"
+																checked={assetEnabled}
+																onChange={() =>
+																	toggleAssetEnabled(line.assetId)
+																}
+																className="rounded border-zinc-300"
+																aria-label={`Alimenter ce mois-ci — ${asset?.label ?? line.assetId}`}
+															/>
+														</label>
+													</TD>
+												)}
 												<TD>
 													<span className="font-medium text-zinc-900 dark:text-zinc-50">
 														{asset?.label ?? line.assetId}

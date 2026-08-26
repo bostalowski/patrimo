@@ -160,8 +160,7 @@ Computed by `buildMonthlyDcaTilt` / `buildNextEuroPlan` in `@patrimo/core`.
 Investment pool only (LIVRET excluded from the tilt envelope). Emergency-fund
 LIVRET advice is **not** taken from this pool — see **Emergency fund surplus
 recommendation**. Hidden when investment monthly pool is zero. Web Dashboard:
-EF surplus on **Emergency fund** card; stock breach ping via
-**DashboardExposureAlert**; no tilt catch-up card — see
+EF surplus on **Emergency fund** card; no tilt catch-up card — see
 [ADR 0022](../adr/0022-dca-first-monthly-card.md).
 See also [ADR 0015](../adr/0015-next-euro-plan.md),
 [ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md),
@@ -177,11 +176,28 @@ Exécution. Monthly investment action is **Exécution** (saved DCA default).
 See [ADR 0021](../adr/0021-monthly-dca-tilt-execution.md),
 [ADR 0022](../adr/0022-dca-first-monthly-card.md).
 
-## Dashboard exposure alert
+## Versement ponctuel (lump-sum)
 
-Web Dashboard optional block when stock `band_drift` **breach** (up to 3 keys by
-\|signedΔ\|) + link Diversification. Copy helpers in `this-month-copy.ts`.
-Hidden when no breach. See [ADR 0022](../adr/0022-dca-first-monthly-card.md).
+Web **Exécution** mode: user enters a one-off total and selects DCA plans;
+inter-plan split is pro-rata on saved monthly `amount`, then intra-plan via
+`computeDcaPlan` / `computeDcaExecution`. Advisory only (no workbook write).
+Ignores monthly DCA tilt. Implemented by `splitLumpSumAcrossDcaPlans` in
+`@patrimo/core`.
+
+## Actifs à alimenter (execution asset selection)
+
+Web **Exécution** per-asset checkboxes (**Alimenter ce mois-ci**): user can
+exclude specific assets from this month's orders without changing the saved DCA
+plan. Unchecked assets reconcentrate budget **within the same basket only**
+(other baskets unchanged). Advisory only (no workbook write). Hidden when
+monthly DCA tilt is active. Optional `enabledAssetIds` on `computeDcaPlan` in
+`@patrimo/core`.
+
+## Dashboard exposure alert (removed)
+
+Former web Dashboard block for stock `band_drift` **breach** (ADR 0022). Removed
+2026-08 — breach detail remains on **Diversification** via allocation coherence.
+Copy helpers in `this-month-copy.ts` are retained for potential reuse.
 
 ## Emergency fund surplus recommendation
 
