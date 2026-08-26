@@ -17,12 +17,12 @@ description: >-
 3. If no CONTRACT yet: feature branch → `make branch-contract` → fill scope / verify / exclusions.
 4. `make branch-ready` must pass before implementing.
 5. Read colocated `ARCHITECTURE.md` for packages you touch.
-6. Implement; never invent sheet names / enums / reserved IDs.
+6. Implement that CONTRACT only. When Layer 2 applies: per case **RED → GREEN** (`docs/howto/tdd-red-green.md`) — failing targeted test for the missing behavior, record RED evidence in PROGRESS, then minimal production code. Never invent sheet names / enums / reserved IDs.
 7. Verify:
    - Always: `make verify`
-   - Behavior: targeted `npm test -- <path>`
+   - Behavior: targeted `npm test -- <path>` (after RED → GREEN when Layer 2 applies)
    - Web UI / API / workbook I/O / settings: `make e2e` or `make verify-full`
-8. Checker: fresh session using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md`.
+8. Checker: fresh session using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing).
 9. Update `docs/agent/branches/<slug>/PROGRESS.md` (+ optional `docs/agent/runs/YYYY-MM-DD-slug.md`).
 10. On merge: update root `FEATURES.md` matrix if platform status changed.
 
@@ -43,8 +43,10 @@ description: >-
 ## Do not
 
 - Declare done on lint/unit alone when layer 3 applies.
+- Write production code for a Layer 2 behavior case before a real RED for that case.
 - Expand into a second feature without updating the branch CONTRACT.
 - Put feature focus in root `PROGRESS.md` (that file is for `main` only).
 - Grade your own non-trivial work without a checker pass.
 - Duplicate domain rules outside `@patrimo/core`.
 - Treat `make next-feature` as a claim queue (deprecated → `platform-gaps` + branch contract).
+- Treat full Spec-Driven Development as required (opt-in only; harness embeds RED → GREEN alone).

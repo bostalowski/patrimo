@@ -10,7 +10,7 @@ In Cursor (or equivalent), start a session with:
 
 ```text
 Goal: Complete the CONTRACT on the current feature branch (make branch-status).
-Method: Follow AGENTS.md lifecycle — CONTRACT → implement → three-layer DoD → maker/checker.
+Method: Follow AGENTS.md lifecycle — CONTRACT → RED→GREEN when Layer 2 applies (docs/howto/tdd-red-green.md) → three-layer DoD → maker/checker.
 Stop when: Checker Pass on the rubric, OR blocked with reason written in branch PROGRESS.md.
 Do not expand into a second feature without updating the CONTRACT.
 ```

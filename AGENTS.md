@@ -35,6 +35,8 @@ Equivalent: `npm run verify` / `npm run verify-full`. Feature-scoped tests: `npm
 | 2 Behavior | targeted `npm test -- <path>` | Any behavior change |
 | 3 System | `make e2e` / `make verify-full` | Web UI, `src/app/api`, workbook I/O, settings |
 
+When Layer 2 applies: implement each CONTRACT case as **RED → GREEN** (failing targeted test for the missing behavior, then minimal production code). Procedure: [docs/howto/tdd-red-green.md](docs/howto/tdd-red-green.md). Skip when CONTRACT Layer 2 is `n/a`.
+
 Do not declare victory on layer 1 alone when layer 3 applies. One CONTRACT per feature branch — see [docs/agent/branches/README.md](docs/agent/branches/README.md). Lint currently gates `packages/core` + `src` (mobile lint debt is out of gate).
 
 ### Maker ≠ checker
@@ -58,7 +60,7 @@ Autonomous loops: [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
 | [mobile/ARCHITECTURE.md](mobile/ARCHITECTURE.md) | Expo app, Drive/local I/O, mobile UI gaps |
 | [electron/ARCHITECTURE.md](electron/ARCHITECTURE.md) | Desktop shell, menus, auto-update |
 | [docs/adr/](docs/adr/index.md) | Why a decision was taken; options and contract |
-| [docs/howto/](docs/howto/) | Step-by-step procedures (dev setup, release, implement-*) |
+| [docs/howto/](docs/howto/) | Step-by-step procedures (dev setup, release, [tdd-red-green](docs/howto/tdd-red-green.md), implement-*) |
 | [docs/overview/platforms.md](docs/overview/platforms.md) | Current web vs mobile capability matrix |
 | [docs/DOC_MODEL.md](docs/DOC_MODEL.md) | Where knowledge lives in this repo |
 
@@ -66,7 +68,7 @@ Autonomous loops: [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
 
 1. **Init:** `make init` (or `make branch-status` + verify baseline).
 2. **Contract:** on a feature branch, `make branch-contract` (or edit existing CONTRACT) → `make branch-ready` must pass.
-3. **Work:** implement that contract only; update colocated ARCHITECTURE / ADR / glossary with the code.
+3. **Work:** implement that contract only. When Layer 2 applies: per case **RED → GREEN** ([tdd-red-green.md](docs/howto/tdd-red-green.md)), record RED evidence in branch PROGRESS; update colocated ARCHITECTURE / ADR / glossary with the code.
 4. **Verify:** layers required by DoD above. Never claim done on failing verify.
 5. **Check:** maker/checker pass against CONTRACT + rubric.
 6. **Handoff:** update `docs/agent/branches/<slug>/PROGRESS.md`. On merge, sync FEATURES matrix + short note on root PROGRESS if useful.

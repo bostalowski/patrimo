@@ -25,9 +25,9 @@ Refuse `branch-contract` / `branch-ready` on `main` / `master` — create a feat
 ## Flow
 
 1. `git checkout -b feat/…`
-2. `make branch-contract` — edit CONTRACT (cadrage)
+2. `make branch-contract` — edit CONTRACT (cadrage; list Layer 2 cases when behavior changes)
 3. `make branch-ready` — must exit 0 before implementing
-4. Agent session: `make branch-status` then implement; update branch PROGRESS; three-layer DoD; checker
+4. Agent session: `make branch-status` then implement — when Layer 2 applies, **RED → GREEN** per case ([tdd-red-green.md](../../howto/tdd-red-green.md)); update branch PROGRESS (incl. RED evidence); three-layer DoD; checker
 5. PR: merge code + this folder; update root FEATURES matrix if status changed
 
 ## WIP = 1
