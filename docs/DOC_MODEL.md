@@ -16,7 +16,7 @@ Harness-first layout. Diátaxis families are **not** required. Put knowledge whe
 | Mechanics | How this package works | Colocated `ARCHITECTURE.md` (+ topic notes beside modules) |
 | Decisions | Why we chose X | [docs/adr/](adr/) |
 | Names | Canonical vocabulary | [docs/reference/glossary.md](reference/glossary.md) |
-| Procedures | How do I perform X | [docs/howto/](howto/) |
+| Procedures | How do I perform X | [docs/howto/](howto/) (incl. [tdd-red-green](howto/tdd-red-green.md) when Layer 2 applies) |
 | Platform gaps | Current web vs mobile | [docs/overview/platforms.md](overview/platforms.md) |
 
 ## Language

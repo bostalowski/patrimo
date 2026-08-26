@@ -12,9 +12,11 @@
 ## Verification
 
 - Layer 1: `make verify`
-- Layer 2: `npm test -- <path>` (if applicable)
+- Layer 2: `npm test -- <path>` (if applicable) — list **behavior cases** (these are RED → GREEN slices); or `n/a`
 - Layer 3: `make e2e` (required if web UI / API / workbook I/O / settings)
 - Feature-specific:
+
+When Layer 2 applies, makers follow [tdd-red-green.md](../../howto/tdd-red-green.md) (CONSTRAINTS §24).
 
 ## Exclusions
 
@@ -24,7 +26,7 @@
 ## Checker
 
 - [ ] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md)
-- Pass bar: no D on correctness; architecture ≥ B; evidence cited
+- Pass bar: no D on correctness; architecture ≥ B; evidence cited; RED evidence when Layer 2 applied
 
 ## On merge
 

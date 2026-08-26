@@ -16,7 +16,7 @@ Before changing product behavior:
 ## Stop criteria (Definition of Done)
 
 - Layer 1: green `make verify` (lint + typecheck + unit tests) — always.
-- Layer 2: targeted tests for the change — when behavior changes.
+- Layer 2: targeted tests for the change — when behavior changes. When Layer 2 applies: **RED → GREEN** per CONTRACT case before production code ([docs/howto/tdd-red-green.md](docs/howto/tdd-red-green.md)); record RED evidence in branch PROGRESS.
 - Layer 3: green `make e2e` / `make verify-full` — when web UI, API routes, workbook I/O, or settings change.
 - Work **one** branch CONTRACT at a time (`make branch-status`).
 - Do not invent sheet names, enums, or reserved IDs — use the glossary and `@patrimo/core`.

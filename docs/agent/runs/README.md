@@ -21,6 +21,7 @@ Optional dated notes for long or multi-session work. **Primary handoff** for a f
 - Files read:
 - Changes:
 - Verify:
+  - RED evidence (Layer 2): command + missing-behavior failure → pass/n/a
   - Layer 1 `make verify` → pass/fail
   - Layer 2 targeted tests → pass/fail / n/a
   - Layer 3 `make e2e` → pass/fail / n/a
