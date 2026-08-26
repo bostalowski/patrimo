@@ -2,13 +2,18 @@ import {
 	computeEmergencyFundHealth,
 	sumLivretMarketValue,
 } from "@patrimo/core/emergency-fund";
+import { computeEmergencyFundSurplusRecommendation } from "@patrimo/core/emergency-fund-recommendation";
 import { assessFinancialGoals } from "@patrimo/core/financial-goals";
-import { buildNextEuroPlan } from "@patrimo/core/next-euro-plan";
+import {
+	buildNextEuroPlan,
+	computeMonthlyInvestmentDcaPool,
+	computeMonthlyLivretDcaPool,
+} from "@patrimo/core/next-euro-plan";
 import { computeNetWorth, portfolioByEnvelope } from "@patrimo/core/portfolio";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
+import { DashboardExposureAlert } from "@/components/dashboard-exposure-alert";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { GoalsSummaryCard } from "@/components/goals-summary-card";
-import { NextEuroPlanCard } from "@/components/next-euro-plan-card";
 import { PerformanceSection } from "@/components/performance-section";
 import { SyncButton } from "@/components/sync-button";
 import {
@@ -94,6 +99,19 @@ export default async function DashboardPage() {
 		profile,
 		inflationRate,
 	});
+	const plannedLivretDcaMonthly = computeMonthlyLivretDcaPool(workbook.dca);
+	const plannedInvestmentDcaMonthly = computeMonthlyInvestmentDcaPool(
+		workbook.dca,
+	);
+	const emergencyFundSurplusRecommendation =
+		computeEmergencyFundSurplusRecommendation({
+			revenusMensuels,
+			depensesMensuelles,
+			livretBalance,
+			plannedLivretDcaMonthly,
+			plannedInvestmentDcaMonthly,
+			emergencyFundConfig: workbook.emergencyFundConfig,
+		});
 	const nextEuroPlan = buildNextEuroPlan({
 		targets: workbook.diversificationTargets ?? [],
 		positions: portfolio.assets,
@@ -107,10 +125,6 @@ export default async function DashboardPage() {
 		emergencyFundConfig: workbook.emergencyFundConfig,
 		portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
 	});
-	const assetLabels = Object.fromEntries(
-		workbook.assets.map((a) => [a.id, a.label]),
-	);
-
 	return (
 		<div className="space-y-8">
 			<header className="flex flex-wrap items-end justify-between gap-4">
@@ -181,15 +195,14 @@ export default async function DashboardPage() {
 			</div>
 
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-				<EmergencyFundCard health={emergencyFund} />
+				<EmergencyFundCard
+					health={emergencyFund}
+					surplusRecommendation={emergencyFundSurplusRecommendation}
+				/>
 				<GoalsSummaryCard assessment={goalsAssessment} />
 			</div>
 
-			<NextEuroPlanCard
-				plan={nextEuroPlan}
-				variant="summary"
-				assetLabels={assetLabels}
-			/>
+			<DashboardExposureAlert coherence={nextEuroPlan?.coherence ?? null} />
 
 			<PerformanceSection history={history} benchmarks={benchmarks} />
 

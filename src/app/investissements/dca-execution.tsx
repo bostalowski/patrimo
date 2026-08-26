@@ -52,7 +52,8 @@ export function DcaExecutionCalculator({
 		monthlyTilt !== null &&
 		(monthlyTilt.verdict === "tilt" || monthlyTilt.verdict === "adjust_plan");
 
-	const [useTilt, setUseTilt] = useState(tiltAvailable);
+	// D9 / ADR 0022: always start on saved DCA; tilt is opt-in and not persisted.
+	const [useTilt, setUseTilt] = useState(false);
 
 	const [minOrders, setMinOrders] = useState<Record<string, string>>(() => {
 		const initial: Record<string, string> = {};
