@@ -24,7 +24,7 @@ Status: `done` | `partial` | `todo` | `absent`
 | Portfolio risk badges | done | done | ADR 0006 |
 | Geographic allocation | done | done | ADR 0008–0011 |
 | Diversification targets | done | done | ADR 0012 |
-| Next-euro plan | done | absent | ADR 0015; web Dashboard + Diversification |
+| Next-euro plan | done | absent | ADR 0015/0020/0021 + 0022; web Dashboard « Ce mois-ci » (EF + saved DCA + breach alert); Diversification card absent; Exécution tilt opt-in |
 | CSV import | done | absent | |
 | Real estate | done | partial | Mobile read-only |
 | Fiscalité | done | partial | Mobile realized only |

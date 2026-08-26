@@ -1,6 +1,6 @@
 # ADR 0020: Emergency-fund surplus recommendation (keep investment DCA)
 
-- Status: accepted
+- Status: accepted (superseded-in-part by [ADR 0022](0022-dca-first-monthly-card.md) for EF banner UI host)
 - Date: 2026-08-24
 - implementation_ready: yes
 
@@ -109,5 +109,7 @@ Two surfaces (capacity + banner) instead of one step in the list.
 - [ADR 0018](0018-configurable-emergency-fund-target.md)
 - [ADR 0019](0019-livret-dca-savings-capacity.md)
 - [ADR 0005](0005-emergency-fund-health-indicator.md)
+- [ADR 0021](0021-monthly-dca-tilt-execution.md)
+- [ADR 0022](0022-dca-first-monthly-card.md) — Dashboard EF banner host is « Ce mois-ci »
 - [packages/core/next-euro-plan.md](../../packages/core/next-euro-plan.md)
 - [packages/core/savings-capacity.md](../../packages/core/savings-capacity.md)

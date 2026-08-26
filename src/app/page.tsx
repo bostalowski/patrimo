@@ -8,7 +8,7 @@ import { computeNetWorth, portfolioByEnvelope } from "@patrimo/core/portfolio";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { EmergencyFundCard } from "@/components/emergency-fund-card";
 import { GoalsSummaryCard } from "@/components/goals-summary-card";
-import { NextEuroPlanCard } from "@/components/next-euro-plan-card";
+import { ThisMonthCard } from "@/components/this-month-card";
 import { PerformanceSection } from "@/components/performance-section";
 import { SyncButton } from "@/components/sync-button";
 import {
@@ -107,10 +107,6 @@ export default async function DashboardPage() {
 		emergencyFundConfig: workbook.emergencyFundConfig,
 		portfolioByEnvelope: portfolioByEnvelope(portfolio.accounts),
 	});
-	const assetLabels = Object.fromEntries(
-		workbook.assets.map((a) => [a.id, a.label]),
-	);
-
 	return (
 		<div className="space-y-8">
 			<header className="flex flex-wrap items-end justify-between gap-4">
@@ -185,11 +181,7 @@ export default async function DashboardPage() {
 				<GoalsSummaryCard assessment={goalsAssessment} />
 			</div>
 
-			<NextEuroPlanCard
-				plan={nextEuroPlan}
-				variant="summary"
-				assetLabels={assetLabels}
-			/>
+			<ThisMonthCard plan={nextEuroPlan} />
 
 			<PerformanceSection history={history} benchmarks={benchmarks} />
 
