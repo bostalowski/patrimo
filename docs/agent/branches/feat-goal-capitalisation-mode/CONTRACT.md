@@ -5,7 +5,7 @@
 - Matrix row (FEATURES.md): **Financial goals (Objectifs)** — web already done; no matrix status change expected (behavior deepen of existing row)
 - Relates: [ADR 0014](../../../adr/0014-financial-goals.md) (supersede capitalisation / pension / rate parts via new ADR on ship)
 - Cadrage tier: **B** (behavior)
-- Challenger: **required** — new workbook columns + structuring `@patrimo/core` capitalisation / pension-overlap invariant + ADR supersession
+- Challenger: required — new workbook columns + structuring `@patrimo/core` capitalisation / pension-overlap invariant + ADR supersession
 
 ## Intent
 
