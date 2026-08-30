@@ -128,6 +128,8 @@ export const OBJECTIFS_HEADERS = [
 	"Âge cible",
 	"Date cible",
 	"Inflation comprise",
+	"Vivre sur le capital",
+	"Taux capitalisation",
 	"Notes",
 ] as const;
 

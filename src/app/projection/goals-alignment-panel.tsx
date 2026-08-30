@@ -26,6 +26,8 @@ export type SerializedGoal = {
 	targetAge?: number;
 	targetDate?: string;
 	inflationIncluded?: boolean;
+	drawOnCapital?: boolean;
+	capitalisationRate?: number;
 	notes?: string;
 };
 
@@ -33,7 +35,6 @@ export type SerializedRetirementProfile = {
 	birthDate?: string;
 	targetRetirementAge: number;
 	estimatedPublicPension?: number;
-	withdrawalRate?: number;
 };
 
 export type GoalsAlignmentInput = {
@@ -69,6 +70,8 @@ function hydrateGoals(goals: SerializedGoal[]): FinancialGoal[] {
 				targetAmount: goal.targetAmount,
 				targetAge: goal.targetAge,
 				inflationIncluded: goal.inflationIncluded !== false,
+				drawOnCapital: goal.drawOnCapital === true,
+				capitalisationRate: goal.capitalisationRate,
 				notes: goal.notes,
 			};
 		}
@@ -81,6 +84,7 @@ function hydrateGoals(goals: SerializedGoal[]): FinancialGoal[] {
 				? new Date(goal.targetDate)
 				: undefined,
 			inflationIncluded: goal.inflationIncluded !== false,
+			drawOnCapital: false,
 			notes: goal.notes,
 		};
 	});
@@ -95,7 +99,6 @@ function hydrateProfile(
 			: undefined,
 		targetRetirementAge: profile.targetRetirementAge,
 		estimatedPublicPension: profile.estimatedPublicPension,
-		withdrawalRate: profile.withdrawalRate,
 	};
 }
 

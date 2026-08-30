@@ -148,7 +148,7 @@ Keys on the sheet must not overlap (duplicate key, or country + its parent regio
 
 ## `Objectifs`
 
-Optional sheet for financial goals. See [Financial goals](../architecture/financial-goals.md) and [ADR 0014](../adr/0014-financial-goals.md).
+Optional sheet for financial goals. See [Financial goals](../../packages/core/financial-goals.md), [ADR 0014](../adr/0014-financial-goals.md), and [ADR 0023](../adr/0023-goal-capitalisation-mode.md).
 
 | Column | Schema field | Rules |
 |---|---|---|
@@ -159,9 +159,11 @@ Optional sheet for financial goals. See [Financial goals](../architecture/financ
 | `Âge cible` | `targetAge` | Integer 50–75 for retirement; empty for capital |
 | `Date cible` | `targetDate` | ISO date for capital; empty for retirement |
 | `Inflation comprise` | `inflationIncluded` | `Oui` / `Non`; missing or empty ⇒ `Oui` (`true`) |
+| `Vivre sur le capital` | `drawOnCapital` | `Oui` / `Non`; missing or empty ⇒ `Non` (`false`). Label + rate defaults only |
+| `Taux capitalisation` | `capitalisationRate` | Fraction in Excel (`0.03` for 3 %), like `Comptes.Taux`; empty ⇒ 0.03 if Non, 0.04 if Oui; bounds `]0, 0.10]` |
 | `Notes` | `notes` | Optional |
 
-Parse drops invalid rows. Save paths (`PUT /api/goals`) reject via `validateFinancialGoals`. Missing sheet ⇒ empty collection. Empty save clears the plan.
+Parse drops invalid rows. Legacy sheets without the two new columns normalise to Non + 3 %. Save paths (`PUT /api/goals`) reject via `validateFinancialGoals`. Missing sheet ⇒ empty collection. Empty save clears the plan.
 
 ## Validation ownership
 

@@ -22,5 +22,6 @@
 - [ADR 0020: Emergency-fund surplus recommendation (keep investment DCA)](0020-emergency-fund-surplus-recommendation.md) — accepted
 - [ADR 0021: Monthly DCA tilt feeds Exécution](0021-monthly-dca-tilt-execution.md) — accepted (superseded-in-part by 0022)
 - [ADR 0022: DCA-first monthly Dashboard card](0022-dca-first-monthly-card.md) — accepted
+- [ADR 0023: Per-goal capitalisation mode and pension overlap](0023-goal-capitalisation-mode.md) — accepted (supersedes-in-part 0014)
 
 Template: [_template.md](_template.md)

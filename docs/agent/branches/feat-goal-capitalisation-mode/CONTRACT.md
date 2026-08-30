@@ -20,16 +20,16 @@
 ### Nominal
 
 - [ ] If un objectif `RETIREMENT_INCOME` a **vivre sur le capital = Non** (intérêts seuls) et un taux saisi (ex. 3 %), then `requiredFromTarget = annualNeed / rate` avec `annualNeed` = revenu annuel cible (moins pension nette **seulement** si overlap — voir edge).
-- [ ] If le même objectif bascule **vivre sur le capital = Oui** avec taux 4 %, then le capital requis utilise ce taux (retrait) ; défauts à la création : mode Non + taux 3 % ; si l’utilisateur passe en Oui sans retoucher le taux, appliquer le défaut 4 % **uniquement** quand le taux était encore le défaut intérêts-seuls (3 %) — sinon conserver la saisie libre.
-- [ ] If pension publique estimée est renseignée sur le profil **et** `goal.targetAge >= profile.targetRetirementAge`, then la pension nette (`brut × PENSION_BRUT_TO_NET_APPROX`) est soustraite du besoin annuel avant capitalisation (comme aujourd’hui quand elle est prise en compte).
-- [ ] If Objectifs est sauvegardé puis rechargé (web Excel + mobile parse), then les colonnes mode / taux round-tripent ; absence des nouvelles colonnes sur un classeur ancien ⇒ défauts (intérêts seuls, 3 %).
+- [ ] If le même objectif bascule **vivre sur le capital = Oui** avec taux 4 %, then le capital requis utilise ce taux (retrait) ; défauts à la création : mode Non + taux 3 % ; bascule de mode sans retoucher le taux : appliquer le défaut du mode cible **uniquement** si le taux était encore le défaut de l’ancien mode (Non→Oui et taux encore 3 % ⇒ 4 % ; Oui→Non et taux encore 4 % ⇒ 3 %) — sinon conserver la saisie libre.
+- [ ] If pension publique estimée est renseignée (`estimatedPublicPension` défini et > 0) **et** `goal.targetAge >= profile.targetRetirementAge`, then la pension nette (`brut × PENSION_BRUT_TO_NET_APPROX`) est soustraite du besoin annuel avant capitalisation (comme aujourd’hui quand elle est prise en compte) ; l’assessment Objectifs expose `pensionNetMonthlyApplied` et la copy affiche ce montant (« déjà déduite »).
+- [ ] If Objectifs est sauvegardé puis rechargé (web Excel + mobile parse), then les colonnes mode / taux round-tripent ; absence des nouvelles colonnes sur un classeur ancien ⇒ défauts (intérêts seuls, 3 %) — **migration acceptée** : le capital requis des anciens objectifs revenu peut changer vs l’ancien 4 % profil.
 
 ### Edge
 
-- [ ] If `goal.targetAge < profile.targetRetirementAge` (ex. 58 vs 64) **ou** pension non renseignée, then **ne pas** soustraire la pension : capitaliser 100 % du revenu cible.
+- [ ] If `goal.targetAge < profile.targetRetirementAge` (ex. 58 vs 64) **ou** pension absente / ≤ 0, then **ne pas** soustraire la pension : capitaliser 100 % du revenu cible.
 - [ ] If après soustraction pension le besoin annuel ≤ 0, then `requiredToday = 0` et progrès stock = 1 (déjà couvert).
-- [ ] If type = `CAPITAL_AT_DATE`, then mode / taux / pension **n’influencent pas** `requiredFromTarget` (= `targetAmount`) ; les champs mode/taux peuvent être absents ou ignorés à la normalisation.
-- [ ] If taux saisi ≤ 0 ou hors borne [0, 0.10] (hors 0), then validation refuse la sauvegarde (même esprit que `withdrawalRate` profil actuel, max 10 %) ; 0 exclus pour éviter division.
+- [ ] If type = `CAPITAL_AT_DATE`, then mode / taux / pension **n’influencent pas** `requiredFromTarget` (= `targetAmount`) ; à l’écriture les cellules mode/taux peuvent rester vides ; à la lecture / normalisation elles sont ignorées pour la formule (pas d’obligation de persister des défauts sur ce type).
+- [ ] If taux saisi ≤ 0 ou > 0.10, then validation refuse la sauvegarde (borne `]0, 0.10]`, même esprit que `withdrawalRate` profil).
 
 ### Out of scope
 
@@ -43,10 +43,11 @@ Status: **LOCKED** = cadrage for this branch · **OPEN** = must answer before co
 |---|---|---|---|
 | Scope of rate/mode | **LOCKED** | Mode + taux **par objectif** (feuille `Objectifs`), pas sur le profil retraite. | Un seul `withdrawalRate` profil (status quo) — rejeté : pas assez fin. |
 | Default draw-on-capital mode | **LOCKED** | **Vivre sur le capital = Non** (intérêts seuls / capital préservé en nominal au sens du taux). | Défaut Oui (SWR 4 %) — rejeté : contraire à l’intention utilisateur. |
-| Default capitalisation rates | **LOCKED** | Saisie libre bornée `]0, 0.10]` ; défaut **3 %** en intérêts seuls ; défaut **4 %** en mode vivre sur le capital. À la création d’un objectif revenu : Non + 3 %. | Un seul défaut 4 % pour les deux modes ; dériver le taux des rendements Projection — rejetés (simplicité / ADR 0014 interdit un second scénario Projection dédié aux objectifs). |
-| When public pension counts | **LOCKED** | Inclure pension nette **ssi** pension renseignée **et** type revenu **et** `targetAge >= targetRetirementAge`. | Égalité stricte d’âge seulement ; flag « Inclure pension » par objectif — rejetés (trop étroit / UI inutile si l’âge suffit). |
-| Workbook columns | **LOCKED** | Ajouter sur `Objectifs` : `Vivre sur le capital` (`Oui`/`Non`, vide ⇒ `Non`) → `drawOnCapital` boolean (default false) ; `Taux capitalisation` (nombre — **Maker : une convention unique** fraction `0.03` ou pourcent `3`, documentée ADR + excel-workbook ; vide ⇒ défaut selon mode). | Garder le taux seulement dans `retirement-profile.json` — rejeté. |
-| Profile withdrawalRate vs goals | **LOCKED** | **Ne plus** alimenter le calcul Objectifs. Champ profil peut rester en schema pour compat lecture mais Objectifs ignore ; pas d’obligation d’UI profil dans cette branche. | Continuer à fallback sur le profil si cellule taux vide — rejeté (double source). |
+| Default capitalisation rates | **LOCKED** | Saisie libre bornée `]0, 0.10]` ; défaut **3 %** (0.03) en intérêts seuls ; défaut **4 %** (0.04) en mode vivre sur le capital. À la création d’un objectif revenu : Non + 3 %. | Un seul défaut 4 % pour les deux modes ; dériver le taux des rendements Projection — rejetés (simplicité / ADR 0014 interdit un second scénario Projection dédié aux objectifs). |
+| Mode vs formula | **LOCKED** | `drawOnCapital` = **libellé + défauts de taux + copy UI seulement**. Les deux modes utilisent la **même** formule `annualNeed / capitalisationRate`. Interdit d’inventer une autre math « intérêts composés » / durée de vie. | Formules distinctes par mode — rejeté (ambigu et hors teach-back). |
+| When public pension counts | **LOCKED** | Inclure pension nette **ssi** `estimatedPublicPension` défini et > 0 **et** type revenu **et** `targetAge >= targetRetirementAge`. Profil fournit aussi `targetRetirementAge` à `requiredCapitalToday` / assess (plus seulement pension + ancien withdrawalRate). | Égalité stricte d’âge seulement ; flag « Inclure pension » par objectif — rejetés (trop étroit / UI inutile si l’âge suffit). |
+| Workbook columns | **LOCKED** | Ajouter sur `Objectifs` : `Vivre sur le capital` (`Oui`/`Non`, vide ⇒ `Non`) → `drawOnCapital` boolean (default false) ; `Taux capitalisation` = **fraction** en Excel et modèle (`0.03` pour 3 %), comme `Comptes.Taux` / profil `withdrawalRate` — **pas** une colonne « % » 0–100 ; vide ⇒ défaut selon mode (3 % si Non, 4 % si Oui). | Pourcent Excel 3 → modèle 0.03 (comme `Poids %`) — rejeté ici : les taux existants du classeur sont déjà en fraction. Garder le taux seulement dans `retirement-profile.json` — rejeté. |
+| Profile withdrawalRate vs goals | **LOCKED** | **Ne plus** alimenter le calcul Objectifs / alignment Projection des goals. Champ profil peut rester en schema pour compat lecture / autres surfaces Retraite mais Objectifs ignore ; pas d’obligation d’UI profil dans cette branche. Callers à retirer du chemin goals : `requiredCapitalToday`, `resolveGoalCapitalNeeds`, `assessFinancialGoals`, panel Projection qui passe encore `withdrawalRate` pour le besoin. | Continuer à fallback sur le profil si cellule taux vide — rejeté (double source). |
 | Documentation / ADR | **LOCKED** | Nouvel ADR **accepted on ship** qui supersède le bloc « Required capital / withdrawalRate / pension always » d’ADR 0014 ; append-only see-also sur 0014 ; MAJ glossary + `packages/core/financial-goals.md` + excel-workbook. | Éditer ADR 0014 in place — rejeté (déjà accepted / en prod). |
 | Web vs mobile surfaces | **LOCKED** | Web : éditeur Objectifs + assessment copy. Mobile : parse/serialize des nouvelles colonnes uniquement (pas d’UI Objectifs). | UI mobile Objectifs — exclu (gap existant). |
 
@@ -54,11 +55,11 @@ Status: **LOCKED** = cadrage for this branch · **OPEN** = must answer before co
 
 Human acceptance recorded in PROGRESS (`Teach-back: accepted`).
 
-- [ ] **Intérêts seuls + overlap pension :** Profil départ 64 ans, pension brute telle que nette ≈ 2 000 €/mois. Objectif revenu 3 000 €/mois à **64** ans, vivre sur le capital = Non, taux 3 %. → Besoin annuel = (3 000 − 2 000) × 12 = 12 000 € ; capital requis = 12 000 / 0.03 = **400 000 €**.
-- [ ] **Avant la retraite (pas de pension) :** Même profil. Objectif revenu 3 000 €/mois à **58** ans, Non, 3 %. → Pas de pension dans le calcul ; capital = 36 000 / 0.03 = **1 200 000 €**.
-- [ ] **Vivre sur le capital :** Objectif 3 000 €/mois à 64 ans, Oui, 4 %, même pension nette 2 000 €. → Capital = 12 000 / 0.04 = **300 000 €**.
-- [ ] **Classeur ancien :** Ligne Objectifs sans les nouvelles colonnes. → Normalisation : `drawOnCapital = false`, taux 3 % ; comportement intérêts seuls.
-- [ ] **Capital à date inchangé :** Objectif `CAPITAL_AT_DATE` 200 000 €. → `requiredToday = 200 000` quel que soit le profil / mode / taux éventuels.
+- [x] **Intérêts seuls + overlap pension :** Profil départ 64 ans, pension brute telle que nette ≈ 2 000 €/mois. Objectif revenu 3 000 €/mois à **64** ans, vivre sur le capital = Non, taux 3 %. → Besoin annuel = (3 000 − 2 000) × 12 = 12 000 € ; capital requis = 12 000 / 0.03 = **400 000 €**.
+- [x] **Avant la retraite (pas de pension) :** Même profil. Objectif revenu 3 000 €/mois à **58** ans, Non, 3 %. → Pas de pension dans le calcul ; capital = 36 000 / 0.03 = **1 200 000 €**.
+- [x] **Vivre sur le capital :** Objectif 3 000 €/mois à 64 ans, Oui, 4 %, même pension nette 2 000 €. → Capital = 12 000 / 0.04 = **300 000 €**.
+- [x] **Classeur ancien :** Ligne Objectifs sans les nouvelles colonnes. → Normalisation : `drawOnCapital = false`, taux 3 % ; comportement intérêts seuls.
+- [x] **Capital à date inchangé :** Objectif `CAPITAL_AT_DATE` 200 000 €. → `requiredToday = 200 000` quel que soit le profil / mode / taux éventuels.
 
 ## Scope
 
@@ -92,7 +93,7 @@ Tier B cadrage: [cadrage-lock.md](../../howto/cadrage-lock.md) (CONSTRAINTS §25
 
 ## Checker
 
-- [ ] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md)
+- [x] Fresh session or distinct checker role will score with [scoring-rubric.md](../../scoring-rubric.md) — **Pass** 2026-08-29 (see PROGRESS)
 - Pass bar: no D on correctness; architecture ≥ B; evidence cited; RED evidence when Layer 2 applied; Tier B teach-back / cadrage lock recorded when Layer 2 applied
 
 ## On merge
@@ -105,4 +106,6 @@ Tier B cadrage: [cadrage-lock.md](../../howto/cadrage-lock.md) (CONSTRAINTS §25
 
 Tier B: all product decisions **LOCKED**, teach-back accepted, Challenger Pass (`Challenger: required`), then `make branch-ready` must pass before coding.
 
-**Framer note:** décisions verrouillées avec l’humain (2026-08-29) : par objectif ; défauts Non / 3 % / 4 % ; overlap `targetAge >= targetRetirementAge`. En attente : validation teach-back (scenarios ci-dessus) + Challenger Pass avant Maker.
+**Framer note:** décisions verrouillées avec l’humain (2026-08-29) : par objectif ; défauts Non / 3 % / 4 % ; overlap `targetAge >= targetRetirementAge`. Teach-back accepté (2026-08-29).
+
+**Challenger note (2026-08-29):** Pass après clarifications — mode = défauts/copy seulement (même formule) ; taux Excel en fraction ; bascule de mode symétrique 3 %↔4 % ; pension > 0 ; migration legacy Non+3 % acceptée ; callers `withdrawalRate` hors chemin goals.

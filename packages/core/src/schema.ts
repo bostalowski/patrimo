@@ -280,6 +280,16 @@ export const FinancialGoal = z.object({
 	targetDate: z.coerce.date().optional(),
 	/** When true (default), targetAmount is today's euros; when false, horizon euros. */
 	inflationIncluded: z.boolean().default(true),
+	/**
+	 * RETIREMENT_INCOME: draw on capital (vs interest-only).
+	 * Label + rate defaults + UI copy only — same formula either way. Default false.
+	 */
+	drawOnCapital: z.boolean().optional(),
+	/**
+	 * RETIREMENT_INCOME: capitalisation fraction in ]0, 0.10].
+	 * Defaults: 0.03 (interest-only) or 0.04 (draw-on-capital) when missing.
+	 */
+	capitalisationRate: z.number().gt(0).max(0.1).optional(),
 	notes: z.string().optional(),
 });
 export type FinancialGoal = z.infer<typeof FinancialGoal>;

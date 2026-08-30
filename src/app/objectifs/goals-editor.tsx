@@ -1,6 +1,10 @@
 "use client";
 
-import { validateFinancialGoals } from "@patrimo/core/financial-goals";
+import {
+	defaultCapitalisationRate,
+	rateAfterDrawOnCapitalToggle,
+	validateFinancialGoals,
+} from "@patrimo/core/financial-goals";
 import type { FinancialGoal, FinancialGoalType } from "@patrimo/core/schema";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,6 +18,8 @@ type DraftGoal = {
 	targetAge: string;
 	targetDate: string;
 	inflationIncluded: boolean;
+	drawOnCapital: boolean;
+	capitalisationRate: string;
 	notes: string;
 };
 
@@ -25,22 +31,31 @@ function toIsoDateInput(value: Date | string | undefined): string {
 }
 
 function toDraft(goals: FinancialGoal[]): DraftGoal[] {
-	return goals.map((goal) => ({
-		id: goal.id,
-		label: goal.label,
-		type: goal.type,
-		targetAmount: String(goal.targetAmount),
-		targetAge: goal.targetAge !== undefined ? String(goal.targetAge) : "",
-		targetDate: toIsoDateInput(goal.targetDate),
-		inflationIncluded: goal.inflationIncluded !== false,
-		notes: goal.notes ?? "",
-	}));
+	return goals.map((goal) => {
+		const drawOnCapital = goal.drawOnCapital === true;
+		const rate =
+			goal.capitalisationRate ?? defaultCapitalisationRate(drawOnCapital);
+		return {
+			id: goal.id,
+			label: goal.label,
+			type: goal.type,
+			targetAmount: String(goal.targetAmount),
+			targetAge: goal.targetAge !== undefined ? String(goal.targetAge) : "",
+			targetDate: toIsoDateInput(goal.targetDate),
+			inflationIncluded: goal.inflationIncluded !== false,
+			drawOnCapital,
+			capitalisationRate: String(Math.round(rate * 10000) / 100),
+			notes: goal.notes ?? "",
+		};
+	});
 }
 
 function fromDraft(rows: DraftGoal[]): FinancialGoal[] {
 	return rows.map((row) => {
 		const targetAmount = Number(row.targetAmount.replace(",", "."));
 		if (row.type === "RETIREMENT_INCOME") {
+			const pct = Number(row.capitalisationRate.replace(",", "."));
+			const capitalisationRate = Number.isFinite(pct) ? pct / 100 : undefined;
 			return {
 				id: row.id.trim(),
 				label: row.label.trim(),
@@ -50,6 +65,8 @@ function fromDraft(rows: DraftGoal[]): FinancialGoal[] {
 					? Math.round(Number(row.targetAge.replace(",", ".")))
 					: undefined,
 				inflationIncluded: row.inflationIncluded,
+				drawOnCapital: row.drawOnCapital,
+				capitalisationRate,
 				notes: row.notes.trim() || undefined,
 			};
 		}
@@ -62,6 +79,7 @@ function fromDraft(rows: DraftGoal[]): FinancialGoal[] {
 				? new Date(`${row.targetDate}T00:00:00.000Z`)
 				: undefined,
 			inflationIncluded: row.inflationIncluded,
+			drawOnCapital: false,
 			notes: row.notes.trim() || undefined,
 		};
 	});
@@ -74,6 +92,8 @@ const VALIDATION_MESSAGES: Record<string, string> = {
 	unexpected_target_date: "La date cible ne s'applique qu'au capital.",
 	invalid_target_age: "Âge cible invalide (50–75).",
 	invalid_target_amount: "Montant cible invalide.",
+	invalid_capitalisation_rate:
+		"Taux de capitalisation invalide (strictement entre 0 % et 10 %).",
 	duplicate_id: "Identifiants en double.",
 	empty_label: "Libellé requis.",
 	empty_id: "Identifiant requis.",
@@ -95,7 +115,29 @@ export function GoalsEditor({ initialGoals }: { initialGoals: FinancialGoal[] })
 
 	function updateRow(index: number, patch: Partial<DraftGoal>) {
 		setRows((current) =>
-			current.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+			current.map((row, i) => {
+				if (i !== index) return row;
+				if (
+					patch.drawOnCapital !== undefined &&
+					patch.drawOnCapital !== row.drawOnCapital
+				) {
+					const currentPct = Number(row.capitalisationRate.replace(",", "."));
+					const currentRate = Number.isFinite(currentPct)
+						? currentPct / 100
+						: defaultCapitalisationRate(row.drawOnCapital);
+					const nextRate = rateAfterDrawOnCapitalToggle({
+						previousDrawOnCapital: row.drawOnCapital,
+						nextDrawOnCapital: patch.drawOnCapital,
+						currentRate,
+					});
+					return {
+						...row,
+						...patch,
+						capitalisationRate: String(Math.round(nextRate * 10000) / 100),
+					};
+				}
+				return { ...row, ...patch };
+			}),
 		);
 	}
 
@@ -113,6 +155,8 @@ export function GoalsEditor({ initialGoals }: { initialGoals: FinancialGoal[] })
 						? `${new Date().getUTCFullYear() + 10}-01-01`
 						: "",
 				inflationIncluded: true,
+				drawOnCapital: false,
+				capitalisationRate: "3",
 				notes: "",
 			},
 		]);
@@ -271,6 +315,49 @@ export function GoalsEditor({ initialGoals }: { initialGoals: FinancialGoal[] })
 									</span>
 								</span>
 							</label>
+							{row.type === "RETIREMENT_INCOME" && (
+								<>
+									<label className="flex items-center gap-2 text-xs text-zinc-500 sm:col-span-2">
+										<input
+											type="checkbox"
+											className="size-4 rounded border-zinc-300"
+											checked={row.drawOnCapital}
+											onChange={(e) =>
+												updateRow(index, {
+													drawOnCapital: e.target.checked,
+												})
+											}
+										/>
+										<span>
+											<span className="font-medium text-zinc-700 dark:text-zinc-200">
+												Vivre sur le capital
+											</span>
+											<span className="ml-1 font-normal text-zinc-400">
+												{row.drawOnCapital
+													? "— retrait du capital (défaut 4 %)"
+													: "— intérêts seuls, capital préservé (défaut 3 %)"}
+											</span>
+										</span>
+									</label>
+									<label className="space-y-1 text-xs text-zinc-500">
+										Taux de capitalisation (%)
+										<input
+											className={inputClasses}
+											inputMode="decimal"
+											value={row.capitalisationRate}
+											onChange={(e) =>
+												updateRow(index, {
+													capitalisationRate: e.target.value,
+												})
+											}
+										/>
+										<span className="block font-normal text-zinc-400">
+											Capital requis = besoin annuel ÷ ce taux (même formule
+											dans les deux modes).
+										</span>
+									</label>
+								</>
+							)}
 							<label className="space-y-1 text-xs text-zinc-500 sm:col-span-2">
 								Notes
 								<input

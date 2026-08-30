@@ -35,9 +35,24 @@ function GoalCard({
 }) {
 	const { goal } = assessment;
 
+	const modeLabel =
+		goal.type === "RETIREMENT_INCOME"
+			? goal.drawOnCapital
+				? "vivre sur le capital"
+				: "intérêts seuls"
+			: null;
+	const ratePct =
+		goal.type === "RETIREMENT_INCOME" && goal.capitalisationRate
+			? Math.round(goal.capitalisationRate * 10000) / 100
+			: null;
+	const pensionNote =
+		goal.type === "RETIREMENT_INCOME" &&
+		assessment.pensionNetMonthlyApplied > 0
+			? ` · retraite publique nette estimée ${formatEuro(assessment.pensionNetMonthlyApplied)}/mois déjà déduite`
+			: "";
 	const needLine =
 		goal.type === "RETIREMENT_INCOME"
-			? `Il te faut ${formatEuro(assessment.requiredToday)} de placements pour viser ${formatEuro(goal.targetAmount)}/mois à ${goal.targetAge} ans`
+			? `Il te faut ${formatEuro(assessment.requiredToday)} de placements pour viser ${formatEuro(goal.targetAmount)}/mois à ${goal.targetAge} ans (${modeLabel}${ratePct !== null ? ` @ ${ratePct} %` : ""})${pensionNote}`
 			: `Il te faut ${formatEuro(assessment.requiredToday)} de placements pour viser ${formatEuro(goal.targetAmount)} au ${
 					goal.targetDate
 						? new Date(goal.targetDate).toLocaleDateString("fr-FR")

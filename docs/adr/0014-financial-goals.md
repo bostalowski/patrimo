@@ -173,3 +173,4 @@ without a named goal would lose meaning as a planning sandbox.
 - [Glossary](../reference/glossary.md)
 - [Projection](../architecture/foundations.md)
 - [ADR 0012](0012-allocation-coherence.md) — analogous target + assessment pattern
+- [ADR 0023](0023-goal-capitalisation-mode.md) — per-goal capitalisation mode + pension overlap (supersedes Required capital / withdrawalRate / pension-always block)
