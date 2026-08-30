@@ -26,6 +26,7 @@ Hard rules: [CONSTRAINTS.md](../../CONSTRAINTS.md). Names: [glossary](../../docs
 | Tax / fiscal | `tax-rules.ts`, `fiscalite.ts`, `fiscal-advice.ts` |
 | Projection / DCA / budget | `projection.ts`, `dca.ts`, `budget.ts`, `retraite.ts` — overflow: [envelope-overflow.md](envelope-overflow.md) |
 | Price schedule helpers | `prices/schedule.ts` |
+| Livret A/LDDS rates + quinzaine math | `livret-rates.ts`, `livret.ts` — ADR 0024 |
 | Real estate | `realestate/*` |
 
 ## System shape

@@ -1,0 +1,202 @@
+[
+  {
+    "effectiveFrom": "1818-05-22",
+    "annualRate": 0.05
+  },
+  {
+    "effectiveFrom": "1851-01-01",
+    "annualRate": 0.0475
+  },
+  {
+    "effectiveFrom": "1881-01-01",
+    "annualRate": 0.035
+  },
+  {
+    "effectiveFrom": "1905-01-01",
+    "annualRate": 0.03
+  },
+  {
+    "effectiveFrom": "1916-01-01",
+    "annualRate": 0.035
+  },
+  {
+    "effectiveFrom": "1926-01-01",
+    "annualRate": 0.035
+  },
+  {
+    "effectiveFrom": "1946-01-01",
+    "annualRate": 0.015
+  },
+  {
+    "effectiveFrom": "1960-01-01",
+    "annualRate": 0.0325
+  },
+  {
+    "effectiveFrom": "1966-01-01",
+    "annualRate": 0.03
+  },
+  {
+    "effectiveFrom": "1968-01-01",
+    "annualRate": 0.035
+  },
+  {
+    "effectiveFrom": "1969-06-01",
+    "annualRate": 0.04
+  },
+  {
+    "effectiveFrom": "1970-01-01",
+    "annualRate": 0.0425
+  },
+  {
+    "effectiveFrom": "1974-01-01",
+    "annualRate": 0.06
+  },
+  {
+    "effectiveFrom": "1975-01-01",
+    "annualRate": 0.075
+  },
+  {
+    "effectiveFrom": "1976-01-01",
+    "annualRate": 0.065
+  },
+  {
+    "effectiveFrom": "1981-10-16",
+    "annualRate": 0.085
+  },
+  {
+    "effectiveFrom": "1983-08-01",
+    "annualRate": 0.075
+  },
+  {
+    "effectiveFrom": "1984-08-16",
+    "annualRate": 0.065
+  },
+  {
+    "effectiveFrom": "1985-07-01",
+    "annualRate": 0.06
+  },
+  {
+    "effectiveFrom": "1986-05-16",
+    "annualRate": 0.045
+  },
+  {
+    "effectiveFrom": "1996-03-01",
+    "annualRate": 0.035
+  },
+  {
+    "effectiveFrom": "1998-06-16",
+    "annualRate": 0.03
+  },
+  {
+    "effectiveFrom": "1999-08-01",
+    "annualRate": 0.0225
+  },
+  {
+    "effectiveFrom": "2000-07-01",
+    "annualRate": 0.03
+  },
+  {
+    "effectiveFrom": "2003-08-01",
+    "annualRate": 0.0225
+  },
+  {
+    "effectiveFrom": "2005-08-01",
+    "annualRate": 0.02
+  },
+  {
+    "effectiveFrom": "2006-02-01",
+    "annualRate": 0.0225
+  },
+  {
+    "effectiveFrom": "2006-08-01",
+    "annualRate": 0.0275
+  },
+  {
+    "effectiveFrom": "2007-08-01",
+    "annualRate": 0.03
+  },
+  {
+    "effectiveFrom": "2008-02-01",
+    "annualRate": 0.035
+  },
+  {
+    "effectiveFrom": "2008-08-01",
+    "annualRate": 0.04
+  },
+  {
+    "effectiveFrom": "2009-02-01",
+    "annualRate": 0.025
+  },
+  {
+    "effectiveFrom": "2009-05-01",
+    "annualRate": 0.0175
+  },
+  {
+    "effectiveFrom": "2009-08-01",
+    "annualRate": 0.0125
+  },
+  {
+    "effectiveFrom": "2010-08-01",
+    "annualRate": 0.0175
+  },
+  {
+    "effectiveFrom": "2011-02-01",
+    "annualRate": 0.02
+  },
+  {
+    "effectiveFrom": "2011-08-01",
+    "annualRate": 0.0225
+  },
+  {
+    "effectiveFrom": "2013-02-01",
+    "annualRate": 0.0175
+  },
+  {
+    "effectiveFrom": "2013-08-01",
+    "annualRate": 0.0125
+  },
+  {
+    "effectiveFrom": "2014-08-01",
+    "annualRate": 0.01
+  },
+  {
+    "effectiveFrom": "2015-08-01",
+    "annualRate": 0.0075
+  },
+  {
+    "effectiveFrom": "2020-02-01",
+    "annualRate": 0.005
+  },
+  {
+    "effectiveFrom": "2022-02-01",
+    "annualRate": 0.01
+  },
+  {
+    "effectiveFrom": "2022-08-01",
+    "annualRate": 0.02
+  },
+  {
+    "effectiveFrom": "2023-02-01",
+    "annualRate": 0.03
+  },
+  {
+    "effectiveFrom": "2023-08-01",
+    "annualRate": 0.03
+  },
+  {
+    "effectiveFrom": "2025-02-01",
+    "annualRate": 0.024
+  },
+  {
+    "effectiveFrom": "2025-08-01",
+    "annualRate": 0.017
+  },
+  {
+    "effectiveFrom": "2026-02-01",
+    "annualRate": 0.015
+  },
+  {
+    "effectiveFrom": "2026-08-01",
+    "annualRate": 0.017
+  }
+]

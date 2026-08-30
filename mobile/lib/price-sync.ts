@@ -6,6 +6,7 @@ import {
   shouldRunSync,
   DEFAULT_SYNC_INTERVAL_MINUTES,
 } from "@patrimo/core/prices/schedule";
+import { syncLivretRates } from "./livret-rates";
 
 const PRICES_STORAGE_KEY = "patrimo:prices";
 const LAST_SYNC_KEY = "patrimo:last_sync";
@@ -322,5 +323,16 @@ export async function syncPrices(
   console.log(`[Prices] Synced ${fetched}/${assets.length} asset prices`);
   await savePrices(store);
   await saveLastSync();
+
+  // Same gesture as web: attempt livret rate cache merge without failing prices (D9).
+  const livretRates = await syncLivretRates();
+  if (livretRates.status === "error") {
+    console.log(`[LivretRates] sync skipped: ${livretRates.error}`);
+  } else {
+    console.log(
+      `[LivretRates] cache ${livretRates.steps} paliers (+${livretRates.added})`,
+    );
+  }
+
   return store;
 }

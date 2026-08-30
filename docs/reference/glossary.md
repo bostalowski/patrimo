@@ -94,6 +94,10 @@ Surplus contribution clipped when a projected envelope reaches its plafond, then
 
 Derived price history stored locally by each application instance. Price caches are not the source of truth and may be removed lazily after the corresponding asset is deleted on another device.
 
+## Livret rate series
+
+Dated official annual rates for Livret A / LDDS (`{ effectiveFrom, annualRate }`). Math in `@patrimo/core` uses seed ∪ local cache only — never `Comptes.Taux` / `account.rate` (UI mirror). Platforms merge the series during price sync (OpenFisca YAML); failure must not fail price sync. See [ADR 0024](../adr/0024-livret-official-rate-series.md).
+
 ## Price source
 
 How an asset obtains quotes: `coingecko`, `yahoo`, `investir`, `zonebourse`, or `manual`.

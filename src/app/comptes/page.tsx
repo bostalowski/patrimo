@@ -21,6 +21,7 @@ import {
 } from "@/lib/utils";
 import { AccountType, Envelope } from "@/lib/schema";
 import { accountDeletionImpact } from "@/lib/deletion-impact";
+import { currentOfficialLivretRate } from "@/lib/portfolio";
 import { AccountForm } from "./account-form";
 import {
   ActiveAccountPositionsTable,
@@ -59,6 +60,7 @@ export default async function ComptesPage() {
   const workbook = loadWorkbook();
   const priceMap = await readPriceMap(workbook.assets);
   const portfolio = buildPortfolio(workbook, priceMap);
+  const officialLivretRate = currentOfficialLivretRate();
 
   const unlockMap = new Map(
     buildAccountUnlocks(workbook, portfolio, priceMap).map((u) => [
@@ -115,6 +117,7 @@ export default async function ComptesPage() {
       <AccountForm
         accountTypes={AccountType.options}
         envelopes={Envelope.options}
+        officialLivretRate={officialLivretRate}
       />
 
       {envelopes.map(([envelope, accounts]) => {

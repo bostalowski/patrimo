@@ -6,10 +6,15 @@ import { GeographicExposurePanel } from "@/components/geographic-exposure-panel"
 import { SectorExposurePanel } from "@/components/sector-exposure-panel";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
-import { buildPortfolio } from "@/lib/portfolio";
+import {
+  buildPortfolio,
+  currentOfficialLivretRate,
+  loadOfficialLivretRateSeries,
+} from "@/lib/portfolio";
 import { readPriceMap } from "@/lib/store";
-import { formatEuro } from "@/lib/utils";
+import { formatEuro, formatPercent } from "@/lib/utils";
 import { AccountForm } from "../account-form";
+import { LivretRatePanel } from "../livret-rate-panel";
 import {
   ActiveAccountPositionsTable,
   ClosedAccountPositions,
@@ -48,6 +53,12 @@ export default async function AccountDetailPage({
   const activePositions = positions.filter((position) => position.quantity > 0);
   const closedPositions = positions.filter((position) => position.quantity <= 0);
   const marketValue = account?.marketValue ?? 0;
+  const isLivret = meta.envelope === "LIVRET";
+  const officialLivretRate = isLivret ? currentOfficialLivretRate() : undefined;
+  const livretRateSeries = isLivret ? loadOfficialLivretRateSeries() : [];
+  const livretTransactions = isLivret
+    ? workbook.transactions.filter((tx) => tx.compte === decodedId)
+    : [];
 
   const accountGeo = aggregateGeographicExposureForAccount(
     positions.map((position) => ({
@@ -92,39 +103,52 @@ export default async function AccountDetailPage({
             account={meta}
             trigger="icon"
             deletionImpact={accountDeletionImpact(workbook, meta.id)}
+            officialLivretRate={officialLivretRate}
           />
         </div>
         <p className="mt-1 text-lg font-semibold tracking-tight">
           {formatEuro(marketValue)}
+          {officialLivretRate !== undefined && (
+            <span className="ml-3 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+              · {formatPercent(officialLivretRate)} réglementé
+            </span>
+          )}
         </p>
       </header>
 
-      <GeographicExposurePanel
-        title="Géographie du compte"
-        countries={accountGeo.countries}
-        regions={accountGeo.regions}
-      />
-
-      <SectorExposurePanel
-        title="Secteurs du compte"
-        sectors={accountSectors.sectors}
-      />
-
-      {meta.envelope === "LIVRET" ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Solde livret {formatEuro(marketValue)}.
-        </p>
-      ) : activePositions.length === 0 && closedPositions.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Aucune position pour ce compte.
-        </p>
+      {isLivret ? (
+        <LivretRatePanel
+          balance={marketValue}
+          currentRate={officialLivretRate!}
+          series={livretRateSeries}
+          transactions={livretTransactions}
+        />
       ) : (
         <>
-          {activePositions.length > 0 && (
-            <ActiveAccountPositionsTable positions={activePositions} />
-          )}
-          {closedPositions.length > 0 && (
-            <ClosedAccountPositions positions={closedPositions} />
+          <GeographicExposurePanel
+            title="Géographie du compte"
+            countries={accountGeo.countries}
+            regions={accountGeo.regions}
+          />
+
+          <SectorExposurePanel
+            title="Secteurs du compte"
+            sectors={accountSectors.sectors}
+          />
+
+          {activePositions.length === 0 && closedPositions.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Aucune position pour ce compte.
+            </p>
+          ) : (
+            <>
+              {activePositions.length > 0 && (
+                <ActiveAccountPositionsTable positions={activePositions} />
+              )}
+              {closedPositions.length > 0 && (
+                <ClosedAccountPositions positions={closedPositions} />
+              )}
+            </>
           )}
         </>
       )}
