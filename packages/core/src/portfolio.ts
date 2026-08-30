@@ -13,6 +13,7 @@ import {
   livretInterestEvents,
   type LivretState,
 } from "./livret";
+import { effectiveLivretRateSeries, type LivretRateStep } from "./livret-rates";
 import {
   NO_ACCOUNT_ID,
   UNASSIGNED_CASH_ASSET_LABEL,
@@ -315,7 +316,10 @@ function livretAccountPosition(
 export function buildPortfolio(
   workbook: Workbook,
   prices: PriceMap,
+  options?: { livretRateSeries?: LivretRateStep[] },
 ): Portfolio {
+  const livretRateSeries =
+    options?.livretRateSeries ?? effectiveLivretRateSeries();
   const perAccount = new Map<Key, MutablePosition>();
   const perAsset = new Map<string, MutablePosition>();
   const perAccountCash = new Map<
@@ -402,7 +406,7 @@ export function buildPortfolio(
     );
     if (flows.length === 0 && interestEvents.length === 0) continue;
     const state = computeLivretState(
-      account.rate ?? 0,
+      livretRateSeries,
       flows,
       interestEvents,
       now,

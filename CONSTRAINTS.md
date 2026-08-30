@@ -10,7 +10,7 @@ Mechanics live in colocated `ARCHITECTURE.md` files (see [docs/DOC_MODEL.md](doc
 1. MUST treat the Excel `.xlsx` workbook as the source of truth for portfolio state (transactions, assets, accounts, budget, real estate, DCA, manual prices, geographic/sector exposure, diversification targets, financial goals).
 2. MUST NOT treat `prices.json`, mobile AsyncStorage automatic prices, or other local caches as recoverable portfolio history.
 3. MUST keep tax figures indicative (simplified French-tax heuristics in `@patrimo/core`). MUST NOT present them as a filing engine or legal advice.
-4. MUST keep the product local-first: network only for price sources, optional Drive, and release checks.
+4. MUST keep the product local-first: network only for price sources, regulated Livret A/LDDS rate series (see [ADR 0024](docs/adr/0024-livret-official-rate-series.md)), optional Drive, and release checks.
 5. MUST document platform capability gaps as current state until closed ([FEATURES.md](FEATURES.md), [docs/overview/platforms.md](docs/overview/platforms.md)). Feature parity is direction, not a guarantee.
 
 ## Domain ownership

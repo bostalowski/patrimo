@@ -24,10 +24,12 @@ POST /api/prices/sync
         |
         +--> syncPrices(assets)     --> data/prices.json
         +--> syncBenchmarks()       --> data/benchmarks.json
+        +--> syncLivretRates()      --> data/livret-rates.json  (non-blocking; D9)
 ```
 
-- Implementation: `src/lib/prices/sync.ts`, route `src/app/api/prices/sync/route.ts`.
+- Implementation: `src/lib/prices/sync.ts`, route `src/app/api/prices/sync/route.ts`, livret rates `src/lib/livret-rates/`.
 - Each non-manual asset fetches history and merges into the existing store keyed by asset id and ISO date.
+- Livret A/LDDS rates are fetched from OpenFisca-France YAML and merged into `livret-rates.json`; errors are reported in the response meta and never fail the price sync ([ADR 0024](../docs/adr/0024-livret-official-rate-series.md)).
 - Manual prices: `POST /api/prices/manual` writes the workbook sheet `Prix manuels`.
 - `readPriceMap` uses `prices.json` for automatic sources and workbook `manualPrices` for `manual` assets.
 - Sync interval and staleness helpers live in `@patrimo/core/prices/schedule` and `config.json` (`syncIntervalMinutes`).
@@ -40,11 +42,12 @@ WorkbookProvider.load / pull-to-refresh
         v
 mobile/lib/price-sync.ts syncPrices
         |
-        v
-AsyncStorage key patrimo:prices
+        +--> AsyncStorage key patrimo:prices
+        +--> syncLivretRates() → AsyncStorage patrimo:livret-rates (non-blocking)
 ```
 
 - Fetches and merges historical series for automatic sources (`coingecko`, `yahoo`, `investir`, `zonebourse`), same sources as web.
+- Also merges the official Livret A/LDDS rate series ([ADR 0024](../docs/adr/0024-livret-official-rate-series.md)); rate failure does not fail price sync.
 - Does not sync benchmarks.
 - Manual assets are skipped; workbook `Prix manuels` remain the source for those valuations.
 - Respects the same `shouldRunSync` interval helper as web when `force` is false.

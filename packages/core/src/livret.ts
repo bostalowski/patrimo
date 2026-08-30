@@ -1,7 +1,14 @@
 import type { Account, Transaction } from "./schema";
 import { deflate } from "./inflation";
+import {
+	currentLivretRate,
+	resolveLivretRateAt,
+	type LivretRateStep,
+} from "./livret-rates";
 
 const QUINZAINES_PER_YEAR = 24;
+
+export type { LivretRateStep };
 
 export type LivretFlow = { date: Date; amount: number };
 
@@ -103,10 +110,10 @@ type ValueFlow = { valueTime: number; amount: number };
 function buildInterestCheckpoints(
   flows: LivretFlow[],
   interestEvents: LivretFlow[],
-  rate: number,
+  rateSeries: LivretRateStep[],
   endTime: number,
 ): Checkpoint[] {
-  if (rate <= 0) return [];
+  if (rateSeries.length === 0) return [];
   if (flows.length === 0 && interestEvents.length === 0) return [];
 
   const baseFlows: ValueFlow[] = [
@@ -167,7 +174,8 @@ function buildInterestCheckpoints(
 
     if (quinzaineTime > lastInterestTime) {
       const principal = capitalizedInterest + base;
-      if (principal > 0) {
+      const rate = resolveLivretRateAt(rateSeries, quinzaine);
+      if (principal > 0 && rate > 0) {
         const quinzaineInterest = (principal * rate) / QUINZAINES_PER_YEAR;
         accruedThisYear += quinzaineInterest;
         runningInterest += quinzaineInterest;
@@ -207,7 +215,7 @@ function principalAt(flows: LivretFlow[], time: number): number {
 }
 
 export function computeLivretState(
-  rate: number,
+  rateSeries: LivretRateStep[],
   flows: LivretFlow[],
   interestEvents: LivretFlow[],
   asOf: Date = new Date(),
@@ -218,7 +226,7 @@ export function computeLivretState(
   const checkpoints = buildInterestCheckpoints(
     flows,
     interestEvents,
-    rate,
+    rateSeries,
     asOfTime,
   );
   const estimatedInterest = interestAt(checkpoints, asOfTime);
@@ -255,17 +263,19 @@ export function livretDailyValues(
 
 export function projectLivret(params: {
   startBalance: number;
-  rate: number;
+  rateSeries: LivretRateStep[];
   plafond?: number;
   monthlyDeposit: number;
   years: number;
   start?: Date;
   inflationRate?: number;
 }): LivretProjection {
-  const { startBalance, rate, plafond, monthlyDeposit, years } = params;
+  const { startBalance, rateSeries, plafond, monthlyDeposit, years } = params;
   const inflationRate = params.inflationRate ?? 0;
   const start = params.start ?? new Date();
   const startMonth = utc(start.getUTCFullYear(), start.getUTCMonth(), 1);
+  // Future months use the last known palier (no anticipation).
+  const rate = currentLivretRate(rateSeries, start);
 
   let principal = startBalance;
   let accrued = 0;

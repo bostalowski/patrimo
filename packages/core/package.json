@@ -10,6 +10,7 @@
     "./inflation": "./src/inflation.ts",
     "./benchmarks": "./src/benchmarks.ts",
     "./livret": "./src/livret.ts",
+    "./livret-rates": "./src/livret-rates.ts",
     "./portfolio": "./src/portfolio.ts",
     "./portfolio-history": "./src/portfolio-history.ts",
     "./performance": "./src/performance.ts",

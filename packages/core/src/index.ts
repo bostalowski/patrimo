@@ -33,6 +33,14 @@ export {
 	type ProjectionPoint as LivretProjectionPoint,
 	projectLivret,
 } from "./livret";
+export {
+	currentLivretRate,
+	effectiveLivretRateSeries,
+	LIVRET_RATE_SEED,
+	mergeLivretRateSeries,
+	resolveLivretRateAt,
+	type LivretRateStep,
+} from "./livret-rates";
 export * from "./manual-prices";
 export * from "./next-euro-copy";
 export * from "./next-euro-plan";

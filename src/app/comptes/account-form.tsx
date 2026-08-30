@@ -22,6 +22,8 @@ type Props = {
   account?: Account;
   trigger?: "primary" | "icon";
   deletionImpact?: DeletionImpact;
+  /** Official Livret A/LDDS rate (fraction) for hint + create prefill (D6). */
+  officialLivretRate?: number;
 };
 
 export function AccountForm({
@@ -30,6 +32,7 @@ export function AccountForm({
   account,
   trigger = "primary",
   deletionImpact,
+  officialLivretRate,
 }: Props) {
   const router = useRouter();
   const isEdit = Boolean(account);
@@ -42,9 +45,13 @@ export function AccountForm({
   const [type, setType] = useState<AccountTypeValue>(account?.type ?? accountTypes[0]);
   const [envelope, setEnvelope] = useState<Envelope>(account?.envelope ?? envelopes[0]);
   const [openDate, setOpenDate] = useState(toDateInput(account?.openDate));
-  const [rate, setRate] = useState(
-    account?.rate !== undefined ? String(account.rate * 100) : "",
-  );
+  const [rate, setRate] = useState(() => {
+    if (account?.rate !== undefined) return String(account.rate * 100);
+    if (!account && officialLivretRate !== undefined) {
+      return String(officialLivretRate * 100);
+    }
+    return "";
+  });
   const [plafond, setPlafond] = useState(
     account?.plafond !== undefined ? String(account.plafond) : "",
   );
@@ -57,7 +64,13 @@ export function AccountForm({
     setType(account?.type ?? accountTypes[0]);
     setEnvelope(account?.envelope ?? envelopes[0]);
     setOpenDate(toDateInput(account?.openDate));
-    setRate(account?.rate !== undefined ? String(account.rate * 100) : "");
+    if (account?.rate !== undefined) {
+      setRate(String(account.rate * 100));
+    } else if (officialLivretRate !== undefined) {
+      setRate(String(officialLivretRate * 100));
+    } else {
+      setRate("");
+    }
     setPlafond(account?.plafond !== undefined ? String(account.plafond) : "");
     setError(null);
   }
@@ -230,9 +243,22 @@ export function AccountForm({
                     inputMode="decimal"
                     value={rate}
                     onChange={(e) => setRate(e.target.value)}
-                    placeholder="3"
+                    placeholder={
+                      officialLivretRate !== undefined
+                        ? String(officialLivretRate * 100)
+                        : "3"
+                    }
                     className={inputClasses}
                   />
+                  {officialLivretRate !== undefined && (
+                    <span className="text-xs font-normal normal-case tracking-normal text-zinc-400">
+                      Taux réglementé Livret A / LDDS en vigueur :{" "}
+                      {(officialLivretRate * 100).toLocaleString("fr-FR", {
+                        maximumFractionDigits: 2,
+                      })}
+                      % (miroir UI — la math utilise la série officielle).
+                    </span>
+                  )}
                 </Field>
 
                 <Field label="Plafond (EUR)">

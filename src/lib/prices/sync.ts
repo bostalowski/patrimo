@@ -11,6 +11,10 @@ import { fetchYahooHistory } from "@/lib/prices/yahoo";
 import { fetchInvestirHistory } from "@/lib/prices/investir";
 import { fetchZonebourseHistory } from "@/lib/prices/zonebourse";
 import { BENCHMARKS } from "@/lib/benchmarks";
+import {
+  syncLivretRates,
+  type LivretRateSyncResult,
+} from "@/lib/livret-rates/sync";
 
 export type SyncResult = {
   asset: string;
@@ -78,6 +82,15 @@ export async function syncPrices(assets: Asset[]): Promise<SyncResult[]> {
 
   await writePrices(store);
   return results;
+}
+
+/** Couples livret rate sync to the price-sync gesture (non-blocking). */
+export async function syncPricesWithLivretRates(
+  assets: Asset[],
+): Promise<{ prices: SyncResult[]; livretRates: LivretRateSyncResult }> {
+  const prices = await syncPrices(assets);
+  const livretRates = await syncLivretRates();
+  return { prices, livretRates };
 }
 
 export async function syncBenchmarks(): Promise<SyncResult[]> {
