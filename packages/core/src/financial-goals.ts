@@ -22,6 +22,7 @@ export type FinancialGoalValidationReason =
 	| "unexpected_target_date"
 	| "invalid_target_age"
 	| "invalid_target_amount"
+	| "invalid_capitalisation_rate"
 	| "duplicate_id"
 	| "empty_label"
 	| "empty_id";
@@ -33,7 +34,8 @@ export type FinancialGoalValidation =
 const RETIREMENT_AGE_MIN = 50;
 const RETIREMENT_AGE_MAX = 75;
 const TRAJECTORY_BAND = 0.05;
-const DEFAULT_WITHDRAWAL_RATE = 0.04;
+const DEFAULT_INTEREST_ONLY_RATE = 0.03;
+const DEFAULT_DRAW_ON_CAPITAL_RATE = 0.04;
 
 export function validateFinancialGoals(
 	goals: FinancialGoal[],
@@ -63,6 +65,13 @@ export function validateFinancialGoals(
 			}
 			if (goal.targetDate !== undefined && goal.targetDate !== null) {
 				return { ok: false, reason: "unexpected_target_date" };
+			}
+			const rate = goal.capitalisationRate;
+			if (
+				rate !== undefined &&
+				(!(rate > 0) || rate > 0.1 || !Number.isFinite(rate))
+			) {
+				return { ok: false, reason: "invalid_capitalisation_rate" };
 			}
 		} else {
 			if (!goal.targetDate) {
@@ -99,6 +108,13 @@ export function normalizeFinancialGoals(
 				continue;
 			}
 			seen.add(goal.id);
+			const drawOnCapital = goal.drawOnCapital === true;
+			const capitalisationRate =
+				goal.capitalisationRate !== undefined &&
+				Number.isFinite(goal.capitalisationRate) &&
+				goal.capitalisationRate > 0
+					? goal.capitalisationRate
+					: defaultCapitalisationRate(drawOnCapital);
 			result.push({
 				id: goal.id,
 				label: goal.label,
@@ -106,6 +122,8 @@ export function normalizeFinancialGoals(
 				targetAmount: goal.targetAmount,
 				targetAge: goal.targetAge,
 				inflationIncluded: goal.inflationIncluded !== false,
+				drawOnCapital,
+				capitalisationRate,
 				notes: goal.notes,
 			});
 		} else {
@@ -131,27 +149,82 @@ export function pensionNetFromProfile(
 	return (profile.estimatedPublicPension ?? 0) * PENSION_BRUT_TO_NET_APPROX;
 }
 
-export function withdrawalRateFromProfile(
-	profile: Pick<RetirementProfile, "withdrawalRate">,
+export function defaultCapitalisationRate(drawOnCapital: boolean): number {
+	return drawOnCapital
+		? DEFAULT_DRAW_ON_CAPITAL_RATE
+		: DEFAULT_INTEREST_ONLY_RATE;
+}
+
+/**
+ * Sticky mode-toggle defaults: Non→Oui with rate still 3% ⇒ 4%;
+ * Oui→Non with rate still 4% ⇒ 3%; otherwise keep the user rate.
+ */
+export function rateAfterDrawOnCapitalToggle(params: {
+	previousDrawOnCapital: boolean;
+	nextDrawOnCapital: boolean;
+	currentRate: number;
+}): number {
+	const { previousDrawOnCapital, nextDrawOnCapital, currentRate } = params;
+	if (previousDrawOnCapital === nextDrawOnCapital) return currentRate;
+	const previousDefault = defaultCapitalisationRate(previousDrawOnCapital);
+	const nextDefault = defaultCapitalisationRate(nextDrawOnCapital);
+	if (Math.abs(currentRate - previousDefault) < 1e-12) return nextDefault;
+	return currentRate;
+}
+
+export function capitalisationRateForGoal(goal: FinancialGoal): number {
+	const drawOnCapital = goal.drawOnCapital === true;
+	const rate = goal.capitalisationRate;
+	if (rate !== undefined && rate > 0 && rate <= 0.1 && Number.isFinite(rate)) {
+		return rate;
+	}
+	return defaultCapitalisationRate(drawOnCapital);
+}
+
+function shouldSubtractPublicPension(
+	goal: FinancialGoal,
+	profile: Partial<
+		Pick<RetirementProfile, "estimatedPublicPension" | "targetRetirementAge">
+	>,
+): boolean {
+	if (goal.type !== "RETIREMENT_INCOME") return false;
+	const pension = profile.estimatedPublicPension;
+	if (pension === undefined || !(pension > 0)) return false;
+	if (goal.targetAge === undefined) return false;
+	const retirementAge = profile.targetRetirementAge;
+	if (retirementAge === undefined) return false;
+	return goal.targetAge >= retirementAge;
+}
+
+/**
+ * Monthly net public pension subtracted from the income goal need, or 0
+ * when overlap does not apply (age before retirement, missing pension, or
+ * non-income goal).
+ */
+export function publicPensionNetMonthlyApplied(
+	goal: FinancialGoal,
+	profile: Partial<
+		Pick<RetirementProfile, "estimatedPublicPension" | "targetRetirementAge">
+	> = {},
 ): number {
-	const rate = profile.withdrawalRate ?? DEFAULT_WITHDRAWAL_RATE;
-	return rate > 0 ? rate : DEFAULT_WITHDRAWAL_RATE;
+	if (!shouldSubtractPublicPension(goal, profile)) return 0;
+	return pensionNetFromProfile(profile);
 }
 
 /** Required capital from targetAmount via formula (no inflate/deflate). */
 export function requiredCapitalToday(
 	goal: FinancialGoal,
-	profile: Pick<
-		RetirementProfile,
-		"estimatedPublicPension" | "withdrawalRate"
+	profile: Partial<
+		Pick<RetirementProfile, "estimatedPublicPension" | "targetRetirementAge">
 	> = {},
 ): number {
 	if (goal.type === "CAPITAL_AT_DATE") {
 		return Math.max(0, goal.targetAmount);
 	}
 	const annualTarget = goal.targetAmount * 12;
-	const annualGap = Math.max(0, annualTarget - pensionNetFromProfile(profile) * 12);
-	return annualGap / withdrawalRateFromProfile(profile);
+	const pensionMonthly = publicPensionNetMonthlyApplied(goal, profile);
+	const annualNeed = Math.max(0, annualTarget - pensionMonthly * 12);
+	return annualNeed / capitalisationRateForGoal(goal);
 }
 
 export type GoalCapitalNeeds = {
@@ -166,9 +239,8 @@ export type GoalCapitalNeeds = {
  */
 export function resolveGoalCapitalNeeds(params: {
 	goal: FinancialGoal;
-	profile?: Pick<
-		RetirementProfile,
-		"estimatedPublicPension" | "withdrawalRate"
+	profile?: Partial<
+		Pick<RetirementProfile, "estimatedPublicPension" | "targetRetirementAge">
 	>;
 	horizonYears: number | null;
 	inflationRate: number;
@@ -263,6 +335,11 @@ export type GoalAssessment = {
 	goal: FinancialGoal;
 	/** Capital needed in today's euros (comparable to liquid MV). */
 	requiredToday: number;
+	/**
+	 * Net public pension (€/month) subtracted from the income need when
+	 * overlap applies; 0 otherwise (for assessment copy).
+	 */
+	pensionNetMonthlyApplied: number;
 	progressCurrent: number;
 	horizonYears: number | null;
 	horizonDate: string | null;
@@ -376,6 +453,10 @@ export function assessFinancialGoals(params: {
 		assessed.push({
 			goal,
 			requiredToday,
+			pensionNetMonthlyApplied: publicPensionNetMonthlyApplied(
+				goal,
+				params.profile,
+			),
 			progressCurrent,
 			horizonYears,
 			horizonDate,

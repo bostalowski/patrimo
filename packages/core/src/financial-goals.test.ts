@@ -4,6 +4,7 @@ import type { Portfolio } from "./portfolio";
 import {
 	assessFinancialGoals,
 	normalizeFinancialGoals,
+	rateAfterDrawOnCapitalToggle,
 	requiredCapitalToday,
 	resolveGoalCapitalNeeds,
 	trajectoryStatus,
@@ -20,6 +21,8 @@ function retirementGoal(
 		targetAmount: 3000,
 		targetAge: 58,
 		inflationIncluded: true,
+		drawOnCapital: false,
+		capitalisationRate: 0.03,
 		...overrides,
 	};
 }
@@ -90,38 +93,224 @@ describe("validateFinancialGoals", () => {
 });
 
 describe("requiredCapitalToday", () => {
-	it("capital goal equals target amount", () => {
-		expect(requiredCapitalToday(capitalGoal())).toBe(200_000);
+	const pensionBrutForNet2000 = 2000 / 0.82;
+
+	it("CAPITAL_AT_DATE equals target amount (mode/rate/pension ignored)", () => {
+		const profile: RetirementProfile = {
+			targetRetirementAge: 64,
+			estimatedPublicPension: pensionBrutForNet2000,
+		};
+		expect(
+			requiredCapitalToday(
+				capitalGoal({
+					targetAmount: 200_000,
+					drawOnCapital: true,
+					capitalisationRate: 0.04,
+				}),
+				profile,
+			),
+		).toBe(200_000);
 	});
 
-	it("retirement capitalises income gap at withdrawal rate", () => {
+	it("intérêts seuls @64 + pension nette 2000 @3% → 400_000 (teach-back)", () => {
+		const profile: RetirementProfile = {
+			targetRetirementAge: 64,
+			estimatedPublicPension: pensionBrutForNet2000,
+		};
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: 64,
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+				profile,
+			),
+		).toBeCloseTo(400_000, 0);
+	});
+
+	it("intérêts seuls @58 avant départ 64 → pas de pension → 1_200_000 (teach-back)", () => {
+		const profile: RetirementProfile = {
+			targetRetirementAge: 64,
+			estimatedPublicPension: pensionBrutForNet2000,
+		};
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: 58,
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+				profile,
+			),
+		).toBe(1_200_000);
+	});
+
+	it("vivre sur le capital @64 + pension @4% → 300_000 (teach-back)", () => {
+		const profile: RetirementProfile = {
+			targetRetirementAge: 64,
+			estimatedPublicPension: pensionBrutForNet2000,
+		};
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: 64,
+					drawOnCapital: true,
+					capitalisationRate: 0.04,
+				}),
+				profile,
+			),
+		).toBeCloseTo(300_000, 0);
+	});
+
+	it("does not subtract pension when estimatedPublicPension is 0", () => {
+		const profile: RetirementProfile = {
+			targetRetirementAge: 64,
+			estimatedPublicPension: 0,
+		};
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: 64,
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+				profile,
+			),
+		).toBe(1_200_000);
+	});
+
+	it("returns 0 when pension covers the income target (overlap)", () => {
+		const profile: RetirementProfile = {
+			targetRetirementAge: 64,
+			estimatedPublicPension: 5000,
+		};
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: 64,
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+				profile,
+			),
+		).toBe(0);
+	});
+
+	it("ignores profile withdrawalRate for goals capitalisation", () => {
 		const profile: RetirementProfile = {
 			targetRetirementAge: 64,
 			estimatedPublicPension: 0,
 			withdrawalRate: 0.04,
 		};
-		// 3000 * 12 / 0.04 = 900_000
-		expect(requiredCapitalToday(retirementGoal(), profile)).toBe(900_000);
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: 58,
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+				profile,
+			),
+		).toBe(1_200_000);
+	});
+});
+
+describe("rateAfterDrawOnCapitalToggle sticky defaults", () => {
+	it("Non→Oui with rate still 3% ⇒ 4%", () => {
+		expect(
+			rateAfterDrawOnCapitalToggle({
+				previousDrawOnCapital: false,
+				nextDrawOnCapital: true,
+				currentRate: 0.03,
+			}),
+		).toBe(0.04);
 	});
 
-	it("subtracts public pension before capitalising", () => {
-		const profile: RetirementProfile = {
-			targetRetirementAge: 64,
-			estimatedPublicPension: 2000 / 0.82, // ≈ 2439 brut → 2000 net
-			withdrawalRate: 0.04,
-		};
-		const required = requiredCapitalToday(retirementGoal(), profile);
-		// annual gap ≈ (3000-2000)*12 = 12000; / 0.04 = 300_000
-		expect(required).toBeCloseTo(300_000, -2);
+	it("Oui→Non with rate still 4% ⇒ 3%", () => {
+		expect(
+			rateAfterDrawOnCapitalToggle({
+				previousDrawOnCapital: true,
+				nextDrawOnCapital: false,
+				currentRate: 0.04,
+			}),
+		).toBe(0.03);
 	});
 
-	it("returns 0 when pension covers the income target", () => {
-		const profile: RetirementProfile = {
-			targetRetirementAge: 64,
-			estimatedPublicPension: 5000,
-			withdrawalRate: 0.04,
-		};
-		expect(requiredCapitalToday(retirementGoal(), profile)).toBe(0);
+	it("keeps custom rate when leaving interest-only default", () => {
+		expect(
+			rateAfterDrawOnCapitalToggle({
+				previousDrawOnCapital: false,
+				nextDrawOnCapital: true,
+				currentRate: 0.05,
+			}),
+		).toBe(0.05);
+	});
+
+	it("keeps custom rate when leaving draw-on-capital default", () => {
+		expect(
+			rateAfterDrawOnCapitalToggle({
+				previousDrawOnCapital: true,
+				nextDrawOnCapital: false,
+				currentRate: 0.025,
+			}),
+		).toBe(0.025);
+	});
+
+	it("no-op when mode unchanged", () => {
+		expect(
+			rateAfterDrawOnCapitalToggle({
+				previousDrawOnCapital: false,
+				nextDrawOnCapital: false,
+				currentRate: 0.03,
+			}),
+		).toBe(0.03);
+	});
+});
+
+describe("normalizeFinancialGoals capitalisation defaults", () => {
+	it("legacy retirement goal without mode/rate → Non + 3%", () => {
+		const [goal] = normalizeFinancialGoals([
+			{
+				id: "ret",
+				label: "Retraite",
+				type: "RETIREMENT_INCOME",
+				targetAmount: 3000,
+				targetAge: 60,
+				inflationIncluded: true,
+			},
+		]);
+		expect(goal.drawOnCapital).toBe(false);
+		expect(goal.capitalisationRate).toBe(0.03);
+	});
+
+	it("empty rate with drawOnCapital true → 4%", () => {
+		const [goal] = normalizeFinancialGoals([
+			retirementGoal({
+				drawOnCapital: true,
+				capitalisationRate: undefined,
+			}),
+		]);
+		expect(goal.drawOnCapital).toBe(true);
+		expect(goal.capitalisationRate).toBe(0.04);
+	});
+});
+
+describe("validateFinancialGoals capitalisationRate", () => {
+	it("rejects rate ≤ 0", () => {
+		expect(
+			validateFinancialGoals([
+				retirementGoal({ capitalisationRate: 0 }),
+			]),
+		).toEqual({ ok: false, reason: "invalid_capitalisation_rate" });
+	});
+
+	it("rejects rate > 0.10", () => {
+		expect(
+			validateFinancialGoals([
+				retirementGoal({ capitalisationRate: 0.11 }),
+			]),
+		).toEqual({ ok: false, reason: "invalid_capitalisation_rate" });
 	});
 });
 
@@ -348,6 +537,65 @@ describe("assessFinancialGoals", () => {
 		expect(assessment!.incompleteProfile).toBe(true);
 		expect(assessment!.goals[0].incomplete).toBe(true);
 		expect(assessment!.goals[0].status).toBeNull();
-		expect(assessment!.goals[0].requiredToday).toBe(900_000);
+		// Non + 3% default, no pension overlap considered without age match details:
+		// targetAge 58 < 64 → 36000/0.03 = 1_200_000
+		expect(assessment!.goals[0].requiredToday).toBe(1_200_000);
+	});
+
+	it("exposes pension nette mensuelle when âge cible recoupe départ (assessment copy)", () => {
+		const pensionBrutForNet2000 = 2000 / 0.82;
+		const withOverlap = assessFinancialGoals({
+			goals: [
+				retirementGoal({
+					targetAge: 64,
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+			],
+			portfolio: emptyPortfolio(100_000),
+			dcaConfigs: [],
+			profile: {
+				...profile,
+				estimatedPublicPension: pensionBrutForNet2000,
+			},
+			inflationRate: 0.02,
+			now,
+		});
+		expect(withOverlap!.goals[0].pensionNetMonthlyApplied).toBeCloseTo(
+			2000,
+			0,
+		);
+
+		const beforeRetirement = assessFinancialGoals({
+			goals: [
+				retirementGoal({
+					targetAge: 58,
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+			],
+			portfolio: emptyPortfolio(100_000),
+			dcaConfigs: [],
+			profile: {
+				...profile,
+				estimatedPublicPension: pensionBrutForNet2000,
+			},
+			inflationRate: 0.02,
+			now,
+		});
+		expect(beforeRetirement!.goals[0].pensionNetMonthlyApplied).toBe(0);
+
+		const capital = assessFinancialGoals({
+			goals: [capitalGoal()],
+			portfolio: emptyPortfolio(100_000),
+			dcaConfigs: [],
+			profile: {
+				...profile,
+				estimatedPublicPension: pensionBrutForNet2000,
+			},
+			inflationRate: 0.02,
+			now,
+		});
+		expect(capital!.goals[0].pensionNetMonthlyApplied).toBe(0);
 	});
 });

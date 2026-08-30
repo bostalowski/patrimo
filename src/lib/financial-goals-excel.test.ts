@@ -24,6 +24,8 @@ const GOALS_HEADERS = [
 	"Âge cible",
 	"Date cible",
 	"Inflation comprise",
+	"Vivre sur le capital",
+	"Taux capitalisation",
 	"Notes",
 ];
 
@@ -117,7 +119,7 @@ describe("Objectifs excel round-trip", () => {
 
 	it("web and mobile parse the same goals", () => {
 		const buffer = sourceBuffer([
-			["g1", "Retraite", "RETIREMENT_INCOME", 3000, 58, null, "Oui", "notes"],
+			["g1", "Retraite", "RETIREMENT_INCOME", 3000, 58, null, "Oui", "Non", 0.03, "notes"],
 			[
 				"g2",
 				"Capital",
@@ -126,6 +128,8 @@ describe("Objectifs excel round-trip", () => {
 				null,
 				new Date("2035-06-15"),
 				"Non",
+				null,
+				null,
 				null,
 			],
 		]);
@@ -143,6 +147,8 @@ describe("Objectifs excel round-trip", () => {
 			targetAmount: 3000,
 			targetAge: 58,
 			inflationIncluded: true,
+			drawOnCapital: false,
+			capitalisationRate: 0.03,
 		});
 		expect(webGoals[1].type).toBe("CAPITAL_AT_DATE");
 		expect(webGoals[1].targetAmount).toBe(200000);
@@ -231,6 +237,8 @@ describe("Objectifs excel round-trip", () => {
 				targetAmount: 2500,
 				targetAge: 60,
 				inflationIncluded: false,
+				drawOnCapital: true,
+				capitalisationRate: 0.04,
 			},
 		];
 
@@ -248,7 +256,83 @@ describe("Objectifs excel round-trip", () => {
 				targetAmount: 2500,
 				targetAge: 60,
 				inflationIncluded: false,
+				drawOnCapital: true,
+				capitalisationRate: 0.04,
 			},
 		]);
+	});
+
+	it("legacy sheet without mode/rate columns defaults to Non + 3%", () => {
+		const workbook = XLSX.utils.book_new();
+		appendSheet(workbook, "Transactions", [
+			[
+				"Date",
+				"Type",
+				"Compte",
+				"Compte destination",
+				"Actif",
+				"Quantité",
+				"Prix unitaire",
+				"Devise",
+				"Frais",
+				"Frais devise",
+				"Notes",
+			],
+		]);
+		appendSheet(workbook, "Actifs", [
+			[
+				"ID",
+				"Libellé",
+				"Type",
+				"ISIN",
+				"Ticker",
+				"Source prix",
+				"Param source",
+				"Devise",
+				"TER",
+			],
+		]);
+		appendSheet(workbook, "Comptes", [
+			[
+				"ID",
+				"Libellé",
+				"Type",
+				"Enveloppe",
+				"Date d'ouverture",
+				"Taux",
+				"Plafond",
+			],
+		]);
+		appendSheet(workbook, GOALS_SHEET, [
+			[
+				"ID",
+				"Libellé",
+				"Type",
+				"Montant cible",
+				"Âge cible",
+				"Date cible",
+				"Inflation comprise",
+				"Notes",
+			],
+			["g1", "Retraite", "RETIREMENT_INCOME", 3000, 64, null, "Oui", null],
+		]);
+		const buffer = XLSX.write(workbook, {
+			type: "array",
+			bookType: "xlsx",
+			cellDates: true,
+		}) as ArrayBuffer;
+		writeFileSync(configState.excelPath!, Buffer.from(buffer));
+
+		const webGoal = webExcel.loadWorkbook().financialGoals[0];
+		const mobileGoal =
+			mobileExcel.parseWorkbook(buffer).workbook.financialGoals[0];
+		expect(webGoal).toMatchObject({
+			drawOnCapital: false,
+			capitalisationRate: 0.03,
+		});
+		expect(mobileGoal).toMatchObject({
+			drawOnCapital: false,
+			capitalisationRate: 0.03,
+		});
 	});
 });

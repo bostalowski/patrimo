@@ -297,6 +297,16 @@ export function serializeWorkbook(
 			"Date cible": entry.targetDate ?? null,
 			"Inflation comprise":
 				entry.inflationIncluded !== false ? "Oui" : "Non",
+			"Vivre sur le capital":
+				entry.type === "RETIREMENT_INCOME"
+					? entry.drawOnCapital
+						? "Oui"
+						: "Non"
+					: null,
+			"Taux capitalisation":
+				entry.type === "RETIREMENT_INCOME"
+					? (entry.capitalisationRate ?? null)
+					: null,
 			Notes: entry.notes ?? null,
 		})),
 	);
@@ -677,6 +687,7 @@ function parseFinancialGoals(rows: Record<string, unknown>[]): FinancialGoal[] {
 			const parsed = new Date(targetDateRaw);
 			if (Number.isFinite(parsed.getTime())) targetDate = parsed;
 		}
+		const capitalisationRaw = toNumber(row["Taux capitalisation"]);
 		pending.push({
 			id,
 			label,
@@ -686,6 +697,9 @@ function parseFinancialGoals(rows: Record<string, unknown>[]): FinancialGoal[] {
 				targetAgeRaw !== null ? Math.round(targetAgeRaw) : undefined,
 			targetDate,
 			inflationIncluded: parseOuiNon(row["Inflation comprise"], true),
+			drawOnCapital: parseOuiNon(row["Vivre sur le capital"], false),
+			capitalisationRate:
+				capitalisationRaw !== null ? capitalisationRaw : undefined,
 			notes: emptyToUndefined(row["Notes"]),
 		});
 	}

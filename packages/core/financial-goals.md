@@ -2,7 +2,7 @@
 
 How Patrimo stores named capital/income intentions, measures stock gap on
 Objectifs, and reads alignment on Projection from the live envelope
-parameters. Decision: [ADR 0014](../../docs/adr/0014-financial-goals.md).
+parameters. Decisions: [ADR 0014](../../docs/adr/0014-financial-goals.md), [ADR 0023](../../docs/adr/0023-goal-capitalisation-mode.md).
 
 ## Intent
 
@@ -44,6 +44,8 @@ Optional sheet `Objectifs`:
 | `Âge cible` | `targetAge` | Required for retirement (50–75); empty otherwise |
 | `Date cible` | `targetDate` | Required for capital; empty otherwise |
 | `Inflation comprise` | `inflationIncluded` | `Oui` / `Non` (empty ⇒ `Oui`). `Oui` = montant en euros d’aujourd’hui ; `Non` = déjà en euros de l’horizon |
+| `Vivre sur le capital` | `drawOnCapital` | `Oui` / `Non` (empty ⇒ `Non`). Mode = libellé + défauts de taux + copy ; même formule |
+| `Taux capitalisation` | `capitalisationRate` | Fraction `]0, 0.10]` (empty ⇒ 0.03 si Non, 0.04 si Oui) |
 | `Notes` | `notes` | Optional |
 
 Missing sheet ⇒ empty collection. Empty save clears the plan.
@@ -56,7 +58,8 @@ Missing sheet ⇒ empty collection. Empty save clears the plan.
 | `requiredCapitalToday(goal, profile)` | Capital from `targetAmount` via formula (no inflate/deflate) |
 | `resolveGoalCapitalNeeds(...)` | `requiredToday` / `requiredAtHorizon` / `targetNominalAtHorizon` from `inflationIncluded` + horizon + rate |
 | `computeGoalHorizon` / `trajectoryStatus` | Horizon + ±5 % bands for Projection alignment |
-| `assessFinancialGoals(...)` | Stock progress (Objectifs); optional preset trajectory for non-UI callers |
+| `assessFinancialGoals(...)` | Stock progress (Objectifs); exposes `pensionNetMonthlyApplied` for copy when overlap |
+| `publicPensionNetMonthlyApplied(goal, profile)` | Net €/month subtracted from income need (0 if no overlap) |
 
 ## Surfaces
 
@@ -67,11 +70,15 @@ Missing sheet ⇒ empty collection. Empty save clears the plan.
 | Web `/projection` | Read-only `GoalsAlignmentPanel` when goals exist; driven by envelope controls |
 | Mobile | Sheet round-trip only in V1 (no UI) |
 
-Retirement birth date, public pension, and `withdrawalRate` stay in
-`retirement-profile.json` (not duplicated on the sheet).
+Retirement birth date, public pension, and `targetRetirementAge` stay in
+`retirement-profile.json` (not duplicated on the sheet). Profile
+`withdrawalRate` does **not** feed Objectifs capitalisation (per-goal
+`capitalisationRate` + `drawOnCapital` instead). Public pension net is
+subtracted only when estimated &gt; 0 and `targetAge >= targetRetirementAge`.
 
 ## See also
 
 - [ADR 0014](../../docs/adr/0014-financial-goals.md)
 - [Excel workbook](../../docs/reference/excel-workbook.md)
 - [Platforms](../../docs/overview/platforms.md)
+- [ADR 0023](../../docs/adr/0023-goal-capitalisation-mode.md)

@@ -82,13 +82,14 @@ export default async function ProjectionPage() {
             targetAge: goal.targetAge,
             targetDate: goal.targetDate?.toISOString(),
             inflationIncluded: goal.inflationIncluded !== false,
+            drawOnCapital: goal.drawOnCapital === true,
+            capitalisationRate: goal.capitalisationRate,
             notes: goal.notes,
           })),
           profile: {
             birthDate: retirementProfile.birthDate?.toISOString(),
             targetRetirementAge: retirementProfile.targetRetirementAge,
             estimatedPublicPension: retirementProfile.estimatedPublicPension,
-            withdrawalRate: retirementProfile.withdrawalRate,
           },
         }
       : null;
