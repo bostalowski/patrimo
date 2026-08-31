@@ -3,10 +3,15 @@
 import { useMemo } from "react";
 import {
 	computeGoalHorizon,
+	normalizeFinancialGoals,
 	resolveGoalCapitalNeeds,
 	trajectoryStatus,
 	type TrajectoryStatus,
 } from "@patrimo/core/financial-goals";
+import {
+	normalizeRetirementProfile,
+	type PensionScenarioType,
+} from "@patrimo/core/retirement-profile";
 import type { FinancialGoal, RetirementProfile } from "@patrimo/core/schema";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -28,13 +33,19 @@ export type SerializedGoal = {
 	inflationIncluded?: boolean;
 	drawOnCapital?: boolean;
 	capitalisationRate?: number;
+	publicPensionLink?: FinancialGoal["publicPensionLink"];
 	notes?: string;
 };
 
 export type SerializedRetirementProfile = {
 	birthDate?: string;
-	targetRetirementAge: number;
-	estimatedPublicPension?: number;
+	activeScenario?: PensionScenarioType;
+	scenarios?: Partial<
+		Record<
+			PensionScenarioType,
+			{ startDate?: string; grossMonthly?: number }
+		>
+	>;
 };
 
 export type GoalsAlignmentInput = {
@@ -69,9 +80,13 @@ function hydrateGoals(goals: SerializedGoal[]): FinancialGoal[] {
 				type: "RETIREMENT_INCOME",
 				targetAmount: goal.targetAmount,
 				targetAge: goal.targetAge,
+				targetDate: goal.targetDate
+					? new Date(goal.targetDate)
+					: undefined,
 				inflationIncluded: goal.inflationIncluded !== false,
 				drawOnCapital: goal.drawOnCapital === true,
 				capitalisationRate: goal.capitalisationRate,
+				publicPensionLink: goal.publicPensionLink,
 				notes: goal.notes,
 			};
 		}
@@ -93,13 +108,25 @@ function hydrateGoals(goals: SerializedGoal[]): FinancialGoal[] {
 function hydrateProfile(
 	profile: SerializedRetirementProfile,
 ): RetirementProfile {
-	return {
+	const scenarios: RetirementProfile["scenarios"] = {};
+	if (profile.scenarios) {
+		for (const [type, slot] of Object.entries(profile.scenarios)) {
+			if (!slot) continue;
+			scenarios[type as PensionScenarioType] = {
+				startDate: slot.startDate
+					? new Date(`${slot.startDate}T00:00:00.000Z`)
+					: undefined,
+				grossMonthly: slot.grossMonthly,
+			};
+		}
+	}
+	return normalizeRetirementProfile({
 		birthDate: profile.birthDate
 			? new Date(profile.birthDate)
 			: undefined,
-		targetRetirementAge: profile.targetRetirementAge,
-		estimatedPublicPension: profile.estimatedPublicPension,
-	};
+		scenarios,
+		activeScenario: profile.activeScenario,
+	});
 }
 
 type GoalAlignmentRow = {
@@ -126,11 +153,13 @@ export function GoalsAlignmentPanel({
 }) {
 	const rows = useMemo((): GoalAlignmentRow[] => {
 		const profile = hydrateProfile(input.profile);
-		const incompleteProfile = !profile.birthDate;
+		const goals = normalizeFinancialGoals(
+			hydrateGoals(input.goals),
+			profile.birthDate,
+		);
 
-		return hydrateGoals(input.goals).map((goal) => {
-			const needsBirthDate = goal.type === "RETIREMENT_INCOME";
-			const incomplete = needsBirthDate && incompleteProfile;
+		return goals.map((goal) => {
+			const incomplete = !goal.targetDate;
 			const horizon = computeGoalHorizon(goal, profile, now);
 			const needs = resolveGoalCapitalNeeds({
 				goal,
@@ -249,7 +278,7 @@ export function GoalsAlignmentPanel({
 												)}
 										</>
 									)}
-									{row.incomplete && <> · profil incomplet</>}
+									{row.incomplete && <> · objectif incomplet</>}
 								</p>
 							</div>
 							{row.status && (

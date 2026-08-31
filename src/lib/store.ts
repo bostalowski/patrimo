@@ -5,6 +5,10 @@ import { ExpectedReturns, RetirementProfile } from "@/lib/schema";
 import { getDcaConfigs, loadWorkbook, saveDcaConfigs } from "@/lib/excel";
 import { latestPrice } from "@patrimo/core/format";
 import { latestManualPrice, manualPricesToPriceStore as toManualPriceStore } from "@patrimo/core/manual-prices";
+import {
+  normalizeRetirementProfile,
+  serializeRetirementProfileForWrite,
+} from "@patrimo/core/retirement-profile";
 import { z } from "zod";
 
 const DATA_DIR = process.env.FINGRAPHS_DATA_DIR
@@ -133,14 +137,21 @@ const RetirementProfileStoreSchema = z.object({
 export async function readRetirementProfile(): Promise<RetirementProfile> {
   const raw = await readJson<unknown>(RETIREMENT_PROFILE_FILE, {});
   const parsed = RetirementProfileStoreSchema.safeParse(raw);
-  if (parsed.success) return parsed.data.profile;
-  const flat = RetirementProfile.safeParse(raw);
-  if (flat.success) return flat.data;
-  return RetirementProfile.parse({});
+  let profile: RetirementProfile;
+  if (parsed.success) {
+    profile = parsed.data.profile;
+  } else {
+    const flat = RetirementProfile.safeParse(raw);
+    profile = flat.success ? flat.data : RetirementProfile.parse({});
+  }
+  return normalizeRetirementProfile(profile);
 }
 
 export async function writeRetirementProfile(
   profile: RetirementProfile,
 ): Promise<void> {
-  await writeJson(RETIREMENT_PROFILE_FILE, { profile });
+  const normalized = normalizeRetirementProfile(profile);
+  await writeJson(RETIREMENT_PROFILE_FILE, {
+    profile: serializeRetirementProfileForWrite(normalized),
+  });
 }

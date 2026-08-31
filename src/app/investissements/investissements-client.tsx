@@ -1,11 +1,15 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition, useEffect } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import type { MonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
 import { DcaPlanner } from "@/app/dca/dca-planner";
 import { DeletePropertyButton } from "@/app/immobilier/delete-property-button";
 import { PropertyForm } from "@/app/immobilier/property-form";
+import {
+	RetirementProfileForm,
+} from "@/components/retirement-profile-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { propertySnapshot } from "@/lib/realestate/projection";
@@ -16,8 +20,8 @@ import type {
 	Detention,
 	Property,
 	PropertyRegime,
+	RetirementProfile,
 } from "@/lib/schema";
-import { clampRetirementAge } from "@/lib/schema";
 import {
 	cn,
 	formatDate,
@@ -27,12 +31,6 @@ import {
 } from "@/lib/utils";
 import { DcaExecutionCalculator } from "./dca-execution";
 
-export type RetraiteProfileForm = {
-	birthDate?: string;
-	targetRetirementAge: number;
-	estimatedPublicPension?: number;
-};
-
 type SerializedProperty = Omit<
 	Property,
 	"dateAcquisition" | "dateDebutCredit"
@@ -40,9 +38,6 @@ type SerializedProperty = Omit<
 	dateAcquisition?: string;
 	dateDebutCredit?: string;
 };
-
-const inputClasses =
-	"rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
 
 const REGIME_LABELS: Record<PropertyRegime, string> = {
 	IR_REEL: "IR réel",
@@ -65,7 +60,7 @@ type Props = {
 	seedConfig: DcaConfig | null;
 	priceMap: Record<string, number>;
 	monthlyTilt: MonthlyDcaTilt | null;
-	initialProfile: RetraiteProfileForm;
+	initialProfile: RetirementProfile;
 	properties: SerializedProperty[];
 };
 
@@ -148,148 +143,23 @@ export function InvestissementsClient({
 			)}
 
 			{tab === "retraite" && (
-				<RetirementProfileSection initialProfile={initialProfile} />
+				<div className="space-y-4">
+					<RetirementProfileForm
+						initialProfile={initialProfile}
+						refreshOnBirthDateChange={false}
+					/>
+					<p className="text-xs text-zinc-500">
+						Projections détaillées sur la page{" "}
+						<Link href="/retraite" className="underline">
+							Retraite
+						</Link>
+						.
+					</p>
+				</div>
 			)}
 
 			{tab === "immobilier" && <ImmobilierSection properties={properties} />}
 		</div>
-	);
-}
-
-function RetirementProfileSection({
-	initialProfile,
-}: {
-	initialProfile: RetraiteProfileForm;
-}) {
-	const router = useRouter();
-	const [pending, startTransition] = useTransition();
-	const [profile, setProfile] = useState<RetraiteProfileForm>(initialProfile);
-	const [ageDraft, setAgeDraft] = useState(
-		String(initialProfile.targetRetirementAge),
-	);
-	const [saveError, setSaveError] = useState<string | null>(null);
-
-	async function persist(next: RetraiteProfileForm, refresh: boolean) {
-		setSaveError(null);
-		const body = {
-			birthDate: next.birthDate ? new Date(next.birthDate).toISOString() : null,
-			targetRetirementAge: next.targetRetirementAge,
-			estimatedPublicPension: next.estimatedPublicPension,
-		};
-		const res = await fetch("/api/retirement-profile", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(body),
-		});
-		if (!res.ok) {
-			const data = (await res.json()) as { error?: string };
-			setSaveError(data.error ?? "Erreur de sauvegarde");
-			return;
-		}
-		if (refresh) {
-			startTransition(() => router.refresh());
-		}
-	}
-
-	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Profil retraite</CardTitle>
-				<p className="text-xs text-zinc-500">
-					Enregistré automatiquement à la sortie du champ.
-					{pending && " Mise à jour…"}
-				</p>
-			</CardHeader>
-			<CardBody className="flex max-w-xl flex-col gap-6">
-				{saveError && (
-					<p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>
-				)}
-				<label className="flex flex-col gap-1 text-sm">
-					<span className="font-medium text-zinc-700 dark:text-zinc-300">
-						Date de naissance
-					</span>
-					<input
-						type="date"
-						className={inputClasses}
-						value={profile.birthDate ?? ""}
-						onChange={(e) =>
-							setProfile((p) => ({
-								...p,
-								birthDate: e.target.value || undefined,
-							}))
-						}
-						onBlur={() => void persist(profile, true)}
-					/>
-				</label>
-				<label className="flex flex-col gap-1 text-sm">
-					<span className="font-medium text-zinc-700 dark:text-zinc-300">
-						Âge de départ visé
-					</span>
-					<p className="text-xs leading-relaxed text-zinc-500">
-						Entre 50 et 75 ans.
-					</p>
-					<input
-						type="text"
-						inputMode="numeric"
-						autoComplete="off"
-						className={inputClasses}
-						value={ageDraft}
-						onChange={(e) => {
-							const v = e.target.value.replace(/\D/g, "");
-							setAgeDraft(v);
-						}}
-						onBlur={() => {
-							const digits = ageDraft.replace(/\D/g, "");
-							const clamped =
-								digits === ""
-									? profile.targetRetirementAge
-									: clampRetirementAge(Number(digits));
-							setAgeDraft(String(clamped));
-							const next = { ...profile, targetRetirementAge: clamped };
-							setProfile(next);
-							void persist(next, true);
-						}}
-					/>
-				</label>
-				<label className="flex flex-col gap-1 text-sm">
-					<span className="font-medium text-zinc-700 dark:text-zinc-300">
-						Pension publique estimée (€ / mois brut)
-					</span>
-					<p className="text-xs leading-relaxed text-zinc-500">
-						Estimation officielle sur{" "}
-						<a
-							href="https://www.info-retraite.fr"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-sky-600 underline dark:text-sky-400"
-						>
-							info-retraite.fr
-						</a>
-						.
-					</p>
-					<input
-						type="number"
-						min={0}
-						step={50}
-						className={inputClasses}
-						value={
-							profile.estimatedPublicPension !== undefined
-								? String(profile.estimatedPublicPension)
-								: ""
-						}
-						onChange={(e) => {
-							const v = e.target.value;
-							setProfile((p) => ({
-								...p,
-								estimatedPublicPension:
-									v === "" ? undefined : Math.max(0, Number(v) || 0),
-							}));
-						}}
-						onBlur={() => void persist(profile, false)}
-					/>
-				</label>
-			</CardBody>
-		</Card>
 	);
 }
 

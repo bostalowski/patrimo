@@ -1,5 +1,6 @@
 import { portfolioByEnvelope } from "@patrimo/core/portfolio";
 import { buildMonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
+import { normalizeRetirementProfile } from "@patrimo/core/retirement-profile";
 import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { buildPortfolio } from "@/lib/portfolio";
@@ -74,11 +75,7 @@ export default async function InvestissementsPage() {
 				seedConfig={peaSeed}
 				priceMap={priceMapRecord}
 				monthlyTilt={monthlyTilt}
-				initialProfile={{
-					birthDate: profile.birthDate?.toISOString().slice(0, 10),
-					targetRetirementAge: profile.targetRetirementAge,
-					estimatedPublicPension: profile.estimatedPublicPension,
-				}}
+				initialProfile={normalizeRetirementProfile(profile)}
 				properties={workbook.properties.map((p) => ({
 					...p,
 					dateAcquisition: p.dateAcquisition?.toISOString(),

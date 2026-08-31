@@ -6,13 +6,16 @@ import { readPriceMap, readDcaConfigs, readRetirementProfile } from "@/lib/store
 import {
   buildRetirementSources,
   buildRetirementTimeline,
-  computeRetirementHorizon,
 } from "@/lib/retraite";
+import {
+  civilYmd,
+  normalizeRetirementProfile,
+  resolveActiveRetirement,
+} from "@patrimo/core/retirement-profile";
+import { PENSION_SCENARIO_LABELS } from "@/lib/pension-scenario-labels";
 import { RetraiteClient } from "./retraite-client";
 
 export const dynamic = "force-dynamic";
-
-const DEFAULT_HORIZON_YEARS = 10;
 
 export default async function RetraitePage() {
   requireExcelConfigured();
@@ -26,25 +29,19 @@ export default async function RetraitePage() {
     readRetirementProfile(),
   ]);
   const portfolio = buildPortfolio(workbook, priceMap);
+  const normalized = normalizeRetirementProfile(profile);
+  const resolved = resolveActiveRetirement(normalized, now);
 
-  const horizon = profile.birthDate
-    ? computeRetirementHorizon(
-        profile.birthDate,
-        profile.targetRetirementAge,
+  const sources = resolved.ok
+    ? buildRetirementSources({
+        portfolio,
+        dcaConfigs,
+        properties: workbook.properties,
+        horizonYears: resolved.horizonYears,
+        inflationRate,
         now,
-      )
-    : null;
-
-  const horizonYears = horizon?.horizonYears ?? DEFAULT_HORIZON_YEARS;
-
-  const sources = buildRetirementSources({
-    portfolio,
-    dcaConfigs,
-    properties: workbook.properties,
-    horizonYears,
-    inflationRate,
-    now,
-  });
+      })
+    : { scenarios: [], monthlyRealEstateNet: 0 };
 
   const timeline = buildRetirementTimeline({
     accounts: workbook.accounts.map((a) => ({
@@ -52,7 +49,9 @@ export default async function RetraitePage() {
       openDate: a.openDate,
       label: a.label,
     })),
-    retirementDateIso: horizon?.retirementDate.toISOString(),
+    retirementDateIso: resolved.ok
+      ? civilYmd(resolved.startDate)
+      : undefined,
     now,
   });
 
@@ -68,21 +67,16 @@ export default async function RetraitePage() {
       </header>
 
       <RetraiteClient
-        initialProfile={{
-          birthDate: profile.birthDate?.toISOString().slice(0, 10),
-          targetRetirementAge: profile.targetRetirementAge,
-          estimatedPublicPension: profile.estimatedPublicPension,
-        }}
+        initialProfile={normalized}
         horizon={
-          horizon
+          resolved.ok
             ? {
-                currentAge: horizon.currentAge,
-                horizonYears: horizon.horizonYears,
-                retirementDate: horizon.retirementDate.toISOString(),
+                horizonYears: resolved.horizonYears,
+                retirementDate: civilYmd(resolved.startDate),
+                scenarioLabel: PENSION_SCENARIO_LABELS[resolved.type],
               }
             : null
         }
-        projectionHorizonYears={horizonYears}
         scenarios={sources.scenarios}
         monthlyRealEstateNet={sources.monthlyRealEstateNet}
         timeline={timeline}

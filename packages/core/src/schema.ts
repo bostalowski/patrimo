@@ -42,16 +42,60 @@ export function clampRetirementAge(val: unknown): number {
 	return Math.min(75, Math.max(50, Math.round(n)));
 }
 
+/** Optional age: absent stays absent (no ghost 64). Present values are clamped. */
+function optionalClampRetirementAge(val: unknown): unknown {
+	if (val === undefined || val === null || val === "") return undefined;
+	return clampRetirementAge(val);
+}
+
+export const PensionScenarioType = z.enum([
+	"LEGAL_AGE",
+	"FULL_RATE",
+	"AUTOMATIC_FULL_RATE",
+]);
+export type PensionScenarioType = z.infer<typeof PensionScenarioType>;
+
+export const PensionScenarioSlot = z.object({
+	startDate: z.preprocess(
+		(val) => (val === null || val === "" ? undefined : val),
+		z.coerce.date().optional(),
+	),
+	grossMonthly: z.number().nonnegative().optional(),
+});
+export type PensionScenarioSlot = z.infer<typeof PensionScenarioSlot>;
+
+export const PensionScenarios = z.object({
+	LEGAL_AGE: PensionScenarioSlot.optional(),
+	FULL_RATE: PensionScenarioSlot.optional(),
+	AUTOMATIC_FULL_RATE: PensionScenarioSlot.optional(),
+});
+export type PensionScenarios = z.infer<typeof PensionScenarios>;
+
 export const RetirementProfile = z.object({
 	birthDate: z.preprocess(
 		(val) => (val === null || val === "" ? undefined : val),
 		z.coerce.date().optional(),
 	),
-	targetRetirementAge: z.preprocess(clampRetirementAge, z.number().int()),
+	scenarios: PensionScenarios.optional(),
+	activeScenario: PensionScenarioType.optional(),
+	/** Legacy flat field — read for migration only; omit on write after migrate. */
+	targetRetirementAge: z.preprocess(
+		optionalClampRetirementAge,
+		z.number().int().optional(),
+	),
+	/** Legacy flat field — read for migration only; omit on write after migrate. */
 	estimatedPublicPension: z.number().nonnegative().optional(),
 	withdrawalRate: z.number().min(0).max(0.1).default(0.04).optional(),
 });
 export type RetirementProfile = z.infer<typeof RetirementProfile>;
+
+export const PublicPensionLink = z.enum([
+	"NONE",
+	"LEGAL_AGE",
+	"FULL_RATE",
+	"AUTOMATIC_FULL_RATE",
+]);
+export type PublicPensionLink = z.infer<typeof PublicPensionLink>;
 
 export const Transaction = z.object({
 	date: z.coerce.date(),
@@ -291,6 +335,11 @@ export const FinancialGoal = z.object({
 	 */
 	capitalisationRate: z.number().gt(0).max(0.1).optional(),
 	notes: z.string().optional(),
+	/**
+	 * RETIREMENT_INCOME: which public pension scenario to subtract (net).
+	 * Missing / empty / NONE ⇒ no pension. Legacy sheets without column ⇒ NONE.
+	 */
+	publicPensionLink: PublicPensionLink.optional(),
 });
 export type FinancialGoal = z.infer<typeof FinancialGoal>;
 

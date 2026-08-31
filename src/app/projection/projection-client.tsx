@@ -1,13 +1,23 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import {
+	normalizeRetirementProfile,
+	serializeRetirementProfileForWrite,
+	yearsUntilCivilDate,
+	type PensionScenarioType,
+} from "@patrimo/core/retirement-profile";
+import { PENSION_BRUT_TO_NET_APPROX } from "@patrimo/core/retraite";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState, useTransition } from "react";
+import { PENSION_SCENARIO_LABELS } from "@/lib/pension-scenario-labels";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	DEFAULT_OVERFLOW_ENVELOPE,
 	projectEnvelopesWithOverflow,
 } from "@/lib/projection";
-import type { Envelope } from "@/lib/schema";
-import { cn, formatEuro, formatPercent } from "@/lib/utils";
+import { RetirementProfile, type Envelope } from "@/lib/schema";
+import { cn, formatDate, formatEuro, formatPercent } from "@/lib/utils";
 import {
 	EnvelopeProjection,
 	type EnvelopeProjectionInput,
@@ -18,11 +28,30 @@ import {
 	type SerializedProperty,
 } from "./realestate-projection";
 
-type RetirementData = {
-	horizonYears: number;
-	targetRetirementAge: number;
+export type RetirementBlockInput = {
+	profile: {
+		birthDate?: string;
+		activeScenario?: PensionScenarioType;
+		scenarios: Partial<
+			Record<
+				PensionScenarioType,
+				{ startDate?: string; grossMonthly?: number }
+			>
+		>;
+	};
+	filledScenarios: {
+		type: PensionScenarioType;
+		startDate: string;
+		grossMonthly: number;
+	}[];
 	monthlyRealEstateNet: number;
-	estimatedPublicPension?: number;
+	resolved: {
+		type: PensionScenarioType;
+		startDate: string;
+		horizonYears: number;
+		grossMonthly: number;
+		netMonthly: number;
+	} | null;
 };
 
 type Tab = "envelopes" | "immobilier";
@@ -35,6 +64,28 @@ const TABS: { key: Tab; label: string }[] = [
 function parseNumber(value: string): number {
 	const n = Number(value.replace(",", ".").replace(/\s/g, ""));
 	return Number.isFinite(n) ? n : 0;
+}
+
+function hydrateProfile(input: RetirementBlockInput["profile"]): RetirementProfile {
+	const scenarios: RetirementProfile["scenarios"] = {};
+	for (const [type, slot] of Object.entries(input.scenarios)) {
+		if (!slot) continue;
+		scenarios[type as PensionScenarioType] = {
+			startDate: slot.startDate
+				? new Date(`${slot.startDate}T00:00:00.000Z`)
+				: undefined,
+			grossMonthly: slot.grossMonthly,
+		};
+	}
+	return normalizeRetirementProfile(
+		RetirementProfile.parse({
+			birthDate: input.birthDate
+				? new Date(input.birthDate)
+				: undefined,
+			scenarios,
+			activeScenario: input.activeScenario,
+		}),
+	);
 }
 
 export type InflationView = { rate: number };
@@ -53,7 +104,7 @@ export function ProjectionClient({
 	envelopeRates: Record<Envelope, number>;
 	properties: SerializedProperty[];
 	inflationRate: number;
-	retirement: RetirementData | null;
+	retirement: RetirementBlockInput;
 	goalsAlignment: GoalsAlignmentInput | null;
 }) {
 	const [tab, setTab] = useState<Tab>("envelopes");
@@ -135,16 +186,14 @@ export function ProjectionClient({
 						goalsAlignment={goalsAlignment}
 					/>
 
-					{retirement && (
-						<RetirementIncomeCard
-							retirement={retirement}
-							envelopeInputs={envelopeInputs}
-							inflation={inflation}
-							monthly={monthly}
-							rates={rates}
-							overflowEnvelope={overflowEnvelope}
-						/>
-					)}
+					<RetirementIncomeCard
+						retirement={retirement}
+						envelopeInputs={envelopeInputs}
+						inflation={inflation}
+						monthly={monthly}
+						rates={rates}
+						overflowEnvelope={overflowEnvelope}
+					/>
 				</div>
 			)}
 
@@ -163,13 +212,39 @@ function RetirementIncomeCard({
 	rates,
 	overflowEnvelope,
 }: {
-	retirement: RetirementData;
+	retirement: RetirementBlockInput;
 	envelopeInputs: EnvelopeProjectionInput[];
 	inflation: InflationView;
 	monthly: Record<string, string>;
 	rates: Record<string, string>;
 	overflowEnvelope: Envelope;
 }) {
+	const router = useRouter();
+	const [pending, startTransition] = useTransition();
+	const [activeType, setActiveType] = useState<PensionScenarioType | "">(
+		retirement.resolved?.type ?? retirement.profile.activeScenario ?? "",
+	);
+
+	const selectedScenario = useMemo(() => {
+		if (!activeType) return null;
+		return (
+			retirement.filledScenarios.find((s) => s.type === activeType) ?? null
+		);
+	}, [activeType, retirement.filledScenarios]);
+
+	const horizonYears = selectedScenario
+		? yearsUntilCivilDate(
+				new Date(`${selectedScenario.startDate}T00:00:00.000Z`),
+			)
+		: null;
+
+	const grossMonthly = selectedScenario?.grossMonthly ?? 0;
+	const netMonthly = grossMonthly * PENSION_BRUT_TO_NET_APPROX;
+	const netRealMonthly =
+		horizonYears !== null
+			? netMonthly / (1 + inflation.rate) ** horizonYears
+			: 0;
+
 	const rateOf = useCallback(
 		(envelope: Envelope): number => parseNumber(rates[envelope] ?? "0") / 100,
 		[rates],
@@ -187,6 +262,7 @@ function RetirementIncomeCard({
 	);
 
 	const projections = useMemo(() => {
+		if (horizonYears === null) return [];
 		const specs = envelopeInputs.map((env) => ({
 			envelope: env.envelope,
 			startBalance: env.currentValue,
@@ -208,7 +284,7 @@ function RetirementIncomeCard({
 		}
 		const { projections: rows } = projectEnvelopesWithOverflow({
 			envelopes: specs,
-			years: retirement.horizonYears,
+			years: horizonYears,
 			inflationRate: inflation.rate,
 			overflowEnvelope,
 		});
@@ -217,7 +293,7 @@ function RetirementIncomeCard({
 		envelopeInputs,
 		monthlyOf,
 		rateOf,
-		retirement.horizonYears,
+		horizonYears,
 		inflation.rate,
 		overflowEnvelope,
 	]);
@@ -241,13 +317,53 @@ function RetirementIncomeCard({
 	const monthlyFromCapital = annualReturns / 12;
 
 	const realMonthlyFromCapital =
-		monthlyFromCapital / (1 + inflation.rate) ** retirement.horizonYears;
+		horizonYears !== null
+			? monthlyFromCapital / (1 + inflation.rate) ** horizonYears
+			: 0;
 
-	const pension = retirement.estimatedPublicPension ?? 0;
 	const totalMonthly =
-		monthlyFromCapital + pension + retirement.monthlyRealEstateNet;
+		monthlyFromCapital + netMonthly + retirement.monthlyRealEstateNet;
 	const totalReal =
-		realMonthlyFromCapital + pension + retirement.monthlyRealEstateNet;
+		realMonthlyFromCapital + netRealMonthly + retirement.monthlyRealEstateNet;
+
+	async function persistActiveScenario(type: PensionScenarioType) {
+		const profile = hydrateProfile(retirement.profile);
+		const next = normalizeRetirementProfile({
+			...profile,
+			activeScenario: type,
+		});
+		const body = serializeRetirementProfileForWrite(next);
+		const res = await fetch("/api/retirement-profile", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		});
+		if (res.ok) {
+			setActiveType(type);
+			startTransition(() => router.refresh());
+		}
+	}
+
+	if (retirement.filledScenarios.length === 0) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>
+						Revenu mensuel à la retraite (sans toucher au capital)
+					</CardTitle>
+				</CardHeader>
+				<CardBody>
+					<p className="text-sm text-amber-800 dark:text-amber-200">
+						Renseigne un scénario de pension publique (date + montant brut) dans{" "}
+						<Link href="/retraite" className="underline">
+							Retraite
+						</Link>{" "}
+						pour afficher cette projection.
+					</p>
+				</CardBody>
+			</Card>
+		);
+	}
 
 	return (
 		<Card>
@@ -255,104 +371,173 @@ function RetirementIncomeCard({
 				<CardTitle>
 					Revenu mensuel à la retraite (sans toucher au capital)
 				</CardTitle>
-				<p className="text-xs text-zinc-500 dark:text-zinc-400">
-					À {retirement.targetRetirementAge} ans (dans{" "}
-					{Math.round(retirement.horizonYears)} ans) : combien tu peux retirer
-					chaque mois en vivant uniquement sur les rendements de ton capital,
-					sans l&apos;entamer.
-				</p>
+				{selectedScenario && horizonYears !== null ? (
+					<p className="text-xs text-zinc-500 dark:text-zinc-400">
+						Scénario{" "}
+						{PENSION_SCENARIO_LABELS[selectedScenario.type]} — départ le{" "}
+						{formatDate(new Date(`${selectedScenario.startDate}T00:00:00.000Z`))}{" "}
+						(dans {Math.round(horizonYears)} ans) : combien tu peux retirer
+						chaque mois en vivant uniquement sur les rendements de ton capital,
+						sans l&apos;entamer.
+					</p>
+				) : (
+					<p className="text-xs text-zinc-500 dark:text-zinc-400">
+						Sélectionne un scénario renseigné pour calculer l&apos;horizon de
+						ce bloc.
+					</p>
+				)}
 			</CardHeader>
 			<CardBody>
-				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-					<div className="space-y-1">
-						<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-							Capital projeté
-						</p>
-						<p className="text-xl font-semibold tabular-nums">
-							{formatEuro(projectedCapital)}
-						</p>
-					</div>
-					<div className="space-y-1">
-						<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-							Rendement moyen pondéré
-						</p>
-						<p className="text-xl font-semibold tabular-nums">
-							{formatPercent(weightedRate)}
-						</p>
-					</div>
-					<div className="space-y-1">
-						<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-							Intérêts mensuels (nominal)
-						</p>
-						<p className="text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-							{formatEuro(monthlyFromCapital)}
-						</p>
-					</div>
-					<div className="space-y-1">
-						<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-							Intérêts mensuels (réel)
-						</p>
-						<p className="text-xl font-semibold tabular-nums text-sky-600 dark:text-sky-400">
-							{formatEuro(realMonthlyFromCapital)}
-						</p>
-						<p className="text-xs text-zinc-400">
-							ajusté de l&apos;inflation à {formatPercent(inflation.rate)}
-						</p>
+				<div className="mb-4 space-y-2">
+					<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+						Scénario pension publique
+					</p>
+					<div className="flex flex-wrap gap-2">
+						{retirement.filledScenarios.map((scenario) => (
+							<button
+								key={scenario.type}
+								type="button"
+								disabled={pending}
+								onClick={() => void persistActiveScenario(scenario.type)}
+								className={cn(
+									"rounded-lg border px-3 py-1.5 text-sm transition-colors",
+									activeType === scenario.type
+										? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+										: "border-zinc-200 hover:border-zinc-400 dark:border-zinc-700",
+								)}
+							>
+								{PENSION_SCENARIO_LABELS[scenario.type]}
+							</button>
+						))}
 					</div>
 				</div>
 
-				<div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-					<p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500">
-						Décomposition du revenu mensuel total
+				{selectedScenario && horizonYears !== null ? (
+					<>
+						<div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+							<div className="space-y-1">
+								<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+									Pension publique (brut)
+								</p>
+								<p className="text-lg font-semibold tabular-nums">
+									{formatEuro(grossMonthly)}
+								</p>
+							</div>
+							<div className="space-y-1">
+								<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+									Pension publique (net approx.)
+								</p>
+								<p className="text-lg font-semibold tabular-nums">
+									{formatEuro(netMonthly)}
+								</p>
+							</div>
+							<div className="space-y-1">
+								<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+									Pension nette (réel)
+								</p>
+								<p className="text-lg font-semibold tabular-nums text-sky-600 dark:text-sky-400">
+									{formatEuro(netRealMonthly)}
+								</p>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+							<div className="space-y-1">
+								<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+									Capital projeté
+								</p>
+								<p className="text-xl font-semibold tabular-nums">
+									{formatEuro(projectedCapital)}
+								</p>
+							</div>
+							<div className="space-y-1">
+								<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+									Rendement moyen pondéré
+								</p>
+								<p className="text-xl font-semibold tabular-nums">
+									{formatPercent(weightedRate)}
+								</p>
+							</div>
+							<div className="space-y-1">
+								<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+									Intérêts mensuels (nominal)
+								</p>
+								<p className="text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+									{formatEuro(monthlyFromCapital)}
+								</p>
+							</div>
+							<div className="space-y-1">
+								<p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+									Intérêts mensuels (réel)
+								</p>
+								<p className="text-xl font-semibold tabular-nums text-sky-600 dark:text-sky-400">
+									{formatEuro(realMonthlyFromCapital)}
+								</p>
+								<p className="text-xs text-zinc-400">
+									ajusté de l&apos;inflation à {formatPercent(inflation.rate)}
+								</p>
+							</div>
+						</div>
+
+						<div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+							<p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500">
+								Décomposition du revenu mensuel total
+							</p>
+							<div className="space-y-2 text-sm">
+								<div className="flex items-center justify-between">
+									<span className="text-zinc-600 dark:text-zinc-300">
+										Rendements du capital
+									</span>
+									<span className="font-mono font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
+										{formatEuro(monthlyFromCapital)}
+									</span>
+								</div>
+								{netMonthly > 0 && (
+									<div className="flex items-center justify-between">
+										<span className="text-zinc-600 dark:text-zinc-300">
+											Pension publique (net approx.)
+										</span>
+										<span className="font-mono font-medium tabular-nums">
+											{formatEuro(netMonthly)}
+										</span>
+									</div>
+								)}
+								{retirement.monthlyRealEstateNet > 0 && (
+									<div className="flex items-center justify-between">
+										<span className="text-zinc-600 dark:text-zinc-300">
+											Loyers nets
+										</span>
+										<span className="font-mono font-medium tabular-nums">
+											{formatEuro(retirement.monthlyRealEstateNet)}
+										</span>
+									</div>
+								)}
+								<div className="flex items-center justify-between border-t border-zinc-100 pt-2 dark:border-zinc-800">
+									<span className="font-semibold text-zinc-900 dark:text-zinc-50">
+										Total mensuel (net)
+									</span>
+									<span className="font-mono text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+										{formatEuro(totalMonthly)}
+									</span>
+								</div>
+								<div className="flex items-center justify-between text-xs text-zinc-500">
+									<span>
+										En pouvoir d&apos;achat (pension nette réelle + intérêts
+										réels + loyers)
+									</span>
+									<span className="font-mono tabular-nums text-sky-600 dark:text-sky-400">
+										{formatEuro(totalReal)}
+									</span>
+								</div>
+							</div>
+						</div>
+					</>
+				) : (
+					<p className="text-sm text-amber-800 dark:text-amber-200">
+						Renseigne et sélectionne un scénario actif pour afficher la
+						projection.
 					</p>
-					<div className="space-y-2 text-sm">
-						<div className="flex items-center justify-between">
-							<span className="text-zinc-600 dark:text-zinc-300">
-								Rendements du capital
-							</span>
-							<span className="font-mono font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
-								{formatEuro(monthlyFromCapital)}
-							</span>
-						</div>
-						{pension > 0 && (
-							<div className="flex items-center justify-between">
-								<span className="text-zinc-600 dark:text-zinc-300">
-									Pension publique estimée
-								</span>
-								<span className="font-mono font-medium tabular-nums">
-									{formatEuro(pension)}
-								</span>
-							</div>
-						)}
-						{retirement.monthlyRealEstateNet > 0 && (
-							<div className="flex items-center justify-between">
-								<span className="text-zinc-600 dark:text-zinc-300">
-									Loyers nets
-								</span>
-								<span className="font-mono font-medium tabular-nums">
-									{formatEuro(retirement.monthlyRealEstateNet)}
-								</span>
-							</div>
-						)}
-						<div className="flex items-center justify-between border-t border-zinc-100 pt-2 dark:border-zinc-800">
-							<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-								Total mensuel
-							</span>
-							<span className="font-mono text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-								{formatEuro(totalMonthly)}
-							</span>
-						</div>
-						<div className="flex items-center justify-between text-xs text-zinc-500">
-							<span>
-								En pouvoir d&apos;achat (après {formatPercent(inflation.rate)}{" "}
-								d&apos;inflation × {Math.round(retirement.horizonYears)} ans)
-							</span>
-							<span className="font-mono tabular-nums text-sky-600 dark:text-sky-400">
-								{formatEuro(totalReal)}
-							</span>
-						</div>
-					</div>
-				</div>
+				)}
 			</CardBody>
 		</Card>
 	);

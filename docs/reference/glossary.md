@@ -144,17 +144,21 @@ euros and is deflated for stock progress. **Stock progress** on Objectifs
 compares liquid wealth to `requiredToday` (always today's euros).
 **Trajectory** on Projection compares projected real capacity to
 `requiredToday`; UI **Besoin** shows `requiredAtHorizon`. Types:
-**retirement income** (monthly income at a target age) and **capital at
+**retirement income** (monthly income at a **target date**) and **capital at
 date**. Retirement-income goals also store **Vivre sur le capital**
-(`drawOnCapital`, default false = intérêts seuls) and **Taux capitalisation**
-(`capitalisationRate`, fraction `]0, 0.10]`, defaults 3 % / 4 % by mode) —
-mode is label + defaults + copy only; formula is always
-`annualNeed / capitalisationRate`. Public pension net is subtracted only when
-estimated &gt; 0 and `targetAge >= targetRetirementAge`. Profile
-`withdrawalRate` does not feed goals. Several goals share the same liquid pool
-(no exclusive envelope assignment in V1). See
+(`drawOnCapital`, default false = intérêts seuls), **Taux capitalisation**
+(`capitalisationRate`, fraction `]0, 0.10]`, defaults 3 % / 4 % by mode), and
+**Pension publique** (`publicPensionLink`: `NONE` / `LEGAL_AGE` / `FULL_RATE` /
+`AUTOMATIC_FULL_RATE`, default `NONE`). Mode is label + defaults + copy only;
+formula is always `annualNeed / capitalisationRate`. Public pension net is
+subtracted only when the linked scenario is **filled** and civil
+`targetDate ≥ scenario.startDate`. Retirement profile scenarios live in
+`retirement-profile.json` (not the workbook). Profile `withdrawalRate` does
+not feed goals. Several goals share the same liquid pool (no exclusive
+envelope assignment in V1). See
 [ADR 0014](../adr/0014-financial-goals.md),
-[ADR 0023](../adr/0023-goal-capitalisation-mode.md).
+[ADR 0023](../adr/0023-goal-capitalisation-mode.md),
+[ADR 0025](../adr/0025-multi-scenario-public-pension.md).
 
 ## Diversification target
 

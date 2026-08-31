@@ -293,7 +293,8 @@ export function serializeWorkbook(
 			Libellé: entry.label,
 			Type: entry.type,
 			"Montant cible": entry.targetAmount,
-			"Âge cible": entry.targetAge ?? null,
+			"Âge cible":
+				entry.type === "RETIREMENT_INCOME" ? null : (entry.targetAge ?? null),
 			"Date cible": entry.targetDate ?? null,
 			"Inflation comprise":
 				entry.inflationIncluded !== false ? "Oui" : "Non",
@@ -306,6 +307,12 @@ export function serializeWorkbook(
 			"Taux capitalisation":
 				entry.type === "RETIREMENT_INCOME"
 					? (entry.capitalisationRate ?? null)
+					: null,
+			"Pension publique":
+				entry.type === "RETIREMENT_INCOME"
+					? !entry.publicPensionLink || entry.publicPensionLink === "NONE"
+						? "Aucune"
+						: entry.publicPensionLink
 					: null,
 			Notes: entry.notes ?? null,
 		})),
@@ -669,6 +676,22 @@ function parseDiversificationTargets(
 	return normalizeDiversificationTargets(pending);
 }
 
+function parsePublicPensionLink(
+	raw: unknown,
+): FinancialGoal["publicPensionLink"] {
+	const value = emptyToUndefined(raw);
+	if (!value || value === "Aucune") return "NONE";
+	if (
+		value === "LEGAL_AGE" ||
+		value === "FULL_RATE" ||
+		value === "AUTOMATIC_FULL_RATE" ||
+		value === "NONE"
+	) {
+		return value;
+	}
+	return "NONE";
+}
+
 function parseFinancialGoals(rows: Record<string, unknown>[]): FinancialGoal[] {
 	const pending: FinancialGoal[] = [];
 	for (const row of rows) {
@@ -700,6 +723,7 @@ function parseFinancialGoals(rows: Record<string, unknown>[]): FinancialGoal[] {
 			drawOnCapital: parseOuiNon(row["Vivre sur le capital"], false),
 			capitalisationRate:
 				capitalisationRaw !== null ? capitalisationRaw : undefined,
+			publicPensionLink: parsePublicPensionLink(row["Pension publique"]),
 			notes: emptyToUndefined(row["Notes"]),
 		});
 	}

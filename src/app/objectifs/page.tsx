@@ -1,5 +1,8 @@
 import { Target } from "lucide-react";
-import { assessFinancialGoals } from "@patrimo/core/financial-goals";
+import {
+	assessFinancialGoals,
+	normalizeFinancialGoals,
+} from "@patrimo/core/financial-goals";
 import { GoalsAssessmentPanel } from "@/app/objectifs/goals-assessment";
 import { GoalsEditor } from "@/app/objectifs/goals-editor";
 import { getInflationRate } from "@/lib/config";
@@ -19,8 +22,12 @@ export default async function ObjectifsPage() {
 	]);
 	const portfolio = buildPortfolio(workbook, priceMap);
 	const inflationRate = getInflationRate();
+	const goals = normalizeFinancialGoals(
+		workbook.financialGoals ?? [],
+		profile.birthDate,
+	);
 	const assessment = assessFinancialGoals({
-		goals: workbook.financialGoals ?? [],
+		goals,
 		portfolio,
 		dcaConfigs: workbook.dca,
 		profile,
@@ -41,7 +48,7 @@ export default async function ObjectifsPage() {
 				</p>
 			</header>
 
-			<GoalsEditor initialGoals={workbook.financialGoals ?? []} />
+			<GoalsEditor initialGoals={goals} />
 			<GoalsAssessmentPanel assessment={assessment} />
 		</div>
 	);

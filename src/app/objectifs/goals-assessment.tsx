@@ -52,7 +52,11 @@ function GoalCard({
 			: "";
 	const needLine =
 		goal.type === "RETIREMENT_INCOME"
-			? `Il te faut ${formatEuro(assessment.requiredToday)} de placements pour viser ${formatEuro(goal.targetAmount)}/mois à ${goal.targetAge} ans (${modeLabel}${ratePct !== null ? ` @ ${ratePct} %` : ""})${pensionNote}`
+			? `Il te faut ${formatEuro(assessment.requiredToday)} de placements pour viser ${formatEuro(goal.targetAmount)}/mois au ${
+					goal.targetDate
+						? new Date(goal.targetDate).toLocaleDateString("fr-FR")
+						: "—"
+				} (${modeLabel}${ratePct !== null ? ` @ ${ratePct} %` : ""})${pensionNote}`
 			: `Il te faut ${formatEuro(assessment.requiredToday)} de placements pour viser ${formatEuro(goal.targetAmount)} au ${
 					goal.targetDate
 						? new Date(goal.targetDate).toLocaleDateString("fr-FR")
