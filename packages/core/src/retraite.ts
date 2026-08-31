@@ -10,6 +10,12 @@ import {
 } from "./projection";
 import { projectProperty } from "./realestate/projection";
 import { propertySnapshot } from "./realestate/projection";
+import {
+  PENSION_BRUT_TO_NET_APPROX,
+  resolveActiveRetirement,
+} from "./retirement-profile";
+
+export { PENSION_BRUT_TO_NET_APPROX };
 
 const MS_PER_YEAR = 365.25 * 24 * 3600 * 1000;
 
@@ -176,8 +182,6 @@ export function buildRetirementSources(params: {
   };
 }
 
-export const PENSION_BRUT_TO_NET_APPROX = 0.82;
-
 const ENVELOPE_FRUIT_TAX: Record<Envelope, number> = {
   LIVRET: 0,
   PEA: 0.172,
@@ -216,8 +220,8 @@ export function computeSustainableIncome(
   monthlyRealEstateNet: number,
   nominalReturnRate: number,
 ): SustainableIncome {
-  const pensionNet =
-    (profile.estimatedPublicPension ?? 0) * PENSION_BRUT_TO_NET_APPROX;
+  const resolved = resolveActiveRetirement(profile);
+  const pensionNet = resolved.ok ? resolved.netMonthly : 0;
   const fruitsBrut =
     (scenario.totalFinancialNominal * nominalReturnRate) / 12;
   const avgTaxRate = weightedTaxRate(scenario.envelopes);

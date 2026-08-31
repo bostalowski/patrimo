@@ -1,6 +1,6 @@
 # ADR 0023: Per-goal capitalisation mode and pension overlap
 
-- Status: accepted
+- Status: accepted (pension overlap rule superseded-in-part by [ADR 0025](0025-multi-scenario-public-pension.md))
 - Date: 2026-08-29
 - implementation_ready: yes
 - Supersedes-in-part: [ADR 0014](0014-financial-goals.md) (Required capital / `withdrawalRate` / pension-always block)

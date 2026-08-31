@@ -235,10 +235,11 @@ describe("Objectifs excel round-trip", () => {
 				label: "Retraite",
 				type: "RETIREMENT_INCOME",
 				targetAmount: 2500,
-				targetAge: 60,
+				targetDate: new Date("2045-01-01T00:00:00.000Z"),
 				inflationIncluded: false,
 				drawOnCapital: true,
 				capitalisationRate: 0.04,
+				publicPensionLink: "NONE",
 			},
 		];
 
@@ -254,12 +255,44 @@ describe("Objectifs excel round-trip", () => {
 				label: "Retraite",
 				type: "RETIREMENT_INCOME",
 				targetAmount: 2500,
-				targetAge: 60,
+				targetDate: expect.any(Date),
 				inflationIncluded: false,
 				drawOnCapital: true,
 				capitalisationRate: 0.04,
 			},
 		]);
+	});
+
+	it("RETIREMENT_INCOME write clears Âge cible cell (date only)", () => {
+		writeFileSync(configState.excelPath!, Buffer.from(sourceBuffer()));
+
+		webExcel.replaceWorkbook({
+			...webExcel.loadWorkbook(),
+			financialGoals: [
+				{
+					id: "g1",
+					label: "Retraite",
+					type: "RETIREMENT_INCOME",
+					targetAmount: 3000,
+					targetAge: 64,
+					targetDate: new Date("2045-06-15T00:00:00.000Z"),
+					inflationIncluded: true,
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+					publicPensionLink: "NONE",
+				},
+			],
+		});
+
+		const sheet = XLSX.readFile(configState.excelPath!, {
+			cellDates: true,
+		}).Sheets[GOALS_SHEET];
+		const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+			defval: null,
+		});
+		expect(rows[0]["Âge cible"]).toBeNull();
+		expect(rows[0]["Date cible"]).toBeInstanceOf(Date);
+		expect(webExcel.loadWorkbook().financialGoals[0].targetAge).toBeUndefined();
 	});
 
 	it("legacy sheet without mode/rate columns defaults to Non + 3%", () => {

@@ -47,7 +47,8 @@ describe("/api/goals", () => {
 				label: "Retraite",
 				type: "RETIREMENT_INCOME",
 				targetAmount: 3000,
-				targetAge: 58,
+				targetDate: "2045-01-01T00:00:00.000Z",
+				publicPensionLink: "NONE",
 			},
 			{
 				id: "g2",
@@ -77,7 +78,7 @@ describe("/api/goals", () => {
 					label: "Retraite",
 					type: "RETIREMENT_INCOME",
 					targetAmount: 3000,
-					targetAge: 60,
+					targetDate: new Date("2045-01-01T00:00:00.000Z"),
 					inflationIncluded: true,
 				},
 			],
@@ -90,7 +91,7 @@ describe("/api/goals", () => {
 		expect(saved.financialGoals).toEqual([]);
 	});
 
-	it("PUT with retirement goal missing age returns 400", async () => {
+	it("PUT with retirement goal missing target date returns 400", async () => {
 		const response = await goalsRoute.PUT(
 			putRequest({
 				goals: [

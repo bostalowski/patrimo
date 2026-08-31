@@ -5,9 +5,14 @@ import {
 	rateAfterDrawOnCapitalToggle,
 	validateFinancialGoals,
 } from "@patrimo/core/financial-goals";
-import type { FinancialGoal, FinancialGoalType } from "@patrimo/core/schema";
+import type {
+	FinancialGoal,
+	FinancialGoalType,
+	PublicPensionLink,
+} from "@patrimo/core/schema";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PENSION_SCENARIO_LABELS } from "@/lib/pension-scenario-labels";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 
 type DraftGoal = {
@@ -15,11 +20,11 @@ type DraftGoal = {
 	label: string;
 	type: FinancialGoalType;
 	targetAmount: string;
-	targetAge: string;
 	targetDate: string;
 	inflationIncluded: boolean;
 	drawOnCapital: boolean;
 	capitalisationRate: string;
+	publicPensionLink: PublicPensionLink;
 	notes: string;
 };
 
@@ -40,11 +45,11 @@ function toDraft(goals: FinancialGoal[]): DraftGoal[] {
 			label: goal.label,
 			type: goal.type,
 			targetAmount: String(goal.targetAmount),
-			targetAge: goal.targetAge !== undefined ? String(goal.targetAge) : "",
 			targetDate: toIsoDateInput(goal.targetDate),
 			inflationIncluded: goal.inflationIncluded !== false,
 			drawOnCapital,
 			capitalisationRate: String(Math.round(rate * 10000) / 100),
+			publicPensionLink: goal.publicPensionLink ?? "NONE",
 			notes: goal.notes ?? "",
 		};
 	});
@@ -61,12 +66,13 @@ function fromDraft(rows: DraftGoal[]): FinancialGoal[] {
 				label: row.label.trim(),
 				type: "RETIREMENT_INCOME" as const,
 				targetAmount,
-				targetAge: row.targetAge
-					? Math.round(Number(row.targetAge.replace(",", ".")))
+				targetDate: row.targetDate
+					? new Date(`${row.targetDate}T00:00:00.000Z`)
 					: undefined,
 				inflationIncluded: row.inflationIncluded,
 				drawOnCapital: row.drawOnCapital,
 				capitalisationRate,
+				publicPensionLink: row.publicPensionLink,
 				notes: row.notes.trim() || undefined,
 			};
 		}
@@ -80,6 +86,7 @@ function fromDraft(rows: DraftGoal[]): FinancialGoal[] {
 				: undefined,
 			inflationIncluded: row.inflationIncluded,
 			drawOnCapital: false,
+			publicPensionLink: "NONE",
 			notes: row.notes.trim() || undefined,
 		};
 	});
@@ -87,7 +94,7 @@ function fromDraft(rows: DraftGoal[]): FinancialGoal[] {
 
 const VALIDATION_MESSAGES: Record<string, string> = {
 	missing_target_age: "Âge cible requis pour un objectif retraite (50–75).",
-	missing_target_date: "Date cible requise pour un objectif capital.",
+	missing_target_date: "Date cible requise.",
 	unexpected_target_age: "L'âge cible ne s'applique qu'à la retraite.",
 	unexpected_target_date: "La date cible ne s'applique qu'au capital.",
 	invalid_target_age: "Âge cible invalide (50–75).",
@@ -106,6 +113,16 @@ const inputClasses =
 function newId(): string {
 	return `goal-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
+
+const PENSION_LINK_OPTIONS: { value: PublicPensionLink; label: string }[] = [
+	{ value: "NONE", label: "Aucune" },
+	{ value: "LEGAL_AGE", label: PENSION_SCENARIO_LABELS.LEGAL_AGE },
+	{ value: "FULL_RATE", label: PENSION_SCENARIO_LABELS.FULL_RATE },
+	{
+		value: "AUTOMATIC_FULL_RATE",
+		label: PENSION_SCENARIO_LABELS.AUTOMATIC_FULL_RATE,
+	},
+];
 
 export function GoalsEditor({ initialGoals }: { initialGoals: FinancialGoal[] }) {
 	const router = useRouter();
@@ -149,14 +166,14 @@ export function GoalsEditor({ initialGoals }: { initialGoals: FinancialGoal[] })
 				label: type === "RETIREMENT_INCOME" ? "Retraite" : "Capital",
 				type,
 				targetAmount: type === "RETIREMENT_INCOME" ? "3000" : "100000",
-				targetAge: type === "RETIREMENT_INCOME" ? "60" : "",
 				targetDate:
 					type === "CAPITAL_AT_DATE"
 						? `${new Date().getUTCFullYear() + 10}-01-01`
-						: "",
+						: `${new Date().getUTCFullYear() + 25}-01-01`,
 				inflationIncluded: true,
 				drawOnCapital: false,
 				capitalisationRate: "3",
+				publicPensionLink: "NONE",
 				notes: "",
 			},
 		]);
@@ -269,29 +286,40 @@ export function GoalsEditor({ initialGoals }: { initialGoals: FinancialGoal[] })
 											: "Capital déjà exprimé en euros de l'horizon (pas de ré-inflation)."}
 								</span>
 							</label>
-							{row.type === "RETIREMENT_INCOME" ? (
+							<label className="space-y-1 text-xs text-zinc-500">
+								Date cible
+								<input
+									type="date"
+									className={inputClasses}
+									value={row.targetDate}
+									onChange={(e) =>
+										updateRow(index, { targetDate: e.target.value })
+									}
+								/>
+							</label>
+							{row.type === "RETIREMENT_INCOME" && (
 								<label className="space-y-1 text-xs text-zinc-500">
-									Âge cible
-									<input
+									Pension publique
+									<select
 										className={inputClasses}
-										inputMode="numeric"
-										value={row.targetAge}
+										value={row.publicPensionLink}
 										onChange={(e) =>
-											updateRow(index, { targetAge: e.target.value })
+											updateRow(index, {
+												publicPensionLink: e.target
+													.value as PublicPensionLink,
+											})
 										}
-									/>
-								</label>
-							) : (
-								<label className="space-y-1 text-xs text-zinc-500">
-									Date cible
-									<input
-										type="date"
-										className={inputClasses}
-										value={row.targetDate}
-										onChange={(e) =>
-											updateRow(index, { targetDate: e.target.value })
-										}
-									/>
+									>
+										{PENSION_LINK_OPTIONS.map((option) => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
+									</select>
+									<span className="block font-normal text-zinc-400">
+										Pension nette du scénario lié déduite du besoin de capital
+										(lorsque la date cible est après le départ du scénario).
+									</span>
 								</label>
 							)}
 							<label className="flex items-center gap-2 text-xs text-zinc-500 sm:col-span-2">

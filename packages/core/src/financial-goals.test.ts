@@ -19,10 +19,11 @@ function retirementGoal(
 		label: "Retraite",
 		type: "RETIREMENT_INCOME",
 		targetAmount: 3000,
-		targetAge: 58,
+		targetDate: new Date("2040-01-01T00:00:00.000Z"),
 		inflationIncluded: true,
 		drawOnCapital: false,
 		capitalisationRate: 0.03,
+		publicPensionLink: "NONE",
 		...overrides,
 	};
 }
@@ -68,12 +69,12 @@ describe("validateFinancialGoals", () => {
 		).toEqual({ ok: true });
 	});
 
-	it("rejects retirement without age", () => {
+	it("rejects retirement without targetDate", () => {
 		expect(
 			validateFinancialGoals([
-				retirementGoal({ targetAge: undefined }),
+				retirementGoal({ targetDate: undefined }),
 			]),
-		).toEqual({ ok: false, reason: "missing_target_age" });
+		).toEqual({ ok: false, reason: "missing_target_date" });
 	});
 
 	it("rejects capital without date", () => {
@@ -94,84 +95,84 @@ describe("validateFinancialGoals", () => {
 
 describe("requiredCapitalToday", () => {
 	const pensionBrutForNet2000 = 2000 / 0.82;
+	const startOk = new Date("2030-01-01T00:00:00.000Z");
+	const profilePension: RetirementProfile = {
+		scenarios: {
+			LEGAL_AGE: {
+				startDate: startOk,
+				grossMonthly: pensionBrutForNet2000,
+			},
+		},
+		activeScenario: "LEGAL_AGE",
+	};
 
 	it("CAPITAL_AT_DATE equals target amount (mode/rate/pension ignored)", () => {
-		const profile: RetirementProfile = {
-			targetRetirementAge: 64,
-			estimatedPublicPension: pensionBrutForNet2000,
-		};
 		expect(
 			requiredCapitalToday(
 				capitalGoal({
 					targetAmount: 200_000,
 					drawOnCapital: true,
 					capitalisationRate: 0.04,
+					publicPensionLink: "LEGAL_AGE",
 				}),
-				profile,
+				profilePension,
 			),
 		).toBe(200_000);
 	});
 
-	it("intérêts seuls @64 + pension nette 2000 @3% → 400_000 (teach-back)", () => {
-		const profile: RetirementProfile = {
-			targetRetirementAge: 64,
-			estimatedPublicPension: pensionBrutForNet2000,
-		};
+	it("intérêts seuls + pension nette 2000 @3% → 400_000 (teach-back)", () => {
 		expect(
 			requiredCapitalToday(
 				retirementGoal({
-					targetAge: 64,
+					targetDate: startOk,
+					publicPensionLink: "LEGAL_AGE",
 					drawOnCapital: false,
 					capitalisationRate: 0.03,
 				}),
-				profile,
+				profilePension,
 			),
 		).toBeCloseTo(400_000, 0);
 	});
 
-	it("intérêts seuls @58 avant départ 64 → pas de pension → 1_200_000 (teach-back)", () => {
-		const profile: RetirementProfile = {
-			targetRetirementAge: 64,
-			estimatedPublicPension: pensionBrutForNet2000,
-		};
+	it("intérêts seuls avant date scénario → pas de pension → 1_200_000 (teach-back)", () => {
 		expect(
 			requiredCapitalToday(
 				retirementGoal({
-					targetAge: 58,
+					targetDate: new Date("2029-12-31T00:00:00.000Z"),
+					publicPensionLink: "LEGAL_AGE",
 					drawOnCapital: false,
 					capitalisationRate: 0.03,
 				}),
-				profile,
+				profilePension,
 			),
 		).toBe(1_200_000);
 	});
 
-	it("vivre sur le capital @64 + pension @4% → 300_000 (teach-back)", () => {
-		const profile: RetirementProfile = {
-			targetRetirementAge: 64,
-			estimatedPublicPension: pensionBrutForNet2000,
-		};
+	it("vivre sur le capital + pension @4% → 300_000 (teach-back)", () => {
 		expect(
 			requiredCapitalToday(
 				retirementGoal({
-					targetAge: 64,
+					targetDate: startOk,
+					publicPensionLink: "LEGAL_AGE",
 					drawOnCapital: true,
 					capitalisationRate: 0.04,
 				}),
-				profile,
+				profilePension,
 			),
 		).toBeCloseTo(300_000, 0);
 	});
 
-	it("does not subtract pension when estimatedPublicPension is 0", () => {
+	it("does not subtract pension when grossMonthly is 0 (filled)", () => {
 		const profile: RetirementProfile = {
-			targetRetirementAge: 64,
-			estimatedPublicPension: 0,
+			scenarios: {
+				LEGAL_AGE: { startDate: startOk, grossMonthly: 0 },
+			},
 		};
 		expect(
 			requiredCapitalToday(
 				retirementGoal({
-					targetAge: 64,
+					targetDate: startOk,
+					publicPensionLink: "LEGAL_AGE",
 					drawOnCapital: false,
 					capitalisationRate: 0.03,
 				}),
@@ -182,13 +183,15 @@ describe("requiredCapitalToday", () => {
 
 	it("returns 0 when pension covers the income target (overlap)", () => {
 		const profile: RetirementProfile = {
-			targetRetirementAge: 64,
-			estimatedPublicPension: 5000,
+			scenarios: {
+				LEGAL_AGE: { startDate: startOk, grossMonthly: 5000 },
+			},
 		};
 		expect(
 			requiredCapitalToday(
 				retirementGoal({
-					targetAge: 64,
+					targetDate: startOk,
+					publicPensionLink: "LEGAL_AGE",
 					drawOnCapital: false,
 					capitalisationRate: 0.03,
 				}),
@@ -199,14 +202,12 @@ describe("requiredCapitalToday", () => {
 
 	it("ignores profile withdrawalRate for goals capitalisation", () => {
 		const profile: RetirementProfile = {
-			targetRetirementAge: 64,
-			estimatedPublicPension: 0,
+			scenarios: {},
 			withdrawalRate: 0.04,
 		};
 		expect(
 			requiredCapitalToday(
 				retirementGoal({
-					targetAge: 58,
 					drawOnCapital: false,
 					capitalisationRate: 0.03,
 				}),
@@ -270,18 +271,22 @@ describe("rateAfterDrawOnCapitalToggle sticky defaults", () => {
 
 describe("normalizeFinancialGoals capitalisation defaults", () => {
 	it("legacy retirement goal without mode/rate → Non + 3%", () => {
-		const [goal] = normalizeFinancialGoals([
-			{
-				id: "ret",
-				label: "Retraite",
-				type: "RETIREMENT_INCOME",
-				targetAmount: 3000,
-				targetAge: 60,
-				inflationIncluded: true,
-			},
-		]);
+		const [goal] = normalizeFinancialGoals(
+			[
+				{
+					id: "ret",
+					label: "Retraite",
+					type: "RETIREMENT_INCOME",
+					targetAmount: 3000,
+					targetAge: 60,
+					inflationIncluded: true,
+				},
+			],
+			new Date("1970-01-01T00:00:00.000Z"),
+		);
 		expect(goal.drawOnCapital).toBe(false);
 		expect(goal.capitalisationRate).toBe(0.03);
+		expect(goal.targetDate).toBeInstanceOf(Date);
 	});
 
 	it("empty rate with drawOnCapital true → 4%", () => {
@@ -521,13 +526,15 @@ describe("assessFinancialGoals", () => {
 		expect(assessment!.sumRequiredToday).toBe(10_000_000);
 	});
 
-	it("marks retirement goal incomplete without birth date", () => {
+	it("marks retirement goal incomplete without targetDate", () => {
 		const assessment = assessFinancialGoals({
-			goals: [retirementGoal()],
+			goals: [
+				retirementGoal({ targetAge: 64, targetDate: undefined }),
+			],
 			portfolio: emptyPortfolio(100_000),
 			dcaConfigs: [],
 			profile: {
-				targetRetirementAge: 64,
+				scenarios: {},
 				withdrawalRate: 0.04,
 			},
 			inflationRate: 0.02,
@@ -537,27 +544,63 @@ describe("assessFinancialGoals", () => {
 		expect(assessment!.incompleteProfile).toBe(true);
 		expect(assessment!.goals[0].incomplete).toBe(true);
 		expect(assessment!.goals[0].status).toBeNull();
-		// Non + 3% default, no pension overlap considered without age match details:
-		// targetAge 58 < 64 → 36000/0.03 = 1_200_000
 		expect(assessment!.goals[0].requiredToday).toBe(1_200_000);
 	});
 
-	it("exposes pension nette mensuelle when âge cible recoupe départ (assessment copy)", () => {
-		const pensionBrutForNet2000 = 2000 / 0.82;
-		const withOverlap = assessFinancialGoals({
+	it("legacy age-only + profile birthDate: migrates targetDate and assesses horizon", () => {
+		const birthDate = new Date("1965-04-01T00:00:00.000Z");
+		const assessment = assessFinancialGoals({
 			goals: [
 				retirementGoal({
 					targetAge: 64,
+					targetDate: undefined,
+					publicPensionLink: "NONE",
+				}),
+			],
+			portfolio: emptyPortfolio(100_000),
+			dcaConfigs: [],
+			profile: {
+				birthDate,
+				scenarios: {},
+				withdrawalRate: 0.04,
+			},
+			inflationRate: 0.02,
+			now: new Date("2026-04-01T00:00:00.000Z"),
+		});
+
+		expect(assessment!.goals[0].incomplete).toBe(false);
+		expect(assessment!.goals[0].horizonDate).toBe("2029-04-01");
+		expect(assessment!.goals[0].goal.targetDate).toEqual(
+			new Date("2029-04-01T00:00:00.000Z"),
+		);
+		expect(assessment!.goals[0].goal.targetAge).toBeUndefined();
+	});
+
+	it("exposes pension nette mensuelle when targetDate overlaps scenario (assessment copy)", () => {
+		const pensionBrutForNet2000 = 2000 / 0.82;
+		const start = new Date("2030-01-01T00:00:00.000Z");
+		const profileWithPension: RetirementProfile = {
+			...profile,
+			scenarios: {
+				LEGAL_AGE: {
+					startDate: start,
+					grossMonthly: pensionBrutForNet2000,
+				},
+			},
+			activeScenario: "LEGAL_AGE",
+		};
+		const withOverlap = assessFinancialGoals({
+			goals: [
+				retirementGoal({
+					targetDate: start,
+					publicPensionLink: "LEGAL_AGE",
 					drawOnCapital: false,
 					capitalisationRate: 0.03,
 				}),
 			],
 			portfolio: emptyPortfolio(100_000),
 			dcaConfigs: [],
-			profile: {
-				...profile,
-				estimatedPublicPension: pensionBrutForNet2000,
-			},
+			profile: profileWithPension,
 			inflationRate: 0.02,
 			now,
 		});
@@ -569,17 +612,15 @@ describe("assessFinancialGoals", () => {
 		const beforeRetirement = assessFinancialGoals({
 			goals: [
 				retirementGoal({
-					targetAge: 58,
+					targetDate: new Date("2029-12-31T00:00:00.000Z"),
+					publicPensionLink: "LEGAL_AGE",
 					drawOnCapital: false,
 					capitalisationRate: 0.03,
 				}),
 			],
 			portfolio: emptyPortfolio(100_000),
 			dcaConfigs: [],
-			profile: {
-				...profile,
-				estimatedPublicPension: pensionBrutForNet2000,
-			},
+			profile: profileWithPension,
 			inflationRate: 0.02,
 			now,
 		});
@@ -589,13 +630,181 @@ describe("assessFinancialGoals", () => {
 			goals: [capitalGoal()],
 			portfolio: emptyPortfolio(100_000),
 			dcaConfigs: [],
-			profile: {
-				...profile,
-				estimatedPublicPension: pensionBrutForNet2000,
-			},
+			profile: profileWithPension,
 			inflationRate: 0.02,
 			now,
 		});
 		expect(capital!.goals[0].pensionNetMonthlyApplied).toBe(0);
+	});
+});
+
+describe("public pension link + date overlap (multi-scenario)", () => {
+	const fullRateStart = new Date("2054-04-01T00:00:00.000Z");
+	const profileWithScenarios: RetirementProfile = {
+		birthDate: new Date("1965-06-15T00:00:00.000Z"),
+		scenarios: {
+			LEGAL_AGE: {
+				startDate: new Date("2030-06-15T00:00:00.000Z"),
+				grossMonthly: 2966,
+			},
+			FULL_RATE: {
+				startDate: fullRateStart,
+				grossMonthly: 2000 / 0.82,
+			},
+		},
+		activeScenario: "LEGAL_AGE",
+	};
+
+	it("Aucune / NONE: never subtracts pension", () => {
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: undefined,
+					targetDate: new Date("2060-01-01T00:00:00.000Z"),
+					publicPensionLink: "NONE",
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+				profileWithScenarios,
+			),
+		).toBe(1_200_000);
+	});
+
+	it("FULL_RATE + targetDate >= startDate: subtracts net before capitalisation", () => {
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: undefined,
+					targetDate: new Date("2054-04-01T00:00:00.000Z"),
+					publicPensionLink: "FULL_RATE",
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+					targetAmount: 3000,
+				}),
+				profileWithScenarios,
+			),
+		).toBeCloseTo((3000 - 2000) * 12 / 0.03, 0);
+	});
+
+	it("targetDate before scenario startDate: pension deducted = 0", () => {
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: undefined,
+					targetDate: new Date("2054-03-31T00:00:00.000Z"),
+					publicPensionLink: "FULL_RATE",
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+				profileWithScenarios,
+			),
+		).toBe(1_200_000);
+	});
+
+	it("link to unfilled scenario type: treat as NONE", () => {
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: undefined,
+					targetDate: new Date("2060-01-01T00:00:00.000Z"),
+					publicPensionLink: "AUTOMATIC_FULL_RATE",
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+				profileWithScenarios,
+			),
+		).toBe(1_200_000);
+	});
+
+	it("CAPITAL_AT_DATE: pension link does not change requiredFromTarget", () => {
+		expect(
+			requiredCapitalToday(
+				capitalGoal({
+					targetAmount: 200_000,
+					publicPensionLink: "FULL_RATE",
+				}),
+				profileWithScenarios,
+			),
+		).toBe(200_000);
+	});
+
+	it("income <= net pension with overlap: requiredToday = 0", () => {
+		expect(
+			requiredCapitalToday(
+				retirementGoal({
+					targetAge: undefined,
+					targetAmount: 1500,
+					targetDate: new Date("2055-01-01T00:00:00.000Z"),
+					publicPensionLink: "FULL_RATE",
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+				profileWithScenarios,
+			),
+		).toBe(0);
+	});
+
+	it("income <= net + overlap: stock progressCurrent = 1", () => {
+		const assessment = assessFinancialGoals({
+			goals: [
+				retirementGoal({
+					targetAge: undefined,
+					targetAmount: 1500,
+					targetDate: new Date("2055-01-01T00:00:00.000Z"),
+					publicPensionLink: "FULL_RATE",
+					drawOnCapital: false,
+					capitalisationRate: 0.03,
+				}),
+			],
+			portfolio: emptyPortfolio(50_000),
+			dcaConfigs: [],
+			profile: profileWithScenarios,
+			inflationRate: 0.02,
+			now: new Date("2026-01-01T00:00:00.000Z"),
+		});
+		expect(assessment!.goals[0].requiredToday).toBe(0);
+		expect(assessment!.goals[0].progressCurrent).toBe(1);
+	});
+
+	it("normalize: age-only + birthDate → targetDate anniversary; age dropped", () => {
+		const birthDate = new Date("1965-04-01T00:00:00.000Z");
+		const [goal] = normalizeFinancialGoals(
+			[
+				retirementGoal({
+					targetAge: 64,
+					targetDate: undefined,
+				}),
+			],
+			birthDate,
+		);
+		expect(goal.targetDate).toEqual(new Date("2029-04-01T00:00:00.000Z"));
+		expect(goal.targetAge).toBeUndefined();
+	});
+
+	it("normalize: both age and date → targetDate wins, age dropped", () => {
+		const [goal] = normalizeFinancialGoals([
+			retirementGoal({
+				targetAge: 70,
+				targetDate: new Date("2050-06-15T00:00:00.000Z"),
+			}),
+		]);
+		expect(goal.targetDate).toEqual(new Date("2050-06-15T00:00:00.000Z"));
+		expect(goal.targetAge).toBeUndefined();
+	});
+
+	it("validate RETIREMENT_INCOME requires targetDate (not age)", () => {
+		expect(
+			validateFinancialGoals([
+				retirementGoal({
+					targetAge: undefined,
+					targetDate: new Date("2050-01-01T00:00:00.000Z"),
+				}),
+			]),
+		).toEqual({ ok: true });
+		expect(
+			validateFinancialGoals([
+				retirementGoal({ targetAge: 64, targetDate: undefined }),
+			]),
+		).toEqual({ ok: false, reason: "missing_target_date" });
 	});
 });

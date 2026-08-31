@@ -55,6 +55,7 @@ export * as realestate from "./realestate/projection";
 export * as realestateProperty from "./realestate/property";
 export * as realestateTax from "./realestate/tax";
 export * from "./retraite";
+export * from "./retirement-profile";
 export * from "./savings-capacity";
 export * from "./savings-capacity-copy";
 export * from "./schema";

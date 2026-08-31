@@ -22,7 +22,7 @@ describe("InvestissementsClient", () => {
 				seedConfig={null}
 				priceMap={{}}
 				monthlyTilt={null}
-				initialProfile={{ targetRetirementAge: 65 }}
+				initialProfile={{}}
 				properties={[]}
 			/>,
 		);

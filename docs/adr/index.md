@@ -22,7 +22,8 @@
 - [ADR 0020: Emergency-fund surplus recommendation (keep investment DCA)](0020-emergency-fund-surplus-recommendation.md) — accepted
 - [ADR 0021: Monthly DCA tilt feeds Exécution](0021-monthly-dca-tilt-execution.md) — accepted (superseded-in-part by 0022)
 - [ADR 0022: DCA-first monthly Dashboard card](0022-dca-first-monthly-card.md) — accepted
-- [ADR 0023: Per-goal capitalisation mode and pension overlap](0023-goal-capitalisation-mode.md) — accepted (supersedes-in-part 0014)
+- [ADR 0023: Per-goal capitalisation mode and pension overlap](0023-goal-capitalisation-mode.md) — accepted (supersedes-in-part 0014; pension overlap superseded-in-part by 0025)
 - [ADR 0024: Official Livret A / LDDS rate series (sync + quinzaine math)](0024-livret-official-rate-series.md) — accepted (extends CONSTRAINTS §4)
+- [ADR 0025: Multi-scenario public pension (info-retraite)](0025-multi-scenario-public-pension.md) — accepted (supersedes-in-part 0014 income horizon by age and 0023 age-based pension overlap)
 
 Template: [_template.md](_template.md)

@@ -2,8 +2,12 @@ import type { FinancialGoal, RetirementProfile } from "./schema";
 import { FinancialGoalType } from "./schema";
 import {
 	PENSION_BRUT_TO_NET_APPROX,
-	computeRetirementHorizon,
-} from "./retraite";
+	compareCivilYmd,
+	civilAnniversary,
+	civilYmd,
+	isPensionScenarioFilled,
+	normalizeRetirementProfile,
+} from "./retirement-profile";
 import {
 	SCENARIO_PRESETS,
 	projectInvestment,
@@ -54,17 +58,8 @@ export function validateFinancialGoals(
 		seen.add(goal.id);
 
 		if (goal.type === "RETIREMENT_INCOME") {
-			if (goal.targetAge === undefined || goal.targetAge === null) {
-				return { ok: false, reason: "missing_target_age" };
-			}
-			if (
-				goal.targetAge < RETIREMENT_AGE_MIN ||
-				goal.targetAge > RETIREMENT_AGE_MAX
-			) {
-				return { ok: false, reason: "invalid_target_age" };
-			}
-			if (goal.targetDate !== undefined && goal.targetDate !== null) {
-				return { ok: false, reason: "unexpected_target_date" };
+			if (!goal.targetDate) {
+				return { ok: false, reason: "missing_target_date" };
 			}
 			const rate = goal.capitalisationRate;
 			if (
@@ -85,8 +80,14 @@ export function validateFinancialGoals(
 	return { ok: true };
 }
 
+/**
+ * Normalize goals for persistence/math. Optional `birthDate` migrates
+ * legacy RETIREMENT_INCOME age-only rows to `targetDate`.
+ * When both age and date present, `targetDate` wins (age ignored for math).
+ */
 export function normalizeFinancialGoals(
 	goals: FinancialGoal[],
+	birthDate?: Date,
 ): FinancialGoal[] {
 	const result: FinancialGoal[] = [];
 	const seen = new Set<string>();
@@ -100,10 +101,24 @@ export function normalizeFinancialGoals(
 		if (seen.has(goal.id)) continue;
 
 		if (parsed.data === "RETIREMENT_INCOME") {
-			if (
-				goal.targetAge === undefined ||
-				goal.targetAge < RETIREMENT_AGE_MIN ||
-				goal.targetAge > RETIREMENT_AGE_MAX
+			let targetDate = goal.targetDate;
+			let targetAge = goal.targetAge;
+			if (!targetDate && birthDate && targetAge !== undefined) {
+				if (
+					targetAge >= RETIREMENT_AGE_MIN &&
+					targetAge <= RETIREMENT_AGE_MAX
+				) {
+					targetDate = civilAnniversary(birthDate, targetAge);
+					targetAge = undefined;
+				}
+			}
+			// Both present: targetDate wins for math; drop age from normalized form.
+			if (targetDate) {
+				targetAge = undefined;
+			} else if (
+				targetAge === undefined ||
+				targetAge < RETIREMENT_AGE_MIN ||
+				targetAge > RETIREMENT_AGE_MAX
 			) {
 				continue;
 			}
@@ -115,16 +130,18 @@ export function normalizeFinancialGoals(
 				goal.capitalisationRate > 0
 					? goal.capitalisationRate
 					: defaultCapitalisationRate(drawOnCapital);
+			const link = goal.publicPensionLink ?? "NONE";
 			result.push({
 				id: goal.id,
 				label: goal.label,
 				type: "RETIREMENT_INCOME",
 				targetAmount: goal.targetAmount,
-				targetAge: goal.targetAge,
+				...(targetDate ? { targetDate } : { targetAge }),
 				inflationIncluded: goal.inflationIncluded !== false,
 				drawOnCapital,
 				capitalisationRate,
 				notes: goal.notes,
+				publicPensionLink: link === "NONE" ? "NONE" : link,
 			});
 		} else {
 			if (!goal.targetDate) continue;
@@ -137,16 +154,22 @@ export function normalizeFinancialGoals(
 				targetDate: goal.targetDate,
 				inflationIncluded: goal.inflationIncluded !== false,
 				notes: goal.notes,
+				publicPensionLink: "NONE",
 			});
 		}
 	}
 	return result;
 }
 
+export function pensionNetFromGross(grossMonthly: number): number {
+	return grossMonthly * PENSION_BRUT_TO_NET_APPROX;
+}
+
+/** @deprecated Prefer scenario gross via publicPensionNetMonthlyApplied. */
 export function pensionNetFromProfile(
 	profile: Pick<RetirementProfile, "estimatedPublicPension">,
 ): number {
-	return (profile.estimatedPublicPension ?? 0) * PENSION_BRUT_TO_NET_APPROX;
+	return pensionNetFromGross(profile.estimatedPublicPension ?? 0);
 }
 
 export function defaultCapitalisationRate(drawOnCapital: boolean): number {
@@ -181,42 +204,38 @@ export function capitalisationRateForGoal(goal: FinancialGoal): number {
 	return defaultCapitalisationRate(drawOnCapital);
 }
 
-function shouldSubtractPublicPension(
+function linkedScenarioGross(
 	goal: FinancialGoal,
-	profile: Partial<
-		Pick<RetirementProfile, "estimatedPublicPension" | "targetRetirementAge">
-	>,
-): boolean {
-	if (goal.type !== "RETIREMENT_INCOME") return false;
-	const pension = profile.estimatedPublicPension;
-	if (pension === undefined || !(pension > 0)) return false;
-	if (goal.targetAge === undefined) return false;
-	const retirementAge = profile.targetRetirementAge;
-	if (retirementAge === undefined) return false;
-	return goal.targetAge >= retirementAge;
+	profile: RetirementProfile,
+): number | null {
+	if (goal.type !== "RETIREMENT_INCOME") return null;
+	const link = goal.publicPensionLink ?? "NONE";
+	if (link === "NONE") return null;
+	const normalized = normalizeRetirementProfile(profile);
+	const slot = normalized.scenarios?.[link];
+	if (!isPensionScenarioFilled(slot)) return null;
+	if (!goal.targetDate || !slot!.startDate) return null;
+	if (compareCivilYmd(goal.targetDate, slot!.startDate) < 0) return null;
+	return slot!.grossMonthly!;
 }
 
 /**
  * Monthly net public pension subtracted from the income goal need, or 0
- * when overlap does not apply (age before retirement, missing pension, or
- * non-income goal).
+ * when link is NONE, scenario unfilled, or targetDate before scenario start.
  */
 export function publicPensionNetMonthlyApplied(
 	goal: FinancialGoal,
-	profile: Partial<
-		Pick<RetirementProfile, "estimatedPublicPension" | "targetRetirementAge">
-	> = {},
+	profile: RetirementProfile = {} as RetirementProfile,
 ): number {
-	if (!shouldSubtractPublicPension(goal, profile)) return 0;
-	return pensionNetFromProfile(profile);
+	const gross = linkedScenarioGross(goal, profile);
+	if (gross === null) return 0;
+	return pensionNetFromGross(gross);
 }
 
 /** Required capital from targetAmount via formula (no inflate/deflate). */
 export function requiredCapitalToday(
 	goal: FinancialGoal,
-	profile: Partial<
-		Pick<RetirementProfile, "estimatedPublicPension" | "targetRetirementAge">
-	> = {},
+	profile: RetirementProfile = {} as RetirementProfile,
 ): number {
 	if (goal.type === "CAPITAL_AT_DATE") {
 		return Math.max(0, goal.targetAmount);
@@ -239,13 +258,14 @@ export type GoalCapitalNeeds = {
  */
 export function resolveGoalCapitalNeeds(params: {
 	goal: FinancialGoal;
-	profile?: Partial<
-		Pick<RetirementProfile, "estimatedPublicPension" | "targetRetirementAge">
-	>;
+	profile?: RetirementProfile;
 	horizonYears: number | null;
 	inflationRate: number;
 }): GoalCapitalNeeds {
-	const fromTarget = requiredCapitalToday(params.goal, params.profile ?? {});
+	const fromTarget = requiredCapitalToday(
+		params.goal,
+		params.profile ?? ({} as RetirementProfile),
+	);
 	const included = params.goal.inflationIncluded !== false;
 	const years = params.horizonYears;
 
@@ -297,25 +317,23 @@ export type GoalHorizon = {
 
 export function computeGoalHorizon(
 	goal: FinancialGoal,
-	profile: Pick<RetirementProfile, "birthDate">,
+	_profile: Pick<RetirementProfile, "birthDate"> = {},
 	now: Date = new Date(),
 ): GoalHorizon | null {
-	if (goal.type === "RETIREMENT_INCOME") {
-		if (!profile.birthDate || goal.targetAge === undefined) return null;
-		const { horizonYears, retirementDate } = computeRetirementHorizon(
-			profile.birthDate,
-			goal.targetAge,
-			now,
-		);
-		return {
-			horizonYears,
-			horizonDate: retirementDate,
-			expired: horizonYears <= 0,
-		};
-	}
+	// RETIREMENT_INCOME and CAPITAL_AT_DATE: targetDate is the horizon source.
+	// When both age and date were present on read, targetDate already won.
 	if (!goal.targetDate) return null;
-	const ms = goal.targetDate.getTime() - now.getTime();
-	const horizonYears = ms / (365.25 * 24 * 3600 * 1000);
+	const startUtc = Date.UTC(
+		now.getUTCFullYear(),
+		now.getUTCMonth(),
+		now.getUTCDate(),
+	);
+	const endUtc = Date.UTC(
+		goal.targetDate.getUTCFullYear(),
+		goal.targetDate.getUTCMonth(),
+		goal.targetDate.getUTCDate(),
+	);
+	const horizonYears = (endUtc - startUtc) / (365.25 * 24 * 3600 * 1000);
 	return {
 		horizonYears: Math.max(0, horizonYears),
 		horizonDate: goal.targetDate,
@@ -378,7 +396,11 @@ export function assessFinancialGoals(params: {
 	scenario?: ScenarioKey;
 	now?: Date;
 }): GoalsAssessment | null {
-	const goals = params.goals;
+	// Legacy age-only income goals migrate to targetDate when birthDate is known.
+	const goals = normalizeFinancialGoals(
+		params.goals,
+		params.profile.birthDate,
+	);
 	if (goals.length === 0) return null;
 
 	const now = params.now ?? new Date();
@@ -387,7 +409,6 @@ export function assessFinancialGoals(params: {
 		SCENARIO_PRESETS.find((p) => p.key === scenarioKey) ?? SCENARIO_PRESETS[1];
 	const liquidMarketValue = params.portfolio.totals.marketValue;
 	const contributions = contributionsFromDca(params.dcaConfigs);
-	const incompleteProfile = !params.profile.birthDate;
 
 	const assessed: GoalAssessment[] = [];
 	let sumRequiredToday = 0;
@@ -396,8 +417,7 @@ export function assessFinancialGoals(params: {
 
 	for (const goal of goals) {
 		const horizon = computeGoalHorizon(goal, params.profile, now);
-		const needsBirthDate = goal.type === "RETIREMENT_INCOME";
-		const incomplete = needsBirthDate && incompleteProfile;
+		const incomplete = !goal.targetDate;
 
 		const needs = resolveGoalCapitalNeeds({
 			goal,
@@ -425,7 +445,7 @@ export function assessFinancialGoals(params: {
 
 		if (!incomplete && horizon) {
 			horizonYears = horizon.horizonYears;
-			horizonDate = horizon.horizonDate.toISOString();
+			horizonDate = civilYmd(horizon.horizonDate);
 			expired = horizon.expired;
 			maxHorizonYears = Math.max(maxHorizonYears, horizon.horizonYears);
 
@@ -507,6 +527,8 @@ export function assessFinancialGoals(params: {
 		sumRequiredAtHorizons,
 		oversubscribed,
 		scenario: preset.key,
-		incompleteProfile,
+		incompleteProfile: goals.some(
+			(g) => g.type === "RETIREMENT_INCOME" && !g.targetDate,
+		),
 	};
 }

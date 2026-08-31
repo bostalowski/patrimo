@@ -41,11 +41,12 @@ Optional sheet `Objectifs`:
 | `Libellé` | `label` | Display name |
 | `Type` | `type` | `RETIREMENT_INCOME` or `CAPITAL_AT_DATE` |
 | `Montant cible` | `targetAmount` | Monthly income or capital; semantics depend on `Inflation comprise` |
-| `Âge cible` | `targetAge` | Required for retirement (50–75); empty otherwise |
-| `Date cible` | `targetDate` | Required for capital; empty otherwise |
+| `Âge cible` | `targetAge` | Legacy / display only for retirement; **empty on write** for `RETIREMENT_INCOME` |
+| `Date cible` | `targetDate` | Required for retirement income and capital goals |
 | `Inflation comprise` | `inflationIncluded` | `Oui` / `Non` (empty ⇒ `Oui`). `Oui` = montant en euros d’aujourd’hui ; `Non` = déjà en euros de l’horizon |
 | `Vivre sur le capital` | `drawOnCapital` | `Oui` / `Non` (empty ⇒ `Non`). Mode = libellé + défauts de taux + copy ; même formule |
 | `Taux capitalisation` | `capitalisationRate` | Fraction `]0, 0.10]` (empty ⇒ 0.03 si Non, 0.04 si Oui) |
+| `Pension publique` | `publicPensionLink` | `Aucune` / `LEGAL_AGE` / `FULL_RATE` / `AUTOMATIC_FULL_RATE` (missing column ⇒ Aucune) |
 | `Notes` | `notes` | Optional |
 
 Missing sheet ⇒ empty collection. Empty save clears the plan.
@@ -70,15 +71,17 @@ Missing sheet ⇒ empty collection. Empty save clears the plan.
 | Web `/projection` | Read-only `GoalsAlignmentPanel` when goals exist; driven by envelope controls |
 | Mobile | Sheet round-trip only in V1 (no UI) |
 
-Retirement birth date, public pension, and `targetRetirementAge` stay in
+Retirement public pension scenarios and `activeScenario` stay in
 `retirement-profile.json` (not duplicated on the sheet). Profile
 `withdrawalRate` does **not** feed Objectifs capitalisation (per-goal
 `capitalisationRate` + `drawOnCapital` instead). Public pension net is
-subtracted only when estimated &gt; 0 and `targetAge >= targetRetirementAge`.
+subtracted only when `publicPensionLink` names a **filled** scenario and
+civil `targetDate ≥ scenario.startDate`. See [ADR 0025](../../docs/adr/0025-multi-scenario-public-pension.md).
 
 ## See also
 
 - [ADR 0014](../../docs/adr/0014-financial-goals.md)
+- [ADR 0023](../../docs/adr/0023-goal-capitalisation-mode.md)
+- [ADR 0025](../../docs/adr/0025-multi-scenario-public-pension.md)
 - [Excel workbook](../../docs/reference/excel-workbook.md)
 - [Platforms](../../docs/overview/platforms.md)
-- [ADR 0023](../../docs/adr/0023-goal-capitalisation-mode.md)

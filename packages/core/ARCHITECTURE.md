@@ -19,6 +19,7 @@ Hard rules: [CONSTRAINTS.md](../../CONSTRAINTS.md). Names: [glossary](../../docs
 | Savings capacity | `savings-capacity.ts` — see [savings-capacity.md](savings-capacity.md) |
 | Emergency fund surplus recommendation | `emergency-fund-recommendation.ts` — ADR 0020 |
 | Financial goals | `financial-goals.ts` — see [financial-goals.md](financial-goals.md) |
+| Retirement profile / multi-scenario public pension | `retirement-profile.ts` — ADR 0025 |
 | Emergency fund | `emergency-fund.ts` — see [emergency-fund.md](emergency-fund.md) |
 | Emergency fund config | `emergency-fund-config.ts` |
 | Portfolio risk | `portfolio-risk.ts` — see [portfolio-risk.md](portfolio-risk.md) |

@@ -33,6 +33,7 @@
     "./per": "./src/per.ts",
     "./deblocage": "./src/deblocage.ts",
     "./retraite": "./src/retraite.ts",
+    "./retirement-profile": "./src/retirement-profile.ts",
     "./deletion": "./src/deletion.ts",
     "./diversification-coherence": "./src/diversification-coherence.ts",
     "./diversification-labels": "./src/diversification-labels.ts",

@@ -1,4 +1,12 @@
 import Link from "next/link";
+import {
+	civilYmd,
+	filledPensionScenarioOptions,
+	normalizeRetirementProfile,
+	resolveActiveRetirement,
+	type PensionScenarioType,
+} from "@patrimo/core/retirement-profile";
+import { PENSION_BRUT_TO_NET_APPROX } from "@patrimo/core/retraite";
 import { loadWorkbook, getBudget } from "@/lib/excel";
 import { getInflationRate } from "@/lib/config";
 import { requireExcelConfigured } from "@/lib/page-guards";
@@ -6,16 +14,29 @@ import { summarizeBudget } from "@/lib/budget";
 import { buildPortfolio } from "@/lib/portfolio";
 import { readPriceMap, readDcaConfigs, readExpectedReturns, readRetirementProfile } from "@/lib/store";
 import { DEFAULT_ENVELOPE_PLAFONDS, DEFAULT_ENVELOPE_RATES, type ContributionStream } from "@/lib/projection";
-import {
-  buildRetirementSources,
-  computeRetirementHorizon,
-} from "@/lib/retraite";
+import { buildRetirementSources } from "@/lib/retraite";
 import type { Envelope } from "@/lib/schema";
 import { ProjectionClient } from "./projection-client";
 import type { EnvelopeProjectionInput } from "./envelope-projection";
 import type { SerializedProperty } from "./realestate-projection";
+import type { RetirementBlockInput } from "./projection-client";
 
 export const dynamic = "force-dynamic";
+
+function serializeScenarios(
+	profile: ReturnType<typeof normalizeRetirementProfile>,
+): RetirementBlockInput["profile"]["scenarios"] {
+	const out: RetirementBlockInput["profile"]["scenarios"] = {};
+	for (const type of ["LEGAL_AGE", "FULL_RATE", "AUTOMATIC_FULL_RATE"] as PensionScenarioType[]) {
+		const slot = profile.scenarios?.[type];
+		if (!slot) continue;
+		out[type] = {
+			startDate: slot.startDate ? civilYmd(slot.startDate) : undefined,
+			grossMonthly: slot.grossMonthly,
+		};
+	}
+	return out;
+}
 
 export default async function ProjectionPage() {
   requireExcelConfigured();
@@ -49,22 +70,20 @@ export default async function ProjectionPage() {
     dateDebutCredit: p.dateDebutCredit?.toISOString(),
   }));
 
-  const retirementHorizon = retirementProfile.birthDate
-    ? computeRetirementHorizon(
-        retirementProfile.birthDate,
-        retirementProfile.targetRetirementAge,
-        now,
-      )
-    : null;
+  const normalized = normalizeRetirementProfile(retirementProfile);
+  const resolved = resolveActiveRetirement(
+    normalized,
+    now,
+    PENSION_BRUT_TO_NET_APPROX,
+  );
+  const filledOptions = filledPensionScenarioOptions(normalized);
 
-  const retirementHorizonYears = retirementHorizon?.horizonYears ?? 10;
-
-  const retirementSources = retirementProfile.birthDate
+  const retirementSources = resolved.ok
     ? buildRetirementSources({
         portfolio,
         dcaConfigs,
         properties: workbook.properties,
-        horizonYears: retirementHorizonYears,
+        horizonYears: resolved.horizonYears,
         inflationRate,
         now,
       })
@@ -84,15 +103,39 @@ export default async function ProjectionPage() {
             inflationIncluded: goal.inflationIncluded !== false,
             drawOnCapital: goal.drawOnCapital === true,
             capitalisationRate: goal.capitalisationRate,
+            publicPensionLink: goal.publicPensionLink,
             notes: goal.notes,
           })),
           profile: {
-            birthDate: retirementProfile.birthDate?.toISOString(),
-            targetRetirementAge: retirementProfile.targetRetirementAge,
-            estimatedPublicPension: retirementProfile.estimatedPublicPension,
+            birthDate: normalized.birthDate?.toISOString(),
+            scenarios: serializeScenarios(normalized),
+            activeScenario: normalized.activeScenario,
           },
         }
       : null;
+
+  const retirementBlock: RetirementBlockInput = {
+    profile: {
+      birthDate: normalized.birthDate?.toISOString(),
+      scenarios: serializeScenarios(normalized),
+      activeScenario: normalized.activeScenario,
+    },
+    filledScenarios: filledOptions.map(({ type, slot }) => ({
+      type,
+      startDate: civilYmd(slot.startDate!),
+      grossMonthly: slot.grossMonthly!,
+    })),
+    monthlyRealEstateNet: retirementSources?.monthlyRealEstateNet ?? 0,
+    resolved: resolved.ok
+      ? {
+          type: resolved.type,
+          startDate: civilYmd(resolved.startDate),
+          horizonYears: resolved.horizonYears,
+          grossMonthly: resolved.grossMonthly,
+          netMonthly: resolved.netMonthly,
+        }
+      : null,
+  };
 
   return (
     <div className="space-y-8">
@@ -115,16 +158,7 @@ export default async function ProjectionPage() {
         envelopeRates={envelopeRates}
         properties={properties}
         inflationRate={inflationRate}
-        retirement={
-          retirementHorizon
-            ? {
-                horizonYears: retirementHorizon.horizonYears,
-                targetRetirementAge: retirementProfile.targetRetirementAge,
-                monthlyRealEstateNet: retirementSources?.monthlyRealEstateNet ?? 0,
-                estimatedPublicPension: retirementProfile.estimatedPublicPension,
-              }
-            : null
-        }
+        retirement={retirementBlock}
         goalsAlignment={goalsAlignment}
       />
     </div>
