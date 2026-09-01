@@ -66,6 +66,13 @@ make platform-gaps      # FEATURES matrix rows still open (inventory)
 
 Or: `npm run verify` / `npm run verify-full`. Agent session bootstrap: `make init`.
 
+## Optional: Coasts
+
+[Coasts](https://coasts.dev) — root [`Coastfile`](../../Coastfile) + skill
+[`.agents/skills/coasts/`](../../.agents/skills/coasts/SKILL.md). Isolates ports /
+worktree bind mounts for parallel agents. Not part of DoD; classic `npm run dev`
+stays the default. See `AGENTS.md` → **Coast Runtime**.
+
 ## Build artifacts
 
 | Command | Output |

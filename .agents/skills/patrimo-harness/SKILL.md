@@ -10,6 +10,9 @@ description: >-
 
 # Patrimo harness skill
 
+Canonical path: `.agents/skills/patrimo-harness/` (symlinked as
+`.cursor/skills/patrimo-harness` and `.claude/skills/patrimo-harness`).
+
 ## Quick path
 
 1. Read `CONSTRAINTS.md`, `docs/reference/glossary.md`.
@@ -51,3 +54,10 @@ description: >-
 - Duplicate domain rules outside `@patrimo/core`.
 - Treat `make next-feature` as a claim queue (deprecated → `platform-gaps` + branch contract).
 - Treat full Spec-Driven Development as required (opt-in only; harness embeds cadrage-lock + RED → GREEN).
+
+## Related (optional runtime)
+
+Isolated ports / DinD for parallel worktrees / agents: root `Coastfile` +
+`.agents/skills/coasts/SKILL.md` (also `.cursor/skills/coasts`, `/coasts`
+command). Not part of DoD — do not require Coasts for verify / branch gates.
+Classic `npm run dev` stays the default single-checkout path.

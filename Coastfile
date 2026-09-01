@@ -1,0 +1,22 @@
+# Coasts — isolated local runtimes for parallel worktrees / agents.
+# Install CLI: eval "$(curl -fsSL https://coasts.dev/install)"
+# Then: coast daemon install && coast build && coast run <name>
+# Agent skill: .agents/skills/coasts/SKILL.md (also linked from .cursor / .claude)
+
+[coast]
+name = "patrimo"
+runtime = "dind"
+primary_port = "web"
+# Per-instance .next if you later add [services.web] (Turbopack lock isolation).
+private_paths = [".next"]
+# Cursor Parallel Agents + Claude Code worktrees
+worktree_dir = [".worktrees", ".claude/worktrees", "~/.cursor/worktrees/patrimo"]
+
+# No docker-compose: Excel workbook is the portfolio source of truth (no postgres/redis).
+# Next.js stays on the host (`npm run dev` → 3000) unless you add a [services.web] entry.
+
+[ports]
+web = 3000
+
+[assign]
+default = "none"
