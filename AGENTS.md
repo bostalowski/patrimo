@@ -25,6 +25,9 @@ make platform-gaps      # list FEATURES matrix rows still open (inventory, not a
 make cold-start         # score whether the repo answers the five cold-start questions
 ```
 
+Optional isolated runtimes: root [`Coastfile`](Coastfile) + [Coasts](https://coasts.dev)
+(see **Coast Runtime** below and [`.agents/skills/coasts/`](.agents/skills/coasts/SKILL.md)).
+
 Equivalent: `npm run verify` / `npm run verify-full`. Feature-scoped tests: `npm test -- <path>`.
 
 ### Definition of Done (three layers)
@@ -64,6 +67,8 @@ Autonomous loops: [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
 | [docs/howto/](docs/howto/) | Step-by-step procedures (dev setup, release, [cadrage-lock](docs/howto/cadrage-lock.md), [tdd-red-green](docs/howto/tdd-red-green.md), implement-*) |
 | [docs/overview/platforms.md](docs/overview/platforms.md) | Current web vs mobile capability matrix |
 | [docs/DOC_MODEL.md](docs/DOC_MODEL.md) | Where knowledge lives in this repo |
+| [`.agents/skills/patrimo-harness/`](.agents/skills/patrimo-harness/SKILL.md) | Shared skill (Cursor + Claude) — procedural checklist (start / done / harness keywords). |
+| [`Coastfile`](Coastfile) + [`.agents/skills/coasts/`](.agents/skills/coasts/SKILL.md) | Isolated local runtimes (Coasts) for parallel worktrees / agents — optional; classic `npm run dev` stays valid. |
 
 ## Session lifecycle
 
@@ -81,3 +86,64 @@ This is NOT the Next.js you know.
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
+
+# Coast Runtime
+
+This project **optionally** uses [Coasts](https://coasts.dev) — isolated DinD
+runtimes (ports / worktree bind mounts) when working with parallel worktrees or
+agents. There is no postgres/redis stack: the Excel workbook is the portfolio
+source of truth. The classic host path (`npm run dev` → :3000) remains valid
+and is still the default for day-to-day single-checkout work.
+
+The filesystem is shared between the host and the Coast container, so file
+edits on either side are visible immediately.
+
+Full workflow: [`.agents/skills/coasts/SKILL.md`](.agents/skills/coasts/SKILL.md)
+(also exposed as `.cursor/skills/coasts` and `.claude/skills/coasts`).
+Session harness skill: [`.agents/skills/patrimo-harness/`](.agents/skills/patrimo-harness/SKILL.md).
+
+## Discovery
+
+Before the first **Coast** runtime command in a session, run:
+
+```bash
+coast lookup
+```
+
+This prints the instance name, ports, and example commands. Use that instance
+name for subsequent `coast exec` / `coast ports` / `coast logs` calls.
+
+If `coast lookup` has no match, the classic host path is fine — do not create a
+Coast unless the user wants isolation / parallel runtimes (Coasts are memory
+intensive). Ask before `coast run`.
+
+## What runs where
+
+Only use `coast exec` for things that need the container runtime. Everything
+else runs on the host.
+
+Use `coast exec` for:
+- Shells into the Coast DinD when debugging the Coast itself
+- Commands that need processes defined under `[services.*]` (none today)
+
+Run directly on the host:
+- Linting / typecheck / unit tests (`make verify`)
+- Git, file search, code generation, `npm install`
+- Next.js (`npm run dev` → port 3000) unless a `[services.web]` entry is added
+  to the Coastfile later
+- Electron (`npm run electron:dev`), Expo mobile
+- Playwright e2e (`make e2e` — own Next on `:3100`, never via `coast exec`)
+
+## Creating and assigning
+
+- Prefer `coast assign <existing> -w <worktree>` over creating a new instance.
+- Ask before reassigning an occupied Coast or before `coast run`.
+- If `coast run` fails for lack of a build: `coast build` first (needs Docker).
+
+## Rules
+
+- Always `coast lookup` before the first Coast runtime command in a session.
+- Do not treat Coasts as mandatory when the user is on the classic host path.
+- Use `coast docs` / `coast search-docs` before guessing about Coast behavior.
+- Harness product commands (`make verify`, `make branch-*`, …) stay on the host —
+  they are not replaced by Coasts.

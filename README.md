@@ -38,6 +38,27 @@ cd mobile && npm start   # Expo
 Détails (Node 24+, Drive OAuth mobile, build) :
 [docs/howto/local-dev-setup.md](docs/howto/local-dev-setup.md).
 
+### Optional: Coasts (isolated runtimes for parallel worktrees / agents)
+
+[Coasts](https://coasts.dev) isolates ports / DinD per instance via the root `Coastfile`.
+Patrimo has no postgres/redis — Next stays on the host unless you extend the Coastfile.
+
+```
+eval "$(curl -fsSL https://coasts.dev/install)"
+coast daemon install
+coast build
+coast run main
+coast ports main
+```
+
+Agent wiring (already in the repo):
+
+- Runtime rules: `AGENTS.md` → **Coast Runtime**
+- Skill: `.agents/skills/coasts/SKILL.md` (symlinked for Cursor + Claude Code)
+- Cursor command: `/coasts` → `.cursor/commands/coasts.md`
+
+Classic `npm run dev` remains the default workflow. After changing `worktree_dir`, recreate existing Coast instances (`coast rm` then `coast run`) so bind mounts pick up Cursor Parallel Agent paths.
+
 ```bash
 npm run electron:build   # .dmg arm64 + Intel dans release/
 npm version patch && git push --follow-tags   # release GitHub Actions (manuel)
