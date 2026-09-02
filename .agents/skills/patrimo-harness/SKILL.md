@@ -25,7 +25,10 @@ Canonical path: `.agents/skills/patrimo-harness/` (symlinked as
    - Always: `make verify`
    - Behavior: targeted `npm test -- <path>` (after RED → GREEN when Layer 2 applies)
    - Web UI / API / workbook I/O / settings: `make e2e` or `make verify-full`
-8. Checker: fresh session using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof).
+8. Checker: fresh session using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof). **Pass ≠ all A** (A or B on Correctness/Architecture is enough). Then apply the **re-check loop**:
+   - **Fail** → Maker fixes → **new Checker mandatory**.
+   - **Pass + docs/copy-only nits** applied by Maker → re-Checker optional; note skip in PROGRESS.
+   - **Pass + nits** that change behavior / core math / tests / API / workbook I/O / user-visible KPIs → Maker fixes → **new Checker mandatory** before done.
 9. Update `docs/agent/branches/<slug>/PROGRESS.md` (+ optional `docs/agent/runs/YYYY-MM-DD-slug.md`).
 10. On merge: update root `FEATURES.md` matrix if platform status changed.
 
@@ -51,6 +54,9 @@ Canonical path: `.agents/skills/patrimo-harness/` (symlinked as
 - Expand into a second feature without updating the branch CONTRACT.
 - Put feature focus in root `PROGRESS.md` (that file is for `main` only).
 - Grade your own non-trivial work without a checker pass.
+- Treat Checker Pass as “all dimensions A” — Pass allows B; do not infinite-loop on nits.
+- After Checker **Fail**, declare done without a **new** Checker Pass.
+- After Checker **Pass**, apply behavior/core/test/KPI fixes and declare done without a **new** Checker when the re-check loop requires one (`docs/howto/maker-checker.md`).
 - Duplicate domain rules outside `@patrimo/core`.
 - Treat `make next-feature` as a claim queue (deprecated → `platform-gaps` + branch contract).
 - Treat full Spec-Driven Development as required (opt-in only; harness embeds cadrage-lock + RED → GREEN).

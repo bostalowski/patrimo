@@ -1,18 +1,20 @@
 "use client";
 
+import type { MonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { MonthlyDcaTilt } from "@patrimo/core/monthly-dca-tilt";
 import { DcaPlanner } from "@/app/dca/dca-planner";
 import { DeletePropertyButton } from "@/app/immobilier/delete-property-button";
 import { PropertyForm } from "@/app/immobilier/property-form";
-import {
-	RetirementProfileForm,
-} from "@/components/retirement-profile-form";
+import { RetirementProfileForm } from "@/components/retirement-profile-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
-import { propertySnapshot } from "@/lib/realestate/projection";
+import {
+	propertySnapshot,
+	REAL_ESTATE_ASSUMPTIONS_FR,
+	REAL_ESTATE_EQUITY_DEFINITION_FR,
+} from "@/lib/realestate/projection";
 import { loanEndDate } from "@/lib/realestate/property";
 import type {
 	Asset,
@@ -193,6 +195,9 @@ function ImmobilierSection({
 
 	return (
 		<div className="space-y-4">
+			<p className="text-xs leading-relaxed text-zinc-400">
+				{REAL_ESTATE_EQUITY_DEFINITION_FR}
+			</p>
 			<PropertyForm />
 
 			{deserializedProperties.length === 0 ? (
@@ -205,7 +210,7 @@ function ImmobilierSection({
 				<>
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						<SummaryCard title="Valeur des biens" value={totals.value} />
-						<SummaryCard title="Équité nette" value={totals.equity} />
+						<SummaryCard title="Patrimoine net" value={totals.equity} />
 						<SummaryCard title="Capital restant dû" value={totals.debt} />
 						<Card>
 							<CardHeader>
@@ -256,7 +261,11 @@ function ImmobilierSection({
 												label="Capital restant dû"
 												value={formatEuro(s.remainingLoan)}
 											/>
-											<Row label="Équité" value={formatEuro(s.equity)} strong />
+											<Row
+												label="Patrimoine net"
+												value={formatEuro(s.equity)}
+												strong
+											/>
 											<Row
 												label="Mensualité (crédit + assurance)"
 												value={formatEuro(s.monthlyPayment)}
@@ -281,13 +290,20 @@ function ImmobilierSection({
 														value={formatPercent(s.grossYield)}
 													/>
 													<Row
-														label="Rendement net (après impôt)"
+														label="Cash-on-cash après impôt"
 														value={formatPercent(s.netYield)}
 														className={signClass(s.netYield)}
 													/>
 												</>
 											)}
 										</dl>
+										{s.warnings.length > 0 && (
+											<ul className="mt-3 space-y-1 text-xs text-amber-700 dark:text-amber-400">
+												{s.warnings.map((w) => (
+													<li key={w}>{w}</li>
+												))}
+											</ul>
+										)}
 									</CardBody>
 								</Card>
 							);
@@ -295,6 +311,10 @@ function ImmobilierSection({
 					</div>
 				</>
 			)}
+
+			<p className="text-xs leading-relaxed text-zinc-400">
+				{REAL_ESTATE_ASSUMPTIONS_FR}
+			</p>
 		</div>
 	);
 }
