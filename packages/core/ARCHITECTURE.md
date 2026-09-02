@@ -28,7 +28,12 @@ Hard rules: [CONSTRAINTS.md](../../CONSTRAINTS.md). Names: [glossary](../../docs
 | Projection / DCA / budget | `projection.ts`, `dca.ts`, `budget.ts`, `retraite.ts` — overflow: [envelope-overflow.md](envelope-overflow.md) |
 | Price schedule helpers | `prices/schedule.ts` |
 | Livret A/LDDS rates + quinzaine math | `livret-rates.ts`, `livret.ts` — ADR 0024 |
-| Real estate | `realestate/*` |
+| Real estate | `realestate/*` — indicative projection; ADR 0026 |
+
+Real-estate notes (ADR 0026): insurance on remaining balance; rents/charges indexed
+by `rentIndexRate` (default = property revalo, not legal IRL); expose `cagr` + annual
+`irr`; non-blocking micro/déficit warnings (tax amounts unchanged); SCI/DIRECT is UI
+metadata only. Retirement `monthlyRealEstateNet` uses last projected year ÷ 12.
 
 ## System shape
 

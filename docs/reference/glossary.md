@@ -42,6 +42,22 @@ Gain or loss locked by disposals and related realized events (sales, and other r
 
 Portfolio valuation plus real-estate equity contributions used on the dashboard (`computeNetWorth`).
 
+## Real-estate cash-on-cash (after tax)
+
+Annual cash-flow after tax (including loan principal repayment) divided by acquisition cost. Displayed as « Cash-on-cash après impôt ». Not a classic net rental yield (NOI / value). Field: `propertySnapshot.netYield`. See [ADR 0026](../adr/0026-realestate-projection-reliability.md).
+
+## Real-estate patrimoine net (equity)
+
+What you own on a property after debt: `(valeur − capital restant dû) × part détenue`. UI label « Patrimoine net »; code field `equity` / `currentEquity`. Shared definition copy: `REAL_ESTATE_EQUITY_DEFINITION_FR`. Not cash-flow and not yield. See [ADR 0026](../adr/0026-realestate-projection-reliability.md).
+
+## Real-estate CAGR
+
+Compound annual growth of apport → `netIfSold` over the projection horizon: `(netIfSold / apport)^(1/horizon) − 1`. Field: `RealEstateProjection.cagr` (alias `annualizedReturn`). Null when apport is 0.
+
+## Real-estate TRI (annual IRR)
+
+Internal rate of return on the annual series: year 0 = −apport, intermediate years = cash-flow after tax, final year = cash-flow + net sale proceeds. Field: `RealEstateProjection.irr`. Distinct from portfolio daily XIRR. See [ADR 0026](../adr/0026-realestate-projection-reliability.md).
+
 ## Emergency fund coverage
 
 Months of monthly expenses covered by total livret market value: `livretBalance / depensesMensuelles`. Computed by `computeEmergencyFundHealth` in `@patrimo/core`. Undefined when monthly expenses are zero or negative (indicator hidden).

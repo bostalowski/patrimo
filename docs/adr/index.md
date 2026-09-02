@@ -25,5 +25,6 @@
 - [ADR 0023: Per-goal capitalisation mode and pension overlap](0023-goal-capitalisation-mode.md) — accepted (supersedes-in-part 0014; pension overlap superseded-in-part by 0025)
 - [ADR 0024: Official Livret A / LDDS rate series (sync + quinzaine math)](0024-livret-official-rate-series.md) — accepted (extends CONSTRAINTS §4)
 - [ADR 0025: Multi-scenario public pension (info-retraite)](0025-multi-scenario-public-pension.md) — accepted (supersedes-in-part 0014 income horizon by age and 0023 age-based pension overlap)
+- [ADR 0026: Indicative real-estate projection model (clarity + single core)](0026-realestate-projection-reliability.md) — accepted
 
 Template: [_template.md](_template.md)

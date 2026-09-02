@@ -13,9 +13,11 @@ Use after the maker’s verify is green. Score each dimension A–D with **cited
 ## Pass / fail
 
 - **Pass:** Correctness A or B; Architecture A or B; no D anywhere; Scope at least B.
+  **Pass does not require A on every dimension.** Optional nits are not automatic Fail.
 - **Fail:** Any D, or Correctness C with no follow-up plan in branch PROGRESS.
 - When CONTRACT Layer 2 applies (not `n/a`): treat **missing RED evidence** as Tests / evidence **C** at best; if there is also no green targeted-test proof, score **D** and Fail. See [tdd-red-green.md](../howto/tdd-red-green.md).
 - When CONTRACT Layer 2 applies: missing **Teach-back: accepted** / cadrage lock in PROGRESS (CONSTRAINTS §25) → Docs handoff **C** or **D** and Fail if Intent/decisions were never locked. See [cadrage-lock.md](../howto/cadrage-lock.md).
+- After Pass/Fail: Maker/Checker follow the **re-check loop** in [maker-checker.md](../howto/maker-checker.md) (Fail → new Checker; Pass + behavior nits → new Checker; Pass + docs-only nits → re-check optional).
 
 ## Checker prompt (paste into a fresh session)
 
@@ -25,4 +27,6 @@ Read CONSTRAINTS.md, make branch-status (CONTRACT + PROGRESS), and git diff.
 Run the verification commands listed in the CONTRACT.
 If CONTRACT Layer 2 applies: require Teach-back/cadrage lock in PROGRESS (docs/howto/cadrage-lock.md, CONSTRAINTS §25); require RED evidence in PROGRESS/run log (failing targeted test for missing behavior before prod), then green targeted tests — see docs/howto/tdd-red-green.md and CONSTRAINTS §24.
 Score with docs/agent/scoring-rubric.md. Cite evidence. Output Pass or Fail only after the table.
+If Pass with nits: list each nit and classify docs/copy-only vs behavior/core/tests/KPI so Maker knows whether a re-Checker is mandatory (docs/howto/maker-checker.md re-check loop).
+If this is a re-check after Maker fixes: score the post-fix diff; confirm prior Fail items or prior behavior nits are closed.
 ```
