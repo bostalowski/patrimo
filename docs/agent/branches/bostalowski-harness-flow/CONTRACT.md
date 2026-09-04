@@ -96,7 +96,7 @@ One tranche = one reviewable commit (or small commit group) on this single branc
 |---|---|---|---|---|
 | 1 | Flow doc + ADR + CONSTRAINTS clauses (Tier A slice, no new script behavior) | E3 | L1 only | `82c6178`, `ab45230` (D1 amendment) |
 | 2 | Executable gates: `red-evidence`, `test-guard`, `pr-check` (non-mutation part), `branch-ready` extension (N7), `scripts/lib/diff.sh` | N1, N2, N3, N4, N5, N6, N7, E1, E2, E4, E5, E6 | L1 + L2 | `030570c` |
-| 3 | PR template + CI `harness`/`size` jobs | N5, N6 | L1 (CI config only) | pending |
+| 3 | PR template + CI `harness`/`size` jobs | N5, N6 | L1 (CI config only) | `d7aa5e2` |
 | 4 | Stryker mutation testing scoped to `packages/core` diff, folded into `gauntlet` | N8, N9 | L1 + L2 | pending |
 | 5 | `orca-role.sh` (Checker in isolated worktree, with Orca-unavailable fallback) + patrimo-harness skill + Coastfile update | E7, E8, N10 | L1 + L2 (script smoke) | pending |
 | 6 | `coherence-code-doc`/`clean-code` wiring into Checker prompt, duplication check in gauntlet, `rework-log.md` + `pr-check` reminder | N11 | L1 (+ L2 for the reminder/duplication check pieces) | pending |
