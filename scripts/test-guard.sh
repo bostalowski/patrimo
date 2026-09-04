@@ -30,10 +30,12 @@ while IFS= read -r f; do
   offenders+=("deleted: $f")
 done < <(git diff --name-status "$BASE"...HEAD -- "${TEST_GLOBS[@]}" 2>/dev/null | awk '$1=="D"{print $2}')
 
-# 2. .skip(/.only( added in a test file
+# 2. .skip(/.only( added in a test file — anchored on the statement actually
+# starting with it/test/describe, so a fixture string literal that merely
+# *contains* ".only(" (e.g. test-guard's own tests) is not a false positive.
 while IFS= read -r file; do
   [[ -z "$file" ]] && continue
-  if git diff "$BASE"...HEAD -- "$file" 2>/dev/null | grep -qE '^\+[^+].*\.(skip|only)\('; then
+  if git diff "$BASE"...HEAD -- "$file" 2>/dev/null | grep -qE '^\+[[:space:]]*(it|test|describe)\.(skip|only)\('; then
     offenders+=("skip/only added: $file")
   fi
 done < <(git diff --name-only "$BASE"...HEAD -- "${TEST_GLOBS[@]}" 2>/dev/null)

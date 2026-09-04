@@ -45,6 +45,23 @@ describe("scripts/test-guard.sh", () => {
     expect(res.status).toBe(0);
   });
 
+  it("does not false-positive when an added line merely contains \".only(\" inside a string literal (not a real call)", () => {
+    // Regression: a meta-test file whose own source embeds `.only(`/`.skip(`
+    // as fixture text (exactly what scripts/test-guard.test.ts itself does)
+    // must not be flagged — only a line where the statement itself starts
+    // with it/test/describe.(skip|only)( is a real offender.
+    fx = createFixture("feat/guard-string-literal");
+    fx.writeFile(
+      "src/meta.test.ts",
+      "import { it, expect } from 'vitest';\nit('detects .only( in fixture text', () => {\n  const src = \"it.only('works', () => 1);\";\n  expect(src).toContain('.only(');\n});\n",
+    );
+    fx.commitAll("add meta-test whose fixture string contains .only(");
+
+    const res = fx.run("scripts/test-guard.sh");
+    expect(res.status).toBe(0);
+    expect(res.stdout).not.toContain("skip/only added");
+  });
+
   it("fails when .only( is added to a test file without justification", () => {
     fx = createFixture("feat/guard-only");
     fx.writeFile(

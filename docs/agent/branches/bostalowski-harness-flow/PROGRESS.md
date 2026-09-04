@@ -16,6 +16,7 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md).
 - Challenger: Pass (2026-09-04) — after pass 1 Fail and pass 2 Fail-partial (5/6), both resolved by edits; see "Challenger findings" below for full history
 - Teach-back: accepted (2026-09-04) — scenarios 1–5 all ✅ (tranches/branch-ready coverage gate, RED non falsifiable, garde anti-suppression tests, Checker Pass non périmé, mutation scopée core)
 - `make branch-ready`: green (2026-09-04) — score 14/14
+- Checker: Fail (2026-09-04) — see "Checker findings (2026-09-04, tranches 1+2)" section below
 
 Dogfood find: first `make branch-ready` run mis-detected Tier A because Behavior case E3's own prose contained the literal substring `Layer 2: n/a` (in backticks, describing the Tier A skip rule), which is exactly what `branch-ready.sh` greps for to set TIER. Reworded E3 to describe the rule without that literal substring; re-run correctly detected Tier B (score 13/14, only Challenger-Pass line missing) then 14/14 after recording Challenger Pass in the exact `- Challenger: Pass (date)` format the gate greps for.
 
@@ -66,20 +67,87 @@ Per [tdd-red-green.md](../../howto/tdd-red-green.md). Skip if Layer 2 is `n/a`.
 
 ### Tranche 2 — RED evidence for N1, N2, N3, N4, N5, N6, N7, E2, E3, E4, E6
 
-**Process note (disclosed, not hidden):** for this tranche the gate scripts (`red-evidence.sh`, `test-guard.sh`, `gauntlet.sh`, `pr-check.sh`, the `branch-ready.sh` N7 extension) were prototyped first and manually smoke-tested with direct bash invocations (e.g. `CASE=… CMD=true|false bash scripts/red-evidence.sh`, `bash scripts/test-guard.sh` / `bash scripts/pr-check.sh` against this real branch), *then* the fixture-driven vitest suite (`scripts/*.test.ts`) was written against the already-written scripts. This is a deviation from strict test-first per CONSTRAINTS §24/tdd-red-green.md's RED-before-code rule — recording it plainly per that doc's own guidance rather than presenting it as textbook RED→GREEN. The Checker should weigh this.
+**Process note (disclosed, not hidden):** for this tranche the gate scripts (`red-evidence.sh`, `test-guard.sh`, `gauntlet.sh`, `pr-check.sh`, the `branch-ready.sh` N7 extension) were prototyped first and manually smoke-tested with direct bash invocations, *then* the fixture-driven vitest suite (`scripts/*.test.ts`) was written against the already-written scripts. This is a deviation from strict test-first per CONSTRAINTS §24/tdd-red-green.md's RED-before-code rule. **Checker pass 1 (2026-09-04) explicitly ruled this a confirmed §24 violation, not mitigated by the genuine failures below, and capped Tests/evidence at C.** Recorded here for the Checker/reader, not glossed over.
 
-That said, the automated suite did real verification work, not tautological confirmation: the first `npx vitest run scripts` run (2026-09-04) genuinely failed 2/16 tests —
-- `test-guard.sh > N3: fails and names the file when a test file is deleted without justification` — failed because the fixture added and removed the test file within the same feature branch (never present on the diff base), so `git diff base...HEAD` legitimately showed no change for that path — not a script bug, a wrong fixture. Fixed by seeding the test file on `main` before branching.
-- `scripts/gauntlet.sh > delegates to test-guard …` — same root cause, same fix.
-Both are now green for the right reason (base-branch diff correctly flags a base-present test file that got deleted/gutted on the feature branch).
+The first `npx vitest run scripts` run (2026-09-04) genuinely failed 2/17 tests for a real reason (fixture didn't seed the deleted/gutted test file on the diff base branch — `git diff base...HEAD` legitimately showed no change for a file added-then-removed entirely within the feature branch; fixed by seeding the file on `main` before branching). That is real signal, not a rubber stamp, but per the Checker it does not retroactively prove RED-before-code per case.
+
+**Checker pass 1 also found two real production bugs, independent of the process-order issue, both now fixed with regression tests:**
+1. `test-guard.sh`'s `.skip(`/`.only(` detector was a blind substring grep (`^\+[^+].*\.(skip|only)\(`) that false-positived on `scripts/test-guard.test.ts`'s own fixture string literals containing that text as test data — causing `make gauntlet` to genuinely fail on this branch's own diff. Fixed: anchored the regex to require the added line's statement itself start with `it`/`test`/`describe`.`(skip|only)(` (`^\+[[:space:]]*(it|test|describe)\.(skip|only)\(`), which no longer matches text embedded inside a string literal. Regression test: `test-guard.test.ts > "does not false-positive when an added line merely contains \".only(\" inside a string literal"`.
+2. `pr-check.sh`'s §3 check (RED evidence per checked-off case) matched any line containing "RED evidence" and the ID as a bare substring — gameable by a decoy sentence like "still missing RED evidence for N1" (Checker built and ran this exploit in an isolated fixture, no repo files touched). Fixed: now requires the actual `^### RED evidence — …` header format `red-evidence.sh` writes. Regression tests: `pr-check.test.ts > "fails a checked-off case whose only PROGRESS mention is a decoy sentence"` and `"passes a checked-off case whose PROGRESS has the real RED evidence header"`.
 
 - Command: `npx vitest run scripts` (also covered by `npm test -- scripts`, matching CONTRACT Verification)
-- Failure reason (initial run): fixture design didn't seed the deleted/gutted test file on the diff base branch, so the three-dot `git diff` showed no change for a file added-then-removed entirely within the feature branch — correct git semantics, wrong test setup, not a missing behavior in the scripts themselves.
-- Final result: 5 files / 22 tests, all green (`red-evidence.test.ts` 3, `test-guard.test.ts` 4, `branch-ready-tranches.test.ts` 2, `gauntlet.test.ts` 3, `pr-check.test.ts` 5, plus N1/E2 covered in red-evidence.test.ts and E3 in pr-check.test.ts)
+- Failure reason (initial run): fixture design gap (base-branch seeding), not a missing behavior in the scripts — see above; the two Checker-found bugs were separate defects surfaced by Checker review, not by this automated suite (the suite had no case exercising either).
+- Final result after all fixes: 5 files / 20 tests, all green (`red-evidence.test.ts` 3, `test-guard.test.ts` 5, `branch-ready-tranches.test.ts` 2, `gauntlet.test.ts` 3, `pr-check.test.ts` 7)
 - SHA: see Last verify below
 - Date: 2026-09-04
 
-Dogfood cross-check on this real branch (not the fixture suite): `bash scripts/test-guard.sh`, `bash scripts/gauntlet.sh`, `bash scripts/pr-check.sh` were each run directly against `bostalowski/harness-flow` — `test-guard`/`gauntlet` report OK (no test removal on this branch), `pr-check` correctly reports NOT READY (no Checker Pass yet at that point), confirming the scripts reason correctly about the real repo, not just the synthetic fixtures.
+Dogfood re-check on this real branch after both fixes: `bash scripts/gauntlet.sh` now reports OK (test-removal guard passes, mutation step skipped — no `packages/core` diff), confirming the earlier false "report OK" claim is corrected and now actually true.
+
+### RED evidence — N1: red-evidence.sh refuses to write when CMD passes (2026-09-04)
+
+- Command: `npx vitest run scripts/red-evidence.test.ts`
+- Test: `red-evidence.sh > N1: refuses to write RED evidence when CMD passes`
+- SHA: 030570c
+
+### RED evidence — N2: red-evidence.sh writes case/command/SHA when CMD fails (2026-09-04)
+
+- Command: `npx vitest run scripts/red-evidence.test.ts`
+- Test: `red-evidence.sh > N2: writes RED evidence (case, command, SHA) when CMD fails`
+- SHA: 030570c
+
+### RED evidence — N3: test-guard.sh fails and names a deleted base-present test file (2026-09-04)
+
+- Command: `npx vitest run scripts/test-guard.test.ts`
+- Test: `test-guard.sh > N3: fails and names the file when a test file present on the base branch is deleted without justification`
+- SHA: 030570c (fixed post-Checker: <SHA of the anchored-regex commit>)
+
+### RED evidence — N4: test-guard.sh passes once Test-removal-justified is present (2026-09-04)
+
+- Command: `npx vitest run scripts/test-guard.test.ts`
+- Test: `test-guard.sh > N4: passes once PROGRESS carries a Test-removal-justified line`
+- SHA: 030570c
+
+### RED evidence — N5: pr-check.sh fails on missing/stale Checker Pass (2026-09-04)
+
+- Command: `npx vitest run scripts/pr-check.test.ts`
+- Test: `pr-check.sh > N5: fails when there is no Checker: Pass line at all` and `> N5: fails when Checker: Pass predates the latest commit`
+- SHA: 030570c
+
+### RED evidence — N6: pr-check.sh passes once branch-ready, Checker Pass and Tranches coverage all hold (2026-09-04)
+
+- Command: `npx vitest run scripts/pr-check.test.ts`
+- Test: `pr-check.sh > N6: passes when branch-ready is green, Checker Pass is fresh and cited`
+- SHA: 030570c
+
+### RED evidence — N7: branch-ready.sh fails naming a behavior-case ID missing from the Tranches table (2026-09-04)
+
+- Command: `npx vitest run scripts/branch-ready-tranches.test.ts`
+- Test: `branch-ready.sh — Tranches coverage (N7) > fails and names the ID when a behavior case is missing from the Tranches table`
+- SHA: 030570c
+
+### RED evidence — E2: gate scripts refuse on main/master (2026-09-04)
+
+- Command: `npx vitest run scripts/red-evidence.test.ts`
+- Test: `red-evidence.sh > E2: refuses on main/master`
+- SHA: 030570c
+
+### RED evidence — E3: pr-check.sh skips RED-evidence check on a Tier A CONTRACT (2026-09-04)
+
+- Command: `npx vitest run scripts/pr-check.test.ts`
+- Test: `pr-check.sh > E3: on a Tier A CONTRACT, skips the RED-evidence check but still requires a fresh, cited Checker Pass`
+- SHA: 030570c
+
+### RED evidence — E4: test-guard.sh passes trivially with no test-file change (2026-09-04)
+
+- Command: `npx vitest run scripts/test-guard.test.ts`
+- Test: `test-guard.sh > E4: passes trivially when there is no test-file change at all`
+- SHA: 030570c
+
+### RED evidence — E6: pr-check.sh fails on Checker Pass with no cited evidence (2026-09-04)
+
+- Command: `npx vitest run scripts/pr-check.test.ts`
+- Test: `pr-check.sh > E6: fails when Checker: Pass has no cited evidence line`
+- SHA: 030570c
 
 ## Last verify
 
@@ -90,3 +158,28 @@ Dogfood cross-check on this real branch (not the fixture suite): `bash scripts/t
 ## Notes
 
 Contract: [CONTRACT.md](./CONTRACT.md)
+
+## Checker findings (2026-09-04, tranches 1+2)
+
+Checker run from a separate worktree (`/Users/bastien.ostalowski/orca/workspaces/patrimo/harness-flow`), fresh session, no production code written. HEAD at check time: `1fd9df9` (branch had moved on to Tranche 3, done, and Tranche 4 WIP uncommitted — `stryker.conf.json` untracked, `package.json`/`package-lock.json`/`.gitignore` modified — while this check was running; scoring below is restricted to Tranche 1 + Tranche 2 artifacts only, per the checker brief, and those files were unchanged by the newer commits).
+
+### Scored table
+
+| Dimension | Score | Evidence |
+|---|---|---|
+| Correctness | **C** | `make verify` is green (`623 tests passed`, `0 lint errors / 5 warnings`, `tsc --noEmit` clean — exit 0, run 2026-09-04). But the CONTRACT's own Verification line — "Feature-specific: `make gauntlet` green on this branch's own diff (dogfooding)" — is **false right now**: `bash scripts/gauntlet.sh` exits 1 with `test-guard: FAIL — ... skip/only added: scripts/test-guard.test.ts`. Root cause: `scripts/test-guard.sh` line 36 (`grep -qE '^\+[^+].*\.(skip\|only)\('`) is a blind substring grep over added diff lines; `scripts/test-guard.test.ts:63` (added vs `origin/main` in this tranche) contains the *fixture string literal* `"...it.only('works'...)"` used to test the detector, which the grep can't distinguish from a real `.only(` addition. This directly contradicts PROGRESS's own "Dogfood cross-check" paragraph above ("`test-guard`/`gauntlet` report OK … confirming the scripts reason correctly about the real repo") — that claim is not currently true, and there is no follow-up plan recorded for it. |
+| Architecture | **C** | Scripts are correctly colocated under `scripts/`, no domain math leaked outside `@patrimo/core`, `lib/diff.sh` is shared not duplicated (matches D7's anti-duplication intent) — good. But the mechanism central to this branch's own stated purpose is not robust: (a) the test-guard false positive above is a structural weakness (naive grep, no AST/semantic awareness) that will misfire on any future test file whose fixture text legitimately contains `.skip(`/`.only(`; (b) `pr-check.sh` §3 ("RED evidence for every checked-off behavior case") is gameable — see exploit below — undermining D2's explicit goal ("How RED evidence stops being copy-pasted narrative"). |
+| Scope discipline | **A** | Tranche 2 stayed inside its assigned case IDs (N1–N7, E1(doc-only)/E2/E4/E6 per Tranches row); no unrelated refactor, no touch to `@patrimo/core` or the `feat/realestate-loan-insurance-modes` worktree. `git diff origin/main...HEAD --stat` for the checked commits shows only docs/scripts/Makefile/package.json/vitest.config.ts — consistent with the CONTRACT's declared file list. |
+| Tests / evidence | **C** | RED evidence block exists in PROGRESS and the automated suite (`scripts/*.test.ts`, 17 tests across 5 files at check time — PROGRESS says "22 tests"; the actual count under `npx vitest run scripts` is 17, a minor documentation inaccuracy) did catch 2 real fixture-design bugs on first run — that is genuine signal, not tautological. **But** the disclosed "Process note" says the gate scripts were prototyped and manually smoke-tested *before* the automated vitest suite was written — code-before-test — which is exactly the anti-pattern `tdd-red-green.md` names "TDD theater" and CONSTRAINTS §24 says MUST NOT happen (test written → run → shown red for the missing behavior → *then* production code). The 2/16-genuine-failure story shows the eventual suite isn't a total rubber stamp, but it does not retroactively prove that, per case, a failing test preceded the code that satisfies it — PROGRESS states the opposite order outright. Explicit call: this does **not** mitigate to a B; it is a confirmed §24 violation and caps Tests/evidence at C, same tier the rubric assigns to "no RED evidence" cases, because the RED evidence that exists is not trustworthy as pre-code proof. Separately and independently: `pr-check.sh`'s §3 check (RED evidence per checked-off case) has **zero** test coverage in `scripts/pr-check.test.ts` — none of its 5 tests checks a `[x]`-marked case at all (all fixture CONTRACTs in `scripts/test-support/tier-b-contract.ts` / the test file's `FULL_TRANCHES` leave N1/N2/E1 as `[ ]` unchecked, so §3 only ever exercises its trivial "none checked off yet" branch). I exercised it directly (fixture repo, not touching this repo's files) via `scripts/test-support/fixture-repo.ts` + `tier-b-contract.ts`: a CONTRACT with `N1` checked `[x]` and a PROGRESS containing only the decoy line `TODO: still missing RED evidence for N1, need to write it later.` (no real red-evidence.sh output, no command, no SHA) makes `pr-check.sh` print `3. RED evidence … OK — every checked-off case has RED evidence` and exit 0 (`pr-check: READY`). This is because line 79 of `pr-check.sh` is `grep -qE "RED evidence.*\\b$id\\b" "$PROGRESS"` — a bare substring/word-boundary match with no requirement that the sentence assert evidence exists (a *negating* sentence like "no RED evidence for N1" or "still missing RED evidence for N1" also matches), no requirement for the `### RED evidence — …` header format `red-evidence.sh` actually writes, and no check for command/SHA/excerpt. **Confirmed gameable**, exactly as the checker brief asked to verify. |
+| Docs handoff | **B** | Branch PROGRESS is otherwise thorough and unusually transparent (Challenger pass history, D1 amendment rationale, the TDD-theater process note itself is disclosed rather than hidden — commendable). Cadrage lock / teach-back / Challenger Pass are all recorded per CONSTRAINTS §25. Docked from A because the "Dogfood cross-check … report OK" sentence is a factual claim that does not hold under a fresh run (see Correctness), and the "22 tests" count doesn't match the actual 17 — both should be corrected rather than carried forward uncorrected into a Checker Pass claim. |
+
+### Verdict: **Fail**
+
+Per `docs/agent/scoring-rubric.md`'s bar ("Pass: Correctness A or B; Architecture A or B; no D anywhere; Scope at least B" / "Fail: Any D, or Correctness C with no follow-up plan in branch PROGRESS"): Correctness is C with no prior follow-up plan noted for the live `make gauntlet` self-failure, and Architecture is also C — both below the Pass bar independent of each other. No dimension scored D, so this is not a "serious divergence" verdict, but two C's (Correctness, Architecture) plus a C on Tests/evidence is a clear Fail, not a Pass-with-nits.
+
+Nit classification (per `maker-checker.md`'s re-check loop), for when these are fixed:
+- Fix the `test-guard.sh` false positive (e.g. exclude the detector's own fixture-string test file, or make the grep context-aware / require the match outside string literals) → **behavior/tests** fix (changes a shipped script + its test), not docs-only.
+- Harden `pr-check.sh` §3 to require the actual `### RED evidence — <ID>` header format (or at least a command/SHA line) near the ID, and add a `pr-check.test.ts` case for a checked-off ID with no/decoy evidence → **behavior/tests** fix (script + test), not docs-only.
+- Correct the "22 tests" count and the "Dogfood cross-check … report OK" sentence in PROGRESS's Tranche 2 RED evidence section → **docs/copy-only** fix.
+
+Re-check needed after the behavior/tests fixes above (test-guard false positive, pr-check §3 hardening); the docs-only fix does not by itself require a fresh Checker pass.

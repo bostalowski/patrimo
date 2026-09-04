@@ -76,6 +76,36 @@ describe("scripts/pr-check.sh", () => {
     expect(res.stdout).toContain("skipped (Tier A)");
   });
 
+  it("fails a checked-off case whose only PROGRESS mention is a decoy sentence, not a real RED evidence header", () => {
+    // Regression for the checker-found exploit: a prose line that merely
+    // contains the words "RED evidence" and the ID (even negated, e.g. "still
+    // missing RED evidence for N1") must not satisfy section 3 — only the
+    // actual "### RED evidence — <ID>…" header red-evidence.sh writes counts.
+    fx = createFixture("feat/prcheck-decoy");
+    fx.writeContract(minimalTierBContract({ tranchesRow: FULL_TRANCHES, checkedCases: ["N1"] }));
+    fx.writeProgress(
+      `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks\n\nTODO: still missing RED evidence for N1, need to write it later.\n`,
+    );
+    fx.commitAll("checked-off N1 with only a decoy PROGRESS line");
+
+    const res = fx.run("scripts/pr-check.sh");
+    expect(res.status).not.toBe(0);
+    expect(res.stdout).toContain("checked-off case(s) with no RED evidence");
+    expect(res.stdout).toContain("N1");
+  });
+
+  it("passes a checked-off case whose PROGRESS has the real RED evidence header", () => {
+    fx = createFixture("feat/prcheck-real-red");
+    fx.writeContract(minimalTierBContract({ tranchesRow: FULL_TRANCHES, checkedCases: ["N1"] }));
+    fx.writeProgress(
+      `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks\n\n### RED evidence — N1: fixture case (2026-01-01)\n\n- Command: \`true\`\n- SHA: abc1234\n`,
+    );
+    fx.commitAll("checked-off N1 with real RED evidence header");
+
+    const res = fx.run("scripts/pr-check.sh");
+    expect(res.status).toBe(0);
+  });
+
   it("N6: passes when branch-ready is green, Checker Pass is fresh and cited", () => {
     fx = createFixture("feat/prcheck-ready");
     fx.writeContract(minimalTierBContract({ tranchesRow: FULL_TRANCHES }));

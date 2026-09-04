@@ -76,7 +76,10 @@ if [[ "$TIER" == "B" && -f "$CONTRACT" ]]; then
   missing=()
   while IFS= read -r id; do
     [[ -z "$id" ]] && continue
-    if [[ ! -f "$PROGRESS" ]] || ! grep -qE "RED evidence.*\\b$id\\b" "$PROGRESS"; then
+    # Require the actual header red-evidence.sh writes ("### RED evidence — <CASE> (<date>)"),
+    # not a bare substring — a decoy prose line ("no RED evidence for N1 yet")
+    # matched the old check and made this gameable.
+    if [[ ! -f "$PROGRESS" ]] || ! grep -qE "^### RED evidence — .*\\b$id\\b" "$PROGRESS"; then
       missing+=("$id")
     fi
   done < <(grep -oE '^[[:space:]]*-[[:space:]]*\[[xX]\][[:space:]]*(N[0-9]+|E[0-9]+):' "$CONTRACT" 2>/dev/null | grep -oE '(N[0-9]+|E[0-9]+)')

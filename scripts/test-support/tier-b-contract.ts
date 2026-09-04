@@ -1,7 +1,11 @@
 // Minimal, valid Tier B CONTRACT/PROGRESS builder for branch-ready/pr-check tests.
 // Not a *.test.ts file — vitest won't collect it.
 
-export function minimalTierBContract(opts: { tranchesRow: string; challengerRequired?: boolean } = { tranchesRow: "" }) {
+export function minimalTierBContract(
+  opts: { tranchesRow: string; challengerRequired?: boolean; checkedCases?: string[] } = { tranchesRow: "" },
+) {
+  const checked = new Set(opts.checkedCases ?? []);
+  const box = (id: string) => (checked.has(id) ? "[x]" : "[ ]");
   return `# Contract: Fixture feature
 
 - Branch: \`feat/fixture\`
@@ -22,12 +26,12 @@ export function minimalTierBContract(opts: { tranchesRow: string; challengerRequ
 
 ### Nominal
 
-- [ ] N1: If fixture condition then fixture outcome
-- [ ] N2: If fixture condition then fixture outcome
+- ${box("N1")} N1: If fixture condition then fixture outcome
+- ${box("N2")} N2: If fixture condition then fixture outcome
 
 ### Edge
 
-- [ ] E1: If fixture edge condition then fixture outcome
+- ${box("E1")} E1: If fixture edge condition then fixture outcome
 
 ### Out of scope
 
