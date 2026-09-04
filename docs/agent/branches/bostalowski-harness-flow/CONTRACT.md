@@ -52,7 +52,7 @@ Each case has a stable ID (`N#`/`E#`); the Tranches table below references cases
 
 | # | Decision | Status | Choice | Alternatives considered |
 |---|---|---|---|---|
-| D1 — Unit of work | What ships as one PR | LOCKED | New **Tranches** table in the CONTRACT template: `# / Tranche / Behavior cases covered (IDs only) / Layers / PR`. All tranches land as **commits on this one branch** (`bostalowski/harness-flow`); each tranche PR is opened from that branch's commit range against the previous tranche's merge point (stacked-diff style) — **not** a separate child branch/CONTRACT. `branch-ready`/`pr-check` keep resolving the slug from the single shared branch throughout, unchanged from today's one-branch-one-slug convention. | Separate child branch per tranche (rejected — Challenger found this needs a new CONTRACT-resolution fallback in `branch-ready.sh` for child branches with no CONTRACT of their own; adds a mechanism this branch doesn't need); keep "1 CONTRACT = 1 PR" (rejected — the exact large-PR problem this branch targets); hard line-count merge block (rejected — arbitrary threshold blocks legitimate mechanical diffs; chose informational CI comment instead) |
+| D1 — Unit of work | What ships as one reviewable increment | LOCKED (amended 2026-09-04 after opening tranche 1's PR) | New **Tranches** table in the CONTRACT template: `# / Tranche / Behavior cases covered (IDs only) / Layers / PR`. All tranches land as **commits on this one branch** (`bostalowski/harness-flow`), reviewed as **one PR (#78) updated incrementally, one commit (or small commit group) per tranche** — reviewed via GitHub's Commits view, not as separate PRs. `branch-ready`/`pr-check` keep resolving the slug from the single shared branch throughout, unchanged from today's one-branch-one-slug convention. | Separate PR per tranche, gated on merging the previous one before pushing the next (originally chosen; **reverted** — GitHub PRs diff branch→base, not a commit range, so pushing tranche 2 to the same branch would have silently grown tranche 1's already-open PR; that mechanic requires either a merge-per-tranche human cadence or child branches, both worse per the alternatives below); separate child branch per tranche (rejected — Challenger found this needs a new CONTRACT-resolution fallback in `branch-ready.sh` for child branches with no CONTRACT of their own; adds a mechanism this branch doesn't need); keep "1 CONTRACT = 1 PR with no internal structure" (rejected — the exact large-PR problem this branch targets — the Tranches table + incremental commits still give reviewable units even inside one PR); hard line-count merge block (rejected — arbitrary threshold blocks legitimate mechanical diffs; chose informational CI comment instead) |
 | D2 — Non-lyable evidence | How RED evidence stops being copy-pasted narrative | LOCKED | `scripts/red-evidence.sh` actually **runs** the test command and refuses to write on exit 0 | Keep RED evidence as free-text the Maker types by hand (status quo; rejected — exactly what METR's self-report gap warns against) |
 | D3 — Feedback control on core | Which control catches weakened tests / weak math coverage | LOCKED | Two controls: (a) `test-guard.sh` — structural diff check for deletions/`.skip`/`.only`; (b) Stryker mutation testing scoped to changed `packages/core/src/**` files only, thresholds in `stryker.conf.json`: **break < 80, warn < 90**, computed only over the changed-file subset (never the whole package's historical score) | Full-repo mutation testing (rejected — too slow, blocks unrelated PRs on historical debt); mutation testing only, no structural guard (rejected — Stryker doesn't catch "test deleted entirely", only "test too weak"); leaving the threshold undecided for the Maker to pick mid-implementation (rejected per Challenger — would resurface as an open question) |
 | D4 — Checker isolation | How "fresh session" stops being self-declared | LOCKED | `make checker` = `scripts/orca-role.sh checker`: resolves the Orca CLI per the `orca-cli` skill's rule when available (falls back to plain `git worktree add` per E8 when not), spawns the Checker in a separate worktree, and a diff check (E7) fails if the Checker's worktree touches anything besides `PROGRESS.md` | Keep checker as "open a new chat window, paste this prompt" (status quo; rejected — no structural guarantee of a clean context or of write-scope limits, and Challenger found nothing previously verified the write-scope claim); hard-require Orca with no fallback (rejected — `orca-cli` skill itself says do not require Orca/Coasts when the user is on the classic host path) |
@@ -83,23 +83,23 @@ Each case has a stable ID (`N#`/`E#`); the Tranches table below references cases
 - Layer 1: `make verify`
 - Layer 2: `npm test -- scripts` — behavior cases above (N1–N11, E1–E8) as RED → GREEN slices, each script's fixture-driven test
 - Layer 3: n/a — no web UI / API route / workbook I/O / settings path changes in this branch
-- Feature-specific: `make gauntlet` green on this branch's own diff (dogfooding); `make pr-check` green before opening the PR for each tranche
+- Feature-specific: `make gauntlet` green on this branch's own diff (dogfooding); `make pr-check` green before pushing each tranche's commit(s) to PR #78
 
 When Layer 2 applies, makers follow [tdd-red-green.md](../../howto/tdd-red-green.md) (CONSTRAINTS §24).
 Tier B cadrage: [cadrage-lock.md](../../howto/cadrage-lock.md) (CONSTRAINTS §25) before Maker.
 
 ## Tranches
 
-One tranche = one stacked PR (commits on this single branch, per D1). Each row's "Behavior cases covered" lists **case IDs only** — `make branch-ready` (N7) parses these tokens.
+One tranche = one reviewable commit (or small commit group) on this single branch, all landing in **one PR ([#78](https://github.com/bostalowski/patrimo/pull/78)), reviewed incrementally** (D1, amended after tranche 1 — see D1 alternatives for why "one PR per tranche" was reverted). Each row's "Behavior cases covered" lists **case IDs only** — `make branch-ready` (N7) parses these tokens.
 
-| # | Tranche | Behavior cases covered | Layers | PR |
+| # | Tranche | Behavior cases covered | Layers | Commit |
 |---|---|---|---|---|
-| 1 | Flow doc + ADR + CONSTRAINTS clauses (Tier A slice, no new script behavior) | E3 | L1 only | not yet opened |
-| 2 | Executable gates: `red-evidence`, `test-guard`, `pr-check` (non-mutation part), `branch-ready` extension (N7), `scripts/lib/diff.sh` | N1, N2, N3, N4, N5, N6, N7, E1, E2, E4, E5, E6 | L1 + L2 | not yet opened |
-| 3 | PR template + CI `harness`/`size` jobs | N5, N6 | L1 (CI config only) | not yet opened |
-| 4 | Stryker mutation testing scoped to `packages/core` diff, folded into `gauntlet` | N8, N9 | L1 + L2 | not yet opened |
-| 5 | `orca-role.sh` (Checker in isolated worktree, with Orca-unavailable fallback) + patrimo-harness skill + Coastfile update | E7, E8, N10 | L1 + L2 (script smoke) | not yet opened |
-| 6 | `coherence-code-doc`/`clean-code` wiring into Checker prompt, duplication check in gauntlet, `rework-log.md` + `pr-check` reminder | N11 | L1 (+ L2 for the reminder/duplication check pieces) | not yet opened |
+| 1 | Flow doc + ADR + CONSTRAINTS clauses (Tier A slice, no new script behavior) | E3 | L1 only | `82c6178` (pushed to #78) |
+| 2 | Executable gates: `red-evidence`, `test-guard`, `pr-check` (non-mutation part), `branch-ready` extension (N7), `scripts/lib/diff.sh` | N1, N2, N3, N4, N5, N6, N7, E1, E2, E4, E5, E6 | L1 + L2 | pending |
+| 3 | PR template + CI `harness`/`size` jobs | N5, N6 | L1 (CI config only) | pending |
+| 4 | Stryker mutation testing scoped to `packages/core` diff, folded into `gauntlet` | N8, N9 | L1 + L2 | pending |
+| 5 | `orca-role.sh` (Checker in isolated worktree, with Orca-unavailable fallback) + patrimo-harness skill + Coastfile update | E7, E8, N10 | L1 + L2 (script smoke) | pending |
+| 6 | `coherence-code-doc`/`clean-code` wiring into Checker prompt, duplication check in gauntlet, `rework-log.md` + `pr-check` reminder | N11 | L1 (+ L2 for the reminder/duplication check pieces) | pending |
 
 ## Exclusions
 

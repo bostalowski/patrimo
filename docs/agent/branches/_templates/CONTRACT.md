@@ -69,15 +69,19 @@ Tier B cadrage: [cadrage-lock.md](../../howto/cadrage-lock.md) (CONSTRAINTS §25
 
 ## Tranches
 
-One tranche = one PR (CONSTRAINTS §26; [feature-flow.md](../../howto/feature-flow.md)).
-Tier A: one row is enough (`n/a` behavior cases). Tier B: every `N#`/`E#`
-case above must appear in at least one row's "Behavior cases covered" cell,
-**as bare IDs only** (no prose after the IDs — `make branch-ready` parses
-this column with a simple token match).
+One tranche = one small, separately-reviewable unit — either its own stacked
+PR (merged before the next tranche's commits push) or a commit landing in
+one already-open PR reviewed incrementally; pick the mechanic explicitly in
+a product decision, since GitHub diffs branch-vs-base (CONSTRAINTS §26;
+[feature-flow.md](../../howto/feature-flow.md)). Tier A: one row is enough
+(`n/a` behavior cases). Tier B: every `N#`/`E#` case above must appear in at
+least one row's "Behavior cases covered" cell, **as bare IDs only** (no
+prose after the IDs — `make branch-ready` parses this column with a simple
+token match).
 
-| # | Tranche | Behavior cases covered | Layers | PR |
+| # | Tranche | Behavior cases covered | Layers | PR / commit |
 |---|---|---|---|---|
-| 1 | | | | not yet opened |
+| 1 | | | | not yet shipped |
 
 ## Exclusions
 

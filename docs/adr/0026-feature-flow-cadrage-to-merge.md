@@ -12,10 +12,15 @@ Flow: G0 branch-contract → G1 branch-ready (cadrage lock) →
   (test-removal guard + scoped mutation) → G5 checker (isolated worktree)
   → G6 pr-check → pr → G7 merge.
 
-Tranches: a CONTRACT ships as N stacked PRs, one per Tranches-table row,
-  each row assigned a subset of the CONTRACT's behavior cases. WIP=1 stays
-  per CONTRACT (CONSTRAINTS §23); a tranche is a slice of that one WIP item,
-  not a second feature.
+Tranches: a CONTRACT ships as N small, separately-reviewable slices, one per
+  Tranches-table row, each row assigned a subset of the CONTRACT's behavior
+  cases. A slice is either its own stacked PR (merged before the next
+  slice's commits push) or a distinct commit/commit-group reviewed
+  incrementally within one open PR — whichever a branch's own commits/PR
+  decision picks; GitHub diffs branch-vs-base, so "stacked PRs" on one
+  shared branch requires merging between slices. WIP=1 stays per CONTRACT
+  (CONSTRAINTS §23); a tranche is a slice of that one WIP item, not a
+  second feature.
 
 Gauntlet = test-guard (structural: no deleted/`.skip`/`.only` test without a
   `Test-removal-justified:` line in PROGRESS) + Stryker mutation testing
@@ -60,16 +65,21 @@ CONTRACT" as what ships per PR.
 ## Decision
 
 Turn each existing procedure into a command with an exit code, and add one
-new unit — the **tranche** — so a CONTRACT ships as stacked small PRs:
+new unit — the **tranche** — so a CONTRACT ships as small, separately
+reviewable slices instead of one large diff:
 
 1. **Tranches.** The CONTRACT template gains a `## Tranches` table (`# /
-   Tranche / behavior cases covered / Layers / PR`). Every nominal/edge
-   behavior case must be assigned to exactly one tranche. `branch-ready`
-   fails a Tier B CONTRACT that has a Tranches table with an unassigned
-   case. One tranche = one PR; tranches of the same CONTRACT stack
-   (`slice-2` branches on `slice-1`). This does not change WIP=1
-   (CONSTRAINTS §23): the WIP unit stays the CONTRACT, tranches are how
-   that one unit ships incrementally.
+   Tranche / behavior cases covered / Layers / PR-or-commit`). Every
+   nominal/edge behavior case must be assigned to exactly one tranche.
+   `branch-ready` fails a Tier B CONTRACT that has a Tranches table with an
+   unassigned case. One tranche = one small reviewable unit, but the
+   mechanic is a per-branch choice, not fixed by this ADR: separate stacked
+   PRs (each merged before the next tranche's commits push — GitHub diffs
+   branch-vs-base, so pushing more commits to an open PR's branch grows
+   that PR rather than starting a new one) or a single PR whose tranches
+   land as distinct commits reviewed incrementally. This does not change
+   WIP=1 (CONSTRAINTS §23): the WIP unit stays the CONTRACT, tranches are
+   how that one unit ships incrementally.
 2. **RED evidence, executed not narrated.** `scripts/red-evidence.sh`
    (`make red CASE="…" CMD="…"`) actually runs the given test command and
    refuses to append RED evidence to branch PROGRESS.md unless it observes
@@ -164,8 +174,9 @@ keeps human review, but shrinks it to a size a human can actually do well
 **Advantages**
 
 Machine-checkable at every transition that previously relied on
-self-report; small stacked PRs match the DORA/Google evidence on batch
-size; the Checker's isolation stops being a same-session social contract;
+self-report; small reviewable tranches (stacked PRs or incremental commits
+within one PR) match the DORA/Google evidence on batch size; the Checker's
+isolation stops being a same-session social contract;
 mutation testing is scoped tightly enough to stay fast and to avoid
 punishing PRs for pre-existing debt.
 

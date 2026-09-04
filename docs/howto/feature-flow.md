@@ -19,14 +19,20 @@ G2  make red CASE=… CMD=…    Maker                       → RED evidence (r
 G3  make verify / make e2e   Maker                       → three-layer DoD for the tranche
 G4  make gauntlet            Maker                       → test-removal guard + scoped mutation
 G5  make checker              Checker (isolated worktree) → Pass/Fail written to PROGRESS only
-G6  make pr-check → make pr  Maker                       → tranche PR opened, gates replayed in CI
+G6  make pr-check → push     Maker                       → tranche pushed as its own PR or commit, gates replayed in CI
 G7  merge                                                → FEATURES matrix + rework-log row
 ```
 
-Repeat G2→G7 once per row of the CONTRACT's `## Tranches` table. The CONTRACT
-(not the tranche) is the WIP=1 unit — CONSTRAINTS §23 is unchanged; a tranche
-is how one CONTRACT ships incrementally as several small PRs instead of one
-large one.
+Repeat G2→G6 once per row of the CONTRACT's `## Tranches` table (G7 fires
+once the tranche mechanic reaches main — per-tranche if stacked PRs, once
+per merged batch if reviewed as commits in one PR). The CONTRACT (not the
+tranche) is the WIP=1 unit — CONSTRAINTS §23 is unchanged; a tranche is how
+one CONTRACT ships incrementally instead of as one large diff. **How** a
+tranche reaches review — a separate stacked PR (merged before the next
+tranche's commits push) or a commit landing in one already-open PR reviewed
+incrementally — is a per-branch choice recorded in that CONTRACT's D1-style
+decision (CONSTRAINTS §26): GitHub diffs branch-vs-base, so pushing more
+commits to an open PR's branch grows that PR rather than starting a new one.
 
 ## Gate reference
 
@@ -38,7 +44,7 @@ large one.
 | G3 | `make verify` (+ `make e2e` when Layer 3 applies) | Three-layer DoD for the tranche's slice | `AGENTS.md` § Run and verify |
 | G4 | `make gauntlet` | No test silently deleted/`.skip`'d/`.only`'d without a `Test-removal-justified:` line; on a `packages/core` diff, no surviving mutant above threshold in the changed files | `scripts/gauntlet.sh`, `scripts/test-guard.sh` |
 | G5 | `make checker` | A Checker in a separate Orca worktree scores the tranche against [scoring-rubric.md](../agent/scoring-rubric.md), writing only to PROGRESS | [maker-checker.md](maker-checker.md), `scripts/orca-role.sh checker` |
-| G6 | `make pr-check` then `make pr` | Everything above is true and recorded, and dated after the latest code commit; PR opened from the branch's PR template | `scripts/pr-check.sh`, `scripts/pr.sh`, CI `harness` job replays `pr-check` |
+| G6 | `make pr-check` then `make pr` (first tranche) or a plain push (later tranches landing in an already-open PR) | Everything above is true and recorded, and dated after the latest code commit | `scripts/pr-check.sh`, `scripts/pr.sh`, CI `harness` job replays `pr-check` on every push |
 | G7 | merge | FEATURES matrix updated if a platform status changed; `docs/agent/rework-log.md` gets a row | [branches/README.md](../agent/branches/README.md) |
 
 `make flow` (`scripts/flow-status.sh`) prints which gate you're on and the
@@ -77,8 +83,9 @@ docs. Shipping all of them as one PR produces exactly the large, slow-to-review
 diff that DORA 2025 and Google's engineering-practices data both flag as the
 point where AI-assisted throughput gains stop translating into stable,
 reviewable delivery. The `## Tranches` table in the CONTRACT template
-assigns each behavior case to one PR-sized slice; `make branch-ready` fails
-a Tier B CONTRACT that leaves a case unassigned.
+assigns each behavior case to one small, separately-reviewable slice
+(stacked PR or incremental commit, per that branch's D1-style choice);
+`make branch-ready` fails a Tier B CONTRACT that leaves a case unassigned.
 
 ## Related
 
