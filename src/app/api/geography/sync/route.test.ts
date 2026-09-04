@@ -44,6 +44,7 @@ function workbook(
     sectorAllocations: [],
     diversificationTargets: [],
 		financialGoals: [],
+		propertyTaxes: [],
     ...overrides,
   };
 }

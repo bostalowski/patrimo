@@ -33,6 +33,7 @@ const emptyWorkbook: Workbook = {
 	sectorAllocations: [],
 	diversificationTargets: [],
 		financialGoals: [],
+		propertyTaxes: [],
 };
 
 vi.mock("./use-workbook", () => ({

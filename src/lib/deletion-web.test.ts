@@ -101,6 +101,7 @@ function sourceWorkbook(): Workbook {
 		sectorAllocations: [],
 		diversificationTargets: [],
 		financialGoals: [],
+		propertyTaxes: [],
 	};
 }
 

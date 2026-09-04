@@ -5,6 +5,7 @@ export const SHEET_BUDGET = "Budget";
 export const SHEET_IMMOBILIER = "Immobilier";
 export const SHEET_DCA = "DCA";
 export const SHEET_PRIX_MANUELS = "Prix manuels";
+export const SHEET_TAXE_FONCIERE = "Taxe foncière";
 export const SHEET_EXPOSITION_GEO = "Exposition geo";
 export const SHEET_EXPOSITION_SECTEUR = "Exposition secteur";
 export const SHEET_ALLOCATION_CIBLE = "Allocation cible";
@@ -100,6 +101,8 @@ export const DCA_HEADERS = [
 
 export const PRIX_MANUELS_HEADERS = ["Actif", "Date", "Prix"] as const;
 
+export const TAXE_FONCIERE_HEADERS = ["Bien", "Année", "Montant"] as const;
+
 export const EXPOSITION_GEO_HEADERS = [
 	"Actif",
 	"Pays",
@@ -148,6 +151,7 @@ export const ALL_SHEETS = [
 	{ name: SHEET_IMMOBILIER, headers: [...IMMOBILIER_HEADERS] },
 	{ name: SHEET_DCA, headers: [...DCA_HEADERS] },
 	{ name: SHEET_PRIX_MANUELS, headers: [...PRIX_MANUELS_HEADERS] },
+	{ name: SHEET_TAXE_FONCIERE, headers: [...TAXE_FONCIERE_HEADERS] },
 	{ name: SHEET_EXPOSITION_GEO, headers: [...EXPOSITION_GEO_HEADERS] },
 	{ name: SHEET_EXPOSITION_SECTEUR, headers: [...EXPOSITION_SECTEUR_HEADERS] },
 	{

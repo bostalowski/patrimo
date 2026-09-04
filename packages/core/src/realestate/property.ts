@@ -14,10 +14,13 @@ export function grossAnnualRent(property: Property): number {
   return property.loyerMensuelHC * 12 * (1 - property.vacancePct);
 }
 
-export function operatingForYear(property: Property): PropertyOperating {
+export function operatingForYear(
+  property: Property,
+  resolvedTaxeFonciere: number = property.taxeFonciere,
+): PropertyOperating {
   const grossRent = grossAnnualRent(property);
   const gestion = grossRent * property.fraisGestionPct;
-  const taxeFonciere = property.taxeFonciere;
+  const taxeFonciere = resolvedTaxeFonciere;
   const chargesNonRecup = property.chargesNonRecupAnnuelles;
   const operatingCharges = gestion + taxeFonciere + chargesNonRecup;
   return {

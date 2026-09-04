@@ -50,6 +50,7 @@ export * from "./portfolio";
 export * from "./portfolio-history";
 export * from "./portfolio-risk";
 export * from "./projection";
+export * from "./property-taxes";
 export * as realestateLoan from "./realestate/loan";
 export * as realestate from "./realestate/projection";
 export * as realestateProperty from "./realestate/property";

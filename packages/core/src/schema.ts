@@ -278,6 +278,19 @@ export const ManualPrice = z.object({
 });
 export type ManualPrice = z.infer<typeof ManualPrice>;
 
+/**
+ * A dated taxe foncière amount for one property (one row per property + year).
+ * Unlike `ManualPrice`, a future year is not rejected (D9): a municipal vote or
+ * an anticipated tax notice can make a future amount legitimately known ahead
+ * of time. See ADR 0027.
+ */
+export const PropertyTax = z.object({
+	propertyId: z.string().min(1),
+	year: z.number().int(),
+	amount: z.number().nonnegative(),
+});
+export type PropertyTax = z.infer<typeof PropertyTax>;
+
 export const GeographicAllocationSource = z.enum(["justetf", "manual"]);
 export type GeographicAllocationSource = z.infer<
 	typeof GeographicAllocationSource
@@ -363,4 +376,5 @@ export type Workbook = {
 	diversificationTargets: DiversificationTarget[];
 	financialGoals: FinancialGoal[];
 	emergencyFundConfig?: EmergencyFundConfig;
+	propertyTaxes: PropertyTax[];
 };

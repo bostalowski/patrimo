@@ -65,6 +65,7 @@ function workbook(overrides: Partial<Workbook> = {}): Workbook {
 		sectorAllocations: [],
 		diversificationTargets: [],
 		financialGoals: [],
+		propertyTaxes: [],
 		...overrides,
 	};
 }

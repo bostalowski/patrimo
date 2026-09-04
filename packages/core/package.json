@@ -39,6 +39,7 @@
     "./diversification-labels": "./src/diversification-labels.ts",
     "./diversification-targets": "./src/diversification-targets.ts",
     "./manual-prices": "./src/manual-prices.ts",
+    "./property-taxes": "./src/property-taxes.ts",
     "./next-euro-plan": "./src/next-euro-plan.ts",
     "./monthly-dca-tilt": "./src/monthly-dca-tilt.ts",
     "./monthly-dca-tilt-copy": "./src/monthly-dca-tilt-copy.ts",
