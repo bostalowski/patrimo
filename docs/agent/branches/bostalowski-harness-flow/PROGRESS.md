@@ -54,7 +54,7 @@ Everything else (D1 core rationale, D2, D5, D6, Intent, Teach-back scenarios 1�
 
 After opening tranche 1's PR (#78), discovered the mechanical problem the pass-1 Challenger had partially flagged: GitHub PRs diff branch→base, not a commit range. Pushing tranche 2's commits to the same branch (`bostalowski/harness-flow`) would silently grow PR #78 instead of forming a separate reviewable PR — defeating the small-diff goal D1 exists to serve. Presented the human with 3 options (merge-per-tranche cadence / stacked child branches / single PR reviewed incrementally); human chose **single PR, incremental commit review**. D1 amended accordingly (old choice moved to rejected alternatives with the reason); Tranches table's "PR" column changed to "Commit" (all tranches land in #78). No behavior case (N1–N11/E1–E8) changed — this only affects the Maker's shipping mechanic, not what is being tested — so re-running Challenger/teach-back was judged unnecessary; documented here instead of silently reopening cadrage (CONSTRAINTS §21/25 spirit).
 - [x] Maker: Tranche 2 (executable gates) — see RED evidence + Last verify below
-- [ ] Maker: Tranche 3 (PR template + CI jobs)
+- [x] Maker: Tranche 3 (PR template + CI jobs) — `make verify` green (2026-09-04); CI YAML validated with js-yaml
 - [ ] Maker: Tranche 4 (Stryker mutation)
 - [ ] Maker: Tranche 5 (orca-role.sh)
 - [ ] Maker: Tranche 6 (coherence/duplication/rework-log)
