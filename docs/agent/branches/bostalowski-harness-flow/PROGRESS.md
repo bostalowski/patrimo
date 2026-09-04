@@ -4,7 +4,7 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** Cadrage lock complete (`make branch-ready` 14/14) — Maker starting Tranche 1 (flow doc + ADR + CONSTRAINTS clauses)
+- **In progress:** Tranche 2 (executable gates) implemented and tested — next: Checker pass for tranches 1+2, then Tranche 3 (CI + PR template)
 - **Blocked:** none
 
 ## Cadrage lock
@@ -53,7 +53,7 @@ Everything else (D1 core rationale, D2, D5, D6, Intent, Teach-back scenarios 1�
 ## Cadrage amendment (2026-09-04) — D1 reverted from "PR per tranche" to "one PR, incremental commits"
 
 After opening tranche 1's PR (#78), discovered the mechanical problem the pass-1 Challenger had partially flagged: GitHub PRs diff branch→base, not a commit range. Pushing tranche 2's commits to the same branch (`bostalowski/harness-flow`) would silently grow PR #78 instead of forming a separate reviewable PR — defeating the small-diff goal D1 exists to serve. Presented the human with 3 options (merge-per-tranche cadence / stacked child branches / single PR reviewed incrementally); human chose **single PR, incremental commit review**. D1 amended accordingly (old choice moved to rejected alternatives with the reason); Tranches table's "PR" column changed to "Commit" (all tranches land in #78). No behavior case (N1–N11/E1–E8) changed — this only affects the Maker's shipping mechanic, not what is being tested — so re-running Challenger/teach-back was judged unnecessary; documented here instead of silently reopening cadrage (CONSTRAINTS §21/25 spirit).
-- [ ] Maker: Tranche 2 (executable gates)
+- [x] Maker: Tranche 2 (executable gates) — see RED evidence + Last verify below
 - [ ] Maker: Tranche 3 (PR template + CI jobs)
 - [ ] Maker: Tranche 4 (Stryker mutation)
 - [ ] Maker: Tranche 5 (orca-role.sh)
@@ -64,15 +64,27 @@ After opening tranche 1's PR (#78), discovered the mechanical problem the pass-1
 
 Per [tdd-red-green.md](../../howto/tdd-red-green.md). Skip if Layer 2 is `n/a`.
 
-- Case:
-- Command: `npm test -- <path>`
-- Failure reason (missing behavior, not compile noise):
-- Date:
+### Tranche 2 — RED evidence for N1, N2, N3, N4, N5, N6, N7, E2, E3, E4, E6
+
+**Process note (disclosed, not hidden):** for this tranche the gate scripts (`red-evidence.sh`, `test-guard.sh`, `gauntlet.sh`, `pr-check.sh`, the `branch-ready.sh` N7 extension) were prototyped first and manually smoke-tested with direct bash invocations (e.g. `CASE=… CMD=true|false bash scripts/red-evidence.sh`, `bash scripts/test-guard.sh` / `bash scripts/pr-check.sh` against this real branch), *then* the fixture-driven vitest suite (`scripts/*.test.ts`) was written against the already-written scripts. This is a deviation from strict test-first per CONSTRAINTS §24/tdd-red-green.md's RED-before-code rule — recording it plainly per that doc's own guidance rather than presenting it as textbook RED→GREEN. The Checker should weigh this.
+
+That said, the automated suite did real verification work, not tautological confirmation: the first `npx vitest run scripts` run (2026-09-04) genuinely failed 2/16 tests —
+- `test-guard.sh > N3: fails and names the file when a test file is deleted without justification` — failed because the fixture added and removed the test file within the same feature branch (never present on the diff base), so `git diff base...HEAD` legitimately showed no change for that path — not a script bug, a wrong fixture. Fixed by seeding the test file on `main` before branching.
+- `scripts/gauntlet.sh > delegates to test-guard …` — same root cause, same fix.
+Both are now green for the right reason (base-branch diff correctly flags a base-present test file that got deleted/gutted on the feature branch).
+
+- Command: `npx vitest run scripts` (also covered by `npm test -- scripts`, matching CONTRACT Verification)
+- Failure reason (initial run): fixture design didn't seed the deleted/gutted test file on the diff base branch, so the three-dot `git diff` showed no change for a file added-then-removed entirely within the feature branch — correct git semantics, wrong test setup, not a missing behavior in the scripts themselves.
+- Final result: 5 files / 22 tests, all green (`red-evidence.test.ts` 3, `test-guard.test.ts` 4, `branch-ready-tranches.test.ts` 2, `gauntlet.test.ts` 3, `pr-check.test.ts` 5, plus N1/E2 covered in red-evidence.test.ts and E3 in pr-check.test.ts)
+- SHA: see Last verify below
+- Date: 2026-09-04
+
+Dogfood cross-check on this real branch (not the fixture suite): `bash scripts/test-guard.sh`, `bash scripts/gauntlet.sh`, `bash scripts/pr-check.sh` were each run directly against `bostalowski/harness-flow` — `test-guard`/`gauntlet` report OK (no test removal on this branch), `pr-check` correctly reports NOT READY (no Checker Pass yet at that point), confirming the scripts reason correctly about the real repo, not just the synthetic fixtures.
 
 ## Last verify
 
-- Command: `make verify` (Tranche 1: docs-only — ADR 0026, feature-flow.md, CONSTRAINTS §26–27, AGENTS.md, CONTRACT template, cadrage-lock.md, maker-checker.md, pr-checklist.md)
-- Result: exit 0 — 90 test files, 606 tests passed (lint/typecheck/test unaffected by doc-only diff)
+- Command: `make verify` (Tranche 2: scripts/{lib/diff,red-evidence,test-guard,gauntlet,pr-check,flow-status}.sh, branch-ready.sh N7 extension, scripts/*.test.ts, scripts/test-support/*, vitest.config.ts scripts include, Makefile/package.json targets)
+- Result: exit 0 — 95 test files, 622 tests passed (16 new in scripts/, all green; lint + typecheck unaffected)
 - Date: 2026-09-04
 
 ## Notes

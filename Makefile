@@ -1,4 +1,4 @@
-.PHONY: setup test lint typecheck verify verify-full init e2e next-feature cold-start branch-contract branch-status branch-ready platform-gaps
+.PHONY: setup test lint typecheck verify verify-full init e2e next-feature cold-start branch-contract branch-status branch-ready platform-gaps red gauntlet pr-check flow
 
 setup:
 	npm ci
@@ -33,6 +33,18 @@ branch-ready:
 
 platform-gaps:
 	bash scripts/platform-gaps.sh
+
+red:
+	bash scripts/red-evidence.sh
+
+gauntlet:
+	bash scripts/gauntlet.sh
+
+pr-check:
+	bash scripts/pr-check.sh
+
+flow:
+	bash scripts/flow-status.sh
 
 # Deprecated alias → platform-gaps + branch-status
 next-feature:

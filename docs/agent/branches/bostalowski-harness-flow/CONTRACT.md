@@ -21,13 +21,13 @@ Each case has a stable ID (`N#`/`E#`); the Tranches table below references cases
 
 ### Nominal
 
-- [ ] N1: If a targeted test command **passes**, then `make red CASE="…" CMD="…"` refuses to write RED evidence to PROGRESS and exits non-zero.
-- [ ] N2: If a targeted test command **fails**, then `make red CASE="…" CMD="…"` appends a RED evidence block to branch PROGRESS.md (case, command, failure excerpt, git SHA, date) and exits 0.
-- [ ] N3: If the diff vs base branch deletes a test file, removes a `test(`/`it(` block, or adds `.skip`/`.only` without a `Test-removal-justified:` line anywhere in branch PROGRESS.md, then `make gauntlet` (via `test-guard.sh`) fails with the offending file(s) named.
-- [ ] N4: If the diff vs base does the same but branch PROGRESS.md contains a `Test-removal-justified: <reason>` line, then that check in `make gauntlet` passes.
-- [ ] N5: If branch PROGRESS.md has no `Checker: Pass` line, or one dated before the latest code commit, then `make pr-check` fails naming that gap.
-- [ ] N6: If branch PROGRESS.md has `Checker: Pass (YYYY-MM-DD)` dated on/after the latest code commit's date, with cited evidence (a rubric table or command output referenced) and `branch-ready` passes and every behavior-case ID in the CONTRACT is referenced by at least one Tranches row, then `make pr-check` passes.
-- [ ] N7: If a Tier B CONTRACT's `## Tranches` table exists, then `make branch-ready` extracts every `N#`/`E#` token from `## Behavior cases` and every `N#`/`E#` token from the Tranches table's "Behavior cases covered" column; any Behavior-case ID missing from the Tranches column fails the gate, naming the missing ID(s).
+- [x] N1: If a targeted test command **passes**, then `make red CASE="…" CMD="…"` refuses to write RED evidence to PROGRESS and exits non-zero.
+- [x] N2: If a targeted test command **fails**, then `make red CASE="…" CMD="…"` appends a RED evidence block to branch PROGRESS.md (case, command, failure excerpt, git SHA, date) and exits 0.
+- [x] N3: If the diff vs base branch deletes a test file, removes a `test(`/`it(` block, or adds `.skip`/`.only` without a `Test-removal-justified:` line anywhere in branch PROGRESS.md, then `make gauntlet` (via `test-guard.sh`) fails with the offending file(s) named.
+- [x] N4: If the diff vs base does the same but branch PROGRESS.md contains a `Test-removal-justified: <reason>` line, then that check in `make gauntlet` passes.
+- [x] N5: If branch PROGRESS.md has no `Checker: Pass` line, or one dated before the latest code commit, then `make pr-check` fails naming that gap.
+- [x] N6: If branch PROGRESS.md has `Checker: Pass (YYYY-MM-DD)` dated on/after the latest code commit's date, with cited evidence (a rubric table or command output referenced) and `branch-ready` passes and every behavior-case ID in the CONTRACT is referenced by at least one Tranches row, then `make pr-check` passes.
+- [x] N7: If a Tier B CONTRACT's `## Tranches` table exists, then `make branch-ready` extracts every `N#`/`E#` token from `## Behavior cases` and every `N#`/`E#` token from the Tranches table's "Behavior cases covered" column; any Behavior-case ID missing from the Tranches column fails the gate, naming the missing ID(s).
 - [ ] N8: If `packages/core/src/**` files are in the diff, then `make gauntlet` runs Stryker mutation testing scoped to exactly those changed files (not the whole package) and fails on a surviving mutant in a changed file above the thresholds configured in `stryker.conf.json` (break < 80, warn < 90, computed per changed-file subset — see D3).
 - [ ] N9: If no `packages/core/src/**` files are in the diff, then the mutation step of `make gauntlet` is reported as `skipped` (not silently green, not run).
 - [ ] N10: If `scripts/orca-role.sh` prints a Framer/Challenger/teach-back prompt, it reads that text verbatim from `docs/howto/cadrage-lock.md`; if it prints the Checker prompt, it reads it verbatim from `docs/agent/scoring-rubric.md` — neither prompt's text is duplicated inside `orca-role.sh` itself.
@@ -36,11 +36,11 @@ Each case has a stable ID (`N#`/`E#`); the Tranches table below references cases
 ### Edge
 
 - [ ] E1: If `make red` is called with a `CMD` that errors for a reason unrelated to the test (bad path, syntax error in the test file itself), the RED evidence written is not validated as "for the right reason" — `red-evidence.sh` can only see the exit code, so this remains a documented limitation: the Maker/Checker must still confirm the failure reason by hand per `tdd-red-green.md`.
-- [ ] E2: If the current branch is `main`/`master`, `make red`/`make gauntlet`/`make pr-check`/`make checker` all refuse (mirrors existing `branch-ready.sh` guard).
-- [ ] E3: If a CONTRACT's Verification section marks Layer 2 not applicable (Tier A), `make gauntlet`'s mutation step and `make red` are not required; `make pr-check` skips the RED-evidence and Tranches-ID checks but still checks Checker Pass recency/citation and reports diff size.
-- [ ] E4: If the diff has no `packages/core` files and no test file changes at all, `test-guard.sh` passes trivially (nothing to guard).
+- [x] E2: If the current branch is `main`/`master`, `make red`/`make gauntlet`/`make pr-check`/`make checker` all refuse (mirrors existing `branch-ready.sh` guard).
+- [x] E3: If a CONTRACT's Verification section marks Layer 2 not applicable (Tier A), `make gauntlet`'s mutation step and `make red` are not required; `make pr-check` skips the RED-evidence and Tranches-ID checks but still checks Checker Pass recency/citation and reports diff size.
+- [x] E4: If the diff has no `packages/core` files and no test file changes at all, `test-guard.sh` passes trivially (nothing to guard).
 - [ ] E5: If two or more Tranches rows both reference the same behavior-case ID, `branch-ready` does not need to detect the overlap (out of scope — a human/Framer/Challenger review catch, not a machine gate this branch adds).
-- [ ] E6: If `Checker: Pass` is recorded in PROGRESS with no cited evidence (no rubric table, no command output, no reference to what was checked), `make pr-check` fails naming the missing citation.
+- [x] E6: If `Checker: Pass` is recorded in PROGRESS with no cited evidence (no rubric table, no command output, no reference to what was checked), `make pr-check` fails naming the missing citation.
 - [ ] E7: If the Checker's worktree diff touches any file other than its own branch's `PROGRESS.md`, `scripts/orca-role.sh checker` (or a check invoked by it) fails, enforcing D4's write-scope claim.
 - [ ] E8: If Orca is not available in the environment (no `orca`/`orca-dev`/`orca-ide` resolves, or `coast lookup` has no match), `make checker` falls back to a plain `git worktree add` for the Checker (no Orca terminal/handoff, no Coast) — still a separate directory with a vanilla-git-isolated context, and still refuses to run on `main`/`master`.
 

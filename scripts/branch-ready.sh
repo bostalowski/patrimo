@@ -5,9 +5,11 @@
 #   Challenger Pass if CONTRACT says Challenger: required.
 # See docs/howto/cadrage-lock.md
 set -euo pipefail
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${FEATURE_FLOW_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+cd "$ROOT"
 # shellcheck source=lib/branch-slug.sh
-source "$(dirname "$0")/lib/branch-slug.sh"
+source "$SCRIPT_DIR/lib/branch-slug.sh"
 
 BRANCH="$(branch_name)"
 SLUG="$(branch_slug "$BRANCH")"
@@ -237,6 +239,45 @@ else
     if [[ -f "$PROGRESS" ]] && ! grep -qiE '^[[:space:]]*-[[:space:]]*Challenger:' "$PROGRESS"; then
       warn "Consider a Challenger pass or note skip reason under Cadrage lock in PROGRESS"
     fi
+  fi
+
+  # Tranches: every N#/E# behavior-case ID must appear in the Tranches
+  # table's "Behavior cases covered" column (bare IDs — CONSTRAINTS §26).
+  if grep -qE '^## Tranches' "$CONTRACT"; then
+    case_ids="$(awk '
+      /^## Behavior cases/ { section=1; next }
+      /^## / { if (section) exit }
+      section {
+        line = $0
+        while (match(line, /(N|E)[0-9]+/)) {
+          print substr(line, RSTART, RLENGTH)
+          line = substr(line, RSTART + RLENGTH)
+        }
+      }
+    ' "$CONTRACT" | sort -u)"
+    tranche_ids="$(awk '
+      /^## Tranches/ { section=1; next }
+      /^## / { if (section) exit }
+      section && /^\|/ {
+        line = $0
+        while (match(line, /(N|E)[0-9]+/)) {
+          print substr(line, RSTART, RLENGTH)
+          line = substr(line, RSTART + RLENGTH)
+        }
+      }
+    ' "$CONTRACT" | sort -u)"
+    if [[ -z "$case_ids" ]]; then
+      pass "Tranches: no N#/E# case IDs found in Behavior cases (nothing to check)"
+    else
+      missing_ids="$(comm -23 <(echo "$case_ids") <(echo "$tranche_ids") 2>/dev/null | grep -v '^$' || true)"
+      if [[ -z "$missing_ids" ]]; then
+        pass "Tranches: every behavior-case ID appears in the Tranches table"
+      else
+        fail "Tranches: case ID(s) missing from Tranches table: $(echo "$missing_ids" | tr '\n' ' ')"
+      fi
+    fi
+  else
+    warn "No ## Tranches section — add one for large CONTRACTs (CONSTRAINTS §26; feature-flow.md)"
   fi
 fi
 
