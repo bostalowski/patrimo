@@ -4,7 +4,7 @@ Harness practice: **lock the what before coding the how**. RED → GREEN proves 
 
 Full Spec-Driven Development (Diátaxis package, SPEC LOCK, autonomous commit/push) remains **opt-in** outside this harness. This howto is the default path for Patrimo.
 
-Related: [branch contracts](../agent/branches/README.md), [tdd-red-green.md](tdd-red-green.md), [maker-checker.md](maker-checker.md). Hard rule: [CONSTRAINTS.md](../../CONSTRAINTS.md) §25.
+Related: [branch contracts](../agent/branches/README.md), [tdd-red-green.md](tdd-red-green.md), [maker-checker.md](maker-checker.md), [feature-flow.md](feature-flow.md) (this procedure is gate G1 in that sequence). Hard rule: [CONSTRAINTS.md](../../CONSTRAINTS.md) §25.
 
 ## Tiers
 
@@ -49,6 +49,7 @@ See [CONTRACT template](../agent/branches/_templates/CONTRACT.md).
 3. **Product decisions** — table with Status `OPEN` | `LOCKED`, Choice, and **Alternatives considered** (at least one rejected option on structuring decisions, or `n/a — trivial`).
 4. **Teach-back** — scenarios listed in CONTRACT; acceptance recorded only in PROGRESS (`- Teach-back: accepted`).
 5. **Cadrage roles** — Framer / Challenger / teach-back dates; `Challenger: required | n/a | skipped (reason)`.
+6. **Tranches** — every `N#`/`E#` behavior case assigned to a PR-sized row (CONSTRAINTS §26; [feature-flow.md](feature-flow.md)).
 
 ## Teach-back (alignment gate)
 

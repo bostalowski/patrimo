@@ -2,7 +2,9 @@
 
 Harness practice from [Learn Harness Engineering — lecture 09](https://walkinglabs.github.io/learn-harness-engineering/fr/lectures/lecture-09-why-agents-declare-victory-too-early/): the agent that writes code is systematically too confident to grade its own work.
 
-Cadrage (Framer / Challenger / teach-back) is a **separate** gate before Maker — see [cadrage-lock.md](cadrage-lock.md). Do not conflate “cadrage Pass” with “checker Pass”.
+Cadrage (Framer / Challenger / teach-back) is a **separate** gate before Maker — see [cadrage-lock.md](cadrage-lock.md). Do not conflate “cadrage Pass” with “checker Pass”. This procedure is gate G5 in [feature-flow.md](feature-flow.md).
+
+`make checker` (`scripts/orca-role.sh checker`, [ADR 0026](../adr/0026-feature-flow-cadrage-to-merge.md)) runs the Checker in a worktree separate from the Maker's — Orca-managed when available, a plain `git worktree` fallback otherwise — instead of a same-session role switch, and checks the Checker's diff touches only that branch's `PROGRESS.md`. Prefer it over "open a new chat and paste the prompt below" when you have worktree tooling available; the paste-prompt path below still works when you don't.
 
 ## Roles
 

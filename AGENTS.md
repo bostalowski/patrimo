@@ -7,6 +7,7 @@ Patrimo is a local wealth-tracking app: an Excel workbook is the portfolio sourc
 1. [CONSTRAINTS.md](CONSTRAINTS.md) — hard MUST / MUST NOT
 2. [docs/reference/glossary.md](docs/reference/glossary.md) — canonical names
 3. Branch handoff: `make branch-status` (or `docs/agent/branches/<slug>/PROGRESS.md`). On `main`, root [PROGRESS.md](PROGRESS.md).
+4. [docs/howto/feature-flow.md](docs/howto/feature-flow.md) — the canonical cadrage → merge sequence (gates G0–G7) referenced throughout this file
 
 Then read the `ARCHITECTURE.md` for the package you touch (see below).
 
@@ -23,6 +24,10 @@ make branch-status      # print branch cadrage / handoff
 make branch-ready       # gate: cadrage filled (Tier B: Intent/decisions/teach-back) — before coding
 make platform-gaps      # list FEATURES matrix rows still open (inventory, not a claim)
 make cold-start         # score whether the repo answers the five cold-start questions
+make red CASE=… CMD=…   # gate: write RED evidence only if CMD actually fails (docs/howto/tdd-red-green.md)
+make gauntlet           # gate: test-removal guard + scoped mutation on @patrimo/core diffs
+make checker            # gate: Checker role in an isolated worktree, PROGRESS-only writes
+make pr-check           # gate: branch-ready + RED evidence + Checker Pass recency + diff-size signal
 ```
 
 Optional isolated runtimes: root [`Coastfile`](Coastfile) + [Coasts](https://coasts.dev)
@@ -64,6 +69,7 @@ Autonomous loops: [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
 | [mobile/ARCHITECTURE.md](mobile/ARCHITECTURE.md) | Expo app, Drive/local I/O, mobile UI gaps |
 | [electron/ARCHITECTURE.md](electron/ARCHITECTURE.md) | Desktop shell, menus, auto-update |
 | [docs/adr/](docs/adr/index.md) | Why a decision was taken; options and contract |
+| [docs/howto/feature-flow.md](docs/howto/feature-flow.md) | The canonical G0–G7 gate sequence from cadrage to merge |
 | [docs/howto/](docs/howto/) | Step-by-step procedures (dev setup, release, [cadrage-lock](docs/howto/cadrage-lock.md), [tdd-red-green](docs/howto/tdd-red-green.md), implement-*) |
 | [docs/overview/platforms.md](docs/overview/platforms.md) | Current web vs mobile capability matrix |
 | [docs/DOC_MODEL.md](docs/DOC_MODEL.md) | Where knowledge lives in this repo |
@@ -72,12 +78,14 @@ Autonomous loops: [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
 
 ## Session lifecycle
 
+Full gate-by-gate sequence: [docs/howto/feature-flow.md](docs/howto/feature-flow.md) (G0–G7). Summary:
+
 1. **Init:** `make init` (or `make branch-status` + verify baseline).
-2. **Cadrage:** on a feature branch, `make branch-contract` → Framer (and Challenger if required) + teach-back when Tier B → `make branch-ready` must pass ([cadrage-lock.md](docs/howto/cadrage-lock.md)).
-3. **Work:** implement that contract only. When Layer 2 applies: per case **RED → GREEN** ([tdd-red-green.md](docs/howto/tdd-red-green.md)), record RED evidence in branch PROGRESS; update colocated ARCHITECTURE / ADR / glossary with the code.
-4. **Verify:** layers required by DoD above. Never claim done on failing verify.
-5. **Check:** maker/checker pass against CONTRACT + rubric.
-6. **Handoff:** update `docs/agent/branches/<slug>/PROGRESS.md`. On merge, sync FEATURES matrix + short note on root PROGRESS if useful.
+2. **Cadrage:** on a feature branch, `make branch-contract` → Framer (and Challenger if required) + teach-back when Tier B, including a `## Tranches` table assigning every behavior case to a PR-sized slice → `make branch-ready` must pass ([cadrage-lock.md](docs/howto/cadrage-lock.md)).
+3. **Work:** implement one tranche at a time. When Layer 2 applies: per case **RED → GREEN** ([tdd-red-green.md](docs/howto/tdd-red-green.md)), record RED evidence in branch PROGRESS; update colocated ARCHITECTURE / ADR / glossary with the code.
+4. **Verify:** layers required by DoD above, then `make gauntlet` (test-removal guard + scoped mutation on `@patrimo/core`, workbook I/O, or API-route diffs — CONSTRAINTS §27). Never claim done on failing verify or gauntlet.
+5. **Check:** `make checker` (isolated worktree) scores the tranche against CONTRACT + rubric; then `make pr-check` before opening the tranche's PR.
+6. **Handoff:** update `docs/agent/branches/<slug>/PROGRESS.md`. On merge, sync FEATURES matrix, append a row to `docs/agent/rework-log.md`, and add a short note on root PROGRESS if useful.
 
 ## Next.js
 
