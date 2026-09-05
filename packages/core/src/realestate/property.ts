@@ -1,57 +1,80 @@
 import type { Property } from "../schema";
 
 export type PropertyOperating = {
-  grossRent: number;
-  gestion: number;
-  taxeFonciere: number;
-  chargesNonRecup: number;
-  operatingCharges: number;
-  netOperatingIncome: number;
+	grossRent: number;
+	gestion: number;
+	taxeFonciere: number;
+	chargesNonRecup: number;
+	operatingCharges: number;
+	netOperatingIncome: number;
 };
 
 export function grossAnnualRent(property: Property): number {
-  if (property.regime === "RESIDENCE_PRINCIPALE") return 0;
-  return property.loyerMensuelHC * 12 * (1 - property.vacancePct);
+	if (property.regime === "RESIDENCE_PRINCIPALE") return 0;
+	return property.loyerMensuelHC * 12 * (1 - property.vacancePct);
 }
 
+export type OperatingYearOptions = {
+	/** Projection year index k (1..horizon). Rent scales by (1+rate)^k. */
+	yearIndex?: number;
+	/** Annual rent/charge index rate. Defaults to 0 (no index) when omitted here — callers pass property revalo. */
+	rentIndexRate?: number;
+	/**
+	 * Year-specific taxe foncière (from property-tax history). When set, used as-is
+	 * without rent-index factor — history is already calendar-year specific.
+	 * When omitted, falls back to `property.taxeFonciere` (also not rent-indexed).
+	 */
+	resolvedTaxeFonciere?: number;
+};
+
 export function operatingForYear(
-  property: Property,
-  resolvedTaxeFonciere: number = property.taxeFonciere,
+	property: Property,
+	optionsOrResolvedTaxe: OperatingYearOptions | number = {},
 ): PropertyOperating {
-  const grossRent = grossAnnualRent(property);
-  const gestion = grossRent * property.fraisGestionPct;
-  const taxeFonciere = resolvedTaxeFonciere;
-  const chargesNonRecup = property.chargesNonRecupAnnuelles;
-  const operatingCharges = gestion + taxeFonciere + chargesNonRecup;
-  return {
-    grossRent,
-    gestion,
-    taxeFonciere,
-    chargesNonRecup,
-    operatingCharges,
-    netOperatingIncome: grossRent - operatingCharges,
-  };
+	// Number overload: ADR 0027 (taxe foncière history) callers pass resolved amount as 2nd arg.
+	const options: OperatingYearOptions =
+		typeof optionsOrResolvedTaxe === "number"
+			? { resolvedTaxeFonciere: optionsOrResolvedTaxe }
+			: optionsOrResolvedTaxe;
+	const yearIndex = options.yearIndex ?? 0;
+	const rentIndexRate = options.rentIndexRate ?? 0;
+	const factor = yearIndex > 0 ? (1 + rentIndexRate) ** yearIndex : 1;
+	const grossRent = grossAnnualRent(property) * factor;
+	const gestion = grossRent * property.fraisGestionPct;
+	// Taxe foncière: year-resolved amount (history) or property default — never × rent factor.
+	const taxeFonciere =
+		options.resolvedTaxeFonciere ?? property.taxeFonciere;
+	const chargesNonRecup = property.chargesNonRecupAnnuelles * factor;
+	const operatingCharges = gestion + taxeFonciere + chargesNonRecup;
+	return {
+		grossRent,
+		gestion,
+		taxeFonciere,
+		chargesNonRecup,
+		operatingCharges,
+		netOperatingIncome: grossRent - operatingCharges,
+	};
 }
 
 export function acquisitionCost(property: Property): number {
-  return property.prixAchat + property.fraisNotaire + property.travaux;
+	return property.prixAchat + property.fraisNotaire + property.travaux;
 }
 
 export function apport(property: Property): number {
-  return Math.max(0, acquisitionCost(property) - property.montantEmprunte);
+	return Math.max(0, acquisitionCost(property) - property.montantEmprunte);
 }
 
 export function monthsSince(date: Date | undefined, reference: Date): number {
-  if (!date) return 0;
-  const months =
-    (reference.getUTCFullYear() - date.getUTCFullYear()) * 12 +
-    (reference.getUTCMonth() - date.getUTCMonth());
-  return Math.max(0, months);
+	if (!date) return 0;
+	const months =
+		(reference.getUTCFullYear() - date.getUTCFullYear()) * 12 +
+		(reference.getUTCMonth() - date.getUTCMonth());
+	return Math.max(0, months);
 }
 
 export function loanEndDate(property: Property): Date | null {
-  if (!property.dateDebutCredit || property.dureeMois <= 0) return null;
-  const d = new Date(property.dateDebutCredit);
-  d.setUTCMonth(d.getUTCMonth() + Math.round(property.dureeMois));
-  return d;
+	if (!property.dateDebutCredit || property.dureeMois <= 0) return null;
+	const d = new Date(property.dateDebutCredit);
+	d.setUTCMonth(d.getUTCMonth() + Math.round(property.dureeMois));
+	return d;
 }

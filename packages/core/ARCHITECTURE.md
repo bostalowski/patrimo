@@ -12,7 +12,6 @@ Hard rules: [CONSTRAINTS.md](../../CONSTRAINTS.md). Names: [glossary](../../docs
 | Portfolio / PRU / P&L | `portfolio.ts`, `portfolio-history.ts`, `performance.ts` |
 | Deletion | `deletion.ts` — see [deletion.md](deletion.md) |
 | Manual prices | `manual-prices.ts` — see [manual-prices.md](manual-prices.md) |
-| Property tax history | `property-taxes.ts` — see [property-taxes.md](property-taxes.md), ADR 0027 |
 | Geographic allocation | `geographic-allocation.ts`, `geographic-exposure.ts`, `justetf-geography.ts` — see [geographic-allocation.md](geographic-allocation.md) |
 | Sector allocation | `sector-allocation.ts`, `sector-exposure.ts`, `justetf-sectors.ts` — see [sector-allocation.md](sector-allocation.md) |
 | Diversification | `diversification-targets.ts`, `diversification-coherence.ts` — see [diversification-targets.md](diversification-targets.md) |
@@ -29,7 +28,14 @@ Hard rules: [CONSTRAINTS.md](../../CONSTRAINTS.md). Names: [glossary](../../docs
 | Projection / DCA / budget | `projection.ts`, `dca.ts`, `budget.ts`, `retraite.ts` — overflow: [envelope-overflow.md](envelope-overflow.md) |
 | Price schedule helpers | `prices/schedule.ts` |
 | Livret A/LDDS rates + quinzaine math | `livret-rates.ts`, `livret.ts` — ADR 0024 |
-| Real estate | `realestate/*` — per-year taxe foncière resolution: `property-taxes.ts`, ADR 0027 |
+| Real estate | `realestate/*` — indicative projection; ADR 0028 + insurance modes ADR 0029 |
+
+Real-estate notes (ADR 0028 / 0028): insurance via `monthlyInsuranceForLoan`
+(CRD / capital initial / forfait, optional **Assurance emprunt** paliers);
+rents/charges indexed
+by `rentIndexRate` (default = property revalo, not legal IRL); expose `cagr` + annual
+`irr`; non-blocking micro/déficit warnings (tax amounts unchanged); SCI/DIRECT is UI
+metadata only. Retirement `monthlyRealEstateNet` uses last projected year ÷ 12.
 
 ## System shape
 
@@ -64,7 +70,6 @@ Platforms only adapt I/O and UI. See [src/ARCHITECTURE.md](../../src/ARCHITECTUR
 
 - [deletion.md](deletion.md) — ADR 0001
 - [manual-prices.md](manual-prices.md) — ADR 0002
-- [property-taxes.md](property-taxes.md) — ADR 0027
 - [geographic-allocation.md](geographic-allocation.md) — ADR 0008–0011
 - [sector-allocation.md](sector-allocation.md) — ADR 0013
 - [diversification-targets.md](diversification-targets.md) — ADR 0012

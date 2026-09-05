@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Pencil, Plus, X } from "lucide-react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn, formatDate } from "@/lib/utils";
-import type { Detention, Property, PropertyRegime } from "@/lib/schema";
+import type { Detention, ModeAssurance, Property, PropertyRegime } from "@/lib/schema";
 import {
   type PropertyTaxDraftRow,
   PropertyTaxHistoryEditor,
@@ -14,6 +14,12 @@ import {
 
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
+
+const MODE_ASSURANCE_LABELS: Record<ModeAssurance, string> = {
+  CRD: "Taux sur capital restant dû (CRD)",
+  CAPITAL_INITIAL: "Taux sur capital initial (prime plate)",
+  MONTANT_FIXE: "Forfait € / mois",
+};
 
 const REGIME_LABELS: Record<PropertyRegime, string> = {
   IR_REEL: "Revenus fonciers (régime réel)",
@@ -45,7 +51,7 @@ const TMI_OPTIONS = [0, 0.11, 0.3, 0.41, 0.45];
 type Props = {
   property?: Property;
   trigger?: "primary" | "icon";
-  /** This property's rows from the `Taxe foncière` sheet (D5). Empty for a new property. */
+  /** This property's rows from the `Taxe foncière` sheet. Empty for a new property. */
   propertyTaxes?: { year: number; amount: number }[];
 };
 
@@ -106,6 +112,20 @@ export function PropertyForm({
   );
   const [tauxAssurance, setTauxAssurance] = useState(
     pct(property?.tauxAssurance ?? 0.003),
+  );
+  const [modeAssurance, setModeAssurance] = useState<ModeAssurance>(
+    property?.modeAssurance ?? "CRD",
+  );
+  const [assuranceMensuelle, setAssuranceMensuelle] = useState(
+    numStr(property?.assuranceMensuelle ?? 0),
+  );
+  const [assurancePaliers, setAssurancePaliers] = useState<
+    { anneeDebut: string; assuranceMensuelle: string }[]
+  >(
+    (property?.assurancePaliers ?? []).map((p) => ({
+      anneeDebut: String(p.anneeDebut),
+      assuranceMensuelle: numStr(p.assuranceMensuelle),
+    })),
   );
   const [loyerMensuelHC, setLoyerMensuelHC] = useState(
     numStr(property?.loyerMensuelHC),
@@ -232,11 +252,24 @@ export function PropertyForm({
           dureeMois: Math.round(parseNum(dureeMois)),
           dateDebutCredit: toIso(dateDebutCredit),
           tauxAssurance: parsePct(tauxAssurance, 0),
+          modeAssurance,
+          assuranceMensuelle: parseNum(assuranceMensuelle),
+          assurancePaliers: assurancePaliers
+            .map((p) => ({
+              anneeDebut: Math.round(parseNum(p.anneeDebut)),
+              assuranceMensuelle: parseNum(p.assuranceMensuelle),
+            }))
+            .filter(
+              (p) =>
+                Number.isFinite(p.anneeDebut) &&
+                p.anneeDebut >= 1 &&
+                Number.isFinite(p.assuranceMensuelle) &&
+                p.assuranceMensuelle > 0,
+            ),
           loyerMensuelHC: parseNum(loyerMensuelHC),
           chargesNonRecupAnnuelles: parseNum(chargesNonRecup),
-          // The flat field is no longer edited directly here (D5): it is
-          // passed through unchanged (fallback plumbing, D4). New
-          // properties default to 0 via the schema when omitted.
+          // Flat taxeFonciere is no longer edited here — history sheet owns
+          // yearly amounts; pass through unchanged on edit (fallback plumbing).
           ...(isEdit && property ? { taxeFonciere: property.taxeFonciere } : {}),
           vacancePct: parsePct(vacancePct, 0),
           fraisGestionPct: parsePct(fraisGestionPct, 0),
@@ -463,16 +496,135 @@ export function PropertyForm({
                 </p>
               </Field>
             )}
-            <Field label="Taux assurance (%)">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={tauxAssurance}
-                onChange={(e) => setTauxAssurance(e.target.value)}
-                placeholder="0.3"
+            <Field label="Mode assurance">
+              <select
+                value={modeAssurance}
+                onChange={(e) =>
+                  setModeAssurance(e.target.value as ModeAssurance)
+                }
                 className={inputClasses}
-              />
+              >
+                {(Object.keys(MODE_ASSURANCE_LABELS) as ModeAssurance[]).map(
+                  (mode) => (
+                    <option key={mode} value={mode}>
+                      {MODE_ASSURANCE_LABELS[mode]}
+                    </option>
+                  ),
+                )}
+              </select>
             </Field>
+            {(modeAssurance === "CRD" ||
+              modeAssurance === "CAPITAL_INITIAL") && (
+              <Field label="Taux assurance (%)">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={tauxAssurance}
+                  onChange={(e) => setTauxAssurance(e.target.value)}
+                  placeholder="0.3"
+                  className={inputClasses}
+                />
+              </Field>
+            )}
+            {modeAssurance === "MONTANT_FIXE" && (
+              <Field label="Assurance mensuelle (€)">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={assuranceMensuelle}
+                  onChange={(e) => setAssuranceMensuelle(e.target.value)}
+                  placeholder="42"
+                  className={inputClasses}
+                />
+              </Field>
+            )}
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  Paliers (feuille Assurance emprunt) — optionnel, prime sur le
+                  mode
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAssurancePaliers((rows) => [
+                      ...rows,
+                      { anneeDebut: "1", assuranceMensuelle: "" },
+                    ])
+                  }
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Ajouter
+                </button>
+              </div>
+              {assurancePaliers.length === 0 ? (
+                <p className="text-xs text-zinc-400">
+                  Aucun palier — le mode ci-dessus s&apos;applique.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {assurancePaliers.map((row, idx) => (
+                    <div
+                      key={`palier-${idx}`}
+                      className="flex flex-wrap items-end gap-2"
+                    >
+                      <label className="flex flex-col gap-1 text-xs text-zinc-500">
+                        Année début
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={row.anneeDebut}
+                          onChange={(e) =>
+                            setAssurancePaliers((rows) =>
+                              rows.map((r, i) =>
+                                i === idx
+                                  ? { ...r, anneeDebut: e.target.value }
+                                  : r,
+                              ),
+                            )
+                          }
+                          className={inputClasses}
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1 text-xs text-zinc-500">
+                        € / mois
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={row.assuranceMensuelle}
+                          onChange={(e) =>
+                            setAssurancePaliers((rows) =>
+                              rows.map((r, i) =>
+                                i === idx
+                                  ? {
+                                      ...r,
+                                      assuranceMensuelle: e.target.value,
+                                    }
+                                  : r,
+                              ),
+                            )
+                          }
+                          className={inputClasses}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAssurancePaliers((rows) =>
+                            rows.filter((_, i) => i !== idx),
+                          )
+                        }
+                        className="rounded-md p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+                        aria-label="Supprimer le palier"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Section>
 
           {!isResidence && (
