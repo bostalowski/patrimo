@@ -9,8 +9,11 @@ runtime = "dind"
 primary_port = "web"
 # Per-instance .next if you later add [services.web] (Turbopack lock isolation).
 private_paths = [".next"]
-# Cursor Parallel Agents + Claude Code worktrees
-worktree_dir = [".worktrees", ".claude/worktrees", "~/.cursor/worktrees/patrimo"]
+# Cursor Parallel Agents + Claude Code worktrees, plus Orca-managed worktrees
+# (observed path for this project: ~/orca/workspaces/patrimo/<name> — confirm
+# with `orca worktree ps --json` if it moves; see scripts/orca-role.sh, which
+# resolves the Orca binary itself rather than hardcoding it here).
+worktree_dir = [".worktrees", ".claude/worktrees", "~/.cursor/worktrees/patrimo", "~/orca/workspaces/patrimo"]
 
 # No docker-compose: Excel workbook is the portfolio source of truth (no postgres/redis).
 # Next.js stays on the host (`npm run dev` → 3000) unless you add a [services.web] entry.

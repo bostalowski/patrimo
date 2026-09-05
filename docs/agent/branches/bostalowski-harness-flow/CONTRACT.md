@@ -30,7 +30,7 @@ Each case has a stable ID (`N#`/`E#`); the Tranches table below references cases
 - [x] N7: If a Tier B CONTRACT's `## Tranches` table exists, then `make branch-ready` extracts every `N#`/`E#` token from `## Behavior cases` and every `N#`/`E#` token from the Tranches table's "Behavior cases covered" column; any Behavior-case ID missing from the Tranches column fails the gate, naming the missing ID(s).
 - [x] N8: If `packages/core/src/**` files are in the diff, then `make gauntlet` runs Stryker mutation testing scoped to exactly those changed files (not the whole package) and fails on a surviving mutant in a changed file above the thresholds configured in `stryker.conf.json` (break < 80, warn < 90, computed per changed-file subset — see D3).
 - [x] N9: If no `packages/core/src/**` files are in the diff, then the mutation step of `make gauntlet` is reported as `skipped` (not silently green, not run).
-- [ ] N10: If `scripts/orca-role.sh` prints a Framer/Challenger/teach-back prompt, it reads that text verbatim from `docs/howto/cadrage-lock.md`; if it prints the Checker prompt, it reads it verbatim from `docs/agent/scoring-rubric.md` — neither prompt's text is duplicated inside `orca-role.sh` itself.
+- [x] N10: If `scripts/orca-role.sh` prints a Framer/Challenger/teach-back prompt, it reads that text verbatim from `docs/howto/cadrage-lock.md`; if it prints the Checker prompt, it reads it verbatim from `docs/agent/scoring-rubric.md` — neither prompt's text is duplicated inside `orca-role.sh` itself.
 - [ ] N11: If `make pr-check` runs and `docs/agent/rework-log.md` has no row referencing the current branch's slug, it prints a non-blocking reminder to add one after merge (does not fail the gate — D8 stays manual/non-automated).
 
 ### Edge
@@ -41,8 +41,8 @@ Each case has a stable ID (`N#`/`E#`); the Tranches table below references cases
 - [x] E4: If the diff has no `packages/core` files and no test file changes at all, `test-guard.sh` passes trivially (nothing to guard).
 - [ ] E5: If two or more Tranches rows both reference the same behavior-case ID, `branch-ready` does not need to detect the overlap (out of scope — a human/Framer/Challenger review catch, not a machine gate this branch adds).
 - [x] E6: If `Checker: Pass` is recorded in PROGRESS with no cited evidence (no rubric table, no command output, no reference to what was checked), `make pr-check` fails naming the missing citation.
-- [ ] E7: If the Checker's worktree diff touches any file other than its own branch's `PROGRESS.md`, `scripts/orca-role.sh checker` (or a check invoked by it) fails, enforcing D4's write-scope claim.
-- [ ] E8: If Orca is not available in the environment (no `orca`/`orca-dev`/`orca-ide` resolves, or `coast lookup` has no match), `make checker` falls back to a plain `git worktree add` for the Checker (no Orca terminal/handoff, no Coast) — still a separate directory with a vanilla-git-isolated context, and still refuses to run on `main`/`master`.
+- [x] E7: If the Checker's worktree diff touches any file other than its own branch's `PROGRESS.md`, `scripts/orca-role.sh checker` (or a check invoked by it) fails, enforcing D4's write-scope claim.
+- [x] E8: If Orca is not available in the environment (no `orca`/`orca-dev`/`orca-ide` resolves, or `coast lookup` has no match), `make checker` falls back to a plain `git worktree add` for the Checker (no Orca terminal/handoff, no Coast) — still a separate directory with a vanilla-git-isolated context, and still refuses to run on `main`/`master`.
 
 ### Out of scope
 

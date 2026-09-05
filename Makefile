@@ -1,4 +1,4 @@
-.PHONY: setup test lint typecheck verify verify-full init e2e next-feature cold-start branch-contract branch-status branch-ready platform-gaps red gauntlet pr-check flow
+.PHONY: setup test lint typecheck verify verify-full init e2e next-feature cold-start branch-contract branch-status branch-ready platform-gaps red gauntlet pr-check flow checker
 
 setup:
 	npm ci
@@ -45,6 +45,9 @@ pr-check:
 
 flow:
 	bash scripts/flow-status.sh
+
+checker:
+	bash scripts/orca-role.sh checker
 
 # Deprecated alias → platform-gaps + branch-status
 next-feature:

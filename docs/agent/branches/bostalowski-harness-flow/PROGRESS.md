@@ -57,7 +57,7 @@ After opening tranche 1's PR (#78), discovered the mechanical problem the pass-1
 - [x] Maker: Tranche 2 (executable gates) — see RED evidence + Last verify below
 - [x] Maker: Tranche 3 (PR template + CI jobs) — `make verify` green (2026-09-04); CI YAML validated with js-yaml
 - [x] Maker: Tranche 4 (Stryker mutation) — config-only + manual dogfood evidence, see RED evidence below
-- [ ] Maker: Tranche 5 (orca-role.sh)
+- [x] Maker: Tranche 5 (orca-role.sh) — `make verify` green (2026-09-04), see RED evidence above
 - [ ] Maker: Tranche 6 (coherence/duplication/rework-log)
 - [ ] Checker Pass (per tranche)
 
@@ -164,11 +164,33 @@ Dogfood re-check on this real branch after both fixes: `bash scripts/gauntlet.sh
 - Command: manual (see above), not `npx vitest run scripts` — this case is Stryker-runtime behavior, not gate-script behavior
 - Date: 2026-09-04
 
+### RED evidence — N10: orca-role.sh prints Framer/Checker prompts read verbatim (2026-09-04)
+
+- Command: `npx vitest run scripts/orca-role.test.ts`
+- Test: `orca-role.sh > N10: prints the Framer prompt read verbatim from cadrage-lock.md` and `> N10: prints the Checker prompt read verbatim from scoring-rubric.md` — each asserts the script's stdout contains the exact opening line read live from `docs/howto/cadrage-lock.md` / `docs/agent/scoring-rubric.md`, so a future edit to either doc is what the test would catch, not a hardcoded copy in the script
+- SHA: (this tranche's commit, see Tranches table)
+
+### RED evidence — E7: orca-role.sh --publish refuses when the Checker's worktree touched anything but PROGRESS.md (2026-09-04)
+
+- Command: `npx vitest run scripts/orca-role.test.ts`
+- Test: `orca-role.sh > E7: --publish fails when the worktree touched a file other than that branch's PROGRESS.md` and `> E7: --publish succeeds and copies PROGRESS.md when only that file changed`
+- SHA: (this tranche's commit)
+
+### RED evidence — E8: orca-role.sh falls back to a plain detached git worktree without Orca (2026-09-04)
+
+- Command: `npx vitest run scripts/orca-role.test.ts`
+- Test: `orca-role.sh > E8: falls back to a plain detached git worktree when Orca is unavailable` (forces the no-Orca path via a `FEATURE_FLOW_NO_ORCA` test-only override — see PROGRESS process note: without this override, tests would non-deterministically take the Orca path or not depending on what's installed on the machine running them)
+- SHA: (this tranche's commit)
+
+Process note: while writing scripts/orca-role.test.ts, `fx.run()`'s use of `execFileSync` was found to silently discard stderr on a successful (exit 0) run — an `E8` assertion checking `res.stdout` for a message the script actually writes to stderr failed for that reason, not a script bug. Fixed by switching `scripts/test-support/fixture-repo.ts`'s `run()` to `spawnSync`, which captures both streams unconditionally; full `scripts/` suite re-run green afterward (26/26).
+
 ## Last verify
 
-- Command: `make verify` (post Checker-fix commit `c3ad734`: test-guard.sh anchored regex, pr-check.sh §3 hardening, regression tests, stryker.conf.json + devDeps for tranche 4)
-- Result: exit 0 — 95 test files, 626 tests passed; `bash scripts/gauntlet.sh` on this branch's own diff also green (test-guard OK, mutation skipped — no `packages/core` diff on this branch)
+- Command: `make verify` (Tranche 5: scripts/orca-role.sh + orca-role.test.ts, fixture-repo.ts spawnSync fix, Makefile/package.json `checker` target, patrimo-harness SKILL.md + Coastfile updates)
+- Result: exit 0 — 96 test files, 632 tests passed; `bash scripts/gauntlet.sh` on this branch's own diff green
 - Date: 2026-09-04
+
+Prior: `make verify` after Tranche 2 (before Checker fixes) — exit 0, 95 files / 623 tests, but `bash scripts/gauntlet.sh` was failing at that point (see Checker findings + fix above) — `make verify` alone did not catch it since gauntlet is a separate gate, illustrating why `make pr-check`/`make gauntlet` are required gates and not implied by verify.
 
 Prior: `make verify` after Tranche 2 (before Checker fixes) — exit 0, 95 files / 623 tests, but `bash scripts/gauntlet.sh` was failing at that point (see Checker findings + fix above) — `make verify` alone did not catch it since gauntlet is a separate gate, illustrating why `make pr-check`/`make gauntlet` are required gates and not implied by verify.
 

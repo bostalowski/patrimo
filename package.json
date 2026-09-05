@@ -36,6 +36,7 @@
     "gauntlet": "bash scripts/gauntlet.sh",
     "pr-check": "bash scripts/pr-check.sh",
     "flow": "bash scripts/flow-status.sh",
+    "checker": "bash scripts/orca-role.sh checker",
     "electron": "electron .",
     "electron:dev": "concurrently -k -n next,electron -c blue,green \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "next build && electron-builder --mac --config electron-builder.yml",

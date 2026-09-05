@@ -1,7 +1,7 @@
 // Test-only helper: builds a throwaway git repo so gate scripts (which cd to
 // FEATURE_FLOW_ROOT when set) can be exercised without touching this repo's
 // own branch/CONTRACT state. Not a *.test.ts file — vitest won't collect it.
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -65,20 +65,18 @@ export function createFixture(branch: string): Fixture {
 
   function run(scriptRelPath: string, args: string[] = [], env: Record<string, string> = {}): RunResult {
     const scriptPath = path.join(REPO_ROOT, scriptRelPath);
-    try {
-      const stdout = execFileSync("bash", [scriptPath, ...args], {
-        cwd: root,
-        env: { ...process.env, FEATURE_FLOW_ROOT: root, ...env },
-      });
-      return { status: 0, stdout: stdout.toString(), stderr: "" };
-    } catch (e) {
-      const err = e as { status?: number; stdout?: Buffer; stderr?: Buffer };
-      return {
-        status: typeof err.status === "number" ? err.status : 1,
-        stdout: (err.stdout ?? Buffer.from("")).toString(),
-        stderr: (err.stderr ?? Buffer.from("")).toString(),
-      };
-    }
+    // spawnSync (not execFileSync) so stdout/stderr are both captured even on
+    // a successful (exit 0) run — execFileSync discards stderr on success.
+    const result = spawnSync("bash", [scriptPath, ...args], {
+      cwd: root,
+      env: { ...process.env, FEATURE_FLOW_ROOT: root, ...env },
+      encoding: "utf8",
+    });
+    return {
+      status: result.status ?? 1,
+      stdout: result.stdout ?? "",
+      stderr: result.stderr ?? "",
+    };
   }
 
   function commitAll(message: string) {
