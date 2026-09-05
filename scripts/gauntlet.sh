@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Gate: test-removal guard + scoped mutation testing on packages/core diff.
 # See docs/adr/0026-feature-flow-cadrage-to-merge.md, CONSTRAINTS §27.
+# set -uo pipefail (no -e): we deliberately capture the mutation step's exit
+# code ourselves (mutation_status=$?) so a later step (duplication signal)
+# can still run instead of the whole script aborting on it.
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${FEATURE_FLOW_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"

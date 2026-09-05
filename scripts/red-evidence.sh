@@ -3,12 +3,16 @@
 # Usage: make red CASE="N2: red-evidence writes on failure" CMD="npm test -- <path>"
 #     or: scripts/red-evidence.sh --case "..." --cmd "..."
 # See docs/howto/tdd-red-green.md, CONSTRAINTS §24.
+# set -uo pipefail (no -e): we deliberately run CMD and inspect its exit
+# code ourselves rather than aborting on it.
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${FEATURE_FLOW_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 cd "$ROOT" || exit 1
 # shellcheck source=lib/branch-slug.sh
 source "$SCRIPT_DIR/lib/branch-slug.sh"
+# shellcheck source=lib/red-evidence-format.sh
+source "$SCRIPT_DIR/lib/red-evidence-format.sh"
 
 CASE="${CASE:-}"
 CMD="${CMD:-}"
@@ -57,7 +61,7 @@ EXCERPT="$(tail -n 15 "$OUT")"
 
 {
   echo ""
-  echo "### RED evidence — $CASE ($DATE)"
+  red_evidence_header "$CASE" "$DATE"
   echo ""
   echo "- Command: \`$CMD\`"
   echo "- SHA: $SHA"

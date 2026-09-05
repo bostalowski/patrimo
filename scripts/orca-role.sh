@@ -7,6 +7,9 @@
 # Role prompts are never duplicated here (D7/N10) — read verbatim from
 # docs/howto/cadrage-lock.md (Framer/Challenger) and
 # docs/agent/scoring-rubric.md (Checker).
+# set -uo pipefail (no -e): git/command-v probes below are expected to
+# fail in normal operation (no Orca installed, etc.) and are branched on,
+# not treated as fatal.
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HARNESS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

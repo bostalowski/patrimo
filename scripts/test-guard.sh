@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Gate: no test silently deleted/weakened without a Test-removal-justified line.
 # See docs/adr/0026-feature-flow-cadrage-to-merge.md, CONSTRAINTS §27.
+# set -uo pipefail (no -e): git-diff/grep pipelines here legitimately exit
+# non-zero on "no match" — we inspect that ourselves, not abort on it.
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${FEATURE_FLOW_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"

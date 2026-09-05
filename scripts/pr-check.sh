@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Gate: branch-ready + RED evidence (checked cases) + Checker Pass recency/
 # citation + diff-size signal. See docs/howto/feature-flow.md (gate G6).
+# set -uo pipefail (no -e): several checks below run a command and inspect
+# its exit code themselves rather than aborting the whole gate on it.
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${FEATURE_FLOW_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -9,6 +11,8 @@ cd "$ROOT" || exit 1
 source "$SCRIPT_DIR/lib/branch-slug.sh"
 # shellcheck source=lib/diff.sh
 source "$SCRIPT_DIR/lib/diff.sh"
+# shellcheck source=lib/red-evidence-format.sh
+source "$SCRIPT_DIR/lib/red-evidence-format.sh"
 
 BRANCH="$(branch_name)"
 if is_integration_branch "$BRANCH"; then
@@ -76,10 +80,11 @@ if [[ "$TIER" == "B" && -f "$CONTRACT" ]]; then
   missing=()
   while IFS= read -r id; do
     [[ -z "$id" ]] && continue
-    # Require the actual header red-evidence.sh writes ("### RED evidence — <CASE> (<date>)"),
-    # not a bare substring — a decoy prose line ("no RED evidence for N1 yet")
-    # matched the old check and made this gameable.
-    if [[ ! -f "$PROGRESS" ]] || ! grep -qE "^### RED evidence — .*\\b$id\\b" "$PROGRESS"; then
+    # Require the actual header red-evidence.sh writes, via the shared
+    # lib/red-evidence-format.sh pattern (not a bare substring — a decoy
+    # prose line like "no RED evidence for N1 yet" matched the old check
+    # and made this gameable).
+    if [[ ! -f "$PROGRESS" ]] || ! grep -qE "$(red_evidence_header_pattern "$id")" "$PROGRESS"; then
       missing+=("$id")
     fi
   done < <(grep -oE '^[[:space:]]*-[[:space:]]*\[[xX]\][[:space:]]*(N[0-9]+|E[0-9]+):' "$CONTRACT" 2>/dev/null | grep -oE '(N[0-9]+|E[0-9]+)')
