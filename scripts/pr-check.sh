@@ -107,10 +107,19 @@ echo "  ${stat:-no diff vs $BASE}"
 
 echo ""
 echo "5. Rework log row for this slug (D8 — must land in the PR being merged)"
-if [[ -f docs/agent/rework-log.md ]] && grep -qF "$SLUG" docs/agent/rework-log.md; then
-  echo "  OK — docs/agent/rework-log.md already has a row for $SLUG"
+if node "$SCRIPT_DIR/lib/rework-log.mjs" check-own; then
+  echo "  OK — own row present with Touched paths"
 else
-  echo "  FAIL — docs/agent/rework-log.md has no row for $SLUG — append one in this PR before merge (not a follow-up)"
+  echo "  FAIL — missing/empty rework-log row for $SLUG — run \`make rework-log-stamp\` in this PR"
+  fail=1
+fi
+
+echo ""
+echo "6. Rework overlap (D8 — auto-detect follow-ups within 30 days)"
+if node "$SCRIPT_DIR/lib/rework-log.mjs" check-overlap; then
+  echo "  OK — no unreworked path overlap (or none in window)"
+else
+  echo "  FAIL — mark Reworked?=yes on the overlapping row(s) in docs/agent/rework-log.md"
   fail=1
 fi
 

@@ -1,4 +1,4 @@
-.PHONY: setup test lint typecheck verify verify-full init e2e next-feature cold-start branch-contract branch-status branch-ready platform-gaps red gauntlet pr-check flow checker
+.PHONY: setup test lint typecheck verify verify-full init e2e next-feature cold-start branch-contract branch-status branch-ready platform-gaps red gauntlet pr-check flow checker rework-log-stamp
 
 setup:
 	npm ci
@@ -42,6 +42,9 @@ gauntlet:
 
 pr-check:
 	bash scripts/pr-check.sh
+
+rework-log-stamp:
+	node scripts/lib/rework-log.mjs stamp
 
 flow:
 	bash scripts/flow-status.sh
