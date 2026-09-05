@@ -47,7 +47,7 @@ flow:
 	bash scripts/flow-status.sh
 
 checker:
-	bash scripts/orca-role.sh checker
+	bash scripts/role-worktree.sh checker
 
 # Deprecated alias → platform-gaps + branch-status
 next-feature:

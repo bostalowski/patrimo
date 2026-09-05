@@ -26,7 +26,7 @@ Canonical path: `.agents/skills/patrimo-harness/` (symlinked as
    - Behavior: targeted `npm test -- <path>` (after RED → GREEN when Layer 2 applies)
    - Web UI / API / workbook I/O / settings: `make e2e` or `make verify-full`
    - `@patrimo/core` / workbook I/O / API route diffs: `make gauntlet` (test-removal guard + scoped mutation testing — CONSTRAINTS §27)
-8. Checker: `make checker` (spawns an isolated worktree — Orca-managed when available, plain `git worktree` fallback otherwise — via `scripts/orca-role.sh`) using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof). The Checker writes only that branch's PROGRESS.md.
+8. Checker: `make checker` (spawns an isolated `git worktree` via `scripts/role-worktree.sh` — plain git, no IDE/tool preference) using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof). The Checker writes only that branch's PROGRESS.md.
 9. `make pr-check` before opening/updating the PR — replays `branch-ready`, requires RED evidence per checked-off case and a fresh, cited Checker Pass. CI's `harness` job replays it on every push.
 10. Update `docs/agent/branches/<slug>/PROGRESS.md` (+ optional `docs/agent/runs/YYYY-MM-DD-slug.md`).
 11. On merge: update root `FEATURES.md` matrix if platform status changed; append a row to `docs/agent/rework-log.md`.
@@ -71,7 +71,7 @@ Isolated ports / DinD for parallel worktrees / agents: root `Coastfile` +
 command). Not part of DoD — do not require Coasts for verify / branch gates.
 Classic `npm run dev` stays the default single-checkout path.
 
-`make checker` prefers an Orca-managed worktree (see `.agents/skills/orca-cli/`
-if present) — `scripts/orca-role.sh` resolves the Orca binary and falls back
-to a plain `git worktree add --detach` when Orca isn't available, so the
-Checker gate never hard-requires Orca or Coasts.
+`make checker` always uses a plain `git worktree add --detach`
+(`scripts/role-worktree.sh`) — no Orca/Coast/IDE preference, so it behaves
+identically whichever agent or tool runs it and never hard-requires Orca
+or Coasts.

@@ -27,9 +27,9 @@ Gauntlet = test-guard (structural: no deleted/`.skip`/`.only` test without a
   scoped to changed `packages/core/src/**` files only (never repo-wide,
   never a global-score gate).
 
-Checker isolation: `make checker` spawns in a separate Orca-managed
-  worktree/Coast, not a same-session role switch. Checker may only write
-  PROGRESS.md.
+Checker isolation: `make checker` spawns in a separate plain `git worktree`
+  (no IDE/tool preference — works identically in any agent or editor), not
+  a same-session role switch. Checker may only write PROGRESS.md.
 
 Prompts are not duplicated: Framer/Challenger/teach-back text stays in
   cadrage-lock.md; Checker text stays in scoring-rubric.md. Scripts read/
@@ -104,15 +104,15 @@ reviewable slices instead of one large diff:
    found ~200 lines is where review quality drops, but a hard line-count
    gate would block legitimate mechanical diffs the harness has no way to
    distinguish from real bloat).
-5. **Checker isolation.** `make checker` = `scripts/orca-role.sh checker`:
-   resolves the Orca CLI per the `orca-cli` skill's own binary-resolution
-   rule, spawns the Checker in a separate Orca-managed worktree (optionally
-   its own Coast), and the Checker may only write `PROGRESS.md` — replacing
-   "open a new chat and paste this prompt" (self-declared freshness) with a
-   structurally separate process.
+5. **Checker isolation.** `make checker` = `scripts/role-worktree.sh checker`:
+   always creates a plain `git worktree add --detach` — no IDE/tool
+   preference, since the write-scope check below only needs a known worktree
+   path to diff, not any particular way of creating it — and the Checker may
+   only write `PROGRESS.md`, replacing "open a new chat and paste this
+   prompt" (self-declared freshness) with a structurally separate process.
 6. **No duplicated prompts.** Framer/Challenger/teach-back prompt text stays
    in `cadrage-lock.md`; the Checker prompt stays in `scoring-rubric.md`.
-   `orca-role.sh` reads and prints them; it does not re-author them
+   `role-worktree.sh` reads and prints them; it does not re-author them
    elsewhere.
 7. **Post-merge signal.** `docs/agent/rework-log.md` — one row per merged
    feature, incremented on a follow-up fix within 30 days — is the only
@@ -209,13 +209,11 @@ mechanically.
   a RED failure for the wrong reason (bad import, typo) — `red-evidence.sh`
   can only see the exit code; `tdd-red-green.md`'s guidance to check the
   failure reason by hand still applies on top of the script.
-- Automating Framer/Challenger spawning beyond resolving the Orca binary and
+- Automating Framer/Challenger spawning beyond creating their worktree and
   printing the existing paste-prompts — no scripted "auto-accept teach-back."
 
 ## Follow-up
 
-- Optional: extend `orca-role.sh` to also spawn Framer/Challenger in
-  isolated worktrees (this branch only requires it for Checker).
 - Optional: once `rework-log.md` has enough rows, revisit whether the
   informational diff-size signal should tighten.
 

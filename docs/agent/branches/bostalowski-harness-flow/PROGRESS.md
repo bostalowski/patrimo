@@ -4,8 +4,8 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** All 6 tranches implemented, tested, and Checker-Passed (three Checker rounds: pass 1 Fail on tranches 1+2 → fixed; pass 2 Fail on a new CI checkout bug found across all 6 tranches → fixed; pass 3 Pass, all-A, verifying the CI fix specifically). `bash scripts/pr-check.sh` now reports `READY` (exit 0) on this branch's own diff. Remaining before merge: (1) push — this session's `gh`/git token lacks the `workflow` scope needed for commits touching `.github/workflows/ci.yml`, so `d7aa5e2` onward (through the latest commit) are local-only pending the human pushing them or granting the scope; (2) once pushed, get a real GitHub Actions run of the `harness`/`size` jobs (never executed for real yet — see Checker pass-3 note); (3) add a `docs/agent/rework-log.md` row on merge (non-blocking reminder, §5).
-- **Blocked:** none locally; merge is blocked on the human pushing the remaining local commits (OAuth `workflow` scope)
+- **In progress:** All 6 tranches implemented, tested, Checker-Passed, pushed, and confirmed green on a real GitHub Actions run (PR #78, run 33948718048 — `verify`/`e2e`/`size`/`harness` all ✓, `pr-check: READY` in the actual CI log). Then, per human request, **D4 amended** (2026-09-05): dropped the Orca-preference branch from Checker isolation, `make checker` now always uses a plain `git worktree` — see "Cadrage amendment (2026-09-05) — D4 simplified" at the end of this file. This is a behavior/core change to already-shipped tranche 5, so a fresh Checker pass is needed before treating it as done.
+- **Blocked:** none. Only remaining item: add a `docs/agent/rework-log.md` row on merge (non-blocking §5 reminder).
 
 ## Cadrage lock
 
@@ -58,7 +58,7 @@ After opening tranche 1's PR (#78), discovered the mechanical problem the pass-1
 - [x] Maker: Tranche 2 (executable gates) — see RED evidence + Last verify below
 - [x] Maker: Tranche 3 (PR template + CI jobs) — `make verify` green (2026-09-04); CI YAML validated with js-yaml
 - [x] Maker: Tranche 4 (Stryker mutation) — config-only + manual dogfood evidence, see RED evidence below
-- [x] Maker: Tranche 5 (orca-role.sh) — `make verify` green (2026-09-04), see RED evidence above
+- [x] Maker: Tranche 5 (`role-worktree.sh`, renamed from `orca-role.sh` 2026-09-05 — see D4 amendment below) — `make verify` green (2026-09-04), see RED evidence above
 - [x] Maker: Tranche 6 (coherence/duplication/rework-log) — `make verify` green (2026-09-05)
 - [x] Checker Pass — 3-round loop: pass 1 Fail (tranches 1+2) → fixed; pass 2 Fail (new CI bug, all 6 tranches) → fixed; pass 3 Pass (2026-09-05, all-A, CI fix independently verified). `bash scripts/pr-check.sh`: READY, exit 0.
 - [ ] Push remaining local commits (`d7aa5e2` onward) — blocked on `workflow` OAuth scope; human action required
@@ -168,25 +168,25 @@ Dogfood re-check on this real branch after both fixes: `bash scripts/gauntlet.sh
 - Command: manual (see above), not `npx vitest run scripts` — this case is Stryker-runtime behavior, not gate-script behavior
 - Date: 2026-09-04
 
-### RED evidence — N10: orca-role.sh prints Framer/Checker prompts read verbatim (2026-09-04)
+### RED evidence — N10: role-worktree.sh prints Framer/Checker prompts read verbatim (2026-09-04; script renamed 2026-09-05, was orca-role.sh)
 
-- Command: `npx vitest run scripts/orca-role.test.ts`
-- Test: `orca-role.sh > N10: prints the Framer prompt read verbatim from cadrage-lock.md` and `> N10: prints the Checker prompt read verbatim from scoring-rubric.md` — each asserts the script's stdout contains the exact opening line read live from `docs/howto/cadrage-lock.md` / `docs/agent/scoring-rubric.md`, so a future edit to either doc is what the test would catch, not a hardcoded copy in the script
-- SHA: 33387c4
+- Command: `npx vitest run scripts/role-worktree.test.ts`
+- Test: `role-worktree.sh > N10: prints the Framer prompt read verbatim from cadrage-lock.md` and `> N10: prints the Checker prompt read verbatim from scoring-rubric.md` — each asserts the script's stdout contains the exact opening line read live from `docs/howto/cadrage-lock.md` / `docs/agent/scoring-rubric.md`, so a future edit to either doc is what the test would catch, not a hardcoded copy in the script
+- SHA: 33387c4 (original), amended by the D4 simplification commit below
 
-### RED evidence — E7: orca-role.sh --publish refuses when the Checker's worktree touched anything but PROGRESS.md (2026-09-04)
+### RED evidence — E7: role-worktree.sh --publish refuses when the Checker's worktree touched anything but PROGRESS.md (2026-09-04; script renamed 2026-09-05, was orca-role.sh)
 
-- Command: `npx vitest run scripts/orca-role.test.ts`
-- Test: `orca-role.sh > E7: --publish fails when the worktree touched a file other than that branch's PROGRESS.md` and `> E7: --publish succeeds and copies PROGRESS.md when only that file changed`
-- SHA: 33387c4
+- Command: `npx vitest run scripts/role-worktree.test.ts`
+- Test: `role-worktree.sh > E7: --publish fails when the worktree touched a file other than that branch's PROGRESS.md` and `> E7: --publish succeeds and copies PROGRESS.md when only that file changed`
+- SHA: 33387c4 (original), amended by the D4 simplification commit below
 
-### RED evidence — E8: orca-role.sh falls back to a plain detached git worktree without Orca (2026-09-04)
+### RED evidence — E8: role-worktree.sh always creates a plain detached git worktree (2026-09-05 — simplified from a conditional Orca-unavailable fallback; see D4 amendment below)
 
-- Command: `npx vitest run scripts/orca-role.test.ts`
-- Test: `orca-role.sh > E8: falls back to a plain detached git worktree when Orca is unavailable` (forces the no-Orca path via a `FEATURE_FLOW_NO_ORCA` test-only override — see PROGRESS process note: without this override, tests would non-deterministically take the Orca path or not depending on what's installed on the machine running them)
-- SHA: 33387c4
+- Command: `npx vitest run scripts/role-worktree.test.ts`
+- Test: `role-worktree.sh > E8: creates a plain detached git worktree (no external tool dependency)` — no longer conditional on an env override; this is now the only path
+- SHA: see D4 amendment below
 
-Process note: while writing scripts/orca-role.test.ts, `fx.run()`'s use of `execFileSync` was found to silently discard stderr on a successful (exit 0) run — an `E8` assertion checking `res.stdout` for a message the script actually writes to stderr failed for that reason, not a script bug. Fixed by switching `scripts/test-support/fixture-repo.ts`'s `run()` to `spawnSync`, which captures both streams unconditionally; full `scripts/` suite re-run green afterward (26/26).
+Process note: while writing the original orca-role.test.ts (2026-09-04), `fx.run()`'s use of `execFileSync` was found to silently discard stderr on a successful (exit 0) run — an assertion checking `res.stdout` for a message the script actually writes to stderr failed for that reason, not a script bug. Fixed by switching `scripts/test-support/fixture-repo.ts`'s `run()` to `spawnSync`, which captures both streams unconditionally; full `scripts/` suite re-run green afterward (26/26).
 
 ### RED evidence — N11: pr-check.sh prints a non-blocking rework-log reminder (2026-09-05)
 
@@ -378,3 +378,19 @@ No new defect found.
 ### Verdict: **Pass**
 
 Per `docs/agent/scoring-rubric.md`'s bar ("Pass: Correctness A or B; Architecture A or B; no D anywhere; Scope at least B"): all five dimensions score A, no D anywhere. The one caveat surfaced (forked-PR `head_ref` quirk) is informational and does not apply to this repo's actual same-repo-branch PR model, so it does not downgrade any dimension. Residual, unchanged-since-pass-2 limitation: the fix is verified by mechanism (documented semantics + local git repro) but not yet by an actual GitHub Actions execution, since push remains blocked by the missing `workflow` OAuth scope — this is disclosed, not hidden, and is not something this Checker pass can resolve locally. Recommend a real end-to-end confirmation (one passing `harness` job run on a real PR) once the OAuth scope is granted and the branch pushes, but this does not block Pass — the mechanism is correctly understood and correctly implemented.
+
+## Cadrage amendment (2026-09-05) — D4 simplified: drop the Orca preference, always plain `git worktree`
+
+Human question, mid-conversation (after the branch had already merged, CI-verified, and been explained end-to-end): "why does the maker-checker step mention Orca specifically — can't we stay IDE-agnostic?" Walked through the tradeoff explicitly before touching anything:
+
+- The only thing `make checker` structurally needs is *some* known, separate worktree path — that's what makes the E7 write-scope check (diff that path, refuse if anything besides `PROGRESS.md` changed) possible at all. A plain `git worktree add --detach` gives 100% of that, using nothing but git — available identically in Cursor, Claude Code, Codex, Orca, or a raw terminal.
+- The original design (D4, tranche 5) additionally *preferred* an Orca-managed worktree when available, falling back to plain git otherwise (E8). On reflection this added no correctness or isolation benefit — E7's enforcement doesn't care how the worktree was created — only an optional convenience for whoever has Orca installed, at the cost of the harness no longer reading as trivially "the same for every IDE/agent."
+- Considered the alternative of going further — not scripting the worktree creation at all, just *documenting* "review in a separate worktree" and letting each IDE/agent do it its own way. Rejected: without a script that actually creates a known path, E7 has nothing to diff against and degrades back into a bare assertion — exactly the self-declared-freshness problem D4 exists to close. Human agreed after this was laid out; kept the mechanical script, dropped only the Orca-preference branch.
+
+Decision: **D4 amended** — `make checker` now *always* creates a plain `git worktree add --detach`, no tool preference, no conditional branch. `scripts/orca-role.sh` renamed to `scripts/role-worktree.sh` (git history preserved via `git mv`); `resolve_orca()` and the `FEATURE_FLOW_NO_ORCA` test-only override deleted (nothing left to disable). Same treatment as the D1 amendment: no re-run of Challenger/teach-back — this narrows an already-locked decision toward its simpler, already-tested fallback path (E8, which was already fully implemented, tested, and Checker-verified as functional) rather than introducing new behavior; documented here instead of silently reopening cadrage (CONSTRAINTS §21/25 spirit).
+
+Updated for consistency (all Orca-specific wording removed, mechanism unchanged elsewhere): `docs/adr/0026-feature-flow-cadrage-to-merge.md` (Decision #5, Invariant 5 wording, Follow-up), `docs/howto/feature-flow.md` (G5 row, roles table), `docs/howto/maker-checker.md`, `.agents/skills/patrimo-harness/SKILL.md`, `Coastfile` (reverted the Orca `worktree_dir` addition from tranche 5 — no longer relevant), `Makefile`/`package.json` (`checker` target), this branch's `CONTRACT.md` (D4, E7, E8, N10, Scope file list, Tranches row 5, Exclusions).
+
+Full `scripts/role-worktree.test.ts` suite (6/6) re-run green after the rename; `make verify` (96 files / 635 tests) green; dogfooded the real `make checker` command end-to-end in this worktree (created `/tmp/dogfood-checker-wt`, printed the Checker prompt correctly, cleaned up with `git worktree remove --force` — no residue).
+
+Given this changes tranche 5's shipped behavior (a behavior/core change, not docs-only), a fresh Checker pass is warranted per the re-check loop before treating this as done — see below.

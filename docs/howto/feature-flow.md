@@ -43,7 +43,7 @@ commits to an open PR's branch grows that PR rather than starting a new one.
 | G2 | `make red CASE="…" CMD="…"` | The named behavior case had no passing test before this command ran — refuses to write evidence if `CMD` already passes | [tdd-red-green.md](tdd-red-green.md), `scripts/red-evidence.sh` |
 | G3 | `make verify` (+ `make e2e` when Layer 3 applies) | Three-layer DoD for the tranche's slice | `AGENTS.md` § Run and verify |
 | G4 | `make gauntlet` | No test silently deleted/`.skip`'d/`.only`'d without a `Test-removal-justified:` line; on a `packages/core` diff, no surviving mutant above threshold in the changed files | `scripts/gauntlet.sh`, `scripts/test-guard.sh` |
-| G5 | `make checker` | A Checker in a separate Orca worktree scores the tranche against [scoring-rubric.md](../agent/scoring-rubric.md), writing only to PROGRESS | [maker-checker.md](maker-checker.md), `scripts/orca-role.sh checker` |
+| G5 | `make checker` | A Checker in a separate plain `git worktree` scores the tranche against [scoring-rubric.md](../agent/scoring-rubric.md), writing only to PROGRESS | [maker-checker.md](maker-checker.md), `scripts/role-worktree.sh checker` |
 | G6 | `make pr-check` then `make pr` (first tranche) or a plain push (later tranches landing in an already-open PR) | Everything above is true and recorded, and dated after the latest code commit | `scripts/pr-check.sh`, `scripts/pr.sh`, CI `harness` job replays `pr-check` on every push |
 | G7 | merge | FEATURES matrix updated if a platform status changed; `docs/agent/rework-log.md` gets a row | [branches/README.md](../agent/branches/README.md) |
 
@@ -60,12 +60,12 @@ Same roles as [cadrage-lock.md](cadrage-lock.md) and
 | Framer | Any session | CONTRACT.md (Intent, cases, decisions, Tranches) |
 | Challenger | Fresh session (`make checker`-style isolation optional, not required) | PROGRESS.md (Pass/Fail + edits requested) |
 | Maker | The branch's own worktree | Production code, tests, CONTRACT/PROGRESS updates |
-| Checker | **Separate Orca worktree/Coast** (`make checker`) | PROGRESS.md only — never production code |
+| Checker | **Separate plain `git worktree`** (`make checker`) | PROGRESS.md only — never production code |
 
 Role prompts are not duplicated here: Framer/Challenger/teach-back text lives
 in [cadrage-lock.md](cadrage-lock.md); the Checker prompt lives in
-[scoring-rubric.md](../agent/scoring-rubric.md). `scripts/orca-role.sh` reads
-and prints them.
+[scoring-rubric.md](../agent/scoring-rubric.md). `scripts/role-worktree.sh`
+reads and prints them.
 
 ## Why gates instead of a checklist
 
