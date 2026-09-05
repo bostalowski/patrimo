@@ -27,11 +27,12 @@ function workbook(overrides: Partial<Workbook> = {}): Workbook {
 		properties: [],
 		dca: [],
 		manualPrices: [],
+		loanInsurancePaliers: [],
+		propertyTaxes: [],
 		geographicAllocations: [],
 		sectorAllocations: [],
 		diversificationTargets: [],
 		financialGoals: [],
-		propertyTaxes: [],
 		...overrides,
 	};
 }

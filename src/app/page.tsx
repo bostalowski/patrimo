@@ -146,7 +146,7 @@ export default async function DashboardPage() {
 				{realEstateEquity > 0 && (
 					<Card>
 						<CardHeader>
-							<CardTitle>Immobilier (équité)</CardTitle>
+							<CardTitle>Immobilier (patrimoine net)</CardTitle>
 							<CardValue>{formatEuro(realEstateEquity)}</CardValue>
 						</CardHeader>
 					</Card>

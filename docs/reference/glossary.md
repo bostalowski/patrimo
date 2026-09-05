@@ -42,6 +42,30 @@ Gain or loss locked by disposals and related realized events (sales, and other r
 
 Portfolio valuation plus real-estate equity contributions used on the dashboard (`computeNetWorth`).
 
+## Real-estate cash-on-cash (after tax)
+
+Annual cash-flow after tax (including loan principal repayment) divided by acquisition cost. Displayed as « Cash-on-cash après impôt ». Not a classic net rental yield (NOI / value). Field: `propertySnapshot.netYield`. See [ADR 0028](../adr/0028-realestate-projection-reliability.md).
+
+## Real-estate patrimoine net (equity)
+
+What you own on a property after debt: `(valeur − capital restant dû) × part détenue`. UI label « Patrimoine net »; code field `equity` / `currentEquity`. Shared definition copy: `REAL_ESTATE_EQUITY_DEFINITION_FR`. Not cash-flow and not yield. See [ADR 0028](../adr/0028-realestate-projection-reliability.md).
+
+## Real-estate CAGR
+
+Compound annual growth of apport → `netIfSold` over the projection horizon: `(netIfSold / apport)^(1/horizon) − 1`. Field: `RealEstateProjection.cagr` (alias `annualizedReturn`). Null when apport is 0.
+
+## Real-estate TRI (annual IRR)
+
+Internal rate of return on the annual series: year 0 = −apport, intermediate years = cash-flow after tax, final year = cash-flow + net sale proceeds. Field: `RealEstateProjection.irr`. Distinct from portfolio daily XIRR. See [ADR 0028](../adr/0028-realestate-projection-reliability.md).
+
+## Borrower-insurance modes (`modeAssurance`)
+
+How monthly loan insurance is computed when no paliers apply: `CRD` (remaining balance × taux / 12, default), `CAPITAL_INITIAL` (initial principal × taux / 12, flat), or `MONTANT_FIXE` (Immobilier column **Assurance mensuelle (€)**). Sheet **Assurance emprunt** (`Bien`, `Année début`, `Assurance mensuelle (€)`) stores optional annual paliers that **override** the mode. Credit-year index: `floor(monthsElapsed / 12) + 1`. See [ADR 0029](../adr/0029-realestate-loan-insurance-modes.md).
+
+## Assurance emprunt (sheet)
+
+Optional workbook sheet for sparse borrower-insurance paliers. Columns: `Bien`, `Année début`, `Assurance mensuelle (€)`. Invalid rows rejected; duplicate Bien+année → last row wins. Hydrated onto `Property.assurancePaliers` / `Workbook.loanInsurancePaliers`. See [ADR 0029](../adr/0029-realestate-loan-insurance-modes.md).
+
 ## Emergency fund coverage
 
 Months of monthly expenses covered by total livret market value: `livretBalance / depensesMensuelles`. Computed by `computeEmergencyFundHealth` in `@patrimo/core`. Undefined when monthly expenses are zero or negative (indicator hidden).
@@ -105,23 +129,6 @@ How an asset obtains quotes: `coingecko`, `yahoo`, `investir`, `zonebourse`, or 
 ## Manual price
 
 A user-entered dated valuation (typically FCPE VL) stored in the optional workbook sheet `Prix manuels`. Only assets whose price source is `manual` use these entries. Automatic market prices remain in local derived caches (`prices.json` / AsyncStorage), not in this sheet.
-
-## Taxe foncière history
-
-A dated per-property property-tax amount, one row per `(Bien, Année)`,
-persisted in the optional workbook sheet `Taxe foncière` (`Bien` =
-`Property.id`, never the label). Model: `PropertyTax { propertyId, year,
-amount }` on `Workbook.propertyTaxes`. Resolution
-(`resolvePropertyTaxForYear`) for a given property and calendar year: an
-exact entry for that year wins (a future year is accepted, unlike **Manual
-price**); otherwise the entry with the largest year at or before the
-requested year wins (carry-forward, no automatic escalation); otherwise the
-flat `Property.taxeFonciere` field is the fallback, applied year by year.
-Feeds `operatingForYear` / `projectProperty` (`totalReturn`, `netIfSold`)
-and `PropertySnapshot.currentPropertyTax` (the resolved amount for the
-current calendar year, part-adjusted) in `@patrimo/core`. Never feeds
-`resaleTax()` — taxe foncière is not deductible from the acquisition price
-for French real-estate capital gains. See [ADR 0027](../adr/0027-property-tax-history.md).
 
 ## Geographic allocation
 
@@ -284,7 +291,6 @@ Computed by `computeSavingsCapacity` in `@patrimo/core`. Complementary to
 - [ADR 0018](../adr/0018-configurable-emergency-fund-target.md)
 - [ADR 0019](../adr/0019-livret-dca-savings-capacity.md)
 - [ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md)
-- [ADR 0027](../adr/0027-property-tax-history.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [Diversification targets](../architecture/diversification-targets.md)

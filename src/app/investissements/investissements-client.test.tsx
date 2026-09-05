@@ -24,7 +24,6 @@ describe("InvestissementsClient", () => {
 				monthlyTilt={null}
 				initialProfile={{}}
 				properties={[]}
-				propertyTaxes={[]}
 			/>,
 		);
 
