@@ -115,12 +115,14 @@ reviewable slices instead of one large diff:
    `role-worktree.sh` reads and prints them; it does not re-author them
    elsewhere.
 7. **Merge signal (rework log).** `docs/agent/rework-log.md` — one row per
-   feature that reaches `main`, incremented on a follow-up fix within 30 days —
-   is the only measurement this ADR adds, kept deliberately small.
-   **Amendment (2026-09-05):** the row is appended **in the PR about to merge**
-   (same diff as the feature). `make pr-check` fails if the current slug has
-   no row yet — no follow-up chore PR. (Originally: manual append after merge
-   with a non-blocking reminder only.)
+   feature that reaches `main`. **Amendment (2026-09-05, timing):** the row is
+   appended **in the PR about to merge**; `make pr-check` fails without it.
+   **Amendment (2026-09-05, auto-detect):** each row carries a `Touched` path
+   fingerprint (`make rework-log-stamp`). A later PR whose diff overlaps
+   `Touched` of a row still at `Reworked?=no` within 30 days fails
+   `make pr-check` and **proposes** those rows (`make rework-log-propose`);
+   a human answers yes (follow-up → `yes`) or no (coincidental →
+   `n/a — not a rework`). Agents must not auto-ack.
 
 ## Invariants
 

@@ -8,7 +8,7 @@ const FULL_TRANCHES =
 function writeReworkRow(fx: Fixture, slug: string) {
   fx.writeFile(
     "docs/agent/rework-log.md",
-    `| Date | Slug | Feature | Reworked? |\n|---|---|---|---|\n| 2026-01-01 | ${slug} | Fixture | no |\n`,
+    `| Date merged | Slug | Feature | Touched | Reworked? (follow-up within 30 days) |\n|---|---|---|---|---|\n| 2026-01-01 | ${slug} | Fixture | docs/agent/branches/${slug}/CONTRACT.md | no |\n`,
   );
 }
 
@@ -135,12 +135,15 @@ describe("scripts/pr-check.sh", () => {
     fx.writeProgress(
       `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks, all green\n`,
     );
-    fx.writeFile("docs/agent/rework-log.md", "| Date | Slug | Feature | Reworked? |\n|---|---|---|---|\n");
+    fx.writeFile(
+      "docs/agent/rework-log.md",
+      "| Date merged | Slug | Feature | Touched | Reworked? (follow-up within 30 days) |\n|---|---|---|---|---|\n",
+    );
     fx.commitAll("ready, but no rework-log row yet");
 
     const res = fx.run("scripts/pr-check.sh");
     expect(res.status).not.toBe(0);
-    expect(res.stdout).toContain("FAIL — docs/agent/rework-log.md has no row");
+    expect(res.stdout).toContain("FAIL — missing/empty rework-log row");
     expect(res.stdout).toContain("pr-check: NOT READY");
   });
 
@@ -150,14 +153,11 @@ describe("scripts/pr-check.sh", () => {
     fx.writeProgress(
       `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks, all green\n`,
     );
-    fx.writeFile(
-      "docs/agent/rework-log.md",
-      "| Date | Slug | Feature | Reworked? |\n|---|---|---|---|\n| 2026-01-01 | feat-prcheck-hasrework | Fixture | no |\n",
-    );
+    writeReworkRow(fx, "feat-prcheck-hasrework");
     fx.commitAll("ready, rework-log row present");
 
     const res = fx.run("scripts/pr-check.sh");
     expect(res.status).toBe(0);
-    expect(res.stdout).toContain("OK — docs/agent/rework-log.md already has a row");
+    expect(res.stdout).toContain("OK — own row present with Touched paths");
   });
 });
