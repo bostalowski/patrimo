@@ -9,6 +9,7 @@
 
 ## Done (recent)
 
+- [x] Taxe foncière par année — [PR #77](https://github.com/bostalowski/patrimo/pull/77), branch archive [docs/agent/branches/bostalowski-ajout-taxe-fonci-re/](docs/agent/branches/bostalowski-ajout-taxe-fonci-re/), [ADR 0027](docs/adr/0027-property-tax-history.md)
 - [x] Checker Pass on sector allocation mobile parity (PR #57) — [run log](docs/agent/runs/2026-08-21-sector-allocation-mobile.md)
 - [x] Sector allocation mobile UI parity — [run log](docs/agent/runs/2026-08-21-sector-allocation-mobile.md)
 - [x] Checker Pass on e2e isolation — [run log](docs/agent/runs/2026-08-21-e2e-isolation.md)
@@ -24,7 +25,7 @@ Gaps: `make platform-gaps`. Claim with a feature branch + `make branch-contract`
 ## Last verify
 
 - See the active branch’s `docs/agent/branches/<slug>/PROGRESS.md`, or the latest merged PR.
-- Date: 2026-08-21
+- Date: 2026-09-05
 
 ## Notes
 

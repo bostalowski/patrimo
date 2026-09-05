@@ -4,7 +4,7 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** Harness gate catch-up after rebase onto feature-flow (N#/E# + Tranches, RED headers, gauntlet scope fix, Checker Pass lines). Ready for `make pr-check` / PR.
+- **In progress:** Merged — [PR #77](https://github.com/bostalowski/patrimo/pull/77) (`ea2a384`). Archive only; post-merge rework-log + root PROGRESS handled on follow-up chore branch.
 - **Blocked:** none
 
 ## Cadrage lock

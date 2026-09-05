@@ -117,8 +117,8 @@ One tranche = one small, separately-reviewable unit (CONSTRAINTS §26; [feature-
 
 ## On merge
 
-- [ ] Update root [FEATURES.md](../../../../FEATURES.md) matrix if platform status changed
-- [ ] Leave this folder as archive (or note PR link in root PROGRESS Done)
+- [x] Update root [FEATURES.md](../../../../FEATURES.md) matrix if platform status changed — n/a (Real estate already `done` on web; this deepens the existing capability, no matrix row change)
+- [x] Leave this folder as archive — merged [PR #77](https://github.com/bostalowski/patrimo/pull/77) (`ea2a384`); noted on root [PROGRESS.md](../../../../PROGRESS.md) Done
 
 ## Cadrage gate
 
