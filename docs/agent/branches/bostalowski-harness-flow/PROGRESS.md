@@ -4,8 +4,8 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** All 6 tranches implemented and committed locally (82c6178..a80b485). Blocked on: (1) a fresh Checker re-check covering tranches 1–6 (the recorded Checker Fail from tranches 1+2 was addressed but never re-scored — maker-checker.md's re-check loop requires a fresh pass after behavior/tests fixes), (2) pushing — this session's `gh`/git token lacks the `workflow` scope needed for the commits touching `.github/workflows/ci.yml`, so `d7aa5e2` onward are local-only pending the human pushing them or granting the scope.
-- **Blocked:** none (see In progress for the two open items — neither blocks further local work, both block merge)
+- **In progress:** All 6 tranches implemented, tested, and Checker-Passed (three Checker rounds: pass 1 Fail on tranches 1+2 → fixed; pass 2 Fail on a new CI checkout bug found across all 6 tranches → fixed; pass 3 Pass, all-A, verifying the CI fix specifically). `bash scripts/pr-check.sh` now reports `READY` (exit 0) on this branch's own diff. Remaining before merge: (1) push — this session's `gh`/git token lacks the `workflow` scope needed for commits touching `.github/workflows/ci.yml`, so `d7aa5e2` onward (through the latest commit) are local-only pending the human pushing them or granting the scope; (2) once pushed, get a real GitHub Actions run of the `harness`/`size` jobs (never executed for real yet — see Checker pass-3 note); (3) add a `docs/agent/rework-log.md` row on merge (non-blocking reminder, §5).
+- **Blocked:** none locally; merge is blocked on the human pushing the remaining local commits (OAuth `workflow` scope)
 
 ## Cadrage lock
 
@@ -16,7 +16,8 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md).
 - Challenger: Pass (2026-09-04) — after pass 1 Fail and pass 2 Fail-partial (5/6), both resolved by edits; see "Challenger findings" below for full history
 - Teach-back: accepted (2026-09-04) — scenarios 1–5 all ✅ (tranches/branch-ready coverage gate, RED non falsifiable, garde anti-suppression tests, Checker Pass non périmé, mutation scopée core)
 - `make branch-ready`: green (2026-09-04) — score 14/14
-- Checker: Fail (2026-09-05) — see "Checker findings (2026-09-05, re-check tranches 1-6)" below
+- Checker: Pass (2026-09-05) — pass 3, CI checkout-ref fix verified; see "Checker findings (2026-09-05, re-check pass 3 — CI fix verification)" below
+- Checker evidence: `ci.yml` harness/size jobs now set `ref: ${{ github.head_ref }}`; local repro (detached-SHA worktree → `branch_name()` = "HEAD"; named-branch worktree → real branch name) confirms the mechanism; `make verify` (96/635 green), `npx vitest run scripts` (6/29 green), `branch-ready.sh` 15/15, `gauntlet.sh` OK, `pr-check.sh` NOT READY only on §2 (no-Checker-Pass, expected pre-this-edit) and §5 (non-blocking reminder) — all as anticipated.
 
 Dogfood find: first `make branch-ready` run mis-detected Tier A because Behavior case E3's own prose contained the literal substring `Layer 2: n/a` (in backticks, describing the Tier A skip rule), which is exactly what `branch-ready.sh` greps for to set TIER. Reworded E3 to describe the rule without that literal substring; re-run correctly detected Tier B (score 13/14, only Challenger-Pass line missing) then 14/14 after recording Challenger Pass in the exact `- Challenger: Pass (date)` format the gate greps for.
 
@@ -59,7 +60,10 @@ After opening tranche 1's PR (#78), discovered the mechanical problem the pass-1
 - [x] Maker: Tranche 4 (Stryker mutation) — config-only + manual dogfood evidence, see RED evidence below
 - [x] Maker: Tranche 5 (orca-role.sh) — `make verify` green (2026-09-04), see RED evidence above
 - [x] Maker: Tranche 6 (coherence/duplication/rework-log) — `make verify` green (2026-09-05)
-- [ ] Checker Pass — re-check required (fresh session) covering tranches 1–6 together before `make pr-check` can go green; the recorded pass-1 Fail must not be silently treated as stale
+- [x] Checker Pass — 3-round loop: pass 1 Fail (tranches 1+2) → fixed; pass 2 Fail (new CI bug, all 6 tranches) → fixed; pass 3 Pass (2026-09-05, all-A, CI fix independently verified). `bash scripts/pr-check.sh`: READY, exit 0.
+- [ ] Push remaining local commits (`d7aa5e2` onward) — blocked on `workflow` OAuth scope; human action required
+- [ ] Observe a real GitHub Actions run of `harness`/`size` once pushed (never executed for real to date)
+- [ ] Add a `docs/agent/rework-log.md` row for this branch on merge (pr-check §5 reminder)
 
 ## RED evidence (when Layer 2 applies)
 
@@ -310,3 +314,67 @@ Re-check needed after the CI checkout-ref fix (behavior/core) is made and, ideal
 - **Non-blocking nit fixed:** extracted the `"### RED evidence — "` header format into `scripts/lib/red-evidence-format.sh` (`red_evidence_header()` / `red_evidence_header_pattern()`), sourced by both `red-evidence.sh` (write side) and `pr-check.sh` §3 (read side) — closes the implicit-duplication coupling the Checker flagged, even though no live exploit existed against it.
 - **Non-blocking nit fixed:** added a one-line rationale comment next to `set -uo pipefail` (no `-e`) in `test-guard.sh`, `gauntlet.sh`, `pr-check.sh`, `red-evidence.sh`, `orca-role.sh`, explaining the deliberate choice vs `branch-ready.sh`'s `set -euo pipefail`.
 - Full `scripts/` suite re-run after all fixes: 6 files / 29 tests, all green. `make verify`: 96 files / 635 tests, exit 0. `bash scripts/gauntlet.sh` / `bash scripts/pr-check.sh` dogfooded again on this real branch — same expected state (gauntlet green; pr-check NOT READY only on §2 no-Checker-Pass-yet and the non-blocking §5 reminder).
+
+## Checker findings (2026-09-05, re-check pass 3 — CI fix verification)
+
+Fresh Checker pass, run from a separate worktree (`/Users/bastien.ostalowski/orca/workspaces/patrimo/harness-flow`), no production code written. HEAD at check time: `1cc6eb4` (the fix commit responding to pass 2's Fail). Scope: rigorous, independent verification of the specific claimed fix — not a re-scoring of the whole branch from scratch.
+
+### 1. Is `github.head_ref` actually correct here?
+
+Verified from documented GitHub Actions context semantics: `github.head_ref` is populated only for `pull_request`/`pull_request_target` events and names the head **branch**, not a SHA — matching what the fix commit message itself states (and correctly rejects the pass-2 Checker's own suggested `github.event.pull_request.head.sha` alternative, since checking out a bare SHA also detaches HEAD).
+
+Local mechanism repro (since the real GitHub Actions runner can't be executed here): built a throwaway branch at this branch's tip, created two isolated `git worktree add` checkouts —
+```
+$ git worktree add --detach /tmp/repro-detached <sha>   # simulates checkout: uses/checkout@v4 with NO ref override
+$ (cd /tmp/repro-detached && git rev-parse --abbrev-ref HEAD)
+HEAD
+$ git worktree add /tmp/repro-attached throwaway-repro-branch   # simulates ref: <branch-name>
+$ (cd /tmp/repro-attached && git rev-parse --abbrev-ref HEAD)
+throwaway-repro-branch
+```
+This confirms the mechanism the fix relies on: checking out a **named branch** (as `ref: ${{ github.head_ref }}` does) yields an attached HEAD whose `git rev-parse --abbrev-ref HEAD` resolves to the real branch name, while a detached/SHA checkout resolves to the literal string `"HEAD"` — exactly the pass-2 bug and exactly what the fix closes. Both scratch worktrees and the throwaway branch were removed afterward (`git worktree remove --force` x2, `git branch -D`); `git worktree list` confirms no residue.
+
+**Caveat surfaced, not previously flagged, non-blocking for this repo:** a documented GitHub Actions gotcha exists for **forked-repo PRs** — `actions/checkout@v4`'s default `repository:` input is the *base* repo, so `ref: ${{ github.head_ref }}` on a forked PR would try to fetch a branch name that only exists in the fork, and the fetch would fail loudly (checkout step fails, not silent wrong-branch behavior) unless `repository: ${{ github.event.pull_request.head.repo.full_name }}` is also set. This does not apply to same-repo branch PRs (this repo's actual usage pattern — a personal project, no external-fork contribution model evident anywhere in CONSTRAINTS/ADR/docs), so it is not a regression or a blocking gap for the stated use case, but it is a real edge case the fix commit doesn't mention. Worth a one-line doc note if/when this repo ever accepts fork PRs; not required for Pass here.
+
+### 2. `.github/workflows/ci.yml` structural validation
+
+Parsed with `js-yaml` (Node): 4 jobs (`verify`, `e2e`, `harness`, `size`); `on:` is `pull_request` (no filters) + `push` (branches: `[main]`). `harness.if` and `size.if` both `"github.event_name == 'pull_request'"` — correctly gates both jobs to PR events only, so `github.head_ref` (empty on `push`) is never read outside a context where it's populated. Both jobs' checkout step `with:` resolves to `{"fetch-depth":0,"ref":"${{ github.head_ref }}"}`. `verify`/`e2e` are unaffected (no `ref:` override, no `branch_name()` call) — correct, they never needed one.
+
+### 3. Local reproduction of the mechanism — see §1 above (done, not skipped).
+
+### 4. Regression sweep
+
+- `make verify`: 96 test files / 635 tests, exit 0.
+- `npx vitest run scripts`: 6 files / 29 tests, all green (matches expected count).
+- `bash scripts/branch-ready.sh`: score 15/15, "Ready to implement this branch CONTRACT."
+- `bash scripts/gauntlet.sh`: test-guard OK, mutation skipped (no `packages/core` diff), duplication signal — none found; exit 0.
+- `bash scripts/pr-check.sh`: `NOT READY` — §1 branch-ready OK, §2 FAIL (no Checker Pass line yet, expected — this pass is what supplies it), §3 OK (RED evidence present for all checked-off cases), §4 informational diff-size, §5 non-blocking rework-log reminder. Exactly the anticipated shape — no new failures.
+
+### 5. Non-blocking nits from pass 2 — confirmed closed
+
+- `scripts/lib/red-evidence-format.sh` created (`red_evidence_header()` write-side helper, `red_evidence_header_pattern()` read-side ERE builder). Confirmed **actually wired in**, not just added alongside: `scripts/red-evidence.sh` sources it and calls `red_evidence_header "$CASE" "$DATE"` in place of the old inline `echo "### RED evidence — $CASE ($DATE)"`; `scripts/pr-check.sh` sources it and calls `red_evidence_header_pattern "$id"` inside its `grep -qE` check in place of the old inline pattern literal. No remaining independent copy of the header string in either script.
+- `set -uo pipefail` rationale comments confirmed present (one line each, distinct wording per script's actual reason) in all 5 named scripts: `scripts/test-guard.sh`, `scripts/gauntlet.sh`, `scripts/pr-check.sh`, `scripts/red-evidence.sh`, `scripts/orca-role.sh` — grepped directly, not sampled.
+
+### 6. Fresh sweep for anything new introduced by commit `1cc6eb4` itself
+
+`git show 1cc6eb4 --stat`: 8 files changed (`ci.yml`, this PROGRESS.md, `gauntlet.sh`, `lib/red-evidence-format.sh` new, `orca-role.sh`, `pr-check.sh`, `red-evidence.sh`, `test-guard.sh`). Read the full diff for every non-PROGRESS file:
+- `ci.yml`: exactly the two `ref:` additions plus explanatory comments — no other change (job order, `if:` guards, `permissions:`, other steps all byte-identical to the pre-fix version).
+- `red-evidence-format.sh`: new file, small, does exactly what it claims — no side effects, no repo-wide state.
+- `pr-check.sh` / `red-evidence.sh`: mechanical `source` + call-site swap for the header string; the resulting regex/output is byte-identical to the pre-fix inline versions (verified: same `^### RED evidence — ` prefix, same `\b$id\b` suffix behavior) — a pure refactor, not a behavior change. `npx vitest run scripts/pr-check.test.ts scripts/red-evidence.test.ts` (12/12 combined) green.
+- `gauntlet.sh` / `orca-role.sh` / `test-guard.sh`: comment-only additions next to their existing `set -uo pipefail` line — no logic touched, confirmed by diff (no line other than the added comment block changed).
+
+No new defect found.
+
+### Scored table
+
+| Dimension | Score | Evidence |
+|---|---|---|
+| Correctness | **A** | The specific pass-2 blocking bug (detached-HEAD checkout breaking `branch_name()` on every real PR) is fixed with the correct mechanism (named-branch `ref:`, not a SHA), independently verified against documented GitHub Actions semantics and a local repro of the underlying git behavior (§1 above), not just trusted from the commit message. `if:` guards correctly scope the fix to `pull_request` events only. Full regression sweep (§4) shows no new failures anywhere. |
+| Architecture | **A** | The fix is minimal and correctly scoped — two `ref:` lines plus comments, no unrelated change to job structure, gating, or permissions. The three non-blocking nits are genuinely closed at the architecture level: header-string duplication removed via a real shared lib (not just added alongside), `set -e` rationale documented where a deliberate deviation from `branch-ready.sh`'s stricter mode exists. One caveat noted (forked-PR `head_ref` gotcha, §1) — informational, not a defect in this repo's actual usage model. |
+| Scope discipline | **A** | `git show 1cc6eb4 --stat`: only the 2 CI lines (+ comments), the new shared-lib file, mechanical call-site swaps in 2 scripts, comment-only additions in 3 scripts, and this PROGRESS.md. No touch to `packages/core`, no unrelated refactor, nothing outside what pass 2's Fail asked to be fixed. |
+| Tests / evidence | **A** | `make verify` (96/635), `npx vitest run scripts` (6/29, matches expected count exactly), `branch-ready.sh` (15/15), `gauntlet.sh` (OK), `pr-check.sh` (NOT READY only on the two anticipated, non-regressed items) all independently re-run in this session, not re-trusted from PROGRESS narrative. The core claim (named-branch checkout ⇒ attached HEAD ⇒ correct `branch_name()`) was verified with a real local git repro distinct from trusting GitHub's own runner, exactly as asked — still honestly caveated as "mechanism verified, real Actions run still pending" since push remains blocked by the OAuth scope (unchanged, disclosed limitation, not a defect of this fix). |
+| Docs handoff | **A** | PROGRESS's "Fix applied" section accurately describes the change, correctly explains why the Checker's own suggested SHA-based alternative would not have worked, and honestly discloses the fix is still unverified by a real GitHub Actions run. Nothing overclaimed. |
+
+### Verdict: **Pass**
+
+Per `docs/agent/scoring-rubric.md`'s bar ("Pass: Correctness A or B; Architecture A or B; no D anywhere; Scope at least B"): all five dimensions score A, no D anywhere. The one caveat surfaced (forked-PR `head_ref` quirk) is informational and does not apply to this repo's actual same-repo-branch PR model, so it does not downgrade any dimension. Residual, unchanged-since-pass-2 limitation: the fix is verified by mechanism (documented semantics + local git repro) but not yet by an actual GitHub Actions execution, since push remains blocked by the missing `workflow` OAuth scope — this is disclosed, not hidden, and is not something this Checker pass can resolve locally. Recommend a real end-to-end confirmation (one passing `harness` job run on a real PR) once the OAuth scope is granted and the branch pushes, but this does not block Pass — the mechanism is correctly understood and correctly implemented.
