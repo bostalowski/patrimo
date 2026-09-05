@@ -4,8 +4,8 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** Tranche 2 (executable gates) implemented and tested — next: Checker pass for tranches 1+2, then Tranche 3 (CI + PR template)
-- **Blocked:** none
+- **In progress:** All 6 tranches implemented and committed locally (82c6178..a80b485). Blocked on: (1) a fresh Checker re-check covering tranches 1–6 (the recorded Checker Fail from tranches 1+2 was addressed but never re-scored — maker-checker.md's re-check loop requires a fresh pass after behavior/tests fixes), (2) pushing — this session's `gh`/git token lacks the `workflow` scope needed for the commits touching `.github/workflows/ci.yml`, so `d7aa5e2` onward are local-only pending the human pushing them or granting the scope.
+- **Blocked:** none (see In progress for the two open items — neither blocks further local work, both block merge)
 
 ## Cadrage lock
 
@@ -188,7 +188,7 @@ Process note: while writing scripts/orca-role.test.ts, `fx.run()`'s use of `exec
 
 - Command: `npx vitest run scripts/pr-check.test.ts`
 - Test: `pr-check.sh > N11: prints a non-blocking reminder when rework-log.md has no row for this slug` and `> N11: reports OK when rework-log.md already has a row for this slug`
-- SHA: (this tranche's commit, see Tranches table)
+- SHA: a80b485
 
 Also this tranche (no dedicated case ID — informational-only tooling, disclosed rather than claimed as a hard gate):
 - `scripts/lib/dup-check.mjs` + `gauntlet.sh` step 3: a duplication signal (6+ shared line block across two changed files) that never fails the gate — covered by `gauntlet.test.ts > "reports a duplication signal (informational, never fails the gate)…"`. The real duplication judgment call is the `/clean-code` skill, now wired into the Checker prompt (`scoring-rubric.md`) alongside `/coherence-code-doc`, per D8/Tranche 6 scope — no automated test for the skill invocation itself (that's a human/agent judgment step, not gate-script behavior).

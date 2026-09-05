@@ -99,7 +99,7 @@ One tranche = one reviewable commit (or small commit group) on this single branc
 | 3 | PR template + CI `harness`/`size` jobs | N5, N6 | L1 (CI config only) | `d7aa5e2` |
 | 4 | Stryker mutation testing scoped to `packages/core` diff, folded into `gauntlet` | N8, N9 | L1 + L2 | `8bbe571` |
 | 5 | `orca-role.sh` (Checker in isolated worktree, with Orca-unavailable fallback) + patrimo-harness skill + Coastfile update | E7, E8, N10 | L1 + L2 (script smoke) | `33387c4` |
-| 6 | `coherence-code-doc`/`clean-code` wiring into Checker prompt, duplication check in gauntlet, `rework-log.md` + `pr-check` reminder | N11 | L1 (+ L2 for the reminder/duplication check pieces) | pending |
+| 6 | `coherence-code-doc`/`clean-code` wiring into Checker prompt, duplication check in gauntlet, `rework-log.md` + `pr-check` reminder | N11 | L1 (+ L2 for the reminder/duplication check pieces) | `a80b485` |
 
 ## Exclusions
 
