@@ -18,7 +18,8 @@ n/a — Tier A
 
 | # | Decision | Status | Choice | Alternatives considered |
 |---|---|---|---|---|
-| D1 | How to record follow-up fixes without human memory | LOCKED | Path fingerprint `Touched` + `make pr-check` overlap fail within 30 days until `Reworked?=yes` | Manual `Reworked?` only; CI comment without fail |
+| D1 | How to record follow-up fixes without human memory | LOCKED | Path fingerprint `Touched` + overlap fail + human yes/no via `make rework-log-propose` (`yes` or `n/a — not a rework`) | Silent markdown edit; agent auto-ack without asking |
+
 
 ## Teach-back
 
@@ -54,7 +55,7 @@ n/a — Tier A
 ## On merge
 
 - [ ] Update root [FEATURES.md](../../../../FEATURES.md) matrix if platform status changed
-- [ ] Append / refresh the [rework-log](../../rework-log.md) row **in this PR** via `make rework-log-stamp`; resolve overlap (`Reworked?=yes`) if `pr-check` reports it
+- [x] Append / refresh the [rework-log](../../rework-log.md) row **in this PR** via `make rework-log-stamp`; if overlap fires, human yes/no via `make rework-log-propose` (never silent auto-ack)
 - [ ] Leave this folder as archive (or note PR link in root PROGRESS Done)
 
 ## Cadrage gate

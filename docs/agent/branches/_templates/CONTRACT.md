@@ -96,7 +96,7 @@ token match).
 ## On merge
 
 - [ ] Update root [FEATURES.md](../../../../FEATURES.md) matrix if platform status changed
-- [ ] Append / refresh the [rework-log](../../rework-log.md) row **in this PR** via `make rework-log-stamp`; resolve overlap (`Reworked?=yes`) if `pr-check` reports it
+- [ ] Append / refresh the [rework-log](../../rework-log.md) row **in this PR** via `make rework-log-stamp`; if overlap fires, human yes/no via `make rework-log-propose` (never silent auto-ack)
 - [ ] Leave this folder as archive (or note PR link in root PROGRESS Done)
 
 ## Cadrage gate

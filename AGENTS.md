@@ -85,7 +85,7 @@ Full gate-by-gate sequence: [docs/howto/feature-flow.md](docs/howto/feature-flow
 3. **Work:** implement one tranche at a time. When Layer 2 applies: per case **RED → GREEN** ([tdd-red-green.md](docs/howto/tdd-red-green.md)), record RED evidence in branch PROGRESS; update colocated ARCHITECTURE / ADR / glossary with the code.
 4. **Verify:** layers required by DoD above, then `make gauntlet` (test-removal guard + scoped mutation on `@patrimo/core`, workbook I/O, or API-route diffs — CONSTRAINTS §27). Never claim done on failing verify or gauntlet.
 5. **Check:** `make checker` (isolated worktree) scores the tranche against CONTRACT + rubric; then `make pr-check` before opening the tranche's PR.
-6. **Handoff:** update `docs/agent/branches/<slug>/PROGRESS.md`. Before the merging PR: `make rework-log-stamp` (row + Touched paths) and resolve any overlap (`Reworked?=yes` on older rows) so `make pr-check` passes. On merge: sync FEATURES matrix if needed; short root PROGRESS note if useful.
+6. **Handoff:** update `docs/agent/branches/<slug>/PROGRESS.md`. Before the merging PR: `make rework-log-stamp`. If `pr-check` reports unreworked path overlap, run `make rework-log-propose` (or ask the human, then `REWORK_ACK=yes|no make rework-log-propose`) — never silent markdown edits. On merge: sync FEATURES matrix if needed; short root PROGRESS note if useful.
 
 ## Next.js
 

@@ -29,7 +29,7 @@ Canonical path: `.agents/skills/patrimo-harness/` (symlinked as
 8. Checker: `make checker` (spawns an isolated `git worktree` via `scripts/role-worktree.sh` — plain git, no IDE/tool preference) using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof). The Checker writes only that branch's PROGRESS.md.
 9. `make pr-check` before opening/updating the PR — replays `branch-ready`, requires RED evidence per checked-off case and a fresh, cited Checker Pass. CI's `harness` job replays it on every push.
 10. Update `docs/agent/branches/<slug>/PROGRESS.md` (+ optional `docs/agent/runs/YYYY-MM-DD-slug.md`).
-11. Before the merging PR: `make rework-log-stamp`; if path overlap with unreworked rows within 30 days, set those `Reworked?=yes`. On merge: update root `FEATURES.md` if platform status changed.
+11. Before the merging PR: `make rework-log-stamp`. If path overlap with unreworked rows: **propose to the human** (`make rework-log-propose` or ask in chat), then apply only after explicit yes/no (`REWORK_ACK=yes|no`). Never auto-mark. On merge: update root `FEATURES.md` if platform status changed.
 
 Full gate-by-gate sequence: `docs/howto/feature-flow.md` (G0-G7).
 
@@ -50,6 +50,8 @@ Full gate-by-gate sequence: `docs/howto/feature-flow.md` (G0-G7).
 | Gauntlet (test-removal guard + scoped mutation) | `make gauntlet` |
 | Checker (isolated worktree) | `make checker` |
 | PR readiness | `make pr-check` |
+| Stamp rework-log row | `make rework-log-stamp` |
+| Propose overlap ack (human yes/no) | `make rework-log-propose` |
 | Where am I in the flow? | `make flow` |
 
 ## Do not

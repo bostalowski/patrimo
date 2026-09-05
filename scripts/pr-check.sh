@@ -119,7 +119,7 @@ echo "6. Rework overlap (D8 — auto-detect follow-ups within 30 days)"
 if node "$SCRIPT_DIR/lib/rework-log.mjs" check-overlap; then
   echo "  OK — no unreworked path overlap (or none in window)"
 else
-  echo "  FAIL — mark Reworked?=yes on the overlapping row(s) in docs/agent/rework-log.md"
+  echo "  FAIL — ask a human, then \`make rework-log-propose\` (or REWORK_ACK=yes|no after they answer)"
   fail=1
 fi
 

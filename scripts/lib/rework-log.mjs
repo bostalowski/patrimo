@@ -8,17 +8,23 @@
  *   check-own — exit 1 if current slug has no row or empty Touched
  *   check-overlap — exit 1 if current diff overlaps an unreworked row
  *                   (Date within 30 days, Reworked?=no, other slug) unless
- *                   those rows are already marked yes
+ *                   those rows are already marked yes or n/a
+ *   propose — list overlaps and ask a human yes/no per row (or apply
+ *             REWORK_ACK after the human already answered in chat)
  *
  * Env:
  *   FEATURE_FLOW_ROOT — repo root (default: cwd)
  *   FEATURE_FLOW_BASE — diff base (default: origin/main)
  *   REWORK_SLUG — override branch slug
  *   REWORK_FEATURE — override feature cell (else CONTRACT title / slug)
+ *   REWORK_ACK — yes | no  (non-interactive apply after human confirmation)
+ *   REWORK_ACK_NOTE — optional note appended after yes / n/a (e.g. PR #83)
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createInterface } from "node:readline";
 import path from "node:path";
+import { stdin as input, stdout as output } from "node:process";
 
 const ROOT = process.env.FEATURE_FLOW_ROOT || process.cwd();
 const LOG = path.join(ROOT, "docs/agent/rework-log.md");
@@ -156,10 +162,70 @@ function parseRows(md) {
   return rows;
 }
 
+function isCleared(reworked) {
+  const r = String(reworked || "")
+    .trim()
+    .toLowerCase();
+  return r.startsWith("yes") || r.startsWith("n/a");
+}
+
 function formatRow(row) {
   const touched = (row.touched || []).join(" ") || "—";
-  const reworked = row.reworked.startsWith("yes") ? row.reworked : "no";
+  const raw = String(row.reworked || "no").trim();
+  const lower = raw.toLowerCase();
+  let reworked = "no";
+  if (lower.startsWith("yes") || lower.startsWith("n/a")) reworked = raw;
   return `| ${row.date} | ${row.slug} | ${row.feature} | ${touched} | ${reworked} |`;
+}
+
+function findOffenders(rows, slug, changed) {
+  const offenders = [];
+  for (const row of rows) {
+    if (row.slug === slug) continue;
+    if (isCleared(row.reworked)) continue;
+    if (daysBetween(row.date) > WINDOW_DAYS) continue;
+    if (!row.touched.length || row.touched[0] === "—") continue;
+    const hits = pathOverlap(row.touched, changed);
+    if (hits.length) offenders.push({ row, hits: hits.slice(0, 5) });
+  }
+  return offenders;
+}
+
+function ackLabel(answer, note) {
+  const extra = note ? ` — ${note}` : "";
+  if (answer === "yes") return `yes${extra}`;
+  return `n/a — not a rework${extra}`;
+}
+
+function printProposal(offenders, fromSlug) {
+  console.log("rework-log: proposed follow-up check");
+  console.log(
+    `This branch (${fromSlug}) touches paths from recent unreworked feature(s).`,
+  );
+  console.log(
+    "A human must say yes (this is a follow-up fix) or no (coincidental / not a rework).",
+  );
+  console.log("");
+  for (const o of offenders) {
+    console.log(`  • ${o.row.slug}  (merged ${o.row.date})`);
+    console.log(`    ${o.row.feature}`);
+    console.log(`    overlap: ${o.hits.map((h) => h.changed).join(", ")}`);
+  }
+  console.log("");
+  console.log("Then:");
+  console.log("  make rework-log-propose          # interactive y/n per row");
+  console.log(
+    "  REWORK_ACK=yes make rework-log-propose   # after human said yes (all rows)",
+  );
+  console.log(
+    "  REWORK_ACK=no  make rework-log-propose   # after human said no (all rows)",
+  );
+}
+
+function askLine(rl, question) {
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => resolve(String(answer || "").trim()));
+  });
 }
 
 function ensureLogSkeleton(md) {
@@ -253,7 +319,7 @@ function cmdStamp() {
   };
   if (idx >= 0) {
     // Preserve yes if already reworked; refresh touched/feature/date.
-    row.reworked = rows[idx].reworked.startsWith("yes") ? rows[idx].reworked : "no";
+    row.reworked = isCleared(rows[idx].reworked) ? rows[idx].reworked : "no";
     rows[idx] = row;
   } else {
     rows.push(row);
@@ -298,40 +364,107 @@ function cmdCheckOverlap() {
     console.log("rework-log: no changed files vs base — skip overlap");
     return;
   }
-  const offenders = [];
-  for (const row of rows) {
-    if (row.slug === slug) continue;
-    if (row.reworked.startsWith("yes")) continue;
-    if (daysBetween(row.date) > WINDOW_DAYS) continue;
-    if (!row.touched.length || row.touched[0] === "—") continue;
-    const hits = pathOverlap(row.touched, changed);
-    if (hits.length) {
-      offenders.push({ row, hits: hits.slice(0, 5) });
-    }
-  }
+  const offenders = findOffenders(rows, slug, changed);
   if (!offenders.length) {
     console.log("rework-log: no unreworked overlap within 30 days");
     return;
   }
   console.error(
-    "rework-log: FAIL — this diff overlaps recent unreworked feature(s).",
+    "rework-log: FAIL — path overlap with unreworked feature(s). Do not edit the table by hand.",
   );
-  console.error(
-    "If this PR is a follow-up fix, set Reworked? to `yes` (optionally `yes — PR #N`) on those rows in docs/agent/rework-log.md.",
-  );
-  for (const o of offenders) {
+  printProposal(offenders, slug);
+  process.exit(1);
+}
+
+async function cmdPropose() {
+  const slug = currentSlug();
+  if (!existsSync(LOG)) {
+    console.log("rework-log: no log file — nothing to propose");
+    return;
+  }
+  const md = readFileSync(LOG, "utf8");
+  const rows = parseRows(md);
+  const changed = changedFiles();
+  const offenders = findOffenders(rows, slug, changed);
+  if (!offenders.length) {
+    console.log("rework-log: nothing to propose — no unreworked overlap");
+    return;
+  }
+
+  printProposal(offenders, slug);
+
+  const ack = (process.env.REWORK_ACK || "").trim().toLowerCase();
+  const note =
+    (process.env.REWORK_ACK_NOTE || "").trim() ||
+    `follow-up on ${slug}`;
+
+  /** @type {Map<string, "yes" | "no">} */
+  const decisions = new Map();
+
+  if (ack === "yes" || ack === "no") {
+    for (const o of offenders) decisions.set(o.row.slug, ack);
+  } else if (input.isTTY) {
+    const rl = createInterface({ input, output });
+    try {
+      for (const o of offenders) {
+        console.log("");
+        console.log(`About: ${o.row.slug}`);
+        const ans = (
+          await askLine(
+            rl,
+            "Is this PR a follow-up fix for that feature? [y]es / [n]o / [q]uit: ",
+          )
+        ).toLowerCase();
+        if (ans === "q" || ans === "quit") {
+          console.error("rework-log: aborted — no rows updated");
+          process.exit(1);
+        }
+        if (ans === "y" || ans === "yes") decisions.set(o.row.slug, "yes");
+        else if (ans === "n" || ans === "no") decisions.set(o.row.slug, "no");
+        else {
+          console.error(`rework-log: unrecognized answer "${ans}" — abort`);
+          process.exit(1);
+        }
+      }
+    } finally {
+      rl.close();
+    }
+  } else {
     console.error(
-      `  - ${o.row.slug} (merged ${o.row.date}): e.g. ${o.hits.map((h) => h.changed).join(", ")}`,
+      "rework-log: non-interactive and REWORK_ACK unset — ask the human, then re-run with REWORK_ACK=yes|no",
+    );
+    process.exit(1);
+  }
+
+  for (const o of offenders) {
+    const answer = decisions.get(o.row.slug);
+    if (!answer) continue;
+    const idx = rows.findIndex((r) => r.slug === o.row.slug);
+    if (idx < 0) continue;
+    rows[idx] = {
+      ...rows[idx],
+      reworked: ackLabel(answer, note),
+    };
+    console.log(
+      `rework-log: ${o.row.slug} → ${rows[idx].reworked}`,
     );
   }
-  process.exit(1);
+  writeFileSync(LOG, writeRows(md, rows), "utf8");
+  console.log("rework-log: wrote docs/agent/rework-log.md — re-run make pr-check");
 }
 
 const cmd = process.argv[2];
 if (cmd === "stamp") cmdStamp();
 else if (cmd === "check-own") cmdCheckOwn();
 else if (cmd === "check-overlap") cmdCheckOverlap();
-else {
-  console.error("Usage: rework-log.mjs <stamp|check-own|check-overlap>");
+else if (cmd === "propose") {
+  cmdPropose().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+} else {
+  console.error(
+    "Usage: rework-log.mjs <stamp|check-own|check-overlap|propose>",
+  );
   process.exit(2);
 }

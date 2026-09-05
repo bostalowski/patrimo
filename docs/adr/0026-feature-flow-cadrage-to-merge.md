@@ -119,9 +119,10 @@ reviewable slices instead of one large diff:
    appended **in the PR about to merge**; `make pr-check` fails without it.
    **Amendment (2026-09-05, auto-detect):** each row carries a `Touched` path
    fingerprint (`make rework-log-stamp`). A later PR whose diff overlaps
-   `Touched` of a row with `Reworked?=no` within 30 days fails `make pr-check`
-   until that cell is set to `yes` — so follow-up fixes are recorded by the
-   harness, not by human memory.
+   `Touched` of a row still at `Reworked?=no` within 30 days fails
+   `make pr-check` and **proposes** those rows (`make rework-log-propose`);
+   a human answers yes (follow-up → `yes`) or no (coincidental →
+   `n/a — not a rework`). Agents must not auto-ack.
 
 ## Invariants
 

@@ -12,10 +12,20 @@ make rework-log-stamp   # upserts Date / Slug / Feature / Touched / Reworked?=no
 (tests and branch CONTRACT folders excluded). `make pr-check` then:
 
 1. **Fails** if this branch has no row or empty `Touched`.
-2. **Fails** if the current diff **overlaps** `Touched` of another row with
-   `Reworked?=no` and `Date merged` within 30 days — set that row to
-   `yes` (optionally `yes — PR #N`) in the same PR. That is how follow-up
-   fixes are recorded; no human memory required.
+2. **Fails** if the current diff **overlaps** `Touched` of another row still
+   at `Reworked?=no` with `Date merged` within 30 days.
+
+Do **not** edit `Reworked?` by hand from memory. When overlap fires, the gate
+**proposes** the rows; a human answers yes or no:
+
+```bash
+make rework-log-propose
+# or after the human already answered in chat / review:
+REWORK_ACK=yes make rework-log-propose   # follow-up fix → Reworked?=yes
+REWORK_ACK=no  make rework-log-propose   # coincidental → n/a — not a rework
+```
+
+Agents must ask the human before setting `REWORK_ACK`; never auto-ack.
 
 | Date merged | Slug | Feature | Touched | Reworked? (follow-up within 30 days) |
 |---|---|---|---|---|

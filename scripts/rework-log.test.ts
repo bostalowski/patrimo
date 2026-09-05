@@ -92,4 +92,93 @@ describe("scripts/lib/rework-log.mjs", () => {
     });
     expect(res.status).toBe(0);
   });
+
+  it("propose with REWORK_ACK=yes marks follow-up after human confirmation", () => {
+    fx = createFixture("feat/rework-ack-base");
+    fx.writeFile(
+      "docs/agent/rework-log.md",
+      `| Date merged | Slug | Feature | Touched | Reworked? (follow-up within 30 days) |
+|---|---|---|---|---|
+| 2099-01-01 | old-feature | Old | packages/core/src/widget.ts | no |
+`,
+    );
+    fx.writeFile("packages/core/src/widget.ts", "export const x = 1;\n");
+    fx.commitAll("baseline");
+    fx.checkout("feat/rework-ack", true);
+    fx.writeFile("packages/core/src/widget.ts", "export const x = 2;\n");
+    fx.commitAll("fix");
+
+    const propose = runRework(fx, "propose", {
+      FEATURE_FLOW_BASE: "feat/rework-ack-base",
+      REWORK_SLUG: "feat-rework-ack",
+      REWORK_ACK: "yes",
+      REWORK_ACK_NOTE: "PR #99",
+    });
+    expect(propose.status).toBe(0);
+    const md = readFileSync(path.join(fx.root, "docs/agent/rework-log.md"), "utf8");
+    expect(md).toMatch(/old-feature.*yes — PR #99/i);
+
+    const overlap = runRework(fx, "check-overlap", {
+      FEATURE_FLOW_BASE: "feat/rework-ack-base",
+      REWORK_SLUG: "feat-rework-ack",
+    });
+    expect(overlap.status).toBe(0);
+  });
+
+  it("propose with REWORK_ACK=no records n/a — not a rework", () => {
+    fx = createFixture("feat/rework-nack-base");
+    fx.writeFile(
+      "docs/agent/rework-log.md",
+      `| Date merged | Slug | Feature | Touched | Reworked? (follow-up within 30 days) |
+|---|---|---|---|---|
+| 2099-01-01 | old-feature | Old | packages/core/src/widget.ts | no |
+`,
+    );
+    fx.writeFile("packages/core/src/widget.ts", "export const x = 1;\n");
+    fx.commitAll("baseline");
+    fx.checkout("feat/rework-nack", true);
+    fx.writeFile("packages/core/src/widget.ts", "export const x = 2;\n");
+    fx.commitAll("unrelated touch");
+
+    const propose = runRework(fx, "propose", {
+      FEATURE_FLOW_BASE: "feat/rework-nack-base",
+      REWORK_SLUG: "feat-rework-nack",
+      REWORK_ACK: "no",
+    });
+    expect(propose.status).toBe(0);
+    const md = readFileSync(path.join(fx.root, "docs/agent/rework-log.md"), "utf8");
+    expect(md.toLowerCase()).toContain("n/a — not a rework");
+
+    const overlap = runRework(fx, "check-overlap", {
+      FEATURE_FLOW_BASE: "feat/rework-nack-base",
+      REWORK_SLUG: "feat-rework-nack",
+    });
+    expect(overlap.status).toBe(0);
+  });
+
+  it("propose without REWORK_ACK in non-TTY prints proposal and exits 1", () => {
+    fx = createFixture("feat/rework-dry-base");
+    fx.writeFile(
+      "docs/agent/rework-log.md",
+      `| Date merged | Slug | Feature | Touched | Reworked? (follow-up within 30 days) |
+|---|---|---|---|---|
+| 2099-01-01 | old-feature | Old | packages/core/src/widget.ts | no |
+`,
+    );
+    fx.writeFile("packages/core/src/widget.ts", "export const x = 1;\n");
+    fx.commitAll("baseline");
+    fx.checkout("feat/rework-dry", true);
+    fx.writeFile("packages/core/src/widget.ts", "export const x = 2;\n");
+    fx.commitAll("touch");
+
+    const propose = runRework(fx, "propose", {
+      FEATURE_FLOW_BASE: "feat/rework-dry-base",
+      REWORK_SLUG: "feat-rework-dry",
+    });
+    expect(propose.status).not.toBe(0);
+    expect(`${propose.stdout}${propose.stderr}`).toContain("old-feature");
+    expect(`${propose.stdout}${propose.stderr}`).toMatch(/REWORK_ACK/);
+    const md = readFileSync(path.join(fx.root, "docs/agent/rework-log.md"), "utf8");
+    expect(md).toMatch(/\| no\s*\|/);
+  });
 });

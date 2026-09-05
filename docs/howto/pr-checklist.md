@@ -18,4 +18,4 @@ Before merge:
 - [ ] [FEATURES.md](../FEATURES.md) matrix updated if platform status changed; branch [CONTRACT/PROGRESS](../agent/branches/README.md) present for scoped work; root [PROGRESS.md](../PROGRESS.md) only if useful as a `main` pointer.
 - [ ] Non-trivial product PRs: [maker/checker](maker-checker.md) Pass noted in PROGRESS with cited evidence (not just a bare `Pass` line).
 - [ ] Tax copy remains indicative unless an accepted ADR says otherwise.
-- [ ] On the last tranche of a CONTRACT that merges: `make rework-log-stamp`, and if `make pr-check` reports overlap with unreworked rows, set those rows' `Reworked?` to `yes` in the same PR.
+- [ ] On the last tranche of a CONTRACT that merges: `make rework-log-stamp`; if overlap fires, `make rework-log-propose` with a human yes/no (agents ask first — never auto-ack).
