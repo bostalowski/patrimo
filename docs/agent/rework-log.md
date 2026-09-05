@@ -15,4 +15,4 @@ slug yet (gate G6). Use today's date (or the expected merge day) in
 |---|---|---|---|
 | 2026-09-05 | bostalowski-harness-flow | Feature flow — cadrage to merge as executable gates ([PR #78](https://github.com/bostalowski/patrimo/pull/78), [ADR 0026](../adr/0026-feature-flow-cadrage-to-merge.md)) | no |
 | 2026-09-05 | bostalowski-ajout-taxe-fonci-re | Taxe foncière par année (feuille classeur + résolution projection/UI) ([PR #77](https://github.com/bostalowski/patrimo/pull/77), [ADR 0027](../adr/0027-property-tax-history.md)) | no |
-| 2026-09-05 | bostalowski-rework-log-in-feature-pr | Require rework-log row in the merging PR (`make pr-check` blocker; ADR 0026 D8 timing) | no |
+| 2026-09-05 | bostalowski-rework-log-in-feature-pr | Require rework-log row in the merging PR ([PR #81](https://github.com/bostalowski/patrimo/pull/81); ADR 0026 D8 timing) | no |
