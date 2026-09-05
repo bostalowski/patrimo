@@ -62,7 +62,7 @@ After opening tranche 1's PR (#78), discovered the mechanical problem the pass-1
 - [x] Maker: Tranche 6 (coherence/duplication/rework-log) — `make verify` green (2026-09-05)
 - [x] Checker Pass — 3-round loop: pass 1 Fail (tranches 1+2) → fixed; pass 2 Fail (new CI bug, all 6 tranches) → fixed; pass 3 Pass (2026-09-05, all-A, CI fix independently verified). `bash scripts/pr-check.sh`: READY, exit 0.
 - [ ] Push remaining local commits (`d7aa5e2` onward) — blocked on `workflow` OAuth scope; human action required
-- [ ] Observe a real GitHub Actions run of `harness`/`size` once pushed (never executed for real to date)
+- [x] Real GitHub Actions run observed (2026-09-05, after human push): [run 33948718048](https://github.com/bostalowski/patrimo/actions/runs/33948718048) on PR #78 — `verify` ✓, `e2e` ✓, `size` ✓, **`harness` ✓** (first real execution ever; log shows `pr-check: READY` — the `ref: ${{ github.head_ref }}` fix resolves the branch correctly in actual GitHub Actions, not just local reproduction)
 - [ ] Add a `docs/agent/rework-log.md` row for this branch on merge (pr-check §5 reminder)
 
 ## RED evidence (when Layer 2 applies)
