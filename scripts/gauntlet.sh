@@ -27,15 +27,27 @@ echo ""
 echo "2. Mutation testing (packages/core)"
 BASE="$(diff_base)"
 core_files="$(changed_files | grep -E '^packages/core/src/.*\.tsx?$' || true)"
+mutation_status=0
 if [[ -z "$core_files" ]]; then
   echo "  skipped — no packages/core/src files in diff vs $BASE"
-  exit 0
-fi
-if [[ ! -f stryker.conf.json ]]; then
+elif [[ ! -f stryker.conf.json ]]; then
   echo "  skipped — stryker.conf.json not present yet (lands in a later tranche)"
-  exit 0
+else
+  echo "  changed packages/core files:"
+  echo "$core_files" | sed 's/^/    /'
+  mutate_arg="$(echo "$core_files" | paste -sd, -)"
+  npx stryker run --mutate "$mutate_arg" || mutation_status=$?
 fi
-echo "  changed packages/core files:"
-echo "$core_files" | sed 's/^/    /'
-mutate_arg="$(echo "$core_files" | paste -sd, -)"
-npx stryker run --mutate "$mutate_arg"
+
+echo ""
+echo "3. Duplication signal (informational only — never fails the gate; the real"
+echo "   judgment call is the /clean-code skill in the Checker's review)"
+changed_src="$(changed_files | grep -E '\.tsx?$' | grep -v '\.test\.' || true)"
+if [[ -z "$changed_src" ]]; then
+  echo "  no changed non-test .ts/.tsx files to check"
+else
+  # shellcheck disable=SC2086
+  node "$SCRIPT_DIR/lib/dup-check.mjs" $changed_src
+fi
+
+exit "$mutation_status"

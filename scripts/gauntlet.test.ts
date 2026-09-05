@@ -27,6 +27,20 @@ describe("scripts/gauntlet.sh", () => {
     expect(res.status).not.toBe(0);
   });
 
+  it("reports a duplication signal (informational, never fails the gate) when two changed files share a 6+ line block", () => {
+    fx = createFixture("feat/gauntlet-dup");
+    const block = Array.from({ length: 8 }, (_, i) => `const line${i} = ${i};`).join("\n");
+    fx.writeFile("src/a.ts", `${block}\nexport const a = 1;\n`);
+    fx.writeFile("src/b.ts", `${block}\nexport const b = 2;\n`);
+    fx.commitAll("two files sharing a duplicated block");
+
+    const res = fx.run("scripts/gauntlet.sh");
+    expect(res.status).toBe(0); // informational only — does not fail
+    expect(res.stdout).toContain("duplicate");
+    expect(res.stdout).toContain("src/a.ts");
+    expect(res.stdout).toContain("src/b.ts");
+  });
+
   it("reports mutation step skipped (not configured) when packages/core changes but stryker.conf.json is absent", () => {
     fx = createFixture("feat/gauntlet-core-no-stryker");
     fx.writeFile("packages/core/src/thing.ts", "export const x = 1;\n");

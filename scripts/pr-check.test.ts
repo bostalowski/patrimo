@@ -118,4 +118,36 @@ describe("scripts/pr-check.sh", () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain("pr-check: READY");
   });
+
+  it("N11: prints a non-blocking reminder when rework-log.md has no row for this slug", () => {
+    fx = createFixture("feat/prcheck-norework");
+    fx.writeContract(minimalTierBContract({ tranchesRow: FULL_TRANCHES }));
+    fx.writeProgress(
+      `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks, all green\n`,
+    );
+    fx.writeFile("docs/agent/rework-log.md", "| Date | Slug | Feature | Reworked? |\n|---|---|---|---|\n");
+    fx.commitAll("ready, but no rework-log row yet");
+
+    const res = fx.run("scripts/pr-check.sh");
+    expect(res.status).toBe(0); // non-blocking
+    expect(res.stdout).toContain("REMINDER");
+    expect(res.stdout).toContain("rework-log.md");
+  });
+
+  it("N11: reports OK when rework-log.md already has a row for this slug", () => {
+    fx = createFixture("feat/prcheck-hasrework");
+    fx.writeContract(minimalTierBContract({ tranchesRow: FULL_TRANCHES }));
+    fx.writeProgress(
+      `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks, all green\n`,
+    );
+    fx.writeFile(
+      "docs/agent/rework-log.md",
+      "| Date | Slug | Feature | Reworked? |\n|---|---|---|---|\n| 2026-01-01 | feat-prcheck-hasrework | Fixture | no |\n",
+    );
+    fx.commitAll("ready, rework-log row present");
+
+    const res = fx.run("scripts/pr-check.sh");
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain("OK — docs/agent/rework-log.md already has a row");
+  });
 });

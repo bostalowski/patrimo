@@ -31,7 +31,7 @@ Each case has a stable ID (`N#`/`E#`); the Tranches table below references cases
 - [x] N8: If `packages/core/src/**` files are in the diff, then `make gauntlet` runs Stryker mutation testing scoped to exactly those changed files (not the whole package) and fails on a surviving mutant in a changed file above the thresholds configured in `stryker.conf.json` (break < 80, warn < 90, computed per changed-file subset — see D3).
 - [x] N9: If no `packages/core/src/**` files are in the diff, then the mutation step of `make gauntlet` is reported as `skipped` (not silently green, not run).
 - [x] N10: If `scripts/orca-role.sh` prints a Framer/Challenger/teach-back prompt, it reads that text verbatim from `docs/howto/cadrage-lock.md`; if it prints the Checker prompt, it reads it verbatim from `docs/agent/scoring-rubric.md` — neither prompt's text is duplicated inside `orca-role.sh` itself.
-- [ ] N11: If `make pr-check` runs and `docs/agent/rework-log.md` has no row referencing the current branch's slug, it prints a non-blocking reminder to add one after merge (does not fail the gate — D8 stays manual/non-automated).
+- [x] N11: If `make pr-check` runs and `docs/agent/rework-log.md` has no row referencing the current branch's slug, it prints a non-blocking reminder to add one after merge (does not fail the gate — D8 stays manual/non-automated).
 
 ### Edge
 

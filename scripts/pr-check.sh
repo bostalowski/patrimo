@@ -100,6 +100,14 @@ stat="$(git diff --shortstat "$BASE"...HEAD 2>/dev/null || true)"
 echo "  ${stat:-no diff vs $BASE}"
 
 echo ""
+echo "5. Rework log reminder (informational — D8, not a blocker)"
+if [[ -f docs/agent/rework-log.md ]] && grep -qF "$SLUG" docs/agent/rework-log.md; then
+  echo "  OK — docs/agent/rework-log.md already has a row for $SLUG"
+else
+  echo "  REMINDER — docs/agent/rework-log.md has no row for $SLUG yet; add one after merge"
+fi
+
+echo ""
 if [[ "$fail" -eq 1 ]]; then
   echo "pr-check: NOT READY"
   exit 1

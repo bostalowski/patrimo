@@ -58,8 +58,8 @@ After opening tranche 1's PR (#78), discovered the mechanical problem the pass-1
 - [x] Maker: Tranche 3 (PR template + CI jobs) — `make verify` green (2026-09-04); CI YAML validated with js-yaml
 - [x] Maker: Tranche 4 (Stryker mutation) — config-only + manual dogfood evidence, see RED evidence below
 - [x] Maker: Tranche 5 (orca-role.sh) — `make verify` green (2026-09-04), see RED evidence above
-- [ ] Maker: Tranche 6 (coherence/duplication/rework-log)
-- [ ] Checker Pass (per tranche)
+- [x] Maker: Tranche 6 (coherence/duplication/rework-log) — `make verify` green (2026-09-05)
+- [ ] Checker Pass — re-check required (fresh session) covering tranches 1–6 together before `make pr-check` can go green; the recorded pass-1 Fail must not be silently treated as stale
 
 ## RED evidence (when Layer 2 applies)
 
@@ -184,13 +184,21 @@ Dogfood re-check on this real branch after both fixes: `bash scripts/gauntlet.sh
 
 Process note: while writing scripts/orca-role.test.ts, `fx.run()`'s use of `execFileSync` was found to silently discard stderr on a successful (exit 0) run — an `E8` assertion checking `res.stdout` for a message the script actually writes to stderr failed for that reason, not a script bug. Fixed by switching `scripts/test-support/fixture-repo.ts`'s `run()` to `spawnSync`, which captures both streams unconditionally; full `scripts/` suite re-run green afterward (26/26).
 
+### RED evidence — N11: pr-check.sh prints a non-blocking rework-log reminder (2026-09-05)
+
+- Command: `npx vitest run scripts/pr-check.test.ts`
+- Test: `pr-check.sh > N11: prints a non-blocking reminder when rework-log.md has no row for this slug` and `> N11: reports OK when rework-log.md already has a row for this slug`
+- SHA: (this tranche's commit, see Tranches table)
+
+Also this tranche (no dedicated case ID — informational-only tooling, disclosed rather than claimed as a hard gate):
+- `scripts/lib/dup-check.mjs` + `gauntlet.sh` step 3: a duplication signal (6+ shared line block across two changed files) that never fails the gate — covered by `gauntlet.test.ts > "reports a duplication signal (informational, never fails the gate)…"`. The real duplication judgment call is the `/clean-code` skill, now wired into the Checker prompt (`scoring-rubric.md`) alongside `/coherence-code-doc`, per D8/Tranche 6 scope — no automated test for the skill invocation itself (that's a human/agent judgment step, not gate-script behavior).
+- `docs/agent/rework-log.md` created (empty table + header).
+
 ## Last verify
 
-- Command: `make verify` (Tranche 5: scripts/orca-role.sh + orca-role.test.ts, fixture-repo.ts spawnSync fix, Makefile/package.json `checker` target, patrimo-harness SKILL.md + Coastfile updates)
-- Result: exit 0 — 96 test files, 632 tests passed; `bash scripts/gauntlet.sh` on this branch's own diff green
-- Date: 2026-09-04
-
-Prior: `make verify` after Tranche 2 (before Checker fixes) — exit 0, 95 files / 623 tests, but `bash scripts/gauntlet.sh` was failing at that point (see Checker findings + fix above) — `make verify` alone did not catch it since gauntlet is a separate gate, illustrating why `make pr-check`/`make gauntlet` are required gates and not implied by verify.
+- Command: `make verify` (Tranche 6: docs/agent/rework-log.md, pr-check.sh N11 reminder, scripts/lib/dup-check.mjs + gauntlet.sh duplication step, scoring-rubric.md Checker-prompt wiring for coherence-code-doc/clean-code)
+- Result: exit 0 — 96 test files, 635 tests passed; `bash scripts/gauntlet.sh` and `bash scripts/pr-check.sh` dogfooded on this branch's own diff (gauntlet green; pr-check correctly NOT READY — no fresh Checker Pass yet, see below)
+- Date: 2026-09-05
 
 Prior: `make verify` after Tranche 2 (before Checker fixes) — exit 0, 95 files / 623 tests, but `bash scripts/gauntlet.sh` was failing at that point (see Checker findings + fix above) — `make verify` alone did not catch it since gauntlet is a separate gate, illustrating why `make pr-check`/`make gauntlet` are required gates and not implied by verify.
 
