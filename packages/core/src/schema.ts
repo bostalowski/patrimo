@@ -242,6 +242,21 @@ export type PropertyRegime = z.infer<typeof PropertyRegime>;
 export const Detention = z.enum(["SCI", "DIRECT"]);
 export type Detention = z.infer<typeof Detention>;
 
+/**
+ * Borrower-insurance calculation mode. Default `CRD` matches ADR 0028
+ * (monthly insurance = remaining balance × tauxAssurance / 12). Modes and
+ * paliers: ADR 0029.
+ */
+export const ModeAssurance = z.enum(["CRD", "CAPITAL_INITIAL", "MONTANT_FIXE"]);
+export type ModeAssurance = z.infer<typeof ModeAssurance>;
+
+/** One annual step of a property's borrower-insurance schedule, already scoped to that property (no id). */
+export const InsurancePalier = z.object({
+	anneeDebut: z.number().int().min(1),
+	assuranceMensuelle: z.number().positive(),
+});
+export type InsurancePalier = z.infer<typeof InsurancePalier>;
+
 export const Property = z.object({
 	id: z.string().min(1),
 	label: z.string().min(1),
@@ -259,6 +274,16 @@ export const Property = z.object({
 	dureeMois: z.number().int().nonnegative().default(0),
 	dateDebutCredit: z.coerce.date().optional(),
 	tauxAssurance: z.number().nonnegative().default(0),
+	/** Borrower-insurance mode; default CRD (ADR 0028 / 0028). */
+	modeAssurance: ModeAssurance.default("CRD"),
+	/** Flat €/month insurance, used only when `modeAssurance` is `MONTANT_FIXE`. */
+	assuranceMensuelle: z.number().nonnegative().default(0),
+	/**
+	 * Hydrated at parse time from the **Assurance emprunt** sheet
+	 * (`Workbook.loanInsurancePaliers`, filtered via `filterPaliersForProperty`).
+	 * Not itself an `Immobilier` column. Overrides `modeAssurance` when non-empty (D4).
+	 */
+	assurancePaliers: z.array(InsurancePalier).default([]),
 	loyerMensuelHC: z.number().nonnegative().default(0),
 	chargesNonRecupAnnuelles: z.number().nonnegative().default(0),
 	taxeFonciere: z.number().nonnegative().default(0),
@@ -290,6 +315,18 @@ export const PropertyTax = z.object({
 	amount: z.number().nonnegative(),
 });
 export type PropertyTax = z.infer<typeof PropertyTax>;
+
+/**
+ * One annual step of a property's borrower-insurance schedule ("Assurance
+ * emprunt" sheet). Sparse: only change rows are stored. `anneeDebut` is the
+ * canonical credit-year index (see `creditYearFromMonthsElapsed`, D5).
+ * Invalid rows (`anneeDebut < 1` or `assuranceMensuelle <= 0`) are rejected on
+ * parse — see `normalizeLoanInsurancePaliers` in `realestate/insurance.ts`.
+ */
+export const LoanInsurancePalier = InsurancePalier.extend({
+	propertyId: z.string().min(1),
+});
+export type LoanInsurancePalier = z.infer<typeof LoanInsurancePalier>;
 
 export const GeographicAllocationSource = z.enum(["justetf", "manual"]);
 export type GeographicAllocationSource = z.infer<
@@ -371,10 +408,12 @@ export type Workbook = {
 	properties: Property[];
 	dca: DcaConfig[];
 	manualPrices: ManualPrice[];
+	/** Rows from the **Assurance emprunt** sheet (web/mobile serializers hydrate; may be omitted on in-memory fixtures). */
+	loanInsurancePaliers?: LoanInsurancePalier[];
 	geographicAllocations: GeographicAllocation[];
 	sectorAllocations: SectorAllocation[];
 	diversificationTargets: DiversificationTarget[];
 	financialGoals: FinancialGoal[];
 	emergencyFundConfig?: EmergencyFundConfig;
-	propertyTaxes: PropertyTax[];
+	propertyTaxes?: PropertyTax[];
 };

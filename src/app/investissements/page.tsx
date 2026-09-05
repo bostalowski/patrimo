@@ -81,7 +81,6 @@ export default async function InvestissementsPage() {
 					dateAcquisition: p.dateAcquisition?.toISOString(),
 					dateDebutCredit: p.dateDebutCredit?.toISOString(),
 				}))}
-				propertyTaxes={workbook.propertyTaxes}
 			/>
 		</div>
 	);

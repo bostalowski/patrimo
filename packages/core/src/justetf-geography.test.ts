@@ -88,11 +88,12 @@ function workbook(
     properties: [],
     dca: [],
     manualPrices: [],
+    loanInsurancePaliers: [],
+    propertyTaxes: [],
     geographicAllocations: [],
     sectorAllocations: [],
     diversificationTargets: [],
 		financialGoals: [],
-		propertyTaxes: [],
     ...overrides,
   };
 }

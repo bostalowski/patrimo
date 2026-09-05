@@ -39,7 +39,6 @@
     "./diversification-labels": "./src/diversification-labels.ts",
     "./diversification-targets": "./src/diversification-targets.ts",
     "./manual-prices": "./src/manual-prices.ts",
-    "./property-taxes": "./src/property-taxes.ts",
     "./next-euro-plan": "./src/next-euro-plan.ts",
     "./monthly-dca-tilt": "./src/monthly-dca-tilt.ts",
     "./monthly-dca-tilt-copy": "./src/monthly-dca-tilt-copy.ts",
@@ -50,11 +49,13 @@
     "./sector-exposure": "./src/sector-exposure.ts",
     "./justetf-sectors": "./src/justetf-sectors.ts",
     "./realestate/loan": "./src/realestate/loan.ts",
+    "./realestate/insurance": "./src/realestate/insurance.ts",
     "./realestate/property": "./src/realestate/property.ts",
     "./realestate/tax": "./src/realestate/tax.ts",
     "./realestate/projection": "./src/realestate/projection.ts",
     "./workbook-template": "./src/workbook-template.ts",
-    "./prices/schedule": "./src/prices/schedule.ts"
+    "./prices/schedule": "./src/prices/schedule.ts",
+    "./property-taxes": "./src/property-taxes.ts"
   },
   "dependencies": {
     "zod": "^4.4.3"
