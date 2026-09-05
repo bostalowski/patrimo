@@ -28,7 +28,8 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md). Tier A: mark teach-back / Ch
 
 ## Checker
 
-- Checker: Pass — 2026-09-05 — evidence: `npm test -- scripts/rework-log.test.ts scripts/pr-check.test.ts` (12 passed); dogfood: overlapping unreworked rows marked yes; stamp wrote 9 Touched paths; Tier A Layer 2 n/a
+- Checker: Pass (2026-09-05)
+- Checker evidence: `npm test -- scripts/rework-log.test.ts scripts/pr-check.test.ts` (12 passed); dogfood marked overlapping harness rows Reworked?=yes; stamp wrote 9 Touched paths; Tier A Layer 2 n/a; `make branch-ready` 10/10.
 
 ## RED evidence (when Layer 2 applies)
 
