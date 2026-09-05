@@ -168,19 +168,19 @@ Dogfood re-check on this real branch after both fixes: `bash scripts/gauntlet.sh
 
 - Command: `npx vitest run scripts/orca-role.test.ts`
 - Test: `orca-role.sh > N10: prints the Framer prompt read verbatim from cadrage-lock.md` and `> N10: prints the Checker prompt read verbatim from scoring-rubric.md` — each asserts the script's stdout contains the exact opening line read live from `docs/howto/cadrage-lock.md` / `docs/agent/scoring-rubric.md`, so a future edit to either doc is what the test would catch, not a hardcoded copy in the script
-- SHA: (this tranche's commit, see Tranches table)
+- SHA: 33387c4
 
 ### RED evidence — E7: orca-role.sh --publish refuses when the Checker's worktree touched anything but PROGRESS.md (2026-09-04)
 
 - Command: `npx vitest run scripts/orca-role.test.ts`
 - Test: `orca-role.sh > E7: --publish fails when the worktree touched a file other than that branch's PROGRESS.md` and `> E7: --publish succeeds and copies PROGRESS.md when only that file changed`
-- SHA: (this tranche's commit)
+- SHA: 33387c4
 
 ### RED evidence — E8: orca-role.sh falls back to a plain detached git worktree without Orca (2026-09-04)
 
 - Command: `npx vitest run scripts/orca-role.test.ts`
 - Test: `orca-role.sh > E8: falls back to a plain detached git worktree when Orca is unavailable` (forces the no-Orca path via a `FEATURE_FLOW_NO_ORCA` test-only override — see PROGRESS process note: without this override, tests would non-deterministically take the Orca path or not depending on what's installed on the machine running them)
-- SHA: (this tranche's commit)
+- SHA: 33387c4
 
 Process note: while writing scripts/orca-role.test.ts, `fx.run()`'s use of `execFileSync` was found to silently discard stderr on a successful (exit 0) run — an `E8` assertion checking `res.stdout` for a message the script actually writes to stderr failed for that reason, not a script bug. Fixed by switching `scripts/test-support/fixture-repo.ts`'s `run()` to `spawnSync`, which captures both streams unconditionally; full `scripts/` suite re-run green afterward (26/26).
 
