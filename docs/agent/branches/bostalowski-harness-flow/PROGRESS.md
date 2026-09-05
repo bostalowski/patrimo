@@ -56,7 +56,7 @@ Everything else (D1 core rationale, D2, D5, D6, Intent, Teach-back scenarios 1�
 After opening tranche 1's PR (#78), discovered the mechanical problem the pass-1 Challenger had partially flagged: GitHub PRs diff branch→base, not a commit range. Pushing tranche 2's commits to the same branch (`bostalowski/harness-flow`) would silently grow PR #78 instead of forming a separate reviewable PR — defeating the small-diff goal D1 exists to serve. Presented the human with 3 options (merge-per-tranche cadence / stacked child branches / single PR reviewed incrementally); human chose **single PR, incremental commit review**. D1 amended accordingly (old choice moved to rejected alternatives with the reason); Tranches table's "PR" column changed to "Commit" (all tranches land in #78). No behavior case (N1–N11/E1–E8) changed — this only affects the Maker's shipping mechanic, not what is being tested — so re-running Challenger/teach-back was judged unnecessary; documented here instead of silently reopening cadrage (CONSTRAINTS §21/25 spirit).
 - [x] Maker: Tranche 2 (executable gates) — see RED evidence + Last verify below
 - [x] Maker: Tranche 3 (PR template + CI jobs) — `make verify` green (2026-09-04); CI YAML validated with js-yaml
-- [ ] Maker: Tranche 4 (Stryker mutation)
+- [x] Maker: Tranche 4 (Stryker mutation) — config-only + manual dogfood evidence, see RED evidence below
 - [ ] Maker: Tranche 5 (orca-role.sh)
 - [ ] Maker: Tranche 6 (coherence/duplication/rework-log)
 - [ ] Checker Pass (per tranche)
@@ -71,7 +71,7 @@ Per [tdd-red-green.md](../../howto/tdd-red-green.md). Skip if Layer 2 is `n/a`.
 
 The first `npx vitest run scripts` run (2026-09-04) genuinely failed 2/17 tests for a real reason (fixture didn't seed the deleted/gutted test file on the diff base branch — `git diff base...HEAD` legitimately showed no change for a file added-then-removed entirely within the feature branch; fixed by seeding the file on `main` before branching). That is real signal, not a rubber stamp, but per the Checker it does not retroactively prove RED-before-code per case.
 
-**Checker pass 1 also found two real production bugs, independent of the process-order issue, both now fixed with regression tests:**
+**Checker pass 1 also found two real production bugs, independent of the process-order issue, both now fixed with regression tests in `c3ad734`:**
 1. `test-guard.sh`'s `.skip(`/`.only(` detector was a blind substring grep (`^\+[^+].*\.(skip|only)\(`) that false-positived on `scripts/test-guard.test.ts`'s own fixture string literals containing that text as test data — causing `make gauntlet` to genuinely fail on this branch's own diff. Fixed: anchored the regex to require the added line's statement itself start with `it`/`test`/`describe`.`(skip|only)(` (`^\+[[:space:]]*(it|test|describe)\.(skip|only)\(`), which no longer matches text embedded inside a string literal. Regression test: `test-guard.test.ts > "does not false-positive when an added line merely contains \".only(\" inside a string literal"`.
 2. `pr-check.sh`'s §3 check (RED evidence per checked-off case) matched any line containing "RED evidence" and the ID as a bare substring — gameable by a decoy sentence like "still missing RED evidence for N1" (Checker built and ran this exploit in an isolated fixture, no repo files touched). Fixed: now requires the actual `^### RED evidence — …` header format `red-evidence.sh` writes. Regression tests: `pr-check.test.ts > "fails a checked-off case whose only PROGRESS mention is a decoy sentence"` and `"passes a checked-off case whose PROGRESS has the real RED evidence header"`.
 
@@ -99,7 +99,7 @@ Dogfood re-check on this real branch after both fixes: `bash scripts/gauntlet.sh
 
 - Command: `npx vitest run scripts/test-guard.test.ts`
 - Test: `test-guard.sh > N3: fails and names the file when a test file present on the base branch is deleted without justification`
-- SHA: 030570c (fixed post-Checker: <SHA of the anchored-regex commit>)
+- SHA: 030570c (this case's own detection logic — deleted base-present test file — was unaffected by the `c3ad734` fixes, which touched the separate `.skip`/`.only` detector and `pr-check.sh` §3, not this path)
 
 ### RED evidence — N4: test-guard.sh passes once Test-removal-justified is present (2026-09-04)
 
@@ -149,11 +149,28 @@ Dogfood re-check on this real branch after both fixes: `bash scripts/gauntlet.sh
 - Test: `pr-check.sh > E6: fails when Checker: Pass has no cited evidence line`
 - SHA: 030570c
 
+### RED evidence — N9: gauntlet.sh reports mutation step skipped with no packages/core diff (2026-09-04)
+
+- Command: `npx vitest run scripts/gauntlet.test.ts`
+- Test: `gauntlet.sh > N9: reports mutation step skipped when no packages/core file is in the diff`
+- SHA: 030570c (test fixture predates stryker.conf.json; still valid — see N8 note below on the config-present path)
+
+### RED evidence — N8: Stryker mutation testing scoped to changed packages/core files, gated on the D3 thresholds (2026-09-04)
+
+**Disclosed limitation, not hidden:** N8's "fails on a surviving mutant above threshold" path has **no automated fixture test** — spinning a real Stryker run inside an isolated throwaway fixture repo would need its own installed `node_modules`/vitest setup, which is impractical to provision per test run at reasonable cost/speed. Instead, verified directly against real files in this repo (not a fixture, no repo state changed by the check itself):
+- `npx stryker run --mutate "packages/core/src/emergency-fund-config.ts"` (well-covered file) → mutation score 92.86%, "greater than or equal to break threshold 80", **exit 0**.
+- `npx stryker run --mutate "packages/core/src/benchmarks.ts"` (a file with **no** test file at all) → Stryker's own `ConfigError: No tests were executed` → **exit 1** (a config-error failure rather than a literal "score below threshold" failure, but it demonstrates the same required property: an under-tested core file makes the gate fail, and `gauntlet.sh` propagates that nonzero exit since the `npx stryker run` invocation is the script's final command).
+- Root cause of the earlier sandboxing crash (`ENOTSUP … copyfile … .claude/skills/patrimo-harness`, a symlinked directory) was Stryker's default file-copy sandboxing trying to mirror the *entire* repo; fixed by adding an explicit `"files"` allowlist in `stryker.conf.json` scoped to `packages/core/**` + the root config files it needs — this also makes each run fast (2–3s) instead of copying the whole monorepo per mutant batch.
+- Command: manual (see above), not `npx vitest run scripts` — this case is Stryker-runtime behavior, not gate-script behavior
+- Date: 2026-09-04
+
 ## Last verify
 
-- Command: `make verify` (Tranche 2: scripts/{lib/diff,red-evidence,test-guard,gauntlet,pr-check,flow-status}.sh, branch-ready.sh N7 extension, scripts/*.test.ts, scripts/test-support/*, vitest.config.ts scripts include, Makefile/package.json targets)
-- Result: exit 0 — 95 test files, 622 tests passed (16 new in scripts/, all green; lint + typecheck unaffected)
+- Command: `make verify` (post Checker-fix commit `c3ad734`: test-guard.sh anchored regex, pr-check.sh §3 hardening, regression tests, stryker.conf.json + devDeps for tranche 4)
+- Result: exit 0 — 95 test files, 626 tests passed; `bash scripts/gauntlet.sh` on this branch's own diff also green (test-guard OK, mutation skipped — no `packages/core` diff on this branch)
 - Date: 2026-09-04
+
+Prior: `make verify` after Tranche 2 (before Checker fixes) — exit 0, 95 files / 623 tests, but `bash scripts/gauntlet.sh` was failing at that point (see Checker findings + fix above) — `make verify` alone did not catch it since gauntlet is a separate gate, illustrating why `make pr-check`/`make gauntlet` are required gates and not implied by verify.
 
 ## Notes
 
