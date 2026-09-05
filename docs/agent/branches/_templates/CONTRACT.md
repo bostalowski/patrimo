@@ -19,14 +19,17 @@ Tier A: write `n/a — Tier A`. Tier B: fill all bullets.
 ## Behavior cases
 
 Tier A: `n/a — Tier A`. Tier B: observable cases → Layer 2 RED → GREEN slices.
+Give each Nominal/Edge case a stable ID (`N1`, `N2`, … / `E1`, `E2`, …) — the
+`## Tranches` table below references cases **by ID only**, so `make branch-ready`
+can check every case is assigned to a tranche.
 
 ### Nominal
 
-- [ ] If … then …
+- [ ] N1: If … then …
 
 ### Edge
 
-- [ ] If … then …
+- [ ] E1: If … then …
 
 ### Out of scope
 
@@ -63,6 +66,22 @@ Tier A: `n/a — Tier A`. Tier B: list 3–5 scenarios; human acceptance recorde
 
 When Layer 2 applies, makers follow [tdd-red-green.md](../../howto/tdd-red-green.md) (CONSTRAINTS §24).
 Tier B cadrage: [cadrage-lock.md](../../howto/cadrage-lock.md) (CONSTRAINTS §25) before Maker.
+
+## Tranches
+
+One tranche = one small, separately-reviewable unit — either its own stacked
+PR (merged before the next tranche's commits push) or a commit landing in
+one already-open PR reviewed incrementally; pick the mechanic explicitly in
+a product decision, since GitHub diffs branch-vs-base (CONSTRAINTS §26;
+[feature-flow.md](../../howto/feature-flow.md)). Tier A: one row is enough
+(`n/a` behavior cases). Tier B: every `N#`/`E#` case above must appear in at
+least one row's "Behavior cases covered" cell, **as bare IDs only** (no
+prose after the IDs — `make branch-ready` parses this column with a simple
+token match).
+
+| # | Tranche | Behavior cases covered | Layers | PR / commit |
+|---|---|---|---|---|
+| 1 | | | | not yet shipped |
 
 ## Exclusions
 

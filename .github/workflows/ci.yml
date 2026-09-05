@@ -50,3 +50,63 @@ jobs:
         run: make e2e
         env:
           CI: true
+
+  # Replays `make pr-check` — see docs/howto/feature-flow.md (gate G6) and
+  # ADR 0026. PR-only: on a push-to-main event this branch IS main, and
+  # pr-check.sh correctly refuses to run against an integration branch.
+  harness:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # actions/checkout defaults to a detached-HEAD merge ref on
+          # pull_request events; branch_name()/branch_slug() resolve off
+          # `git rev-parse --abbrev-ref HEAD`, which would otherwise return
+          # the literal string "HEAD" and break every CONTRACT lookup.
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Ensure origin/main is fetched (diff base)
+        run: git fetch origin main
+
+      - name: PR check (harness gates)
+        run: make pr-check
+
+  # Informational only (CONSTRAINTS §26) — never blocks merge.
+  size:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Same detached-HEAD note as the harness job — not strictly needed
+          # today (this job never resolves a branch name), kept for
+          # consistency so it doesn't silently break if extended later.
+          ref: ${{ github.head_ref }}
+
+      - name: Ensure origin/main is fetched (diff base)
+        run: git fetch origin main
+
+      - name: Post diff-size signal
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          STAT="$(git diff --shortstat origin/main...HEAD || true)"
+          BODY="Diff size vs main: ${STAT:-no changes}. Informational only (CONSTRAINTS §26) — not a merge blocker."
+          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "$BODY"

@@ -24,5 +24,7 @@ You are the CHECKER, not the implementer. Do not write feature code.
 Read CONSTRAINTS.md, make branch-status (CONTRACT + PROGRESS), and git diff.
 Run the verification commands listed in the CONTRACT.
 If CONTRACT Layer 2 applies: require Teach-back/cadrage lock in PROGRESS (docs/howto/cadrage-lock.md, CONSTRAINTS §25); require RED evidence in PROGRESS/run log (failing targeted test for missing behavior before prod), then green targeted tests — see docs/howto/tdd-red-green.md and CONSTRAINTS §24.
+On a diff touching @patrimo/core, workbook I/O, or API routes, run make gauntlet (CONSTRAINTS §27) and fold its result into Correctness/Architecture.
+Run the coherence-code-doc skill against the diff (code vs ADR/ARCHITECTURE/glossary drift) and the clean-code skill (placement, duplication, anti-patterns); fold findings into Architecture.
 Score with docs/agent/scoring-rubric.md. Cite evidence. Output Pass or Fail only after the table.
 ```
