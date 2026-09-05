@@ -145,7 +145,7 @@ function parseRows(md) {
         slug: cells[1],
         feature: cells[2],
         touched: [],
-        reworked: cells[3].toLowerCase(),
+        reworked: cells[3],
         raw: line,
       });
     } else {
@@ -154,7 +154,7 @@ function parseRows(md) {
         slug: cells[1],
         feature: cells[2],
         touched: cells[3].split(/\s+/).filter(Boolean),
-        reworked: cells[4].toLowerCase(),
+        reworked: cells[4],
         raw: line,
       });
     }
