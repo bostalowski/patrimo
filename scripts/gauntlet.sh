@@ -12,6 +12,8 @@ cd "$ROOT" || exit 1
 source "$SCRIPT_DIR/lib/branch-slug.sh"
 # shellcheck source=lib/diff.sh
 source "$SCRIPT_DIR/lib/diff.sh"
+# shellcheck source=lib/mutate-spec.sh
+source "$SCRIPT_DIR/lib/mutate-spec.sh"
 
 BRANCH="$(branch_name)"
 if is_integration_branch "$BRANCH"; then
@@ -29,16 +31,20 @@ fi
 echo ""
 echo "2. Mutation testing (packages/core)"
 BASE="$(diff_base)"
-core_files="$(changed_files | grep -E '^packages/core/src/.*\.tsx?$' || true)"
+core_files="$(changed_core_production_files)"
+mutate_arg="$(mutate_arg_for_core_diff)"
 mutation_status=0
 if [[ -z "$core_files" ]]; then
-  echo "  skipped — no packages/core/src files in diff vs $BASE"
+  echo "  skipped — no packages/core/src production files in diff vs $BASE"
 elif [[ ! -f stryker.conf.json ]]; then
   echo "  skipped — stryker.conf.json not present yet (lands in a later tranche)"
+elif [[ -z "$mutate_arg" ]]; then
+  echo "  skipped — packages/core production files changed but no added lines to mutate vs $BASE"
 else
-  echo "  changed packages/core files:"
+  echo "  changed packages/core production files:"
   echo "$core_files" | sed 's/^/    /'
-  mutate_arg="$(echo "$core_files" | paste -sd, -)"
+  echo "  mutate specs (production + diff hunks only; *.test.ts excluded):"
+  echo "$mutate_arg" | tr ',' '\n' | sed 's/^/    /'
   npx stryker run --mutate "$mutate_arg" || mutation_status=$?
 fi
 

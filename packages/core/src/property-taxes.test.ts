@@ -113,10 +113,23 @@ describe("normalizePropertyTaxes", () => {
 	it("drops rows with a non-finite or negative amount", () => {
 		const properties = [property("lyon")];
 		const result = normalizePropertyTaxes(
-			[tax("lyon", 2025, Number.NaN), tax("lyon", 2026, -1)],
+			[tax("lyon", 2025, Number.NaN), tax("lyon", 2026, -1), tax("lyon", 2027, Number.POSITIVE_INFINITY)],
 			properties,
 		);
 		expect(result).toEqual([]);
+	});
+
+	it("drops rows with a non-integer year", () => {
+		const result = normalizePropertyTaxes([tax("lyon", 2025.5, 950)], [property("lyon")]);
+		expect(result).toEqual([]);
+	});
+
+	it("keeps distinct (property, year) pairs and allows a zero amount", () => {
+		const result = normalizePropertyTaxes(
+			[tax("lyon", 2024, 900), tax("lyon", 2025, 0)],
+			[property("lyon")],
+		);
+		expect(result).toEqual([tax("lyon", 2024, 900), tax("lyon", 2025, 0)]);
 	});
 });
 
@@ -130,14 +143,40 @@ describe("upsertPropertyTax", () => {
 		const source = workbook({ propertyTaxes: [tax("lyon", 2025, 950)] });
 		const result = upsertPropertyTax(source, tax("lyon", 2025, 960));
 		expect(result.propertyTaxes).toEqual([tax("lyon", 2025, 960)]);
+		expect(result.propertyTaxes).toHaveLength(1);
 	});
 
 	it("accepts a future year without throwing (D9)", () => {
 		expect(() => upsertPropertyTax(workbook(), tax("lyon", 2999, 100))).not.toThrow();
 	});
 
+	it("accepts a zero amount", () => {
+		const result = upsertPropertyTax(workbook(), tax("lyon", 2025, 0));
+		expect(result.propertyTaxes).toEqual([tax("lyon", 2025, 0)]);
+	});
+
 	it("rejects a property tax for an unknown property", () => {
 		expect(() => upsertPropertyTax(workbook(), tax("unknown", 2025, 100))).toThrow(/property/i);
+	});
+
+	it("rejects a non-integer year", () => {
+		expect(() => upsertPropertyTax(workbook(), tax("lyon", 2025.5, 100))).toThrow(/year is invalid/i);
+	});
+
+	it("rejects a non-finite year", () => {
+		expect(() => upsertPropertyTax(workbook(), tax("lyon", Number.NaN, 100))).toThrow(/year is invalid/i);
+	});
+
+	it("rejects a negative amount", () => {
+		expect(() => upsertPropertyTax(workbook(), tax("lyon", 2025, -1))).toThrow(
+			/non-negative finite number/i,
+		);
+	});
+
+	it("rejects a non-finite amount", () => {
+		expect(() => upsertPropertyTax(workbook(), tax("lyon", 2025, Number.NaN))).toThrow(
+			/non-negative finite number/i,
+		);
 	});
 });
 
