@@ -25,7 +25,7 @@
 - [ADR 0023: Per-goal capitalisation mode and pension overlap](0023-goal-capitalisation-mode.md) — accepted (supersedes-in-part 0014; pension overlap superseded-in-part by 0025)
 - [ADR 0024: Official Livret A / LDDS rate series (sync + quinzaine math)](0024-livret-official-rate-series.md) — accepted (extends CONSTRAINTS §4)
 - [ADR 0025: Multi-scenario public pension (info-retraite)](0025-multi-scenario-public-pension.md) — accepted (supersedes-in-part 0014 income horizon by age and 0023 age-based pension overlap)
-- [ADR 0026: Feature flow — cadrage to merge as executable gates](0026-feature-flow-cadrage-to-merge.md) — accepted
+- [ADR 0026: Feature flow — cadrage to merge as executable gates](0026-feature-flow-cadrage-to-merge.md) — accepted (rework-log row timing amended 2026-09-05: required in merging PR)
 - [ADR 0027: Taxe foncière history per property and year](0027-property-tax-history.md) — accepted
 
 Template: [_template.md](_template.md)

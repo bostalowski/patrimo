@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Gate: branch-ready + RED evidence (checked cases) + Checker Pass recency/
-# citation + diff-size signal. See docs/howto/feature-flow.md (gate G6).
+# citation + rework-log row for this slug (D8, in the PR being merged) +
+# diff-size signal. See docs/howto/feature-flow.md (gate G6).
 # set -uo pipefail (no -e): several checks below run a command and inspect
 # its exit code themselves rather than aborting the whole gate on it.
 set -uo pipefail
@@ -105,11 +106,12 @@ stat="$(git diff --shortstat "$BASE"...HEAD 2>/dev/null || true)"
 echo "  ${stat:-no diff vs $BASE}"
 
 echo ""
-echo "5. Rework log reminder (informational — D8, not a blocker)"
+echo "5. Rework log row for this slug (D8 — must land in the PR being merged)"
 if [[ -f docs/agent/rework-log.md ]] && grep -qF "$SLUG" docs/agent/rework-log.md; then
   echo "  OK — docs/agent/rework-log.md already has a row for $SLUG"
 else
-  echo "  REMINDER — docs/agent/rework-log.md has no row for $SLUG yet; add one after merge"
+  echo "  FAIL — docs/agent/rework-log.md has no row for $SLUG — append one in this PR before merge (not a follow-up)"
+  fail=1
 fi
 
 echo ""

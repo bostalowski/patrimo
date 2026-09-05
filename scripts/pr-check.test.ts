@@ -5,6 +5,13 @@ import { minimalProgress, minimalTierBContract } from "./test-support/tier-b-con
 const FULL_TRANCHES =
   "| # | Tranche | Behavior cases covered | Layers | PR |\n|---|---|---|---|---|\n| 1 | fixture | N1, N2, E1 | L1 | pending |";
 
+function writeReworkRow(fx: Fixture, slug: string) {
+  fx.writeFile(
+    "docs/agent/rework-log.md",
+    `| Date | Slug | Feature | Reworked? |\n|---|---|---|---|\n| 2026-01-01 | ${slug} | Fixture | no |\n`,
+  );
+}
+
 describe("scripts/pr-check.sh", () => {
   let fx: Fixture | undefined;
   afterEach(() => fx?.cleanup());
@@ -69,6 +76,7 @@ describe("scripts/pr-check.sh", () => {
     fx.writeProgress(
       `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: docs-only, verified by hand\n`,
     );
+    writeReworkRow(fx, "feat-prcheck-tiera");
     fx.commitAll("tier A ready");
 
     const res = fx.run("scripts/pr-check.sh");
@@ -100,6 +108,7 @@ describe("scripts/pr-check.sh", () => {
     fx.writeProgress(
       `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks\n\n### RED evidence — N1: fixture case (2026-01-01)\n\n- Command: \`true\`\n- SHA: abc1234\n`,
     );
+    writeReworkRow(fx, "feat-prcheck-real-red");
     fx.commitAll("checked-off N1 with real RED evidence header");
 
     const res = fx.run("scripts/pr-check.sh");
@@ -112,6 +121,7 @@ describe("scripts/pr-check.sh", () => {
     fx.writeProgress(
       `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks, all green\n`,
     );
+    writeReworkRow(fx, "feat-prcheck-ready");
     fx.commitAll("ready for pr-check");
 
     const res = fx.run("scripts/pr-check.sh");
@@ -119,7 +129,7 @@ describe("scripts/pr-check.sh", () => {
     expect(res.stdout).toContain("pr-check: READY");
   });
 
-  it("N11: prints a non-blocking reminder when rework-log.md has no row for this slug", () => {
+  it("N11: fails when rework-log.md has no row for this slug", () => {
     fx = createFixture("feat/prcheck-norework");
     fx.writeContract(minimalTierBContract({ tranchesRow: FULL_TRANCHES }));
     fx.writeProgress(
@@ -129,9 +139,9 @@ describe("scripts/pr-check.sh", () => {
     fx.commitAll("ready, but no rework-log row yet");
 
     const res = fx.run("scripts/pr-check.sh");
-    expect(res.status).toBe(0); // non-blocking
-    expect(res.stdout).toContain("REMINDER");
-    expect(res.stdout).toContain("rework-log.md");
+    expect(res.status).not.toBe(0);
+    expect(res.stdout).toContain("FAIL — docs/agent/rework-log.md has no row");
+    expect(res.stdout).toContain("pr-check: NOT READY");
   });
 
   it("N11: reports OK when rework-log.md already has a row for this slug", () => {

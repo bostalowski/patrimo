@@ -19,8 +19,8 @@ G2  make red CASE=… CMD=…    Maker                       → RED evidence (r
 G3  make verify / make e2e   Maker                       → three-layer DoD for the tranche
 G4  make gauntlet            Maker                       → test-removal guard + scoped mutation
 G5  make checker              Checker (isolated worktree) → Pass/Fail written to PROGRESS only
-G6  make pr-check → push     Maker                       → tranche pushed as its own PR or commit, gates replayed in CI
-G7  merge                                                → FEATURES matrix + rework-log row
+G6  make pr-check → push     Maker                       → tranche pushed; rework-log row required in this PR
+G7  merge                                                → FEATURES matrix (+ archive branch / root PROGRESS note)
 ```
 
 Repeat G2→G6 once per row of the CONTRACT's `## Tranches` table (G7 fires
@@ -44,8 +44,8 @@ commits to an open PR's branch grows that PR rather than starting a new one.
 | G3 | `make verify` (+ `make e2e` when Layer 3 applies) | Three-layer DoD for the tranche's slice | `AGENTS.md` § Run and verify |
 | G4 | `make gauntlet` | No test silently deleted/`.skip`'d/`.only`'d without a `Test-removal-justified:` line; on a `packages/core` diff, no surviving mutant above threshold in the changed files | `scripts/gauntlet.sh`, `scripts/test-guard.sh` |
 | G5 | `make checker` | A Checker in a separate plain `git worktree` scores the tranche against [scoring-rubric.md](../agent/scoring-rubric.md), writing only to PROGRESS | [maker-checker.md](maker-checker.md), `scripts/role-worktree.sh checker` |
-| G6 | `make pr-check` then `make pr` (first tranche) or a plain push (later tranches landing in an already-open PR) | Everything above is true and recorded, and dated after the latest code commit | `scripts/pr-check.sh`, `scripts/pr.sh`, CI `harness` job replays `pr-check` on every push |
-| G7 | merge | FEATURES matrix updated if a platform status changed; `docs/agent/rework-log.md` gets a row | [branches/README.md](../agent/branches/README.md) |
+| G6 | `make pr-check` then `make pr` (first tranche) or a plain push (later tranches landing in an already-open PR) | Everything above is true and recorded, dated after the latest code commit; `docs/agent/rework-log.md` has a row for this branch slug | `scripts/pr-check.sh`, `scripts/pr.sh`, CI `harness` job replays `pr-check` on every push |
+| G7 | merge | FEATURES matrix updated if a platform status changed; branch folder archived / root PROGRESS note if useful | [branches/README.md](../agent/branches/README.md) |
 
 `make flow` (`scripts/flow-status.sh`) prints which gate you're on and the
 next command, from the current branch's CONTRACT/PROGRESS state.
