@@ -56,7 +56,7 @@ Do not declare victory on layer 1 alone when layer 3 applies. One CONTRACT per f
 
 Before coding: feature branch → `make branch-contract` → Framer fills CONTRACT (Tier B: Intent / cases / decisions / teach-back) → `make branch-ready`. Update branch PROGRESS during the session. Optional dated notes under `docs/agent/runs/`.
 
-On merge: update root [FEATURES.md](FEATURES.md) matrix if platform status changed; root PROGRESS only as a short `main` pointer.
+On merge: update root [FEATURES.md](FEATURES.md) matrix if platform status changed; root PROGRESS only as a short `main` pointer. The rework-log row lands **in the merging PR** (`make pr-check` requires it).
 
 Autonomous loops: [docs/howto/agent-loop.md](docs/howto/agent-loop.md).
 
@@ -85,7 +85,7 @@ Full gate-by-gate sequence: [docs/howto/feature-flow.md](docs/howto/feature-flow
 3. **Work:** implement one tranche at a time. When Layer 2 applies: per case **RED → GREEN** ([tdd-red-green.md](docs/howto/tdd-red-green.md)), record RED evidence in branch PROGRESS; update colocated ARCHITECTURE / ADR / glossary with the code.
 4. **Verify:** layers required by DoD above, then `make gauntlet` (test-removal guard + scoped mutation on `@patrimo/core`, workbook I/O, or API-route diffs — CONSTRAINTS §27). Never claim done on failing verify or gauntlet.
 5. **Check:** `make checker` (isolated worktree) scores the tranche against CONTRACT + rubric; then `make pr-check` before opening the tranche's PR.
-6. **Handoff:** update `docs/agent/branches/<slug>/PROGRESS.md`. On merge, sync FEATURES matrix, append a row to `docs/agent/rework-log.md`, and add a short note on root PROGRESS if useful.
+6. **Handoff:** update `docs/agent/branches/<slug>/PROGRESS.md`. Before opening/updating the PR that merges: append a row to `docs/agent/rework-log.md` (required by `make pr-check`). On merge: sync FEATURES matrix if needed, and add a short note on root PROGRESS if useful.
 
 ## Next.js
 

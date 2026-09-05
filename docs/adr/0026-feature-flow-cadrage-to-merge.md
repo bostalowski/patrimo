@@ -10,7 +10,7 @@ Contract (do not invent):
 Flow: G0 branch-contract → G1 branch-ready (cadrage lock) →
   per tranche: G2 red (RED evidence) → G3 verify/e2e → G4 gauntlet
   (test-removal guard + scoped mutation) → G5 checker (isolated worktree)
-  → G6 pr-check → pr → G7 merge.
+  → G6 pr-check (includes rework-log row for this slug) → pr → G7 merge.
 
 Tranches: a CONTRACT ships as N small, separately-reviewable slices, one per
   Tranches-table row, each row assigned a subset of the CONTRACT's behavior
@@ -114,9 +114,13 @@ reviewable slices instead of one large diff:
    in `cadrage-lock.md`; the Checker prompt stays in `scoring-rubric.md`.
    `role-worktree.sh` reads and prints them; it does not re-author them
    elsewhere.
-7. **Post-merge signal.** `docs/agent/rework-log.md` — one row per merged
-   feature, incremented on a follow-up fix within 30 days — is the only
-   measurement this ADR adds, kept deliberately small.
+7. **Merge signal (rework log).** `docs/agent/rework-log.md` — one row per
+   feature that reaches `main`, incremented on a follow-up fix within 30 days —
+   is the only measurement this ADR adds, kept deliberately small.
+   **Amendment (2026-09-05):** the row is appended **in the PR about to merge**
+   (same diff as the feature). `make pr-check` fails if the current slug has
+   no row yet — no follow-up chore PR. (Originally: manual append after merge
+   with a non-blocking reminder only.)
 
 ## Invariants
 
@@ -198,8 +202,8 @@ mechanically.
 - `.github/workflows/ci.yml` gains a `harness` job (blocking, runs
   `make pr-check`) and a `size` job (informational only).
 - New devDependencies: `@stryker-mutator/core`, `@stryker-mutator/vitest-runner`.
-- `docs/agent/rework-log.md` starts empty; first row appended when the next
-  feature branch merges after this one.
+- `docs/agent/rework-log.md` rows are required in the merging PR (`make pr-check`
+  fails without the current slug); `Reworked?` still updated by hand within 30 days.
 
 ## Uncovered cases
 
