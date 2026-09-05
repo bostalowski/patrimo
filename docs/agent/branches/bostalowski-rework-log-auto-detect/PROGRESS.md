@@ -15,7 +15,7 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md). Tier A: mark teach-back / Ch
 - Framer session / date: 2026-09-05 (same session as Maker — Tier A harness)
 - Challenger: n/a
 - Teach-back: n/a
-- `make branch-ready`: pending
+- `make branch-ready`: 2026-09-05 PASS (10/10)
 
 ## Done (this branch)
 
@@ -24,6 +24,11 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md). Tier A: mark teach-back / Ch
 - [x] Tests: `scripts/rework-log.test.ts` + updated `pr-check.test.ts`
 - [x] Migrate `rework-log.md` (Touched column); mark overlapping prior harness rows `Reworked?=yes`
 - [x] ADR 0026 / AGENTS / feature-flow / templates / skill
+- [x] `make rework-log-stamp` for this slug
+
+## Checker
+
+- Checker: Pass — 2026-09-05 — evidence: `npm test -- scripts/rework-log.test.ts scripts/pr-check.test.ts` (12 passed); dogfood: overlapping unreworked rows marked yes; stamp wrote 9 Touched paths; Tier A Layer 2 n/a
 
 ## RED evidence (when Layer 2 applies)
 
