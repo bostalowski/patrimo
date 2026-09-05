@@ -70,6 +70,7 @@ function workbook(
     sectorAllocations: [],
     diversificationTargets: [],
 		financialGoals: [],
+		propertyTaxes: [],
     manualPrices,
   };
 }
@@ -187,6 +188,7 @@ describe("/api/prices/manual", () => {
     sectorAllocations: [],
     diversificationTargets: [],
 		financialGoals: [],
+		propertyTaxes: [],
     });
   });
 

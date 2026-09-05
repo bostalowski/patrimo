@@ -47,6 +47,7 @@ const livretWorkbook = {
   sectorAllocations: [],
   diversificationTargets: [],
   financialGoals: [],
+  propertyTaxes: [],
 };
 
 vi.mock("@/lib/page-guards", () => ({

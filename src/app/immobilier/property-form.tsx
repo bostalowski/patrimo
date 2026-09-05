@@ -6,6 +6,11 @@ import { Loader2, Pencil, Plus, X } from "lucide-react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn, formatDate } from "@/lib/utils";
 import type { Detention, Property, PropertyRegime } from "@/lib/schema";
+import {
+  type PropertyTaxDraftRow,
+  PropertyTaxHistoryEditor,
+  propertyTaxRowsFromEntries,
+} from "./property-tax-history";
 
 const inputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";
@@ -40,6 +45,8 @@ const TMI_OPTIONS = [0, 0.11, 0.3, 0.41, 0.45];
 type Props = {
   property?: Property;
   trigger?: "primary" | "icon";
+  /** This property's rows from the `Taxe foncière` sheet (D5). Empty for a new property. */
+  propertyTaxes?: { year: number; amount: number }[];
 };
 
 function pct(value: number | undefined): string {
@@ -57,7 +64,11 @@ function toDateInput(value: Date | string | undefined): string {
   return `${year}-${month}-${day}`;
 }
 
-export function PropertyForm({ property, trigger = "primary" }: Props) {
+export function PropertyForm({
+  property,
+  trigger = "primary",
+  propertyTaxes = [],
+}: Props) {
   const router = useRouter();
   const isEdit = Boolean(property);
   const [open, setOpen] = useState(false);
@@ -102,7 +113,9 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
   const [chargesNonRecup, setChargesNonRecup] = useState(
     numStr(property?.chargesNonRecupAnnuelles),
   );
-  const [taxeFonciere, setTaxeFonciere] = useState(numStr(property?.taxeFonciere));
+  const [taxRows, setTaxRows] = useState<PropertyTaxDraftRow[]>(() =>
+    propertyTaxRowsFromEntries(propertyTaxes),
+  );
   const [vacancePct, setVacancePct] = useState(pct(property?.vacancePct ?? 0));
   const [fraisGestionPct, setFraisGestionPct] = useState(
     pct(property?.fraisGestionPct ?? 0),
@@ -150,6 +163,43 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
     setError(null);
   }
 
+  async function persistTaxRows(propertyId: string) {
+    const nextByYear = new Map<number, number>();
+    for (const row of taxRows) {
+      const year = Math.round(parseNum(row.year));
+      if (!row.year.trim() || !Number.isFinite(year)) continue;
+      nextByYear.set(year, parseNum(row.amount));
+    }
+
+    const removedYears = propertyTaxes
+      .map((entry) => entry.year)
+      .filter((year) => !nextByYear.has(year));
+
+    for (const [year, amount] of nextByYear) {
+      const res = await fetch("/api/property-taxes", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ propertyId, year, amount }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(
+          body?.error ?? `Échec de l'enregistrement de la taxe foncière ${year}`,
+        );
+      }
+    }
+
+    for (const year of removedYears) {
+      await fetch("/api/property-taxes", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ propertyId, year }),
+      });
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -184,7 +234,10 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
           tauxAssurance: parsePct(tauxAssurance, 0),
           loyerMensuelHC: parseNum(loyerMensuelHC),
           chargesNonRecupAnnuelles: parseNum(chargesNonRecup),
-          taxeFonciere: parseNum(taxeFonciere),
+          // The flat field is no longer edited directly here (D5): it is
+          // passed through unchanged (fallback plumbing, D4). New
+          // properties default to 0 via the schema when omitted.
+          ...(isEdit && property ? { taxeFonciere: property.taxeFonciere } : {}),
           vacancePct: parsePct(vacancePct, 0),
           fraisGestionPct: parsePct(fraisGestionPct, 0),
           tmiAssocie: Number(tmiAssocie),
@@ -202,6 +255,11 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
             (isEdit ? "Échec de la mise à jour" : "Échec de la création"),
         );
       }
+
+      const propertyId =
+        isEdit && property ? property.id : ((await res.json()) as { id: string }).id;
+      await persistTaxRows(propertyId);
+
       close();
       startTransition(() => router.refresh());
     } catch (err) {
@@ -437,15 +495,6 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
                 className={inputClasses}
               />
             </Field>
-            <Field label="Taxe foncière / an (EUR)">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={taxeFonciere}
-                onChange={(e) => setTaxeFonciere(e.target.value)}
-                className={inputClasses}
-              />
-            </Field>
             <Field label="Vacance locative (%)">
               <input
                 type="text"
@@ -466,6 +515,7 @@ export function PropertyForm({ property, trigger = "primary" }: Props) {
                 className={inputClasses}
               />
             </Field>
+            <PropertyTaxHistoryEditor rows={taxRows} onChange={setTaxRows} />
           </Section>
           )}
 

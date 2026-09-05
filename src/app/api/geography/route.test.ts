@@ -31,6 +31,7 @@ function workbook(): Workbook {
     sectorAllocations: [],
     diversificationTargets: [],
 		financialGoals: [],
+		propertyTaxes: [],
   };
 }
 

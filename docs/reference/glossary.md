@@ -106,6 +106,23 @@ How an asset obtains quotes: `coingecko`, `yahoo`, `investir`, `zonebourse`, or 
 
 A user-entered dated valuation (typically FCPE VL) stored in the optional workbook sheet `Prix manuels`. Only assets whose price source is `manual` use these entries. Automatic market prices remain in local derived caches (`prices.json` / AsyncStorage), not in this sheet.
 
+## Taxe foncière history
+
+A dated per-property property-tax amount, one row per `(Bien, Année)`,
+persisted in the optional workbook sheet `Taxe foncière` (`Bien` =
+`Property.id`, never the label). Model: `PropertyTax { propertyId, year,
+amount }` on `Workbook.propertyTaxes`. Resolution
+(`resolvePropertyTaxForYear`) for a given property and calendar year: an
+exact entry for that year wins (a future year is accepted, unlike **Manual
+price**); otherwise the entry with the largest year at or before the
+requested year wins (carry-forward, no automatic escalation); otherwise the
+flat `Property.taxeFonciere` field is the fallback, applied year by year.
+Feeds `operatingForYear` / `projectProperty` (`totalReturn`, `netIfSold`)
+and `PropertySnapshot.currentPropertyTax` (the resolved amount for the
+current calendar year, part-adjusted) in `@patrimo/core`. Never feeds
+`resaleTax()` — taxe foncière is not deductible from the acquisition price
+for French real-estate capital gains. See [ADR 0027](../adr/0027-property-tax-history.md).
+
 ## Geographic allocation
 
 Look-through geographic weights for an asset (fractions with `0 < sum ≤ 1` within tolerance; partial sums allowed), persisted in the optional workbook sheet `Exposition geo`. Rows for one asset are either **country-level** (ISO 3166-1 alpha-2 or residual `OTHER`) or **region-level** (product region keys), never mixed. Used to build portfolio, account, and asset breakdowns with **absolute** weights (missing fraction and country `OTHER` stay unreported on charts). Assets without an allocation are excluded from geo charts. UI shows a **country** view and a **region** view; region-only assets appear only in the region view. See [ADR 0010](../adr/0010-partial-geographic-allocation-weights.md).
@@ -267,6 +284,7 @@ Computed by `computeSavingsCapacity` in `@patrimo/core`. Complementary to
 - [ADR 0018](../adr/0018-configurable-emergency-fund-target.md)
 - [ADR 0019](../adr/0019-livret-dca-savings-capacity.md)
 - [ADR 0020](../adr/0020-emergency-fund-surplus-recommendation.md)
+- [ADR 0027](../adr/0027-property-tax-history.md)
 - [Manual price persistence](../architecture/manual-price-persistence.md)
 - [Geographic allocation](../architecture/geographic-allocation.md)
 - [Diversification targets](../architecture/diversification-targets.md)

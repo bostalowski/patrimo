@@ -14,6 +14,7 @@ import {
 } from "@patrimo/core/geographic-allocation";
 import { normalizeSectorAllocations } from "@patrimo/core/sector-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
+import { normalizePropertyTaxes } from "@patrimo/core/property-taxes";
 import type {
 	DiversificationTarget,
 	EmergencyFundConfig,
@@ -50,7 +51,9 @@ import {
 	SHEET_IMMOBILIER,
 	SHEET_OBJECTIFS,
 	SHEET_PRIX_MANUELS,
+	SHEET_TAXE_FONCIERE,
 	SHEET_TRANSACTIONS,
+	TAXE_FONCIERE_HEADERS,
 } from "@patrimo/core/workbook-template";
 import * as XLSX from "xlsx";
 import type { ZodError } from "zod";
@@ -63,6 +66,7 @@ import {
 	type DcaConfig,
 	type ManualPrice,
 	Property,
+	type PropertyTax,
 	Transaction,
 	type Workbook,
 } from "@/lib/schema";
@@ -418,6 +422,23 @@ function parseManualPrices(
 	return normalizeManualPrices(raw, assets);
 }
 
+function parsePropertyTaxes(
+	rows: Record<string, unknown>[],
+	properties: Property[],
+): PropertyTax[] {
+	const raw: PropertyTax[] = [];
+	for (const row of rows) {
+		const propertyId = emptyToUndefined(row["Bien"]);
+		if (!propertyId) continue;
+		raw.push({
+			propertyId,
+			year: toNumber(row["Année"]) ?? Number.NaN,
+			amount: toNumber(row["Montant"]) ?? Number.NaN,
+		});
+	}
+	return normalizePropertyTaxes(raw, properties);
+}
+
 function parseGeographicAllocations(
 	rows: Record<string, unknown>[],
 	assets: Asset[],
@@ -673,6 +694,10 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 		readSheetOptional(sheet, SHEET_PRIX_MANUELS),
 		assets,
 	);
+	const propertyTaxes = parsePropertyTaxes(
+		readSheetOptional(sheet, SHEET_TAXE_FONCIERE),
+		properties,
+	);
 	const geographicAllocations = parseGeographicAllocations(
 		readSheetOptional(sheet, SHEET_EXPOSITION_GEO),
 		assets,
@@ -709,6 +734,7 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 			diversificationTargets,
 			financialGoals,
 			emergencyFundConfig,
+			propertyTaxes,
 		},
 		transactionRows,
 	};
@@ -742,6 +768,10 @@ export function getBudget(): BudgetLine[] {
 
 export function getProperties(): Property[] {
 	return loadWorkbook().properties;
+}
+
+export function getPropertyTaxes(): PropertyTax[] {
+	return loadWorkbook().propertyTaxes;
 }
 
 export function getDcaConfigs(): DcaConfig[] {
@@ -1097,6 +1127,16 @@ export function replaceWorkbook(nextWorkbook: Workbook): void {
 	);
 	replaceSheetRows(
 		workbook,
+		SHEET_TAXE_FONCIERE,
+		(nextWorkbook.propertyTaxes ?? []).map((entry) => ({
+			Bien: entry.propertyId,
+			Année: entry.year,
+			Montant: entry.amount,
+		})),
+		TAXE_FONCIERE_HEADERS,
+	);
+	replaceSheetRows(
+		workbook,
 		SHEET_EXPOSITION_GEO,
 		(nextWorkbook.geographicAllocations ?? []).map((entry) => ({
 			Actif: entry.assetId,
@@ -1364,4 +1404,5 @@ export function upsertProperties(properties: Property[]): void {
 
 export function deleteProperty(id: string): void {
 	deleteRow(SHEET_IMMOBILIER, "ID", id);
+	deleteRow(SHEET_TAXE_FONCIERE, "Bien", id);
 }

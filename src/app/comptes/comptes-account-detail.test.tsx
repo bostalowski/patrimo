@@ -56,6 +56,7 @@ const workbookFixture = {
   ],
   diversificationTargets: [],
 		financialGoals: [],
+		propertyTaxes: [],
 };
 
 vi.mock("@/lib/page-guards", () => ({
@@ -138,6 +139,7 @@ describe("web comptes account detail surface", () => {
       sectorAllocations: [],
       diversificationTargets: [],
 		financialGoals: [],
+		propertyTaxes: [],
     });
 
     vi.resetModules();

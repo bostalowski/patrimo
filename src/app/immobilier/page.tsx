@@ -5,7 +5,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getProperties } from "@/lib/excel";
+import { getProperties, getPropertyTaxes } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { aggregatePropertySnapshots, propertySnapshot } from "@/lib/realestate/projection";
 import { loanEndDate } from "@/lib/realestate/property";
@@ -33,7 +33,14 @@ const DETENTION_LABELS: Record<Detention, string> = {
 export default function ImmobilierPage() {
   requireExcelConfigured();
   const properties = getProperties();
-  const snapshots = properties.map((p) => propertySnapshot(p));
+  const propertyTaxes = getPropertyTaxes();
+  const snapshots = properties.map((p) =>
+    propertySnapshot(
+      p,
+      undefined,
+      propertyTaxes.filter((entry) => entry.propertyId === p.id),
+    ),
+  );
 
   const totals = aggregatePropertySnapshots(snapshots);
 
@@ -95,7 +102,13 @@ export default function ImmobilierPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <PropertyForm property={p} trigger="icon" />
+                      <PropertyForm
+                        property={p}
+                        trigger="icon"
+                        propertyTaxes={propertyTaxes
+                          .filter((entry) => entry.propertyId === p.id)
+                          .map((entry) => ({ year: entry.year, amount: entry.amount }))}
+                      />
                       <DeletePropertyButton id={p.id} label={p.label} />
                     </div>
                   </CardHeader>
@@ -138,7 +151,7 @@ export default function ImmobilierPage() {
                       )}
                       <Row
                         label="Taxe foncière"
-                        value={formatEuro(p.taxeFonciere * p.partDetenue)}
+                        value={formatEuro(s.currentPropertyTax)}
                       />
                     </dl>
                   </CardBody>

@@ -1,5 +1,6 @@
-import type { Property } from "../schema";
+import type { Property, PropertyTax } from "../schema";
 import { deflate } from "../inflation";
+import { resolvePropertyTaxForYear } from "../property-taxes";
 import { monthlyPayment, remainingBalance } from "./loan";
 import {
   acquisitionCost,
@@ -9,6 +10,17 @@ import {
   operatingForYear,
 } from "./property";
 import { annualTax, resaleTax, type ResaleResult } from "./tax";
+
+/**
+ * Map a projection loop index `k` (1-based) to a calendar year (D6).
+ * `k=1` is the current calendar year — consistent with `propertySnapshot`,
+ * which uses `horizonYears: 1` for its "current" metrics. This is an
+ * indicative simplification, like the rest of the model (the loop is not
+ * pinned to the real calendar year of the loan, cf. `monthsElapsedLoan`).
+ */
+function calendarYear(now: Date, k: number): number {
+  return now.getUTCFullYear() + k - 1;
+}
 
 export type RealEstateYear = {
   year: number;
@@ -50,6 +62,7 @@ export type ProjectionOptions = {
   revaloAnnuelle?: number;
   now?: Date;
   inflationRate?: number;
+  propertyTaxes?: PropertyTax[];
 };
 
 export function projectProperty(
@@ -81,7 +94,7 @@ export function projectProperty(
   let cumulativeAmort = Math.min(amortPerYear * yearsHeld, amortBase);
   let cumulativeAmortDeducted = cumulativeAmort;
 
-  const operating = operatingForYear(property);
+  const propertyTaxes = options.propertyTaxes ?? [];
 
   const years: RealEstateYear[] = [];
   let priorDeficit = 0;
@@ -89,6 +102,14 @@ export function projectProperty(
   let cumulativeCashFlow = 0;
 
   for (let k = 1; k <= horizon; k += 1) {
+    const resolvedTaxeFonciere = resolvePropertyTaxForYear(
+      propertyTaxes,
+      property.id,
+      calendarYear(now, k),
+      property.taxeFonciere,
+    );
+    const operating = operatingForYear(property, resolvedTaxeFonciere);
+
     const propertyValue = property.valeurActuelle * Math.pow(1 + revalo, k);
 
     const monthsStart = monthsElapsedLoan + (k - 1) * 12;
@@ -234,6 +255,13 @@ export type PropertySnapshot = {
   grossYield: number;
   netYield: number;
   annualTaxFoncier: number;
+  /**
+   * Taxe foncière resolved for the current calendar year (D6), part-adjusted
+   * like the other monetary snapshot fields (D10). Distinct from
+   * `annualTaxFoncier`, which is the income tax on rental income (IR/PS/IS),
+   * not the taxe foncière itself.
+   */
+  currentPropertyTax: number;
 };
 
 export type PropertyTotals = {
@@ -261,12 +289,24 @@ export function aggregatePropertySnapshots(
 export function propertySnapshot(
   property: Property,
   now: Date = new Date(),
+  propertyTaxes: PropertyTax[] = [],
 ): PropertySnapshot {
-  const projection = projectProperty(property, { horizonYears: 1, now });
+  const projection = projectProperty(property, {
+    horizonYears: 1,
+    now,
+    propertyTaxes,
+  });
   const firstYear = projection.years[0];
   const share = property.partDetenue;
   const grossRent = grossAnnualRent(property) * share;
   const cost = acquisitionCost(property) * share;
+  const currentPropertyTax =
+    resolvePropertyTaxForYear(
+      propertyTaxes,
+      property.id,
+      calendarYear(now, 1),
+      property.taxeFonciere,
+    ) * share;
 
   const loan = {
     principal: property.montantEmprunte,
@@ -287,5 +327,6 @@ export function propertySnapshot(
     grossYield: cost > 0 ? grossRent / cost : 0,
     netYield: cost > 0 ? (firstYear?.cashFlowAfterTax ?? 0) / cost : 0,
     annualTaxFoncier: firstYear?.tax ?? 0,
+    currentPropertyTax,
   };
 }

@@ -20,6 +20,7 @@ import type {
 	Detention,
 	Property,
 	PropertyRegime,
+	PropertyTax,
 	RetirementProfile,
 } from "@/lib/schema";
 import {
@@ -62,6 +63,7 @@ type Props = {
 	monthlyTilt: MonthlyDcaTilt | null;
 	initialProfile: RetirementProfile;
 	properties: SerializedProperty[];
+	propertyTaxes: PropertyTax[];
 };
 
 type Tab = "dca" | "execution" | "retraite" | "immobilier";
@@ -82,6 +84,7 @@ export function InvestissementsClient({
 	monthlyTilt,
 	initialProfile,
 	properties,
+	propertyTaxes,
 }: Props) {
 	const searchParams = useSearchParams();
 	const initialTab = searchParams.get("tab");
@@ -158,15 +161,19 @@ export function InvestissementsClient({
 				</div>
 			)}
 
-			{tab === "immobilier" && <ImmobilierSection properties={properties} />}
+			{tab === "immobilier" && (
+				<ImmobilierSection properties={properties} propertyTaxes={propertyTaxes} />
+			)}
 		</div>
 	);
 }
 
 function ImmobilierSection({
 	properties,
+	propertyTaxes,
 }: {
 	properties: SerializedProperty[];
+	propertyTaxes: PropertyTax[];
 }) {
 	const deserializedProperties = properties.map((p) => ({
 		...p,
@@ -178,7 +185,13 @@ function ImmobilierSection({
 			: undefined,
 	})) as Property[];
 
-	const snapshots = deserializedProperties.map((p) => propertySnapshot(p));
+	function taxesFor(propertyId: string): PropertyTax[] {
+		return propertyTaxes.filter((entry) => entry.propertyId === propertyId);
+	}
+
+	const snapshots = deserializedProperties.map((p) =>
+		propertySnapshot(p, undefined, taxesFor(p.id)),
+	);
 
 	const totals = snapshots.reduce(
 		(acc, s) => {
@@ -245,7 +258,14 @@ function ImmobilierSection({
 											</div>
 										</div>
 										<div className="flex items-center gap-1">
-											<PropertyForm property={p} trigger="icon" />
+											<PropertyForm
+												property={p}
+												trigger="icon"
+												propertyTaxes={taxesFor(p.id).map((entry) => ({
+													year: entry.year,
+													amount: entry.amount,
+												}))}
+											/>
 											<DeletePropertyButton id={p.id} label={p.label} />
 										</div>
 									</CardHeader>

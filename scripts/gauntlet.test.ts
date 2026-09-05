@@ -12,7 +12,7 @@ describe("scripts/gauntlet.sh", () => {
 
     const res = fx.run("scripts/gauntlet.sh");
     expect(res.status).toBe(0);
-    expect(res.stdout).toContain("skipped — no packages/core/src files in diff");
+    expect(res.stdout).toContain("skipped — no packages/core/src production files in diff");
   });
 
   it("delegates to test-guard and fails when a test present on the base branch is gutted without justification", () => {

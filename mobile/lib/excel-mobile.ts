@@ -4,6 +4,7 @@ import {
 } from "@patrimo/core/geographic-allocation";
 import { normalizeSectorAllocations } from "@patrimo/core/sector-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
+import { normalizePropertyTaxes } from "@patrimo/core/property-taxes";
 import type {
 	DiversificationTarget,
 	EmergencyFundConfig,
@@ -18,6 +19,7 @@ import {
 	DcaConfig,
 	type ManualPrice,
 	Property,
+	type PropertyTax,
 	Transaction,
 	type Workbook,
 } from "@patrimo/core/schema";
@@ -50,7 +52,9 @@ import {
 	SHEET_FONDS_URGENCE,
 	SHEET_OBJECTIFS,
 	SHEET_PRIX_MANUELS,
+	SHEET_TAXE_FONCIERE,
 	SHEET_TRANSACTIONS,
+	TAXE_FONCIERE_HEADERS,
 	TRANSACTIONS_HEADERS,
 } from "@patrimo/core/workbook-template";
 import * as XLSX from "xlsx";
@@ -71,6 +75,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	const rawProperties = readSheet(wb, "Immobilier");
 	const rawDca = readSheet(wb, "DCA");
 	const rawManualPrices = readSheet(wb, SHEET_PRIX_MANUELS);
+	const rawPropertyTaxes = readSheet(wb, SHEET_TAXE_FONCIERE);
 	const rawGeographicAllocations = readSheet(wb, SHEET_EXPOSITION_GEO);
 	const rawSectorAllocations = readSheet(wb, SHEET_EXPOSITION_SECTEUR);
 	const rawDiversificationTargets = readSheet(wb, SHEET_CIBLES_DIVERSIFICATION);
@@ -85,6 +90,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	const properties = parseProperties(rawProperties);
 	const dca = parseDca(rawDca);
 	const manualPrices = parseManualPrices(rawManualPrices, assets);
+	const propertyTaxes = parsePropertyTaxes(rawPropertyTaxes, properties);
 	const geographicAllocations = parseGeographicAllocations(
 		rawGeographicAllocations,
 		assets,
@@ -125,6 +131,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 			diversificationTargets,
 			financialGoals,
 			emergencyFundConfig,
+			propertyTaxes,
 		},
 		transactionKeys,
 	};
@@ -250,6 +257,16 @@ export function serializeWorkbook(
 			Actif: entry.assetId,
 			Date: entry.date,
 			Prix: entry.price,
+		})),
+	);
+	replaceRows(
+		workbook,
+		SHEET_TAXE_FONCIERE,
+		TAXE_FONCIERE_HEADERS,
+		(workbookData.propertyTaxes ?? []).map((entry) => ({
+			Bien: entry.propertyId,
+			Année: entry.year,
+			Montant: entry.amount,
 		})),
 	);
 	replaceRows(
@@ -568,6 +585,23 @@ function parseManualPrices(
 		});
 	}
 	return normalizeManualPrices(raw, assets);
+}
+
+function parsePropertyTaxes(
+	rows: Record<string, unknown>[],
+	properties: Property[],
+): PropertyTax[] {
+	const raw: PropertyTax[] = [];
+	for (const row of rows) {
+		const propertyId = emptyToUndefined(row["Bien"]);
+		if (!propertyId) continue;
+		raw.push({
+			propertyId,
+			year: toNumber(row["Année"]) ?? Number.NaN,
+			amount: toNumber(row["Montant"]) ?? Number.NaN,
+		});
+	}
+	return normalizePropertyTaxes(raw, properties);
 }
 
 function parseGeographicAllocations(

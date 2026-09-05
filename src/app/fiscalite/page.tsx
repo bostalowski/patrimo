@@ -56,14 +56,18 @@ export default async function FiscalitePage() {
   const foncierRows: FoncierRow[] = workbook.properties
     .filter((property) => property.regime !== "RESIDENCE_PRINCIPALE")
     .map((property) => {
-      const snapshot = propertySnapshot(property);
+      const snapshot = propertySnapshot(
+        property,
+        undefined,
+        workbook.propertyTaxes.filter((entry) => entry.propertyId === property.id),
+      );
       return {
         id: property.id,
         label: property.label,
         detention: property.detention,
         regime: property.regime,
         grossRent: grossAnnualRent(property) * property.partDetenue,
-        taxeFonciere: property.taxeFonciere * property.partDetenue,
+        taxeFonciere: snapshot.currentPropertyTax,
         annualTax: snapshot.annualTaxFoncier,
         monthlyCashFlow: snapshot.monthlyCashFlowAfterTax,
       };
