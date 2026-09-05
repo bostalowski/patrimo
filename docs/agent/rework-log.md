@@ -11,3 +11,4 @@ this file has no row for the current branch's slug yet.
 
 | Date merged | Slug | Feature | Reworked? (follow-up within 30 days) |
 |---|---|---|---|
+| 2026-09-05 | bostalowski-harness-flow | Feature flow — cadrage to merge as executable gates ([PR #78](https://github.com/bostalowski/patrimo/pull/78), [ADR 0026](../adr/0026-feature-flow-cadrage-to-merge.md)) | no |
