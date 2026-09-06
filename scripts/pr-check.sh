@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Gate: branch-ready + RED evidence (checked cases) + Checker Pass recency/
 # citation + rework-log row for this slug (D8, in the PR being merged) +
-# diff-size signal. See docs/howto/feature-flow.md (gate G6).
+# diff-size signal. See docs/howto/feature-flow.md (gate pr-check).
 # set -uo pipefail (no -e): several checks below run a command and inspect
 # its exit code themselves rather than aborting the whole gate on it.
 set -uo pipefail
@@ -40,7 +40,7 @@ else
 fi
 
 TIER=B
-if [[ -f "$CONTRACT" ]] && grep -qE 'Layer 2:[[:space:]]+n/a' "$CONTRACT"; then
+if [[ -f "$CONTRACT" ]] && grep -qE '(verify-behavior|Layer 2)`?:[[:space:]]+`?n/a' "$CONTRACT"; then
   TIER=A
 fi
 

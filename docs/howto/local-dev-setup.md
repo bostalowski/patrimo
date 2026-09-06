@@ -62,9 +62,10 @@ npm run ios
 ## Test and lint
 
 ```bash
-make verify        # layer 1: lint + typecheck + unit tests
-make e2e           # layer 3: Playwright workbook smoke (isolated Next on :3100)
-make verify-full   # layers 1 + 3
+make verify        # verify-static: lint + typecheck + unit tests
+make e2e           # verify-e2e: Playwright workbook smoke (isolated Next on :3100)
+                   # UI PRs: also capture screenshots — docs/howto/ui-screenshots-in-pr.md
+make verify-full   # verify-static + verify-e2e
 make cold-start         # harness map health (5 questions)
 make branch-contract    # CONTRACT + PROGRESS for current feature branch
 make branch-status      # print branch cadrage

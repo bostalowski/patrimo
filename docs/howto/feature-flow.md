@@ -9,43 +9,48 @@ detailed procedure. This page is the *sequence*.
 
 Hard rules: [CONSTRAINTS.md](../../CONSTRAINTS.md) §23–27.
 
+Gates are named by **slug** (what the step does), usually matching the `make`
+target. Older docs may say `G0`–`G7`; prefer the slugs below in chat, CONTRACT,
+and PROGRESS.
+
 ## The flow
 
 ```text
-G0  make branch-contract     Framer                      → CONTRACT + Tranches table
-G1  make branch-ready        Challenger + human teach-back → cadrage locked, ≥1 tranche
-                             ── per tranche, WIP=1 on the CONTRACT ──
-G2  make red CASE=… CMD=…    Maker                       → RED evidence (real failure, not narrated)
-G3  make verify / make e2e   Maker                       → three-layer DoD for the tranche
-G4  make gauntlet            Maker                       → test-removal guard + scoped mutation
-G5  make checker              Separate Checker agent (worktree = write sandbox) → Pass/Fail in PROGRESS only
-G6  make pr-check → push     Maker                       → tranche pushed; rework-log stamp + overlap check
-G7  merge                                                → FEATURES matrix (+ archive branch / root PROGRESS note)
+branch-contract   make branch-contract     Framer                      → CONTRACT + Tranches table
+branch-ready      make branch-ready        Challenger + human teach-back → cadrage locked, ≥1 tranche
+                                           ── per tranche, WIP=1 on the CONTRACT ──
+red-evidence      make red CASE=… CMD=…    Maker                       → RED evidence (real failure, not narrated)
+dod-verify        make verify / make e2e   Maker                       → DoD bands for the tranche
+gauntlet          make gauntlet            Maker                       → test-removal guard + scoped mutation
+checker           make checker             Separate Checker agent (worktree = write sandbox) → Pass/Fail in PROGRESS only
+pr-check          make pr-check → push     Maker                       → tranche pushed; rework-log stamp + overlap check
+merge             merge                                                → FEATURES matrix (+ archive branch / root PROGRESS note)
 ```
 
-Repeat G2→G6 once per row of the CONTRACT's `## Tranches` table (G7 fires
-once the tranche mechanic reaches main — per-tranche if stacked PRs, once
-per merged batch if reviewed as commits in one PR). The CONTRACT (not the
-tranche) is the WIP=1 unit — CONSTRAINTS §23 is unchanged; a tranche is how
-one CONTRACT ships incrementally instead of as one large diff. **How** a
-tranche reaches review — a separate stacked PR (merged before the next
-tranche's commits push) or a commit landing in one already-open PR reviewed
-incrementally — is a per-branch choice recorded in that CONTRACT's D1-style
-decision (CONSTRAINTS §26): GitHub diffs branch-vs-base, so pushing more
-commits to an open PR's branch grows that PR rather than starting a new one.
+Repeat `red-evidence`→`pr-check` once per row of the CONTRACT's `## Tranches`
+table (`merge` fires once the tranche mechanic reaches main — per-tranche if
+stacked PRs, once per merged batch if reviewed as commits in one PR). The
+CONTRACT (not the tranche) is the WIP=1 unit — CONSTRAINTS §23 is unchanged; a
+tranche is how one CONTRACT ships incrementally instead of as one large diff.
+**How** a tranche reaches review — a separate stacked PR (merged before the
+next tranche's commits push) or a commit landing in one already-open PR
+reviewed incrementally — is a per-branch choice recorded in that CONTRACT's
+D1-style decision (CONSTRAINTS §26): GitHub diffs branch-vs-base, so pushing
+more commits to an open PR's branch grows that PR rather than starting a new
+one.
 
 ## Gate reference
 
-| Gate | Command | What it proves | Detail |
+| Slug | Command | What it proves | Detail |
 |---|---|---|---|
-| G0 | `make branch-contract` | CONTRACT + PROGRESS scaffolded for this branch | [branches/README.md](../agent/branches/README.md) |
-| G1 | `make branch-ready` | Tier B: Intent filled, no `OPEN` decision, teach-back accepted, Challenger Pass if required, every behavior case assigned to a Tranches row | [cadrage-lock.md](cadrage-lock.md) |
-| G2 | `make red CASE="…" CMD="…"` | The named behavior case had no passing test before this command ran — refuses to write evidence if `CMD` already passes | [tdd-red-green.md](tdd-red-green.md), `scripts/red-evidence.sh` |
-| G3 | `make verify` (+ `make e2e` when Layer 3 applies) | Three-layer DoD for the tranche's slice | `AGENTS.md` § Run and verify |
-| G4 | `make gauntlet` | No test silently deleted/`.skip`'d/`.only`'d without a `Test-removal-justified:` line; on a `packages/core` diff, no surviving mutant above threshold in the changed files | `scripts/gauntlet.sh`, `scripts/test-guard.sh` |
-| G5 | `make checker` | Maker prepares a worktree, then spawns a **separate agent** (subagent / Task / fresh empty-context session) that scores the tranche against [scoring-rubric.md](../agent/scoring-rubric.md), writing only to PROGRESS; publish via `--publish` | [maker-checker.md](maker-checker.md), [ADR 0030](../adr/0030-checker-agent-isolation.md), `scripts/role-worktree.sh checker` |
-| G6 | `make pr-check` then `make pr` (first tranche) or a plain push (later tranches landing in an already-open PR) | Everything above is true and recorded, dated after the latest code commit; `make rework-log-stamp` row present with `Touched`; unreworked overlaps resolved only after human yes/no via `make rework-log-propose` | `scripts/pr-check.sh`, `scripts/lib/rework-log.mjs`, `scripts/pr.sh`, CI `harness` job replays `pr-check` on every push |
-| G7 | merge | FEATURES matrix updated if a platform status changed; branch folder archived / root PROGRESS note if useful | [branches/README.md](../agent/branches/README.md) |
+| `branch-contract` | `make branch-contract` | CONTRACT + PROGRESS scaffolded for this branch | [branches/README.md](../agent/branches/README.md) |
+| `branch-ready` | `make branch-ready` | Tier B: Intent filled, no `OPEN` decision, teach-back accepted, Challenger Pass if required, every behavior case assigned to a Tranches row | [cadrage-lock.md](cadrage-lock.md) |
+| `red-evidence` | `make red CASE="…" CMD="…"` | The named behavior case had no passing test before this command ran — refuses to write evidence if `CMD` already passes | [tdd-red-green.md](tdd-red-green.md), `scripts/red-evidence.sh` |
+| `dod-verify` | `make verify` (+ `make e2e` when `verify-e2e` applies) | DoD bands for the tranche's slice; when web UI changed, also capture PR screenshots ([ui-screenshots-in-pr.md](ui-screenshots-in-pr.md)) | `AGENTS.md` § Run and verify |
+| `gauntlet` | `make gauntlet` | No test silently deleted/`.skip`'d/`.only`'d without a `Test-removal-justified:` line; on a `packages/core` diff, no surviving mutant above threshold in the changed files | `scripts/gauntlet.sh`, `scripts/test-guard.sh` |
+| `checker` | `make checker` | Maker prepares a worktree, then spawns a **separate agent** (subagent / Task / fresh empty-context session) that scores the tranche against [scoring-rubric.md](../agent/scoring-rubric.md), writing only to PROGRESS; publish via `--publish` | [maker-checker.md](maker-checker.md), [ADR 0030](../adr/0030-checker-agent-isolation.md), `scripts/role-worktree.sh checker` |
+| `pr-check` | `make pr-check` then `make pr` (first tranche) or a plain push (later tranches landing in an already-open PR) | Everything above is true and recorded, dated after the latest code commit; `make rework-log-stamp` row present with `Touched`; unreworked overlaps resolved only after human yes/no via `make rework-log-propose` | `scripts/pr-check.sh`, `scripts/lib/rework-log.mjs`, `scripts/pr.sh`, CI `harness` job replays `pr-check` on every push |
+| `merge` | merge | FEATURES matrix updated if a platform status changed; branch folder archived / root PROGRESS note if useful | [branches/README.md](../agent/branches/README.md) |
 
 `make flow` (`scripts/flow-status.sh`) prints which gate you're on and the
 next command, from the current branch's CONTRACT/PROGRESS state.
@@ -92,5 +97,7 @@ assigns each behavior case to one small, separately-reviewable slice
 - [cadrage-lock.md](cadrage-lock.md) — Framer / Challenger / teach-back detail
 - [tdd-red-green.md](tdd-red-green.md) — RED → GREEN detail
 - [maker-checker.md](maker-checker.md) — Checker procedure and re-check loop
+- [ui-screenshots-in-pr.md](ui-screenshots-in-pr.md) — Playwright shots in the PR body when web UI changes
 - [agent-loop.md](agent-loop.md) — autonomous loop levels built on this flow
 - [ADR 0026](../adr/0026-feature-flow-cadrage-to-merge.md) — decision record for the gates on this page
+- [`.agents/rules/meaningful-step-names.md`](../../.agents/rules/meaningful-step-names.md) — slug naming for gates and DoD bands (Cursor/Claude via symlink)

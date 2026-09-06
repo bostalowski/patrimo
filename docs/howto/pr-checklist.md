@@ -1,16 +1,17 @@
 # PR checklist (harness)
 
 This page is a human-readable summary. The actual gate is `make pr-check`
-(gate G6 in [feature-flow.md](feature-flow.md)) — it replays `branch-ready`,
+(gate `pr-check` in [feature-flow.md](feature-flow.md)) — it replays `branch-ready`,
 checks RED evidence, Checker Pass recency/citation, and diff size, and the
 CI `harness` job runs it on every `pull_request`. Do not treat this list as
 the enforcement mechanism; treat it as what `make pr-check` is checking.
 
 Before merge:
 
-- [ ] `make pr-check` is green (or its Tier-A subset, when Layer 2 is `n/a`).
-- [ ] Layer 1: `make verify` is green locally (CI `verify` job).
-- [ ] Layer 3: `make e2e` green when the PR touches web UI, `src/app/api`, workbook I/O, or settings (CI `e2e` job always runs smoke).
+- [ ] `make pr-check` is green (or its Tier-A subset, when `verify-behavior` is `n/a`).
+- [ ] `verify-static`: `make verify` is green locally (CI `verify` job).
+- [ ] `verify-e2e`: `make e2e` green when the PR touches web UI, `src/app/api`, workbook I/O, or settings (CI `e2e` job always runs smoke).
+- [ ] When the PR changes web UI: Screenshots section of the PR description filled (procedure: [ui-screenshots-in-pr.md](ui-screenshots-in-pr.md); template: `.github/pull_request_template.md`).
 - [ ] `make gauntlet` is green on a diff touching `@patrimo/core`, workbook I/O, or `src/app/api` (CONSTRAINTS §27).
 - [ ] If you changed code under `packages/core`, `src/`, `mobile/`, or `electron/`, the neighboring `ARCHITECTURE.md` (or topic note) still matches reality.
 - [ ] New concepts appear in [docs/reference/glossary.md](docs/reference/glossary.md) when they are canonical names.
