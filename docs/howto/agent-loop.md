@@ -47,10 +47,10 @@ Do **not** stuff a multi-hour implementation into `/loop` as a repeating identic
 ## Level 3 — maker ≠ checker automation
 
 1. Maker worktree/session implements under the branch CONTRACT (after Level 0).
-2. Separate checker session scores with [scoring-rubric.md](../agent/scoring-rubric.md).
+2. Maker runs `make checker`, then spawns a **separate agent** (subagent / Task / fresh empty-context session) in the printed worktree; that agent scores with [scoring-rubric.md](../agent/scoring-rubric.md). See [ADR 0030](../adr/0030-checker-agent-isolation.md).
 3. Only merge / update FEATURES matrix on Pass.
 
-Optional later: git worktrees for parallel agents; keep WIP = 1 **per branch** (each worktree has its own slug folder).
+Worktree = write sandbox for the Checker agent; keep WIP = 1 **per branch** (each worktree has its own slug folder).
 
 ## Repo helpers
 

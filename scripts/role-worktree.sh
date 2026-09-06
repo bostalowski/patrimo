@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# make checker (and framer/challenger helpers): spawn a cadrage/checker role
-# in an isolated git worktree — plain `git worktree add --detach`, no IDE or
-# tool preference, so it behaves identically whichever agent/IDE runs it.
-# Role prompts are never duplicated here (D7/N10) — read verbatim from
-# docs/howto/cadrage-lock.md (Framer/Challenger) and
-# docs/agent/scoring-rubric.md (Checker).
+# make checker (and framer/challenger helpers): prepare an isolated git
+# worktree (write sandbox) and print the role prompt for a SEPARATE agent.
+# Checker freshness is agent identity (subagent / Task / fresh empty-context
+# session) — the worktree alone is not enough (ADR 0030). Plain
+# `git worktree add --detach`, no IDE preference. Role prompts are never
+# duplicated here — read verbatim from docs/howto/cadrage-lock.md
+# (Framer/Challenger) and docs/agent/scoring-rubric.md (Checker).
 # set -uo pipefail (no -e): git probes below are expected to fail in normal
 # operation (e.g. no PROGRESS change yet) and are branched on, not fatal.
 set -uo pipefail
@@ -94,11 +95,20 @@ else
   echo "Created worktree at $WT_DIR (detached at $BRANCH's current commit)"
 fi
 echo ""
-echo "--- $ROLE prompt (paste into a fresh agent session started in $WT_DIR) ---"
-echo "$PROMPT"
 if [[ "$ROLE" == "checker" ]]; then
+  echo "=== AGENT ISOLATION (required) ==="
+  echo "The Maker session MUST NOT score this work (same-session self-check is a harness violation)."
+  echo "Spawn a SEPARATE agent — subagent / Task tool / fresh empty-context session —"
+  echo "whose working directory is:"
+  echo "  $WT_DIR"
+  echo "Give it ONLY the Checker prompt below. Do not continue grading in the Maker chat."
+  echo "When that agent finishes, publish its PROGRESS edit back with:"
+  echo "  scripts/role-worktree.sh checker --publish $WT_DIR"
   echo ""
   echo "The Checker may write ONLY docs/agent/branches/$SLUG/PROGRESS.md in that worktree."
-  echo "When done, publish its edit back with:"
-  echo "  scripts/role-worktree.sh checker --publish $WT_DIR"
+  echo ""
+  echo "--- $ROLE prompt (give to the separate agent; cwd = $WT_DIR) ---"
+else
+  echo "--- $ROLE prompt (prefer a fresh empty-context session in $WT_DIR) ---"
 fi
+echo "$PROMPT"

@@ -43,6 +43,21 @@ describe("scripts/role-worktree.sh", () => {
     expect(res.stdout).toContain(expectedLine!);
   });
 
+  it("N1: mandates a separate agent (not Maker-session grading) and names the worktree as its cwd", () => {
+    fx = createFixture("feat/role-checker-agent");
+    wtDir = mkdtempSync(path.join(tmpdir(), "role-worktree-wt-"));
+    rmSync(wtDir, { recursive: true, force: true });
+
+    const res = fx.run("scripts/role-worktree.sh", ["checker"], { FEATURE_FLOW_WORKTREE_DIR: wtDir });
+
+    expect(res.status).toBe(0);
+    expect(res.stdout).toMatch(/AGENT ISOLATION \(required\)/i);
+    expect(res.stdout).toMatch(/separate agent/i);
+    expect(res.stdout).toMatch(/MUST NOT score|must not grade/i);
+    expect(res.stdout).toContain(wtDir);
+    expect(res.stdout).not.toMatch(/paste into a fresh agent session started in/i);
+  });
+
   it("E2: refuses on main/master", () => {
     fx = createFixture("main");
 

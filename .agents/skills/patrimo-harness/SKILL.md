@@ -26,7 +26,7 @@ Canonical path: `.agents/skills/patrimo-harness/` (symlinked as
    - Behavior: targeted `npm test -- <path>` (after RED → GREEN when Layer 2 applies)
    - Web UI / API / workbook I/O / settings: `make e2e` or `make verify-full`
    - `@patrimo/core` / workbook I/O / API route diffs: `make gauntlet` (test-removal guard + scoped mutation testing — CONSTRAINTS §27)
-8. Checker: `make checker` (spawns an isolated `git worktree` via `scripts/role-worktree.sh` — plain git, no IDE/tool preference) using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof). The Checker writes only that branch's PROGRESS.md.
+8. Checker: `make checker` prepares an isolated `git worktree` (write sandbox) and prints an **AGENT ISOLATION** mandate. The Maker session MUST NOT score. Spawn a **separate agent** (Cursor: Task / subagent with cwd = that worktree; otherwise a fresh empty-context session on that path) using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof). That agent writes only the branch's PROGRESS.md; then `scripts/role-worktree.sh checker --publish <worktree>`. See ADR 0030.
 9. `make pr-check` before opening/updating the PR — replays `branch-ready`, requires RED evidence per checked-off case and a fresh, cited Checker Pass. CI's `harness` job replays it on every push.
 10. Update `docs/agent/branches/<slug>/PROGRESS.md` (+ optional `docs/agent/runs/YYYY-MM-DD-slug.md`).
 11. Before the merging PR: `make rework-log-stamp`. If path overlap with unreworked rows: **propose to the human** (`make rework-log-propose` or ask in chat), then apply only after explicit yes/no (`REWORK_ACK=yes|no`). Never auto-mark. On merge: update root `FEATURES.md` if platform status changed.
@@ -48,7 +48,7 @@ Full gate-by-gate sequence: `docs/howto/feature-flow.md` (G0-G7).
 | Full | `make verify-full` |
 | RED evidence (executed, not narrated) | `make red CASE="…" CMD="…"` |
 | Gauntlet (test-removal guard + scoped mutation) | `make gauntlet` |
-| Checker (isolated worktree) | `make checker` |
+| Checker (separate agent + worktree sandbox) | `make checker` then spawn subagent / fresh session |
 | PR readiness | `make pr-check` |
 | Stamp rework-log row | `make rework-log-stamp` |
 | Propose overlap ack (human yes/no) | `make rework-log-propose` |
@@ -61,7 +61,7 @@ Full gate-by-gate sequence: `docs/howto/feature-flow.md` (G0-G7).
 - Write production code for a Layer 2 behavior case before a real RED for that case.
 - Expand into a second feature without updating the branch CONTRACT.
 - Put feature focus in root `PROGRESS.md` (that file is for `main` only).
-- Grade your own non-trivial work without a checker pass.
+- Grade your own non-trivial work in the Maker session (even after `make checker` created a worktree).
 - Duplicate domain rules outside `@patrimo/core`.
 - Treat `make next-feature` as a claim queue (deprecated → `platform-gaps` + branch contract).
 - Treat full Spec-Driven Development as required (opt-in only; harness embeds cadrage-lock + RED → GREEN).
@@ -74,6 +74,8 @@ command). Not part of DoD — do not require Coasts for verify / branch gates.
 Classic `npm run dev` stays the default single-checkout path.
 
 `make checker` always uses a plain `git worktree add --detach`
-(`scripts/role-worktree.sh`) — no Orca/Coast/IDE preference, so it behaves
-identically whichever agent or tool runs it and never hard-requires Orca
-or Coasts.
+(`scripts/role-worktree.sh`) as the Checker **write sandbox** — no
+Orca/Coast/IDE preference in the script. Freshness requires a **separate
+agent** (subagent / Task / fresh empty-context session) with cwd = that
+worktree ([ADR 0030](../../../docs/adr/0030-checker-agent-isolation.md)).
+Do not treat the worktree alone as an independent grade.
