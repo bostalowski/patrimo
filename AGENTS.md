@@ -26,7 +26,7 @@ make platform-gaps      # list FEATURES matrix rows still open (inventory, not a
 make cold-start         # score whether the repo answers the five cold-start questions
 make red CASE=… CMD=…   # gate: write RED evidence only if CMD actually fails (docs/howto/tdd-red-green.md)
 make gauntlet           # gate: test-removal guard + scoped mutation on @patrimo/core diffs
-make checker            # gate: Checker role in an isolated worktree, PROGRESS-only writes
+make checker            # gate: prepare checker worktree + mandate separate agent (PROGRESS-only writes)
 make pr-check           # gate: branch-ready + RED evidence + Checker Pass recency + diff-size signal
 ```
 
@@ -50,7 +50,7 @@ Do not declare victory on layer 1 alone when layer 3 applies. One CONTRACT per f
 ### Framer ≠ Maker ≠ checker
 
 - **Cadrage:** Framer fills CONTRACT; Challenger when `Challenger: required`; human teach-back; then `make branch-ready`. Procedure: [docs/howto/cadrage-lock.md](docs/howto/cadrage-lock.md).
-- **Done:** The agent that implements MUST NOT be the sole judge of completion. After green verify, run a **checker** pass (fresh session or explicit checker role) against the branch CONTRACT. Procedure: [docs/howto/maker-checker.md](docs/howto/maker-checker.md). Rubric: [docs/agent/scoring-rubric.md](docs/agent/scoring-rubric.md).
+- **Done:** The agent that implements MUST NOT be the sole judge of completion. After green verify, run `make checker` and spawn a **separate agent** (subagent / Task / fresh empty-context session) against the branch CONTRACT. Procedure: [docs/howto/maker-checker.md](docs/howto/maker-checker.md), [ADR 0030](docs/adr/0030-checker-agent-isolation.md). Rubric: [docs/agent/scoring-rubric.md](docs/agent/scoring-rubric.md).
 
 ### Session artifacts
 
@@ -84,7 +84,7 @@ Full gate-by-gate sequence: [docs/howto/feature-flow.md](docs/howto/feature-flow
 2. **Cadrage:** on a feature branch, `make branch-contract` → Framer (and Challenger if required) + teach-back when Tier B, including a `## Tranches` table assigning every behavior case to a PR-sized slice → `make branch-ready` must pass ([cadrage-lock.md](docs/howto/cadrage-lock.md)).
 3. **Work:** implement one tranche at a time. When Layer 2 applies: per case **RED → GREEN** ([tdd-red-green.md](docs/howto/tdd-red-green.md)), record RED evidence in branch PROGRESS; update colocated ARCHITECTURE / ADR / glossary with the code.
 4. **Verify:** layers required by DoD above, then `make gauntlet` (test-removal guard + scoped mutation on `@patrimo/core`, workbook I/O, or API-route diffs — CONSTRAINTS §27). Never claim done on failing verify or gauntlet.
-5. **Check:** `make checker` (isolated worktree) scores the tranche against CONTRACT + rubric; then `make pr-check` before opening the tranche's PR.
+5. **Check:** `make checker` prepares the worktree; spawn a **separate Checker agent** to score the tranche against CONTRACT + rubric; publish PROGRESS; then `make pr-check` before opening the tranche's PR.
 6. **Handoff:** update `docs/agent/branches/<slug>/PROGRESS.md`. Before the merging PR: `make rework-log-stamp`. If `pr-check` reports unreworked path overlap, run `make rework-log-propose` (or ask the human, then `REWORK_ACK=yes|no make rework-log-propose`) — never silent markdown edits. On merge: sync FEATURES matrix if needed; short root PROGRESS note if useful.
 
 ## Next.js

@@ -64,3 +64,4 @@ next-env.d.ts
 /build/icon-source.png
 /build/icon-1024.png
 /build/icon.iconset
+.worktrees/

@@ -17,10 +17,11 @@ Use after the maker’s verify is green. Score each dimension A–D with **cited
 - When CONTRACT Layer 2 applies (not `n/a`): treat **missing RED evidence** as Tests / evidence **C** at best; if there is also no green targeted-test proof, score **D** and Fail. See [tdd-red-green.md](../howto/tdd-red-green.md).
 - When CONTRACT Layer 2 applies: missing **Teach-back: accepted** / cadrage lock in PROGRESS (CONSTRAINTS §25) → Docs handoff **C** or **D** and Fail if Intent/decisions were never locked. See [cadrage-lock.md](../howto/cadrage-lock.md).
 
-## Checker prompt (paste into a fresh session)
+## Checker prompt (give to a separate agent — subagent / Task / fresh empty-context session)
 
 ```text
 You are the CHECKER, not the implementer. Do not write feature code.
+You MUST run in a separate agent process/session from the Maker (ADR 0030). Work only in the checker worktree path you were given; write ONLY that branch's docs/agent/branches/<slug>/PROGRESS.md.
 Read CONSTRAINTS.md, make branch-status (CONTRACT + PROGRESS), and git diff.
 Run the verification commands listed in the CONTRACT.
 If CONTRACT Layer 2 applies: require Teach-back/cadrage lock in PROGRESS (docs/howto/cadrage-lock.md, CONSTRAINTS §25); require RED evidence in PROGRESS/run log (failing targeted test for missing behavior before prod), then green targeted tests — see docs/howto/tdd-red-green.md and CONSTRAINTS §24.

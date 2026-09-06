@@ -61,5 +61,5 @@ Status: `done` | `partial` | `todo` | `absent`
 2. `make branch-contract` — fill CONTRACT (scope / verify / exclusions)
 3. `make branch-ready` must pass
 4. Implement; update `docs/agent/branches/<slug>/PROGRESS.md`; run required DoD layers
-5. [Checker pass](docs/howto/maker-checker.md) on non-trivial product work
+5. [Checker pass](docs/howto/maker-checker.md) on non-trivial product work — **separate agent** (subagent / fresh session), not Maker self-check ([ADR 0030](docs/adr/0030-checker-agent-isolation.md))
 6. PR: merge; update this matrix if platform status changed

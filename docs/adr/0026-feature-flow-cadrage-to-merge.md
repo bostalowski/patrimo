@@ -1,7 +1,8 @@
 # ADR 0026: Feature flow — cadrage to merge as executable gates
 
-- Status: accepted
+- Status: accepted (superseded-in-part by ADR-0030 — Checker isolation clause)
 - Date: 2026-09-04
+- Superseded-by: [ADR 0030](0030-checker-agent-isolation.md) (Checker isolation / freshness only)
 - implementation_ready: yes
 
 ```text
@@ -9,8 +10,9 @@ Contract (do not invent):
 
 Flow: G0 branch-contract → G1 branch-ready (cadrage lock) →
   per tranche: G2 red (RED evidence) → G3 verify/e2e → G4 gauntlet
-  (test-removal guard + scoped mutation) → G5 checker (isolated worktree)
-  → G6 pr-check (includes rework-log row for this slug) → pr → G7 merge.
+  (test-removal guard + scoped mutation) → G5 checker (separate agent +
+  worktree write sandbox — see ADR 0030) → G6 pr-check (includes
+  rework-log row for this slug) → pr → G7 merge.
 
 Tranches: a CONTRACT ships as N small, separately-reviewable slices, one per
   Tranches-table row, each row assigned a subset of the CONTRACT's behavior
@@ -27,9 +29,10 @@ Gauntlet = test-guard (structural: no deleted/`.skip`/`.only` test without a
   scoped to changed `packages/core/src/**` files only (never repo-wide,
   never a global-score gate).
 
-Checker isolation: `make checker` spawns in a separate plain `git worktree`
-  (no IDE/tool preference — works identically in any agent or editor), not
-  a same-session role switch. Checker may only write PROGRESS.md.
+Checker isolation (superseded-in-part by ADR 0030): `make checker` prepares
+  a plain detached git worktree as write sandbox; freshness requires a
+  SEPARATE agent (subagent / Task / fresh empty-context session), not
+  Maker-session self-check. Checker may only write PROGRESS.md.
 
 Prompts are not duplicated: Framer/Challenger/teach-back text stays in
   cadrage-lock.md; Checker text stays in scoring-rubric.md. Scripts read/
@@ -108,8 +111,11 @@ reviewable slices instead of one large diff:
    always creates a plain `git worktree add --detach` — no IDE/tool
    preference, since the write-scope check below only needs a known worktree
    path to diff, not any particular way of creating it — and the Checker may
-   only write `PROGRESS.md`, replacing "open a new chat and paste this
-   prompt" (self-declared freshness) with a structurally separate process.
+   only write `PROGRESS.md`. **Amended by ADR 0030:** the worktree is the
+   write sandbox; freshness requires spawning a **separate agent**
+   (subagent / Task / fresh empty-context session). Same-session Maker
+   self-check after `make checker` is a harness violation even when the
+   worktree exists.
 6. **No duplicated prompts.** Framer/Challenger/teach-back prompt text stays
    in `cadrage-lock.md`; the Checker prompt stays in `scoring-rubric.md`.
    `role-worktree.sh` reads and prints them; it does not re-author them

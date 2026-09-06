@@ -18,7 +18,7 @@ G1  make branch-ready        Challenger + human teach-back → cadrage locked, �
 G2  make red CASE=… CMD=…    Maker                       → RED evidence (real failure, not narrated)
 G3  make verify / make e2e   Maker                       → three-layer DoD for the tranche
 G4  make gauntlet            Maker                       → test-removal guard + scoped mutation
-G5  make checker              Checker (isolated worktree) → Pass/Fail written to PROGRESS only
+G5  make checker              Separate Checker agent (worktree = write sandbox) → Pass/Fail in PROGRESS only
 G6  make pr-check → push     Maker                       → tranche pushed; rework-log stamp + overlap check
 G7  merge                                                → FEATURES matrix (+ archive branch / root PROGRESS note)
 ```
@@ -43,7 +43,7 @@ commits to an open PR's branch grows that PR rather than starting a new one.
 | G2 | `make red CASE="…" CMD="…"` | The named behavior case had no passing test before this command ran — refuses to write evidence if `CMD` already passes | [tdd-red-green.md](tdd-red-green.md), `scripts/red-evidence.sh` |
 | G3 | `make verify` (+ `make e2e` when Layer 3 applies) | Three-layer DoD for the tranche's slice | `AGENTS.md` § Run and verify |
 | G4 | `make gauntlet` | No test silently deleted/`.skip`'d/`.only`'d without a `Test-removal-justified:` line; on a `packages/core` diff, no surviving mutant above threshold in the changed files | `scripts/gauntlet.sh`, `scripts/test-guard.sh` |
-| G5 | `make checker` | A Checker in a separate plain `git worktree` scores the tranche against [scoring-rubric.md](../agent/scoring-rubric.md), writing only to PROGRESS | [maker-checker.md](maker-checker.md), `scripts/role-worktree.sh checker` |
+| G5 | `make checker` | Maker prepares a worktree, then spawns a **separate agent** (subagent / Task / fresh empty-context session) that scores the tranche against [scoring-rubric.md](../agent/scoring-rubric.md), writing only to PROGRESS; publish via `--publish` | [maker-checker.md](maker-checker.md), [ADR 0030](../adr/0030-checker-agent-isolation.md), `scripts/role-worktree.sh checker` |
 | G6 | `make pr-check` then `make pr` (first tranche) or a plain push (later tranches landing in an already-open PR) | Everything above is true and recorded, dated after the latest code commit; `make rework-log-stamp` row present with `Touched`; unreworked overlaps resolved only after human yes/no via `make rework-log-propose` | `scripts/pr-check.sh`, `scripts/lib/rework-log.mjs`, `scripts/pr.sh`, CI `harness` job replays `pr-check` on every push |
 | G7 | merge | FEATURES matrix updated if a platform status changed; branch folder archived / root PROGRESS note if useful | [branches/README.md](../agent/branches/README.md) |
 
@@ -58,14 +58,14 @@ Same roles as [cadrage-lock.md](cadrage-lock.md) and
 | Role | Runs where | Writes |
 |---|---|---|
 | Framer | Any session | CONTRACT.md (Intent, cases, decisions, Tranches) |
-| Challenger | Fresh session (`make checker`-style isolation optional, not required) | PROGRESS.md (Pass/Fail + edits requested) |
-| Maker | The branch's own worktree | Production code, tests, CONTRACT/PROGRESS updates |
-| Checker | **Separate plain `git worktree`** (`make checker`) | PROGRESS.md only — never production code |
+| Challenger | Fresh session (`make checker`-style agent isolation optional, not required) | PROGRESS.md (Pass/Fail + edits requested) |
+| Maker | The branch's own worktree | Production code, tests, CONTRACT/PROGRESS updates; spawns Checker agent |
+| Checker | **Separate agent** (subagent / Task / fresh empty-context session) with cwd = checker worktree (`make checker`) | PROGRESS.md only — never production code |
 
 Role prompts are not duplicated here: Framer/Challenger/teach-back text lives
 in [cadrage-lock.md](cadrage-lock.md); the Checker prompt lives in
 [scoring-rubric.md](../agent/scoring-rubric.md). `scripts/role-worktree.sh`
-reads and prints them.
+reads and prints them. Worktree alone is not freshness — see [ADR 0030](../adr/0030-checker-agent-isolation.md).
 
 ## Why gates instead of a checklist
 
