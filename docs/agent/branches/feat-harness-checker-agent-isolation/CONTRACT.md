@@ -19,15 +19,15 @@
 ### Nominal
 
 - [x] N1: If Maker runs `make checker` on a feature branch, then stdout states that a **separate agent** (subagent / Task / fresh empty-context session) must score, that the Maker session **must not** grade, and prints the worktree path as that agent’s working directory.
-- [ ] N2: If Maker runs `make checker`, then stdout still prints the Checker prompt verbatim from `docs/agent/scoring-rubric.md` (no prompt duplication in the script — ADR 0026 prompt single-source rule). *(preserved — existing N10 test; no new RED this branch)*
-- [ ] N3: If the separate Checker agent finishes and only `PROGRESS.md` changed in the worktree, then `scripts/role-worktree.sh checker --publish <wt>` copies that file back (unchanged publish-scope contract: PROGRESS only). *(preserved — existing E7 publish tests; no new RED)*
+- [ ] N2: If Maker runs `make checker`, then stdout still prints the Checker prompt verbatim from `docs/agent/scoring-rubric.md` (no prompt duplication in the script — ADR 0026 prompt single-source rule). *(preserved — existing prompt-verbatim unit test; no new RED this branch)*
+- [ ] N3: If the separate Checker agent finishes and only `PROGRESS.md` changed in the worktree, then `scripts/role-worktree.sh checker --publish <wt>` copies that file back (unchanged publish-scope contract: PROGRESS only). *(preserved — existing publish-scope unit tests; no new RED)*
 - [ ] N4: If harness docs / skill / CONSTRAINTS §22–§27 describe Checker isolation, then they state **agent isolation first**, worktree as write sandbox — not worktree-alone as sufficient freshness. *(docs/ADR; Checker review)*
 
 ### Edge
 
 - [ ] E1: If the tool has no Task/subagent API (raw terminal, another IDE), then a **fresh empty-context agent session** opened on the worktree path still satisfies the mandate (portable fallback; no Cursor-only hard dependency). *(docs; Checker review)*
 - [ ] E2: If Maker continues scoring in the same session after `make checker`, that is a harness violation (CONSTRAINTS) even when the worktree exists — docs must say so explicitly. *(CONSTRAINTS + howto; Checker review)*
-- [ ] E3: If `make checker` runs on `main` / `master`, it still refuses (unchanged). *(preserved — existing E2 main refusal test; no new RED)*
+- [ ] E3: If `make checker` runs on `main` / `master`, it still refuses (unchanged). *(preserved — existing main-refusal unit test; no new RED)*
 
 ### Out of scope
 
