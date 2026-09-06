@@ -37,7 +37,7 @@ n/a — Tier A
 ## Scope
 
 - [x] One behavior for this branch: auto-seed a sample workbook + config for local dev only when none is configured yet.
-- [x] Files / packages expected to change: `package.json` (predev/preelectron:dev hooks), new `scripts/ensure-dev-data.mjs`, new `scripts/generate-sample-workbook.mjs`, new committed fixture `data-fixtures/sample-portfolio.xlsx`, doc note in `docs/howto/local-dev-setup.md`.
+- [x] Files / packages expected to change: `package.json` (predev/preelectron:dev hooks), new `scripts/ensure-dev-data.mjs`, new committed fixture `data-fixtures/sample-portfolio.xlsx` (built with a one-off local generator script, not committed — the fixture is the durable artifact), doc note in `docs/howto/local-dev-setup.md`.
 
 ## Verification
 
