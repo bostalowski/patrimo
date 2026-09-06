@@ -2,7 +2,7 @@
 name: patrimo-harness
 description: >-
   Run Patrimo agent sessions under the repo harness: load CONSTRAINTS, branch
-  CONTRACT/PROGRESS, three-layer DoD, maker/checker handoff. Use when starting
+  CONTRACT/PROGRESS, DoD verify bands, maker/checker handoff. Use when starting
   work in financial-graphs/Patrimo, claiming a feature done, initializing a
   session, or when the user mentions harness, verify-full, WIP, branch-contract,
   or cold-start.
@@ -20,18 +20,18 @@ Canonical path: `.agents/skills/patrimo-harness/` (symlinked as
 3. If no CONTRACT yet: feature branch → `make branch-contract` → **Framer** fills Intent / behavior cases / decisions (Tier B) or marks `n/a` (Tier A). See `docs/howto/cadrage-lock.md`.
 4. Tier B: Challenger if `Challenger: required`; human teach-back accepted in PROGRESS; then `make branch-ready` must pass before Maker.
 5. Read colocated `ARCHITECTURE.md` for packages you touch.
-6. Implement that CONTRACT only. When Layer 2 applies: per case **RED → GREEN** (`docs/howto/tdd-red-green.md`) — failing targeted test for the right reason before production code, record RED evidence in PROGRESS, then minimal production code. Never invent sheet names / enums / reserved IDs; never invent behavior absent from CONTRACT cases.
+6. Implement that CONTRACT only. When `verify-behavior` applies: per case **RED → GREEN** (`docs/howto/tdd-red-green.md`) — failing targeted test for the right reason before production code, record RED evidence in PROGRESS, then minimal production code. Never invent sheet names / enums / reserved IDs; never invent behavior absent from CONTRACT cases.
 7. Verify:
-   - Always: `make verify`
-   - Behavior: targeted `npm test -- <path>` (after RED → GREEN when Layer 2 applies)
-   - Web UI / API / workbook I/O / settings: `make e2e` or `make verify-full`
+   - Always (`verify-static`): `make verify`
+   - Behavior (`verify-behavior`): targeted `npm test -- <path>` (after RED → GREEN when it applies)
+   - Web UI / API / workbook I/O / settings (`verify-e2e`): `make e2e` or `make verify-full`. When web UI changed: PR screenshots after asserts (`docs/howto/ui-screenshots-in-pr.md`).
    - `@patrimo/core` / workbook I/O / API route diffs: `make gauntlet` (test-removal guard + scoped mutation testing — CONSTRAINTS §27)
-8. Checker: `make checker` prepares an isolated `git worktree` (write sandbox) and prints an **AGENT ISOLATION** mandate. The Maker session MUST NOT score. Spawn a **separate agent** (Cursor: Task / subagent with cwd = that worktree; otherwise a fresh empty-context session on that path) using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if Layer 2 applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof). That agent writes only the branch's PROGRESS.md; then `scripts/role-worktree.sh checker --publish <worktree>`. See ADR 0030.
+8. Checker: `make checker` prepares an isolated `git worktree` (write sandbox) and prints an **AGENT ISOLATION** mandate. The Maker session MUST NOT score. Spawn a **separate agent** (Cursor: Task / subagent with cwd = that worktree; otherwise a fresh empty-context session on that path) using `docs/howto/maker-checker.md` + `docs/agent/scoring-rubric.md` (Fail if `verify-behavior` applied and RED evidence missing; Fail if Tier B missing teach-back / cadrage lock proof). That agent writes only the branch's PROGRESS.md; then `scripts/role-worktree.sh checker --publish <worktree>`. See ADR 0030.
 9. `make pr-check` before opening/updating the PR — replays `branch-ready`, requires RED evidence per checked-off case and a fresh, cited Checker Pass. CI's `harness` job replays it on every push.
 10. Update `docs/agent/branches/<slug>/PROGRESS.md` (+ optional `docs/agent/runs/YYYY-MM-DD-slug.md`).
 11. Before the merging PR: `make rework-log-stamp`. If path overlap with unreworked rows: **propose to the human** (`make rework-log-propose` or ask in chat), then apply only after explicit yes/no (`REWORK_ACK=yes|no`). Never auto-mark. On merge: update root `FEATURES.md` if platform status changed.
 
-Full gate-by-gate sequence: `docs/howto/feature-flow.md` (G0-G7).
+Full gate-by-gate sequence: `docs/howto/feature-flow.md` (slugs: `branch-contract` … `merge`). Prefer meaningful slugs — never bare `G#` / `Layer N` alone (`.agents/rules/meaningful-step-names.md`, symlinked for Cursor + Claude).
 
 ## Commands
 
@@ -43,9 +43,9 @@ Full gate-by-gate sequence: `docs/howto/feature-flow.md` (G0-G7).
 | Ready to code? | `make branch-ready` |
 | Matrix gaps | `make platform-gaps` |
 | Map health | `make cold-start` |
-| Layer 1 | `make verify` |
-| Layer 3 | `make e2e` |
-| Full | `make verify-full` |
+| `verify-static` | `make verify` |
+| `verify-e2e` | `make e2e` (+ PR screenshots if web UI — `docs/howto/ui-screenshots-in-pr.md`) |
+| Full (`verify-static` + `verify-e2e`) | `make verify-full` |
 | RED evidence (executed, not narrated) | `make red CASE="…" CMD="…"` |
 | Gauntlet (test-removal guard + scoped mutation) | `make gauntlet` |
 | Checker (separate agent + worktree sandbox) | `make checker` then spawn subagent / fresh session |
@@ -56,15 +56,16 @@ Full gate-by-gate sequence: `docs/howto/feature-flow.md` (G0-G7).
 
 ## Do not
 
-- Declare done on lint/unit alone when layer 3 applies.
+- Declare done on lint/unit alone when `verify-e2e` applies.
 - Start Maker work on Tier B before Intent / LOCKED decisions / teach-back / `branch-ready`.
-- Write production code for a Layer 2 behavior case before a real RED for that case.
+- Write production code for a `verify-behavior` case before a real RED for that case.
 - Expand into a second feature without updating the branch CONTRACT.
 - Put feature focus in root `PROGRESS.md` (that file is for `main` only).
 - Grade your own non-trivial work in the Maker session (even after `make checker` created a worktree).
 - Duplicate domain rules outside `@patrimo/core`.
 - Treat `make next-feature` as a claim queue (deprecated → `platform-gaps` + branch contract).
 - Treat full Spec-Driven Development as required (opt-in only; harness embeds cadrage-lock + RED → GREEN).
+- Refer to gates/DoD bands by opaque codes alone (`G3`, `Layer 3`).
 
 ## Related (optional runtime)
 
@@ -78,4 +79,4 @@ Classic `npm run dev` stays the default single-checkout path.
 Orca/Coast/IDE preference in the script. Freshness requires a **separate
 agent** (subagent / Task / fresh empty-context session) with cwd = that
 worktree ([ADR 0030](../../../docs/adr/0030-checker-agent-isolation.md)).
-Do not treat the worktree alone as an independent grade.
+Worktree alone is not an independent grade.

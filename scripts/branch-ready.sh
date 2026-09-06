@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gate: is this feature branch ready to implement? (cadrage filled, not just stubs)
-# Tier A (Layer 2 n/a): classic checks only.
+# Tier A (`verify-behavior` / Layer 2 n/a): classic checks only.
 # Tier B (behavior): Intent, behavior cases, no OPEN decisions, teach-back accepted;
 #   Challenger Pass if CONTRACT says Challenger: required.
 # See docs/howto/cadrage-lock.md
@@ -52,12 +52,12 @@ if [[ ! -f "$CONTRACT" ]]; then
   exit 1
 fi
 
-# Tier: A if Layer 2 is n/a; else B
+# Tier: A if verify-behavior (or legacy Layer 2) is n/a; else B
 TIER=B
-if grep -qE 'Layer 2:[[:space:]]+n/a' "$CONTRACT"; then
+if grep -qE '(verify-behavior|Layer 2)`?:[[:space:]]+`?n/a' "$CONTRACT"; then
   TIER=A
 fi
-echo "   Tier: $TIER (from Layer 2)"
+echo "   Tier: $TIER (from verify-behavior)"
 
 echo "2. CONTRACT filled (not template stubs)"
 if grep -qE '^# Contract: <feature name>' "$CONTRACT"; then
@@ -87,10 +87,10 @@ else
   fail "Scope empty or still template prompts — fill behavior + expected files"
 fi
 
-if grep -qE 'Layer 1:.*make verify' "$CONTRACT"; then
-  pass "Layer 1 lists make verify"
+if grep -qE '(verify-static|Layer 1)`?:.*make verify' "$CONTRACT"; then
+  pass "verify-static lists make verify"
 else
-  fail "Verification must include Layer 1: make verify"
+  fail "Verification must include verify-static: make verify (legacy: Layer 1)"
 fi
 
 if awk '
@@ -100,16 +100,16 @@ if awk '
     if ($0 ~ /^[-*] Feature-specific:[[:space:]]*$/) next
     if ($0 ~ /^[-*] Feature-specific:[[:space:]]+\S/) has_extra=1
     if ($0 ~ /Feature-specific:[[:space:]]+\S/) has_extra=1
-    if ($0 ~ /Layer 2:[[:space:]]+n\/a/) has_extra=1
-    if ($0 ~ /Layer 2:[[:space:]]+`?npm test/) has_extra=1
-    if ($0 ~ /Layer 3:[[:space:]]+n\/a/) has_extra=1
-    if ($0 ~ /Layer 3:[[:space:]]+`?make e2e/) has_extra=1
+    if ($0 ~ /(verify-behavior|Layer 2)`?:[[:space:]]+`?n\/a/) has_extra=1
+    if ($0 ~ /(verify-behavior|Layer 2)`?:[[:space:]]+`?npm test/) has_extra=1
+    if ($0 ~ /(verify-e2e|Layer 3)`?:[[:space:]]+`?n\/a/) has_extra=1
+    if ($0 ~ /(verify-e2e|Layer 3)`?:[[:space:]]+`?make e2e/) has_extra=1
   }
   END { exit has_extra ? 0 : 1 }
 ' "$CONTRACT"; then
-  pass "Verification tailored (feature-specific and/or Layer 2/3 / n/a)"
+  pass "Verification tailored (feature-specific and/or verify-behavior/e2e / n/a)"
 else
-  fail "Set Feature-specific: … or Layer 2/3 (command or n/a) — do not leave stubs blank"
+  fail "Set Feature-specific: … or verify-behavior/verify-e2e (command or n/a) — do not leave stubs blank"
 fi
 
 if awk '

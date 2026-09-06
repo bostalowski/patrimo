@@ -16,8 +16,10 @@ Harness-first layout. Diátaxis families are **not** required. Put knowledge whe
 | Mechanics | How this package works | Colocated `ARCHITECTURE.md` (+ topic notes beside modules) |
 | Decisions | Why we chose X | [docs/adr/](adr/) |
 | Names | Canonical vocabulary | [docs/reference/glossary.md](reference/glossary.md) |
-| Procedures | How do I perform X | [docs/howto/](howto/) (incl. [cadrage-lock](howto/cadrage-lock.md), [tdd-red-green](howto/tdd-red-green.md) when Layer 2 applies) |
+| Procedures | How do I perform X | [docs/howto/](howto/) (incl. [cadrage-lock](howto/cadrage-lock.md), [tdd-red-green](howto/tdd-red-green.md) when `verify-behavior` applies) |
 | Platform gaps | Current web vs mobile | [docs/overview/platforms.md](overview/platforms.md) |
+| Agent rules (always-on) | Cross-IDE process conventions | [`.agents/rules/`](../.agents/rules/) (symlinked into `.cursor/rules/` + `.claude/rules/`) |
+| Agent skills | Optional procedural checklists | [`.agents/skills/`](../.agents/skills/) (symlinked for Cursor + Claude) |
 
 ## Language
 

@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { capturePrScreenshot } from "./pr-screenshot";
 
 test.describe("taxe foncière per-year history (property form API + display)", () => {
   test("adding a per-year taxe foncière entry through the form's API updates /investissements (Immobilier tab) and /fiscalite", async ({
@@ -83,6 +84,8 @@ test.describe("taxe foncière per-year history (property form API + display)", (
     await expect(page.getByText("Appartement E2E")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("950,00").first()).toBeVisible();
     await expect(page.getByText("700,00")).toHaveCount(0);
+    // PR review shot — after asserts (docs/howto/ui-screenshots-in-pr.md).
+    await capturePrScreenshot(page, "property-tax", "fiscalite-apres");
 
     // Same resolved value on the real, reachable Investissements >
     // Immobilier tab (netYield / monthlyCashFlowAfterTax derive from it —
@@ -93,5 +96,6 @@ test.describe("taxe foncière per-year history (property form API + display)", (
     await page.goto("/investissements?tab=immobilier");
     await expect(page.getByText("Appartement E2E")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("431,20").first()).toHaveCount(0);
+    await capturePrScreenshot(page, "property-tax", "investissements-immobilier-apres");
   });
 });

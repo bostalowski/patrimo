@@ -21,9 +21,9 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md). Tier A: mark teach-back / Ch
 
 - [ ]
 
-## RED evidence (when Layer 2 applies)
+## RED evidence (when `verify-behavior` applies)
 
-Per [tdd-red-green.md](../../howto/tdd-red-green.md). Skip if Layer 2 is `n/a`.
+Per [tdd-red-green.md](../../howto/tdd-red-green.md). Skip if `verify-behavior` is `n/a`.
 
 - Case:
 - Command: `npm test -- <path>`
