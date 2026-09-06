@@ -27,10 +27,10 @@ Product direction: web/Electron and mobile should become feature-iso over time. 
 | CSV import | Present | Absent |
 | Budget | Present | Present |
 | DCA plans | Present | Present |
-| Real estate | Present — CRUD + analytics | Partial — read-only |
+| Real estate | Present — CRUD + analytics (ADR 0028 / 0028) | Partial — read-only; projection KPIs from `@patrimo/core` (ADR 0028 / 0028) |
 | Fiscalité | Present — realized + foncier | Partial — realized only |
 | Fees | Present | Partial |
-| Projection | Present | Partial |
+| Projection | Present — immobilier shares core with mobile (ADR 0028) | Partial — immobilier via core; envelope overflow deferred |
 | Retirement profile | Present | Partial |
 | Financial goals (Objectifs) | Present | Absent — sheet round-trip only; no Objectifs UI |
 | Benchmarks | Present | Absent |

@@ -74,7 +74,7 @@ export function upsertPropertyTax(
 ): Workbook {
 	assertPersistablePropertyTax(workbook.properties, propertyTax);
 
-	const nextPropertyTaxes = workbook.propertyTaxes.filter(
+	const nextPropertyTaxes = (workbook.propertyTaxes ?? []).filter(
 		(entry) =>
 			!(
 				entry.propertyId === propertyTax.propertyId &&
@@ -96,7 +96,7 @@ export function deletePropertyTax(
 ): Workbook {
 	return {
 		...workbook,
-		propertyTaxes: workbook.propertyTaxes.filter(
+		propertyTaxes: (workbook.propertyTaxes ?? []).filter(
 			(entry) => !(entry.propertyId === propertyId && entry.year === year),
 		),
 	};

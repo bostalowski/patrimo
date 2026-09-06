@@ -124,6 +124,35 @@ else
 fi
 
 echo ""
+echo "7. UI screenshots committed when web UI changed (docs/howto/ui-screenshots-in-pr.md)"
+ui_changed="$(
+  changed_files \
+    | grep -E '^src/(app|components)/.+\.tsx$' \
+    | grep -v '^src/app/api/' \
+    || true
+)"
+if [[ -z "$ui_changed" ]]; then
+  echo "  skipped — no web UI .tsx changes outside src/app/api/"
+else
+  ui_dir="docs/agent/branches/$SLUG/ui"
+  png_count=0
+  if [[ -d "$ui_dir" ]]; then
+    png_count="$(find "$ui_dir" -maxdepth 1 -type f -name '*.png' | wc -l | tr -d ' ')"
+  fi
+  if [[ "$png_count" -ge 1 ]]; then
+    echo "  OK — $png_count PNG(s) under $ui_dir"
+    echo "  note — embed them in the PR body with absolute raw.githubusercontent.com URLs (relative paths do not render)"
+  else
+    echo "  FAIL — web UI .tsx changed but no PNG under $ui_dir/"
+    echo "    Capture after e2e asserts: PATRIMO_PR_SCREENSHOT_DIR=$ui_dir make e2e"
+    echo "    Then commit the PNGs and embed absolute URLs under ## Screenshots"
+    echo "    UI files:"
+    echo "$ui_changed" | sed 's/^/      /'
+    fail=1
+  fi
+fi
+
+echo ""
 if [[ "$fail" -eq 1 ]]; then
   echo "pr-check: NOT READY"
   exit 1

@@ -202,7 +202,6 @@ function workbook(manualPrices: ManualPrice[]): ManualPriceWorkbook {
     sectorAllocations: [],
     diversificationTargets: [],
 		financialGoals: [],
-		propertyTaxes: [],
   };
 }
 

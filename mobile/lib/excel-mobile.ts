@@ -5,11 +5,16 @@ import {
 import { normalizeSectorAllocations } from "@patrimo/core/sector-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import { normalizePropertyTaxes } from "@patrimo/core/property-taxes";
+import {
+	filterPaliersForProperty,
+	normalizeLoanInsurancePaliers,
+} from "@patrimo/core/realestate/insurance";
 import type {
 	DiversificationTarget,
 	EmergencyFundConfig,
 	FinancialGoal,
 	GeographicAllocation,
+	LoanInsurancePalier,
 	SectorAllocation,
 } from "@patrimo/core/schema";
 import {
@@ -18,6 +23,7 @@ import {
 	BudgetLine,
 	DcaConfig,
 	type ManualPrice,
+	ModeAssurance,
 	Property,
 	type PropertyTax,
 	Transaction,
@@ -34,6 +40,7 @@ import {
 import { normalizeFinancialGoals } from "@patrimo/core/financial-goals";
 import {
 	ACTIFS_HEADERS,
+	ASSURANCE_EMPRUNT_HEADERS,
 	CIBLES_DIVERSIFICATION_HEADERS,
 	COMPTES_HEADERS,
 	DCA_HEADERS,
@@ -44,6 +51,7 @@ import {
 	PRIX_MANUELS_HEADERS,
 	SHEET_ACTIFS,
 	SHEET_ALLOCATION_CIBLE,
+	SHEET_ASSURANCE_EMPRUNT,
 	SHEET_CIBLES_DIVERSIFICATION,
 	SHEET_COMPTES,
 	SHEET_DCA,
@@ -73,6 +81,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	const rawAccounts = readSheet(wb, "Comptes");
 	const rawBudget = readSheet(wb, "Budget");
 	const rawProperties = readSheet(wb, "Immobilier");
+	const rawAssuranceEmprunt = readSheet(wb, SHEET_ASSURANCE_EMPRUNT);
 	const rawDca = readSheet(wb, "DCA");
 	const rawManualPrices = readSheet(wb, SHEET_PRIX_MANUELS);
 	const rawPropertyTaxes = readSheet(wb, SHEET_TAXE_FONCIERE);
@@ -87,7 +96,11 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	const assets = parseAssets(rawAssets);
 	const accounts = parseAccounts(rawAccounts);
 	const budget = parseBudget(rawBudget);
-	const properties = parseProperties(rawProperties);
+	const loanInsurancePaliers = parseLoanInsurancePaliers(rawAssuranceEmprunt);
+	const properties = hydratePropertyPaliers(
+		parseProperties(rawProperties),
+		loanInsurancePaliers,
+	);
 	const dca = parseDca(rawDca);
 	const manualPrices = parseManualPrices(rawManualPrices, assets);
 	const propertyTaxes = parsePropertyTaxes(rawPropertyTaxes, properties);
@@ -110,6 +123,8 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 		properties: properties.length,
 		dca: dca.length,
 		manualPrices: manualPrices.length,
+		loanInsurancePaliers: loanInsurancePaliers.length,
+		propertyTaxes: propertyTaxes.length,
 		geographicAllocations: geographicAllocations.length,
 		sectorAllocations: sectorAllocations.length,
 		diversificationTargets: diversificationTargets.length,
@@ -126,6 +141,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 			properties,
 			dca,
 			manualPrices,
+			loanInsurancePaliers,
 			geographicAllocations,
 			sectorAllocations,
 			diversificationTargets,
@@ -257,6 +273,16 @@ export function serializeWorkbook(
 			Actif: entry.assetId,
 			Date: entry.date,
 			Prix: entry.price,
+		})),
+	);
+	replaceRows(
+		workbook,
+		SHEET_ASSURANCE_EMPRUNT,
+		ASSURANCE_EMPRUNT_HEADERS,
+		(workbookData.loanInsurancePaliers ?? []).map((entry) => ({
+			Bien: entry.propertyId,
+			"Année début": entry.anneeDebut,
+			"Assurance mensuelle (€)": entry.assuranceMensuelle,
 		})),
 	);
 	replaceRows(
@@ -503,6 +529,39 @@ function parseBudget(rows: Record<string, unknown>[]): BudgetLine[] {
 	return results;
 }
 
+function parseModeAssurance(value: unknown): string {
+	const raw = emptyToUndefined(value);
+	if (!raw) return "CRD";
+	const parsed = ModeAssurance.safeParse(String(raw).trim());
+	return parsed.success ? parsed.data : "CRD";
+}
+
+function parseLoanInsurancePaliers(
+	rows: Record<string, unknown>[],
+): LoanInsurancePalier[] {
+	const raw: LoanInsurancePalier[] = [];
+	for (const row of rows) {
+		const propertyId = emptyToUndefined(row["Bien"]);
+		if (!propertyId) continue;
+		raw.push({
+			propertyId: String(propertyId),
+			anneeDebut: toNumber(row["Année début"]) ?? Number.NaN,
+			assuranceMensuelle: toNumber(row["Assurance mensuelle (€)"]) ?? Number.NaN,
+		});
+	}
+	return normalizeLoanInsurancePaliers(raw);
+}
+
+function hydratePropertyPaliers(
+	properties: Property[],
+	paliers: LoanInsurancePalier[],
+): Property[] {
+	return properties.map((property) => ({
+		...property,
+		assurancePaliers: filterPaliersForProperty(paliers, property.id),
+	}));
+}
+
 function parseProperties(rows: Record<string, unknown>[]): Property[] {
 	const results: Property[] = [];
 	let failCount = 0;
@@ -525,6 +584,8 @@ function parseProperties(rows: Record<string, unknown>[]): Property[] {
 			dureeMois: toNumber(row["Durée (mois)"]) ?? 0,
 			dateDebutCredit: optionalDate(row["Date début crédit"]),
 			tauxAssurance: toNumber(row["Taux assurance"]) ?? 0,
+			modeAssurance: parseModeAssurance(row["Mode assurance"]),
+			assuranceMensuelle: toNumber(row["Assurance mensuelle (€)"]) ?? 0,
 			loyerMensuelHC: toNumber(row["Loyer mensuel HC"]) ?? 0,
 			chargesNonRecupAnnuelles: toNumber(row["Charges non récup"]) ?? 0,
 			taxeFonciere: toNumber(row["Taxe foncière"]) ?? 0,

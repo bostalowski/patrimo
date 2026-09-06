@@ -116,7 +116,7 @@ export default function DashboardScreen() {
 				/>
 				{hasRealEstate && (
 					<StatCard
-						label="Immobilier (équité)"
+						label="Immobilier (patrimoine net)"
 						value={formatEuro(realEstateEquity)}
 						theme={t}
 					/>

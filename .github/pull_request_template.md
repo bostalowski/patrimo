@@ -37,15 +37,15 @@ where a CONTRACT is Tier A or this PR is not tranche-based.
 <!-- Required when this PR changes web UI (`verify-e2e`). Otherwise: n/a.
      Procedure: docs/howto/ui-screenshots-in-pr.md
      Capture after green Playwright asserts via capturePrScreenshot (e2e/pr-screenshot.ts).
-     Prefer PNGs under docs/agent/branches/<slug>/ui/ (PATRIMO_PR_SCREENSHOT_DIR=… make e2e)
-     and embed with markdown, or drag-drop / paste into this description. -->
+     Prefer PNGs under docs/agent/branches/<slug>/ui/ (PATRIMO_PR_SCREENSHOT_DIR=… make e2e).
+     Embed with **absolute** raw.githubusercontent.com URLs — relative repo paths do NOT
+     render in GitHub PR bodies. Or drag-drop / paste images into this description. -->
 
 - [ ] `n/a` — no web UI change
 - [ ] Screenshots of the changed screens / states are embedded below
 
-<!-- Paste or link images here:
-
-
+<!-- Paste absolute-URL markdown images here, e.g.:
+![label](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/docs/agent/branches/<slug>/ui/foo.png)
 -->
 
 ## Checker (docs/howto/maker-checker.md)

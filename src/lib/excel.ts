@@ -15,13 +15,19 @@ import {
 import { normalizeSectorAllocations } from "@patrimo/core/sector-allocation";
 import { normalizeManualPrices } from "@patrimo/core/manual-prices";
 import { normalizePropertyTaxes } from "@patrimo/core/property-taxes";
+import {
+	filterPaliersForProperty,
+	normalizeLoanInsurancePaliers,
+} from "@patrimo/core/realestate/insurance";
 import type {
 	DiversificationTarget,
 	EmergencyFundConfig,
 	FinancialGoal,
 	GeographicAllocation,
+	LoanInsurancePalier,
 	SectorAllocation,
 } from "@patrimo/core/schema";
+import { ModeAssurance } from "@patrimo/core/schema";
 import { diversificationPctFromExcel, normalizeDiversificationTargets } from "@patrimo/core/diversification-targets";
 import {
 	DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS,
@@ -30,6 +36,7 @@ import {
 import { normalizeFinancialGoals } from "@patrimo/core/financial-goals";
 import {
 	ALL_SHEETS,
+	ASSURANCE_EMPRUNT_HEADERS,
 	CIBLES_DIVERSIFICATION_HEADERS,
 	OBJECTIFS_HEADERS,
 	BUDGET_HEADERS,
@@ -41,6 +48,7 @@ import {
 	PRIX_MANUELS_HEADERS,
 	SHEET_ACTIFS,
 	SHEET_ALLOCATION_CIBLE,
+	SHEET_ASSURANCE_EMPRUNT,
 	SHEET_BUDGET,
 	SHEET_CIBLES_DIVERSIFICATION,
 	SHEET_COMPTES,
@@ -333,6 +341,56 @@ function parseBudget(rows: Record<string, unknown>[]): BudgetLine[] {
 		});
 }
 
+function parseModeAssurance(value: unknown): string {
+	const raw = emptyToUndefined(value);
+	if (!raw) return "CRD";
+	const parsed = ModeAssurance.safeParse(String(raw).trim());
+	return parsed.success ? parsed.data : "CRD";
+}
+
+function parseLoanInsurancePaliers(
+	rows: Record<string, unknown>[],
+): LoanInsurancePalier[] {
+	const raw: LoanInsurancePalier[] = [];
+	for (const row of rows) {
+		const propertyId = emptyToUndefined(row["Bien"]);
+		if (!propertyId) continue;
+		raw.push({
+			propertyId: String(propertyId),
+			anneeDebut: toNumber(row["Année début"]) ?? Number.NaN,
+			assuranceMensuelle: toNumber(row["Assurance mensuelle (€)"]) ?? Number.NaN,
+		});
+	}
+	return normalizeLoanInsurancePaliers(raw);
+}
+
+function hydratePropertyPaliers(
+	properties: Property[],
+	paliers: LoanInsurancePalier[],
+): Property[] {
+	return properties.map((property) => ({
+		...property,
+		assurancePaliers: filterPaliersForProperty(paliers, property.id),
+	}));
+}
+
+function parsePropertyTaxes(
+	rows: Record<string, unknown>[],
+	properties: Property[],
+): PropertyTax[] {
+	const raw: PropertyTax[] = [];
+	for (const row of rows) {
+		const propertyId = emptyToUndefined(row["Bien"]);
+		if (!propertyId) continue;
+		raw.push({
+			propertyId,
+			year: toNumber(row["Année"]) ?? Number.NaN,
+			amount: toNumber(row["Montant"]) ?? Number.NaN,
+		});
+	}
+	return normalizePropertyTaxes(raw, properties);
+}
+
 function parseProperties(rows: Record<string, unknown>[]): Property[] {
 	return rows
 		.filter((row) => emptyToUndefined(row["ID"]) !== undefined)
@@ -357,6 +415,8 @@ function parseProperties(rows: Record<string, unknown>[]): Property[] {
 					dureeMois: toNumber(row["Durée (mois)"]) ?? 0,
 					dateDebutCredit: optionalDate(rawDebutCredit),
 					tauxAssurance: toNumber(row["Taux assurance"]) ?? 0,
+					modeAssurance: parseModeAssurance(row["Mode assurance"]),
+					assuranceMensuelle: toNumber(row["Assurance mensuelle (€)"]) ?? 0,
 					loyerMensuelHC: toNumber(row["Loyer mensuel HC"]) ?? 0,
 					chargesNonRecupAnnuelles: toNumber(row["Charges non récup"]) ?? 0,
 					taxeFonciere: toNumber(row["Taxe foncière"]) ?? 0,
@@ -420,23 +480,6 @@ function parseManualPrices(
 		});
 	}
 	return normalizeManualPrices(raw, assets);
-}
-
-function parsePropertyTaxes(
-	rows: Record<string, unknown>[],
-	properties: Property[],
-): PropertyTax[] {
-	const raw: PropertyTax[] = [];
-	for (const row of rows) {
-		const propertyId = emptyToUndefined(row["Bien"]);
-		if (!propertyId) continue;
-		raw.push({
-			propertyId,
-			year: toNumber(row["Année"]) ?? Number.NaN,
-			amount: toNumber(row["Montant"]) ?? Number.NaN,
-		});
-	}
-	return normalizePropertyTaxes(raw, properties);
 }
 
 function parseGeographicAllocations(
@@ -686,8 +729,12 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 	const assets = parseAssets(readSheet(sheet, SHEET_ACTIFS));
 	const accounts = parseAccounts(readSheet(sheet, SHEET_COMPTES));
 	const budget = parseBudget(readSheetOptional(sheet, SHEET_BUDGET));
-	const properties = parseProperties(
-		readSheetOptional(sheet, SHEET_IMMOBILIER),
+	const loanInsurancePaliers = parseLoanInsurancePaliers(
+		readSheetOptional(sheet, SHEET_ASSURANCE_EMPRUNT),
+	);
+	const properties = hydratePropertyPaliers(
+		parseProperties(readSheetOptional(sheet, SHEET_IMMOBILIER)),
+		loanInsurancePaliers,
 	);
 	const dca = parseDcaConfigs(readSheetOptional(sheet, SHEET_DCA));
 	const manualPrices = parseManualPrices(
@@ -729,6 +776,7 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 			properties,
 			dca,
 			manualPrices,
+			loanInsurancePaliers,
 			geographicAllocations,
 			sectorAllocations,
 			diversificationTargets,
@@ -771,7 +819,7 @@ export function getProperties(): Property[] {
 }
 
 export function getPropertyTaxes(): PropertyTax[] {
-	return loadWorkbook().propertyTaxes;
+	return loadWorkbook().propertyTaxes ?? [];
 }
 
 export function getDcaConfigs(): DcaConfig[] {
@@ -1127,6 +1175,16 @@ export function replaceWorkbook(nextWorkbook: Workbook): void {
 	);
 	replaceSheetRows(
 		workbook,
+		SHEET_ASSURANCE_EMPRUNT,
+		(nextWorkbook.loanInsurancePaliers ?? []).map((entry) => ({
+			Bien: entry.propertyId,
+			"Année début": entry.anneeDebut,
+			"Assurance mensuelle (€)": entry.assuranceMensuelle,
+		})),
+		ASSURANCE_EMPRUNT_HEADERS,
+	);
+	replaceSheetRows(
+		workbook,
 		SHEET_TAXE_FONCIERE,
 		(nextWorkbook.propertyTaxes ?? []).map((entry) => ({
 			Bien: entry.propertyId,
@@ -1370,6 +1428,8 @@ function propertyEntry(property: Property): UpsertEntry {
 			"Durée (mois)": property.dureeMois,
 			"Date début crédit": property.dateDebutCredit ?? null,
 			"Taux assurance": property.tauxAssurance,
+			"Mode assurance": property.modeAssurance ?? "CRD",
+			"Assurance mensuelle (€)": property.assuranceMensuelle ?? 0,
 			"Loyer mensuel HC": property.loyerMensuelHC,
 			"Charges non récup": property.chargesNonRecupAnnuelles,
 			"Taxe foncière": property.taxeFonciere,
@@ -1399,10 +1459,85 @@ export function upsertProperties(properties: Property[]): void {
 		properties.map(propertyEntry),
 		IMMOBILIER_HEADERS,
 	);
+
+	const existingPaliers = parseLoanInsurancePaliers(
+		readSheetOptional(workbook, SHEET_ASSURANCE_EMPRUNT),
+	);
+	const touchedIds = new Set(properties.map((p) => p.id));
+	const kept = existingPaliers.filter((p) => !touchedIds.has(p.propertyId));
+	const next: LoanInsurancePalier[] = [...kept];
+	for (const property of properties) {
+		for (const palier of property.assurancePaliers ?? []) {
+			next.push({
+				propertyId: property.id,
+				anneeDebut: palier.anneeDebut,
+				assuranceMensuelle: palier.assuranceMensuelle,
+			});
+		}
+	}
+	const normalized = normalizeLoanInsurancePaliers(next);
+	replaceSheetRows(
+		workbook,
+		SHEET_ASSURANCE_EMPRUNT,
+		normalized.map((p) => ({
+			Bien: p.propertyId,
+			"Année début": p.anneeDebut,
+			"Assurance mensuelle (€)": p.assuranceMensuelle,
+		})),
+		ASSURANCE_EMPRUNT_HEADERS,
+	);
+
 	writeWorkbook(workbook, path);
 }
 
 export function deleteProperty(id: string): void {
-	deleteRow(SHEET_IMMOBILIER, "ID", id);
-	deleteRow(SHEET_TAXE_FONCIERE, "Bien", id);
+	const path = getExcelPath();
+	const fileBuffer = readFileSync(path);
+	const workbook = XLSX.read(fileBuffer, { type: "buffer", cellDates: true });
+	const immobilier = workbook.Sheets[SHEET_IMMOBILIER];
+	if (immobilier) {
+		const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(immobilier, {
+			defval: null,
+		});
+		const kept = rows.filter((row) => String(row["ID"] ?? "") !== id);
+		replaceSheetRows(
+			workbook,
+			SHEET_IMMOBILIER,
+			kept.map((row) => {
+				const out: Record<string, unknown> = {};
+				for (const header of IMMOBILIER_HEADERS) {
+					out[header] = row[header] ?? null;
+				}
+				return out;
+			}),
+			IMMOBILIER_HEADERS,
+		);
+	}
+	const paliers = parseLoanInsurancePaliers(
+		readSheetOptional(workbook, SHEET_ASSURANCE_EMPRUNT),
+	).filter((p) => p.propertyId !== id);
+	replaceSheetRows(
+		workbook,
+		SHEET_ASSURANCE_EMPRUNT,
+		paliers.map((p) => ({
+			Bien: p.propertyId,
+			"Année début": p.anneeDebut,
+			"Assurance mensuelle (€)": p.assuranceMensuelle,
+		})),
+		ASSURANCE_EMPRUNT_HEADERS,
+	);
+	const taxRows = readSheetOptional(workbook, SHEET_TAXE_FONCIERE).filter(
+		(row) => String(row["Bien"] ?? "") !== id,
+	);
+	replaceSheetRows(
+		workbook,
+		SHEET_TAXE_FONCIERE,
+		taxRows.map((row) => ({
+			Bien: row["Bien"] ?? null,
+			Année: row["Année"] ?? null,
+			Montant: row["Montant"] ?? null,
+		})),
+		TAXE_FONCIERE_HEADERS,
+	);
+	writeWorkbook(workbook, path);
 }

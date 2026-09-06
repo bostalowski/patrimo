@@ -160,4 +160,44 @@ describe("scripts/pr-check.sh", () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain("OK — own row present with Touched paths");
   });
+
+  it("fails when web UI .tsx changed but no PNG under docs/agent/branches/<slug>/ui/", () => {
+    fx = createFixture("feat/prcheck-no-ui-shots");
+    fx.writeContract(minimalTierBContract({ tranchesRow: FULL_TRANCHES }));
+    fx.writeProgress(
+      `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks, all green\n`,
+    );
+    writeReworkRow(fx, "feat-prcheck-no-ui-shots");
+    fx.writeFile("src/app/demo/page.tsx", "export default function Page() { return null }\n");
+    fx.commitAll("UI change without screenshots");
+
+    const res = fx.run("scripts/pr-check.sh");
+    expect(res.status).not.toBe(0);
+    expect(res.stdout).toContain("web UI .tsx changed but no PNG");
+    expect(res.stdout).toContain("pr-check: NOT READY");
+  });
+
+  it("passes when web UI .tsx changed and a PNG exists under docs/agent/branches/<slug>/ui/", () => {
+    fx = createFixture("feat/prcheck-has-ui-shots");
+    fx.writeContract(minimalTierBContract({ tranchesRow: FULL_TRANCHES }));
+    fx.writeProgress(
+      `${minimalProgress()}\n- Checker: Pass (2099-01-01)\n- Checker evidence: ran fixture checks, all green\n`,
+    );
+    writeReworkRow(fx, "feat-prcheck-has-ui-shots");
+    fx.writeFile("src/app/demo/page.tsx", "export default function Page() { return null }\n");
+    // Minimal valid PNG (1x1)
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    fx.writeFile(
+      "docs/agent/branches/feat-prcheck-has-ui-shots/ui/demo.png",
+      png,
+    );
+    fx.commitAll("UI change with screenshot PNG");
+
+    const res = fx.run("scripts/pr-check.sh");
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain("PNG(s) under docs/agent/branches/feat-prcheck-has-ui-shots/ui");
+  });
 });

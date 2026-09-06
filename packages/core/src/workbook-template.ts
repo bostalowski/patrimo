@@ -3,6 +3,7 @@ export const SHEET_ACTIFS = "Actifs";
 export const SHEET_COMPTES = "Comptes";
 export const SHEET_BUDGET = "Budget";
 export const SHEET_IMMOBILIER = "Immobilier";
+export const SHEET_ASSURANCE_EMPRUNT = "Assurance emprunt";
 export const SHEET_DCA = "DCA";
 export const SHEET_PRIX_MANUELS = "Prix manuels";
 export const SHEET_TAXE_FONCIERE = "Taxe foncière";
@@ -76,6 +77,8 @@ export const IMMOBILIER_HEADERS = [
 	"Durée (mois)",
 	"Date début crédit",
 	"Taux assurance",
+	"Mode assurance",
+	"Assurance mensuelle (€)",
 	"Loyer mensuel HC",
 	"Charges non récup",
 	"Taxe foncière",
@@ -85,6 +88,12 @@ export const IMMOBILIER_HEADERS = [
 	"Part amortissable",
 	"Durée amortissement",
 	"Notes",
+] as const;
+
+export const ASSURANCE_EMPRUNT_HEADERS = [
+	"Bien",
+	"Année début",
+	"Assurance mensuelle (€)",
 ] as const;
 
 export const DCA_HEADERS = [
@@ -149,6 +158,7 @@ export const ALL_SHEETS = [
 	{ name: SHEET_COMPTES, headers: [...COMPTES_HEADERS] },
 	{ name: SHEET_BUDGET, headers: [...BUDGET_HEADERS] },
 	{ name: SHEET_IMMOBILIER, headers: [...IMMOBILIER_HEADERS] },
+	{ name: SHEET_ASSURANCE_EMPRUNT, headers: [...ASSURANCE_EMPRUNT_HEADERS] },
 	{ name: SHEET_DCA, headers: [...DCA_HEADERS] },
 	{ name: SHEET_PRIX_MANUELS, headers: [...PRIX_MANUELS_HEADERS] },
 	{ name: SHEET_TAXE_FONCIERE, headers: [...TAXE_FONCIERE_HEADERS] },

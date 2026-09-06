@@ -12,8 +12,8 @@ cd "$ROOT" || exit 1
 source "$SCRIPT_DIR/lib/branch-slug.sh"
 # shellcheck source=lib/diff.sh
 source "$SCRIPT_DIR/lib/diff.sh"
-# shellcheck source=lib/mutate-spec.sh
-source "$SCRIPT_DIR/lib/mutate-spec.sh"
+# shellcheck source=lib/mutate-ranges.sh
+source "$SCRIPT_DIR/lib/mutate-ranges.sh"
 
 BRANCH="$(branch_name)"
 if is_integration_branch "$BRANCH"; then
@@ -31,19 +31,21 @@ fi
 echo ""
 echo "2. Mutation testing (packages/core)"
 BASE="$(diff_base)"
-core_files="$(changed_core_production_files)"
-mutate_arg="$(mutate_arg_for_core_diff)"
+core_files="$(changed_files | grep -E '^packages/core/src/.*\.tsx?$' | grep -vE '\.test\.tsx?$' || true)"
 mutation_status=0
 if [[ -z "$core_files" ]]; then
-  echo "  skipped — no packages/core/src production files in diff vs $BASE"
+  echo "  skipped — no packages/core/src files in diff vs $BASE"
 elif [[ ! -f stryker.conf.json ]]; then
   echo "  skipped — stryker.conf.json not present yet (lands in a later tranche)"
-elif [[ -z "$mutate_arg" ]]; then
-  echo "  skipped — packages/core production files changed but no added lines to mutate vs $BASE"
 else
-  echo "  changed packages/core production files:"
+  echo "  changed packages/core files (mutate = added/changed lines only):"
   echo "$core_files" | sed 's/^/    /'
-  echo "  mutate specs (production + diff hunks only; *.test.ts excluded):"
+  # Whole-file mutate on shared modules (schema.ts, workbook-template.ts)
+  # tanks the score on untouched Zod/sheet surface. Scope to diff hunks so
+  # the gate measures the feature's new/changed lines (CONSTRAINTS §27 /
+  # ADR 0026: score on changed core surface, not repo-wide).
+  mutate_arg="$(echo "$core_files" | mutate_specs_for_changed_lines)"
+  echo "  mutate specs:"
   echo "$mutate_arg" | tr ',' '\n' | sed 's/^/    /'
   npx stryker run --mutate "$mutate_arg" || mutation_status=$?
 fi

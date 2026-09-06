@@ -43,16 +43,20 @@ Immobilier »).
    Commit those PNGs with the feature (or paste/drag images into the GitHub
    PR description). Prefer committed paths so the description stays stable.
 
-5. Embed in the PR description:
+5. Embed in the PR description with **absolute** image URLs. Relative paths
+   like `docs/agent/branches/<slug>/ui/….png` do **not** render in GitHub PR
+   bodies (unlike README / docs pages):
 
    ```markdown
    ## Screenshots
 
-   ![Fiscalité after](docs/agent/branches/<slug>/ui/fiscalite-apres.png)
+   ![Fiscalité after](https://raw.githubusercontent.com/<owner>/<repo>/<branch>/docs/agent/branches/<slug>/ui/fiscalite-apres.png)
    ```
 
-   Relative paths work once the files are on the PR branch. Alternatively use
-   GitHub’s image paste (uploads to `user-images.githubusercontent.com`).
+   Or drag-drop / paste into the description (uploads to
+   `user-images.githubusercontent.com`). Prefer committed PNGs under
+   `docs/agent/branches/<slug>/ui/` plus absolute `raw.githubusercontent.com`
+   links so the description stays reviewable after refresh.
 
 ## Do not
 

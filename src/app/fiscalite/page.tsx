@@ -59,7 +59,10 @@ export default async function FiscalitePage() {
       const snapshot = propertySnapshot(
         property,
         undefined,
-        workbook.propertyTaxes.filter((entry) => entry.propertyId === property.id),
+        [],
+        (workbook.propertyTaxes ?? []).filter(
+          (entry) => entry.propertyId === property.id,
+        ),
       );
       return {
         id: property.id,
