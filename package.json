@@ -16,6 +16,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "predev": "node scripts/ensure-dev-data.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -38,6 +39,7 @@
     "flow": "bash scripts/flow-status.sh",
     "checker": "bash scripts/role-worktree.sh checker",
     "electron": "electron .",
+    "preelectron:dev": "node scripts/ensure-dev-data.mjs",
     "electron:dev": "concurrently -k -n next,electron -c blue,green \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "next build && electron-builder --mac --config electron-builder.yml",
     "electron:pack": "next build && electron-builder --mac --dir --config electron-builder.yml"
