@@ -20,7 +20,7 @@ export interface Fixture {
   slug: string;
   branch: string;
   run(scriptRelPath: string, args?: string[], env?: Record<string, string>): RunResult;
-  writeFile(relPath: string, content: string): void;
+  writeFile(relPath: string, content: string | Buffer): void;
   writeContract(content: string): void;
   writeProgress(content: string): void;
   readProgress(): string;
@@ -57,7 +57,7 @@ export function createFixture(branch: string): Fixture {
   const branchDir = path.join(root, "docs", "agent", "branches", slug);
   mkdirSync(branchDir, { recursive: true });
 
-  function writeFile(relPath: string, content: string) {
+  function writeFile(relPath: string, content: string | Buffer) {
     const p = path.join(root, relPath);
     mkdirSync(path.dirname(p), { recursive: true });
     writeFileSync(p, content);
