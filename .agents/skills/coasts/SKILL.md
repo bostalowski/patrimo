@@ -109,5 +109,21 @@ services, bare services, and inheritance.
   host — see `.agents/skills/patrimo-harness/SKILL.md`. Coasts does not replace it.
 - Cursor Parallel Agents: worktrees under `~/.cursor/worktrees/patrimo`
   (see `worktree_dir` in the root Coastfile). Claude Code: `.claude/worktrees`.
+  Orca: `~/orca/workspaces/patrimo/<name>`.
 - To run Next inside Coast later: add `[services.web]` (Node 24 via
   `[coast.setup]`) and keep `private_paths = [".next"]`.
+- **Known quirk — French locale hydration mismatch inside a Coast.** The
+  Coast's Node runtime is Alpine-based (small-icu): `Intl.NumberFormat("fr-FR",
+  …)` / `Intl.DateTimeFormat("fr-FR")` silently resolve to `en-US` server-side
+  (`Intl.NumberFormat.supportedLocalesOf(["fr-FR"])` returns `[]`), while the
+  browser has full ICU — producing a React hydration error (e.g. server
+  `+5.2%` vs client `+5,2 %`). `packages/core/src/format.ts` already hardcodes
+  `"fr-FR"` correctly; this is an environment gap, not an app bug, and does
+  not reproduce on the host (full-ICU Node) or in packaged Electron (bundled
+  Node, not Alpine). Not worth bundling `full-icu` for: its data blob must
+  match the exact ICU version compiled into Node and needs a network fetch at
+  install time — fragile for a testing-only artifact. If a Coast's SSR needs
+  to render correct French formatting, that Coast's Node/base image needs
+  full ICU (outside this repo's Coastfile) — otherwise treat locale-format
+  hydration warnings seen only inside a Coast as this known limitation, not a
+  regression to chase in application code.
