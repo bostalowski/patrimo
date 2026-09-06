@@ -75,8 +75,8 @@ Separate agent review of Maker working tree at `/Users/bastien.ostalowski/Worksp
 | Layer 2 | `npm test -- scripts/role-worktree.test.ts` | 7/7 pass |
 | Layer 1 | `make verify` | exit 0 (lint 0 errors; typecheck; 698 tests) |
 | N1 stdout | `make checker` | Prints `=== AGENT ISOLATION (required) ===`, separate-agent spawn, MUST NOT score, worktree cwd |
-| N2 | `role-worktree.test.ts` N10 Checker prompt + rubric | Prompt still single-sourced from `docs/agent/scoring-rubric.md` |
-| N3 | E7 publish tests | PROGRESS-only publish unchanged |
+| N2 | `role-worktree.test.ts` Checker prompt + rubric | Prompt still single-sourced from `docs/agent/scoring-rubric.md` |
+| N3 | publish-scope unit tests | PROGRESS-only publish unchanged |
 | N4 | CONSTRAINTS §22/§27, maker-checker, skill, feature-flow, AGENTS | Agent isolation first; worktree = write sandbox |
 | ADR | `docs/adr/0030-checker-agent-isolation.md` + 0026 Status/Superseded-by | Option C (agent + sandbox); no shell auto-spawn |
 | Gauntlet | n/a | Diff does not touch `@patrimo/core` / workbook I/O / API routes |
