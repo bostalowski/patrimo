@@ -21,7 +21,15 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Configure an Excel path on **Réglages** before using portfolio pages.
+Open [http://localhost:3000](http://localhost:3000).
+
+On a fresh checkout (no `data/config.json` yet), `predev` auto-seeds a sample
+workbook (`data-fixtures/sample-portfolio.xlsx` → `data/sample-portfolio.xlsx`)
+so portfolio pages have data immediately — dev-only, see
+`scripts/ensure-dev-data.mjs`. It never overwrites an existing
+`data/config.json`; point **Réglages** at your own `.xlsx` at any time to
+replace it. Production builds (`build`, `start`, `electron:build`,
+`electron:pack`) never run this step.
 
 Optional env file: copy `.env.local.example` to `.env.local`.
 
