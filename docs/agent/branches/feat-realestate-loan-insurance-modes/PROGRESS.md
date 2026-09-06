@@ -4,11 +4,60 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** Rebased onto `origin/main` (2026-09-05) — ADR renumber: tax history stays **0027**, reliability → **0028**, insurance modes → **0029**; merged taxe foncière + insurance into projection/excel/form. Next: `make verify` / refresh Checker if needed / force-push PR #82.
-- **Blocked:** none
+- **In progress:** Checker Fail (2026-09-06) after rebase onto `origin/main` — restore `propertyTaxes` wiring on fiscalité + investissements (dropped in merge) so Layer 3 e2e is green; then re-Checker.
+- **Blocked:** none (Maker follow-up)
 
-- Checker: Pass (2026-09-05) — re-Pass after gauntlet hunk-scope fix @ `72ef048`
-- Checker evidence: verify 727 green; Layer 2 92/92; e2e 2/2; gauntlet **82.45%** (schema/workbook-template 100%); prior Fail (59.05% whole-file mutate) closed; scores Correctness A / Architecture A / Scope B / Tests A / Docs A
+- Checker: Fail (2026-09-06)
+- Checker evidence: verify **791** green; Layer 2 **107/107**; e2e **1 failed / 2 passed** (`e2e/property-tax.spec.ts` — `/fiscalite` still shows flat `700,00` after upsert `950`); gauntlet **82.23%** ≥ 80 (insurance 88.75 / loan 73.33 / projection 62.50 / property 95.83 / tax 83.49 / schema 100 / workbook-template 100; property-taxes.ts 25% local); prior gauntlet Fail (59.05%) remains closed; scores Correctness C / Architecture B / Scope B / Tests B / Docs B
+
+## Checker re-check after rebase (2026-09-06)
+
+**Verdict: Fail**
+
+Isolated worktree: `patrimo-feat-realestate-loan-insurance-modes-checker` @ `dad585a` (detached HEAD of `feat/realestate-loan-insurance-modes`). Fresh Pass/Fail after rebase onto `origin/main` (tax history ADR **0027** stays; reliability → **0028**; insurance → **0029**; `REWORK_ACK=no` coincidental overlaps). Prior Checker Pass (2026-09-05 @ `72ef048`) is **stale** vs 2026-09-06 commits.
+
+| Dimension | Score | Evidence |
+|---|---|---|
+| Correctness | **C** | `make verify` green (**791** tests). Layer 2: `npm test -- packages/core/src/realestate src/lib/loan-insurance-excel.test.ts packages/core/src/schema.insurance.test.ts packages/core/src/workbook-template.test.ts` (+ mobile excel path via loan-insurance-excel) → **107/107**. Layer 3: `make e2e` → **FAIL** — `e2e/property-tax.spec.ts` expects `950,00` on `/fiscalite` after `POST` property-tax upsert; page still renders flat `700,00` (error-context row). Workbook critical-path e2e **2/2** green. **`make gauntlet` green**: **82.23%** ≥ break **80** (test-removal guard OK vs `origin/main`). Prior Fail item (gauntlet 59.05%) **still closed**. New regression: rebase dropped `workbook.propertyTaxes` from `src/app/fiscalite/page.tsx` and `src/app/investissements/investissements-client.tsx` (`propertySnapshot(property)` without taxes; `taxeFonciere` from flat field). |
+| Architecture | **B** | Insurance placement still sound: math in `@patrimo/core` `realestate/insurance.ts`; web + mobile serializers hydrate via `normalizeLoanInsurancePaliers` (CONSTRAINTS §6–§8, D7). ADR **0029** accepted; ADR **0028** superseded-in-part; glossary + core ARCHITECTURE aligned for modes/paliers (coherence-code-doc ✅ for insurance). Clean-code: single formula path; web↔mobile parse duplication still acceptable. **Merge drift:** main’s taxe-foncière history (ADR **0027**) no longer threaded through fiscalité / investissements snapshots — contradicts main’s wiring and breaks Layer 3. |
+| Scope discipline | **B** | Diff stays on insurance CONTRACT + necessary rebase merge with tax history / rent index. Human `REWORK_ACK=no` for rework-log overlaps. Incomplete reintegration of tax-history UI wiring is a merge defect, not a second feature — still Scope B (PR vs `origin/main` spans stacked surfaces). |
+| Tests / evidence | **B** | Tier B teach-back + Challenger Pass + `branch-ready` still recorded. RED evidence for Tranche1 N1–N6 E1–E9, Tranche2 N7 N8 E10 E11, N9 disclaimer unchanged. Fresh green Layer 1–2 + gauntlet. Layer 3 command required by CONTRACT **red** — DoD incomplete. |
+| Docs handoff | **B** | Cadrage lock / teach-back present (CONSTRAINTS §25). ADR renumber in CONTRACT/ADRs looks correct post-rebase. Nits: Notes still say insurance ADR target **0028**; Done row still describes pre-tax-history renumber; prior Pass evidence (e2e 2/2) obsolete after main added property-tax e2e. |
+
+**Fail reason:** Correctness **C** — mandatory Layer 3 `make e2e` red after rebase (taxe foncière history display regression). Prior gauntlet Fail remains closed; this Fail is a **new** post-rebase item.
+
+**Follow-up plan (Maker):** Restore `propertyTaxes` filter → `propertySnapshot(..., taxes)` (and `currentPropertyTax` / equivalent) on `src/app/fiscalite/page.tsx` and `src/app/investissements/investissements-client.tsx` (+ page prop plumbing if removed) to match `origin/main`; re-run `make e2e` until green; then re-Checker. Do not treat as rework-log follow-up of tax-history PR (`REWORK_ACK=no` already recorded).
+
+### Prior Fail items vs this re-check
+
+| Prior item | Status |
+|---|---|
+| Gauntlet 59.05% / whole-file schema+template mutate | **Closed** — Checker-run gauntlet **82.23%** ≥ 80 |
+| Stale PROGRESS Done T2–T4 / ADR comment nits (2026-09-05 Fail) | **Closed** in prior re-Pass |
+| Layer 3 e2e / fiscalité+investissements `propertyTaxes` wiring after rebase | **Open — causes this Fail** |
+
+### Coherence-code-doc (folded into Architecture)
+
+| Axe | Statut | Constat |
+|---|---|---|
+| Fidélité décision (insurance) | ✅ | Modes + paliers override + D5 year formula match ADR 0029 |
+| Invariants (insurance) | ✅ | Core-owned math; legacy default CRD; mobile read parity |
+| Ancrage glossaire | ✅ | Borrower-insurance modes + Assurance emprunt |
+| Placement | ✅ | ADR `docs/adr/`; mechanics in core ARCHITECTURE |
+| Tax-history UI wiring vs ADR 0027 / main | ❌ | fiscalité + investissements omit `propertyTaxes` after rebase — code drifts from main’s accepted tax-history behavior |
+
+### Clean-code (folded into Architecture)
+
+- ✅ Insurance: single formula path; serializers call core normalize.
+- ⚠️ Web↔mobile insurance parse helpers — still acceptable (independent mappers).
+- ❌ Tax resolution: flat `property.taxeFonciere` reintroduced on fiscalité/investissements instead of snapshot-from-history (merge incompleteness).
+
+### Nits (optional once Fail fixed — classify)
+
+1. **behavior/core/tests** — Restore property-tax history wiring + green `make e2e` (see Fail reason). **Re-Checker mandatory.**
+2. **docs/copy-only** — Notes § still says this branch’s insurance ADR is **0028**; post-rebase target is **0029** (reliability **0028**).
+3. **docs/copy-only** — Done checkbox text still describes renumber reliability→0027 / insurance→0028 (pre–tax-history-on-main).
+4. Informational: `projection.ts` local mutate ~62.5% / `property-taxes.ts` 25% while **overall** ≥ 80 — not a gate miss.
 
 ## Checker re-Pass (2026-09-05)
 
@@ -116,6 +165,9 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md).
 - [x] Maker: re-green gauntlet — hunk-scoped mutate (`scripts/lib/mutate-ranges.sh`) + `schema.insurance.test.ts` / `workbook-template.test.ts` → **82.45%**
 - [x] Checker re-Pass (2026-09-05) — gauntlet **82.45%** confirmed; prior Fail closed
 - [x] `make pr-check` READY + PR opened (#82)
+- [x] Rebase onto `origin/main` (tax history ADR **0027**); renumber reliability → **0028**, insurance → **0029**; `REWORK_ACK=no` for coincidental rework-log overlaps
+- [x] Checker Fail (2026-09-06) — Layer 3 e2e red: fiscalité/investissements dropped `propertyTaxes` wiring in rebase merge (gauntlet still **82.23%**, prior gauntlet Fail remains closed)
+- [ ] Maker: restore `propertyTaxes` → `propertySnapshot` on fiscalité + investissements; green `make e2e`; re-Checker
 - [ ] On merge: rework-log row (+ FEATURES already noted)
 
 ## Challenger findings (2026-09-04)
@@ -157,9 +209,10 @@ Per [tdd-red-green.md](../../howto/tdd-red-green.md) and `make red` (CONSTRAINTS
 
 ## Last verify
 
-- Command: `make verify` + Layer 2 targeted + `make e2e` + `make gauntlet` (Checker re-Pass @ `72ef048`)
-- Result: verify **727** green; Layer 2 **92/92**; e2e **2/2**; gauntlet **82.45%** (break 80) — insurance 88.75 / loan 73.33 / projection 59.09 / property 95.35 / tax 83.49 / schema 100 / workbook-template 100
-- Date: 2026-09-05
+- Command: `make verify` + Layer 2 targeted + `make e2e` + `make gauntlet` (Checker Fail re-check @ `dad585a`)
+- Result: verify **791** green; Layer 2 **107/107**; e2e **FAIL** (`property-tax.spec.ts` — fiscalité still `700,00` after upsert `950`; workbook path 2/2); gauntlet **82.23%** (break 80) — insurance 88.75 / loan 73.33 / projection 62.50 / property 95.83 / tax 83.49 / schema 100 / workbook-template 100 / property-taxes 25
+- Date: 2026-09-06
+- Verdict: **Fail** (Correctness C — Layer 3); prior gauntlet Fail remains closed
 
 ## GREEN evidence (tranche 1)
 
