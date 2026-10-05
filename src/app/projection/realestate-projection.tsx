@@ -50,7 +50,7 @@ export type SerializedProperty = Omit<
 	dateDebutCredit?: string;
 };
 
-function deserialize(p: SerializedProperty): Property {
+export function deserializeProperty(p: SerializedProperty): Property {
 	return {
 		...p,
 		dateAcquisition: p.dateAcquisition
@@ -80,7 +80,7 @@ export function RealEstateProjection({
 
 	const selected = useMemo(() => {
 		const found = properties.find((p) => p.id === selectedId) ?? properties[0];
-		return found ? deserialize(found) : null;
+		return found ? deserializeProperty(found) : null;
 	}, [properties, selectedId]);
 
 	const horizon = Math.max(1, parseNumber(years));

@@ -36,6 +36,9 @@ rents/charges indexed
 by `rentIndexRate` (default = property revalo, not legal IRL); expose `cagr` + annual
 `irr`; non-blocking micro/déficit warnings (tax amounts unchanged); SCI/DIRECT is UI
 metadata only. Retirement `monthlyRealEstateNet` uses last projected year ÷ 12.
+`buildRetirementSources` accepts `includeRealEstate?: boolean` (default true):
+false zeros locative equity and cash-flow in scenario totals; `RESIDENCE_PRINCIPALE` stays excluded when included.
+`aggregateIncludedRealEstate` / `addRealEstateEquityToPoints` share that filter for Projection curves (year-by-year equity overlay).
 
 ## System shape
 

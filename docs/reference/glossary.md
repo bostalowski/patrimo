@@ -58,6 +58,10 @@ Compound annual growth of apport → `netIfSold` over the projection horizon: `(
 
 Internal rate of return on the annual series: year 0 = −apport, intermediate years = cash-flow after tax, final year = cash-flow + net sale proceeds. Field: `RealEstateProjection.irr`. Distinct from portfolio daily XIRR. See [ADR 0028](../adr/0028-realestate-projection-reliability.md).
 
+## Projection include real estate
+
+Web Projection toggle (session-only, default on) that overlays locative patrimoine net (`aggregateIncludedRealEstate`) onto envelope totals/curve and retirement rent. `RESIDENCE_PRINCIPALE` is excluded. Mobile not included.
+
 ## Borrower-insurance modes (`modeAssurance`)
 
 How monthly loan insurance is computed when no paliers apply: `CRD` (remaining balance × taux / 12, default), `CAPITAL_INITIAL` (initial principal × taux / 12, flat), or `MONTANT_FIXE` (Immobilier column **Assurance mensuelle (€)**). Sheet **Assurance emprunt** (`Bien`, `Année début`, `Assurance mensuelle (€)`) stores optional annual paliers that **override** the mode. Credit-year index: `floor(monthsElapsed / 12) + 1`. See [ADR 0029](../adr/0029-realestate-loan-insurance-modes.md).
