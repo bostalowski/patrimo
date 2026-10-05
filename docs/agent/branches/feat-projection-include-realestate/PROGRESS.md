@@ -4,8 +4,10 @@ Branch-local handoff. Do not put other features' focus here.
 
 ## Current focus
 
-- **In progress:** Checker **Fail** (2026-10-05) — commit the dirty Maker tree so `main...HEAD` contains core, then re-run `make gauntlet` + Checker
+- **In progress:** none — Checker **Pass** (re-check 2026-10-05 after commit `2625467`)
 - **Blocked:** none
+- Checker: Pass (2026-10-05)
+- Checker evidence: re-check @ `2625467` — `make verify` 805; `npm test -- packages/core/src/retraite` 7; `npm test -- src/app/projection/projection-include-realestate.test.tsx` 4; `make e2e` 5; `make gauntlet` mutation 82.28% ≥ 80 on `retraite.ts`; teach-back + RED E1/E3/N1–N4 present
 
 ## Cadrage lock
 
@@ -25,7 +27,9 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md).
 - [x] `make branch-ready` 15 / 15
 - [x] Tranche 1 GREEN: `includeRealEstate` on `buildRetirementSources` (E1–E3)
 - [x] Tranche 2 GREEN: checkbox + overlay courbe/totaux (N1–N4)
-- [x] Checker Fail (2026-10-05) — see section below
+- [x] Feature commit `2625467` — `feat: include real estate in Projection by default`
+- [x] Checker Fail (2026-10-05) — empty `main...HEAD` / uncommitted dirty tree (superseded)
+- [x] Checker Pass re-check (2026-10-05) — after `2625467` (see section below)
 
 ## RED evidence (when `verify-behavior` applies)
 
@@ -35,13 +39,13 @@ Maker recorded case-level RED excerpts (below). Template stub left empty.
 
 ## Last verify
 
-- Command (Checker, Maker dirty tree): `make verify` (lint 0 errors / 5 pre-existing warnings; typecheck; 805 tests) ; `npm test -- packages/core/src/retraite` (7 passed) ; `npm test -- src/app/projection/projection-include-realestate.test.tsx` (4 passed) ; `make e2e` (5 passed, including `projection-include-realestate.spec.ts`) ; `make gauntlet` (test-guard OK ; **mutation skipped** — no `packages/core/src` in git diff vs `origin/main`)
-- Result: verify-static / targeted / e2e green on uncommitted Maker files; gauntlet mutation **not executed**
+- Command (Checker re-check @ `2625467`): `make verify` (lint 0 errors / 5 pre-existing warnings; typecheck; **805** tests) ; `npm test -- packages/core/src/retraite` (**7** passed) ; `npm test -- src/app/projection/projection-include-realestate.test.tsx` (**4** passed) ; `make e2e` (**5** passed, including `projection-include-realestate.spec.ts`) ; `make gauntlet` (test-guard OK vs `origin/main` ; mutation on `packages/core/src/retraite.ts` **82.28%** ≥ break **80**, 65 killed / 14 survived)
+- Result: verify-static / targeted / e2e / gauntlet green on committed feature tip
 - Date: 2026-10-05
 
 ## Notes
 
-Contract: [CONTRACT.md](./CONTRACT.md) lives in the Maker worktree (uncommitted). Checker sandbox HEAD `4b82ddb` has no branch folder besides this PROGRESS write.
+Contract: [CONTRACT.md](./CONTRACT.md). Checker sandbox detached HEAD `2625467` (= `feat/projection-include-realestate` tip). Prior Fail was empty `main...HEAD`; feature is now in git history (14 files / +989 −57 vs `main`).
 
 ### RED evidence — E1: includeRealEstate false zeros equity and rent (2026-10-05)
 
@@ -131,26 +135,30 @@ Contract: [CONTRACT.md](./CONTRACT.md) lives in the Maker worktree (uncommitted)
    Duration  1.59s (transform 141ms, setup 0ms, collect 536ms, tests 451ms, environment 327ms, prepare 53ms)
 ```
 
-## Checker (2026-10-05) — Fail
+## Checker (2026-10-05) — Fail (superseded)
 
 Separate agent (ADR 0030) in worktree
 `/Users/bastien.ostalowski/Workspace/worktrees/feat-projection-include-realestate-feat-projection-include-realestate-checker`
-(detached `4b82ddb` = `main` / `feat/projection-include-realestate` tip). **No feature commits.** Implementation exists only as **uncommitted** files in the Maker worktree
-`/Users/bastien.ostalowski/Workspace/worktrees/feat-projection-include-realestate`.
-Checker sandbox `git diff main...HEAD` is **empty**; `retraite.test.ts` / UI test / CONTRACT are absent here. Product commands below were therefore replayed against the Maker dirty tree (read-only). This file is the only write.
+(detached `4b82ddb` = `main` / `feat/projection-include-realestate` tip). **No feature commits.** Implementation existed only as **uncommitted** files in the Maker worktree. Checker sandbox `git diff main...HEAD` was **empty**; gauntlet mutation skipped. Verdict **Fail** — follow-up: commit feature so `main...HEAD` lists `packages/core/src/**`, then re-Checker.
+
+## Checker re-check (2026-10-05) — Pass
+
+Separate agent (ADR 0030) in worktree
+`/Users/bastien.ostalowski/Workspace/worktrees/feat-projection-include-realestate-feat-projection-include-realestate-checker`
+(detached `2625467` — `feat: include real estate in Projection by default`). Re-check after prior Fail (empty `main...HEAD`). This file is the only write.
 
 ### Evidence run
 
 | Check | Command / path | Result |
 |---|---|---|
-| Checker sandbox diff | `git diff main...HEAD` in checker worktree | empty (HEAD `4b82ddb`) |
-| Cadrage / teach-back | Maker PROGRESS + CONTRACT | `- Teach-back: accepted (2026-10-05)`; Challenger skipped with reason; decisions LOCKED |
-| RED | Maker PROGRESS excerpts E1, E3, aggregateIncludedRealEstate, N1–N4 | Failures are missing behavior (flag / helper / checkbox), not compile noise; SHA `4b82ddb` matches uncommitted tip |
-| `verify-behavior` core | Maker: `npm test -- packages/core/src/retraite` | **7 passed** (`retraite.test.ts`) |
-| `verify-behavior` UI | Maker: `npm test -- src/app/projection/projection-include-realestate.test.tsx` | **4 passed** |
-| `verify-static` | Maker: `make verify` | lint 0 errors; typecheck; **805 passed** |
-| `verify-e2e` | Maker: `make e2e` | **5 passed** including `checkbox is on by default on /projection` |
-| Gauntlet (Maker + checker) | `make gauntlet` | test-guard OK; **mutation skipped — no `packages/core/src` in diff vs `origin/main`**; duplication signal n/a (uncommitted) |
+| Checker sandbox diff | `git log/diff main...HEAD` @ `2625467` | **1 commit**; 14 files incl. `packages/core/src/retraite.ts`, projection UI, e2e, glossary, core ARCHITECTURE |
+| Cadrage / teach-back | PROGRESS + CONTRACT | Teach-back accepted (2026-10-05); Challenger skipped with reason; decisions LOCKED; `branch-ready` 15/15 |
+| RED | PROGRESS excerpts E1, E3, N4/aggregate, N1–N4 | Failures are missing behavior (flag / helper / checkbox), not compile noise |
+| `verify-behavior` core | `npm test -- packages/core/src/retraite` | **7 passed** |
+| `verify-behavior` UI | `npm test -- src/app/projection/projection-include-realestate.test.tsx` | **4 passed** |
+| `verify-static` | `make verify` | lint 0 errors / 5 warnings; **805 passed** |
+| `verify-e2e` | `make e2e` | **5 passed** incl. `checkbox is on by default on /projection` |
+| Gauntlet | `make gauntlet` | test-guard OK; mutate `retraite.ts` **82.28%** (65 killed / 14 survived) ≥ break **80** |
 
 ### Coherence code ↔ doc
 
@@ -159,32 +167,42 @@ Checker sandbox `git diff main...HEAD` is **empty**; `retraite.test.ts` / UI tes
 | Fidélité décision | ✅ | Default-on session checkbox; `includeRealEstate !== false`; locative overlay via core helpers | CONTRACT D4–D7 ↔ `projection-client.tsx` `useState(true)` ; `retraite.ts` `aggregateIncludedRealEstate` |
 | Invariant exclude `RESIDENCE_PRINCIPALE` | ⚠️ | Core filter in `aggregateIncludedRealEstate`; UI **re-filters** the same regime for `currentEquity` | D3 / glossary ↔ `retraite.ts` skip RP ; `envelope-projection.tsx` `currentRealEstateEquity` |
 | Décision D6 courbe année par année | ✅ | `addRealEstateEquityToPoints` overlays `years[].equity` | D6 ↔ `retraite.ts` + `envelope-projection.tsx` `chartData` |
-| Pas de débordement | ✅ | Immobilier what-if tab still ignores the global checkbox; no workbook column | D2 / exclusions ↔ `RealEstateProjection` props unchanged |
-| Liens & pages | ⚠️ | Core ARCHITECTURE + glossary updated; `src/ARCHITECTURE.md` silent; FEATURES / platforms.md already mention the toggle (CONTRACT said matrix on merge) | `packages/core/ARCHITECTURE.md` ; `docs/reference/glossary.md` « Projection include real estate » |
-| Ancrage glossaire | ✅ | New toggle named in glossary | glossary ↔ checkbox copy « Inclure l'immobilier » |
-| Placement domaine | ⏭️ | Mono-package domain math in `@patrimo/core` | CONSTRAINTS §6–§7 |
+| Pas de débordement | ✅ | Immobilier what-if tab ignores global checkbox; no workbook column | D2 / exclusions ↔ `RealEstateProjection` props unchanged |
+| Liens & pages | ⚠️ | Core ARCHITECTURE + glossary updated; `src/ARCHITECTURE.md` silent; FEATURES / platforms.md already mention toggle (CONTRACT On merge) | `packages/core/ARCHITECTURE.md` ; glossary « Projection include real estate » |
+| Ancrage glossaire | ✅ | Toggle named in glossary | glossary ↔ checkbox « Inclure l'immobilier » |
+| Placement domaine | ⏭️ | Domain math in `@patrimo/core` | CONSTRAINTS §6–§7 |
 
 ### Clean-code (placement / duplication)
 
 - Domain flag and year overlay live in `@patrimo/core` (`aggregateIncludedRealEstate`, `addRealEstateEquityToPoints`, `buildRetirementSources`) — correct layer.
-- `envelope-projection.tsx` duplicates the RP exclusion for **current** equity via `currentEquity` instead of a core helper — drift risk vs D3.
-- UI tests N1 assert `patrimoineValue() > 10_000` while a 10y Livret path is already > 10_000 without immobilier — does not prove N1 capital inclusion by itself (N2’s decrease on uncheck is the stronger signal).
-- e2e creates a Livret only, never a locative, never unchecks — CONTRACT screenshots asked default-on / default-off / retirement rents; only `projection-include-realestate-default-on.png` is present in Maker.
+- `envelope-projection.tsx` duplicates RP exclusion for **current** equity via `currentEquity` instead of a core helper — drift risk vs D3 (Architecture dock, not ownership violation).
+- UI test N1 asserts `patrimoineValue() > 10_000` while a 10y Livret path is already > 10_000 without immobilier — N2’s decrease on uncheck is the stronger capital-inclusion signal.
+- e2e creates a Livret only, never a locative, never unchecks — CONTRACT screenshots asked default-on / default-off / retirement rents; only `projection-include-realestate-default-on.png` present.
+- Gauntlet duplication signal: shared prop/typing blocks between `envelope-projection.tsx` and `projection-client.tsx` (informational).
 
 ### Scoring table
 
 | Dimension | Score | Evidence |
 |---|---|---|
-| Correctness | C | Maker dirty-tree `make verify` 805, targeted 7+4, `make e2e` 5 green. Checker sandbox has **no** feature diff. `make gauntlet` **skipped mutation** despite dirty `packages/core/src/retraite.ts` (CONSTRAINTS §27 unmet in substance). e2e does not exercise N1–N4 totals/toggle. |
+| Correctness | B | `make verify` 805; targeted 7+4; `make e2e` 5; `make gauntlet` **82.28%** on committed `retraite.ts` (prior Fail closed). Edge gaps: e2e smoke-only (no locative / uncheck); 14 survivors under break threshold. |
 | Architecture | B | Core owns include/exclude + overlay; Immobilier tab untouched. Minor: RP skip duplicated in UI `currentRealEstateEquity`; `src/ARCHITECTURE.md` not updated. |
 | Scope discipline | B | CONTRACT cases N1–N4 / E1–E3 only; mobile / workbook / GoalsAlignment excluded. Early FEATURES.md + `platforms.md` edits belong to On merge. |
-| Tests / evidence | B | RED excerpts exist for E1, E3, aggregation, N1–N4 then green targeted tests. Gaps: N1 amount assertion weak; e2e smoke-only; gauntlet mutants not run; E2 is keep-current (no dedicated RED, acceptable). |
-| Docs handoff | B | Teach-back accepted + Challenger skip reason recorded (behaviour-gate). Glossary + core ARCHITECTURE present. Checker sandbox cannot see CONTRACT until committed. Screenshot set incomplete vs CONTRACT. |
+| Tests / evidence | B | RED excerpts for E1, E3, aggregation, N1–N4 then green targeted tests. Gaps: N1 amount assertion weak; e2e smoke-only; E2 keep-current (no dedicated RED header, acceptable). Combined `N1-N4` header covers the UI suite RED. |
+| Docs handoff | B | Teach-back accepted + Challenger skip reason (behaviour-gate). Glossary + core ARCHITECTURE present. Screenshot set incomplete vs CONTRACT (default-on only). |
 
-### Follow-up (required before re-Checker)
+### Prior Fail items vs this re-check
 
-1. Commit the Maker dirty set (`retraite.ts` + tests, projection UI/e2e, docs, screenshots) so `git diff origin/main...HEAD` lists `packages/core/src/**`.
-2. Re-run `make gauntlet` until mutation actually executes on `retraite.ts` (or document why Stryker is not configured — `stryker.conf.json` exists at repo root).
-3. Spawn Checker again on a worktree whose HEAD contains those commits (empty `main...HEAD` must not recur).
+| Prior item | Status |
+|---|---|
+| Empty `main...HEAD` / uncommitted Maker tree | **Closed** — commit `2625467` |
+| Gauntlet mutation skipped (no `packages/core/src` in diff) | **Closed** — mutation **82.28%** ≥ 80 |
+| Checker sandbox missing feature files | **Closed** — HEAD has core + UI + e2e + docs |
 
-Verdict: **Fail**
+### Nits (optional — not Fail)
+
+1. **tests/e2e** — Strengthen e2e with a locative + uncheck path; add default-off / rents screenshots if CONTRACT still wants them.
+2. **tests/ui** — N1 could assert delta vs financial-only (or absolute equity) instead of `> 10_000`.
+3. **clean-code** — Extract current locative equity sum into core next to `aggregateIncludedRealEstate` to avoid UI RP filter drift.
+4. **docs** — Optional `src/ARCHITECTURE.md` note for the Projection toggle; FEATURES matrix On-merge already partly done.
+
+Verdict: **Pass**
