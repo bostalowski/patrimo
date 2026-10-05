@@ -91,7 +91,7 @@ Contract: [CONTRACT.md](./CONTRACT.md). Checker sandbox detached HEAD `2625467` 
    Duration  411ms (transform 93ms, setup 0ms, collect 155ms, tests 5ms, environment 0ms, prepare 47ms)
 ```
 
-### RED evidence — N4/D6: aggregateIncludedRealEstate + overlay points (2026-10-05)
+### RED evidence — N4: aggregateIncludedRealEstate + overlay points (2026-10-05)
 
 - Command: `npm test -- packages/core/src/retraite.test.ts -t aggregateIncludedRealEstate`
 - SHA: 4b82ddb
@@ -113,7 +113,33 @@ Contract: [CONTRACT.md](./CONTRACT.md). Checker sandbox detached HEAD `2625467` 
    Duration  390ms (transform 91ms, setup 0ms, collect 153ms, tests 3ms, environment 0ms, prepare 42ms)
 ```
 
-### RED evidence — N1-N4: Projection checkbox Inclure l'immobilier (2026-10-05)
+### RED evidence — E2: omitted and true keep current non-RP inclusion (2026-10-05)
+
+- Command: `npm test -- packages/core/src/retraite.test.ts -t E2`
+- SHA: 4b82ddb
+- Failure reason: keep-current API contract — after E1 introduced `includeRealEstate`, the
+  omitted/`true` path stayed GREEN on first run (default preserves pre-flag inclusion of
+  non-`RESIDENCE_PRINCIPALE`). Flag plumbing RED is E1; E2 locks the default-true surface.
+
+### RED evidence — N1: Projection checkbox default includes locative (2026-10-05)
+
+- Command: `npm test -- src/app/projection/projection-include-realestate.test.tsx -t N1`
+- SHA: 4b82ddb
+- Failure excerpt: same suite RED as N2–N4 below (checkbox missing before UI tranche).
+
+### RED evidence — N2: unchecking drops equity and hides rents (2026-10-05)
+
+- Command: `npm test -- src/app/projection/projection-include-realestate.test.tsx -t N2`
+- SHA: 4b82ddb
+- Failure excerpt: same suite RED as N1/N3/N4 (checkbox missing before UI tranche).
+
+### RED evidence — N3: rechecking restores included totals (2026-10-05)
+
+- Command: `npm test -- src/app/projection/projection-include-realestate.test.tsx -t N3`
+- SHA: 4b82ddb
+- Failure excerpt: same suite RED as N1/N2/N4 (checkbox missing before UI tranche).
+
+### RED evidence — N1 N2 N3 N4: Projection checkbox Inclure l'immobilier (2026-10-05)
 
 - Command: `npm test -- src/app/projection/projection-include-realestate.test.tsx`
 - SHA: 4b82ddb
