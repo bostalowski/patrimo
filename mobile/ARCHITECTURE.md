@@ -11,7 +11,7 @@ Hard rules: [CONSTRAINTS.md](../CONSTRAINTS.md). Core map: [packages/core/ARCHIT
 | Source abstraction | `mobile/lib/file-source.ts`, `local-file.ts`, `google-drive.ts` |
 | Parse / serialize | `mobile/lib/excel-mobile.ts` |
 | Writers | `mobile/lib/write-*.ts` calling core |
-| Price sync | `mobile/lib/price-sync.ts` → AsyncStorage (not web `prices.json`) |
+| Price sync | `mobile/lib/price-sync.ts` → AsyncStorage (not web `prices.json`); also Livret rates + IR barème caches |
 | UI routes | `mobile/app/**` |
 | Projection extras | [projection-extra-contributions.md](projection-extra-contributions.md) |
 

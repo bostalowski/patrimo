@@ -68,7 +68,7 @@ Tax figures remain **indicative** ([CONSTRAINTS.md](../../CONSTRAINTS.md) §3).
 
 ## Uncovered cases
 
-- IFI, CSG déductible nuance, surtaxe PV, household progressive IR, fine SCI IS
+- IFI, CSG déductible nuance, surtaxe PV, household progressive IR (now [ADR 0031](0031-household-ir-bracket-observation.md)), fine SCI IS
   liquidation, workbook IRL column, changing retirement CF year selection.
 
 ## Follow-up
@@ -81,3 +81,4 @@ Tax figures remain **indicative** ([CONSTRAINTS.md](../../CONSTRAINTS.md) §3).
 - Branch CONTRACT: `docs/agent/branches/feat-realestate-projection-reliability/`
 - [CONSTRAINTS.md](../../CONSTRAINTS.md) §3, §6–§7
 - Glossary: Real-estate cash-on-cash, Real-estate CAGR, Real-estate TRI
+- Household progressive IR observation: [ADR 0031](0031-household-ir-bracket-observation.md)

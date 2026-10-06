@@ -23,11 +23,12 @@ import type {
 	DiversificationTarget,
 	EmergencyFundConfig,
 	FinancialGoal,
+	FoyerFiscalConfig,
 	GeographicAllocation,
 	LoanInsurancePalier,
 	SectorAllocation,
 } from "@patrimo/core/schema";
-import { ModeAssurance } from "@patrimo/core/schema";
+import { FoyerFiscalConfigSchema, ModeAssurance } from "@patrimo/core/schema";
 import { diversificationPctFromExcel, normalizeDiversificationTargets } from "@patrimo/core/diversification-targets";
 import {
 	DEFAULT_EMERGENCY_FUND_CATCH_UP_HORIZON_MONTHS,
@@ -44,6 +45,7 @@ import {
 	EXPOSITION_GEO_HEADERS,
 	EXPOSITION_SECTEUR_HEADERS,
 	FONDS_URGENCE_HEADERS,
+	FOYER_FISCAL_HEADERS,
 	IMMOBILIER_HEADERS,
 	PRIX_MANUELS_HEADERS,
 	SHEET_ACTIFS,
@@ -56,6 +58,7 @@ import {
 	SHEET_EXPOSITION_GEO,
 	SHEET_EXPOSITION_SECTEUR,
 	SHEET_FONDS_URGENCE,
+	SHEET_FOYER_FISCAL,
 	SHEET_IMMOBILIER,
 	SHEET_OBJECTIFS,
 	SHEET_PRIX_MANUELS,
@@ -684,6 +687,37 @@ function parseEmergencyFundConfig(
 	};
 }
 
+function parseFoyerFiscalConfig(
+	rows: Record<string, unknown>[],
+): FoyerFiscalConfig | undefined {
+	const row = rows.find((entry) =>
+		["Source revenu", "Montant mensuel", "Base", "Parts"].some((column) => {
+			const value = entry[column];
+			return value !== null && value !== undefined && String(value).trim() !== "";
+		}),
+	);
+	if (!row) return undefined;
+
+	const parsed = FoyerFiscalConfigSchema.safeParse({
+		incomeSource: emptyToUndefined(row["Source revenu"]),
+		manualAmount: toNumber(row["Montant mensuel"]) ?? undefined,
+		manualBasis: emptyToUndefined(row["Base"]),
+		parts: toNumber(row["Parts"]) ?? undefined,
+	});
+	return parsed.success ? parsed.data : undefined;
+}
+
+function foyerFiscalConfigToRow(
+	config: FoyerFiscalConfig,
+): Record<string, unknown> {
+	return {
+		"Source revenu": config.incomeSource,
+		"Montant mensuel": config.manualAmount ?? null,
+		Base: config.manualBasis ?? null,
+		Parts: config.parts,
+	};
+}
+
 function parseOuiNon(value: unknown, defaultValue: boolean): boolean {
 	if (value === null || value === undefined || value === "") return defaultValue;
 	const normalized = String(value).trim().toLowerCase();
@@ -762,6 +796,9 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 	const emergencyFundConfig = parseEmergencyFundConfig(
 		readSheetOptional(sheet, SHEET_FONDS_URGENCE),
 	);
+	const foyerFiscalConfig = parseFoyerFiscalConfig(
+		readSheetOptional(sheet, SHEET_FOYER_FISCAL),
+	);
 
 	const transactions = [...parsedTransactions].sort(
 		(a, b) => a.date.getTime() - b.date.getTime(),
@@ -783,6 +820,7 @@ function buildWorkbookFromXlsx(sheet: XLSX.WorkBook): {
 			financialGoals,
 			emergencyFundConfig,
 			propertyTaxes,
+			foyerFiscalConfig,
 		},
 		transactionRows,
 	};
@@ -1271,6 +1309,14 @@ export function replaceWorkbook(nextWorkbook: Workbook): void {
 				]
 			: [],
 		FONDS_URGENCE_HEADERS,
+	);
+	replaceSheetRows(
+		workbook,
+		SHEET_FOYER_FISCAL,
+		nextWorkbook.foyerFiscalConfig
+			? [foyerFiscalConfigToRow(nextWorkbook.foyerFiscalConfig)]
+			: [],
+		FOYER_FISCAL_HEADERS,
 	);
 	deleteSheetIfPresent(workbook, SHEET_ALLOCATION_CIBLE);
 

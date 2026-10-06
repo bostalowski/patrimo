@@ -6,6 +6,12 @@ import { grossAnnualRent } from "@/lib/realestate/property";
 import type { Envelope } from "@/lib/schema";
 import { FiscaliteReport, type SerializedEvent } from "./fiscalite-report";
 import { FoncierSection, type FoncierRow } from "./foncier-section";
+import { FoyerFiscalSection } from "./foyer-fiscal-section";
+import { readIrBaremeCacheSync } from "@/lib/ir-bareme/cache";
+import {
+  observeWorkbookTaxBracket,
+  resolvedBareme,
+} from "@/lib/observe-workbook-tax-bracket";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +82,9 @@ export default async function FiscalitePage() {
       };
     });
 
+  const irCache = readIrBaremeCacheSync();
+  const bareme = resolvedBareme(irCache);
+
   return (
     <div className="space-y-8">
       <FiscaliteReport
@@ -83,6 +92,12 @@ export default async function FiscalitePage() {
         yearlyTotals={yearlyTotals}
         openDates={openDates}
         missingOpenDates={missingOpenDates}
+      />
+      <FoyerFiscalSection
+        config={workbook.foyerFiscalConfig ?? null}
+        observation={observeWorkbookTaxBracket(workbook, irCache)}
+        brackets={bareme.brackets}
+        incomeYear={bareme.incomeYear}
       />
       <FoncierSection rows={foncierRows} />
     </div>

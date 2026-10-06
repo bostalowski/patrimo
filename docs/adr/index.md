@@ -30,5 +30,6 @@
 - [ADR 0028: Indicative real-estate projection model (clarity + single core)](0028-realestate-projection-reliability.md) — accepted (superseded-in-part by 0029 — insurance clause)
 - [ADR 0029: Borrower-insurance modes and Assurance emprunt paliers](0029-realestate-loan-insurance-modes.md) — accepted
 - [ADR 0030: Checker isolation is agent identity (subagent / fresh session)](0030-checker-agent-isolation.md) — accepted (supersedes-in-part 0026 Checker isolation clause)
+- [ADR 0031: Indicative household IR barème observation (sync + PAS conseil)](0031-household-ir-bracket-observation.md) — accepted (extends CONSTRAINTS §4)
 
 Template: [_template.md](_template.md)

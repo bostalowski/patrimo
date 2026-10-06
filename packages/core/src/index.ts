@@ -61,4 +61,6 @@ export * from "./savings-capacity";
 export * from "./savings-capacity-copy";
 export * from "./schema";
 export * from "./tax-rules";
+export * from "./tax-bracket";
+export * from "./ir-bareme";
 export * from "./workbook-template";

@@ -24,7 +24,7 @@ Hard rules: [CONSTRAINTS.md](../../CONSTRAINTS.md). Names: [glossary](../../docs
 | Emergency fund config | `emergency-fund-config.ts` |
 | Portfolio risk | `portfolio-risk.ts` — see [portfolio-risk.md](portfolio-risk.md) |
 | Fees | `fees.ts` — see [fee-monitoring.md](fee-monitoring.md) |
-| Tax / fiscal | `tax-rules.ts`, `fiscalite.ts`, `fiscal-advice.ts` |
+| Tax / fiscal | `tax-rules.ts`, `fiscalite.ts`, `fiscal-advice.ts`, `tax-bracket.ts`, `ir-bareme.ts` (household IR observation + official barème seed/merge) |
 | Projection / DCA / budget | `projection.ts`, `dca.ts`, `budget.ts`, `retraite.ts` — overflow: [envelope-overflow.md](envelope-overflow.md) |
 | Price schedule helpers | `prices/schedule.ts` |
 | Livret A/LDDS rates + quinzaine math | `livret-rates.ts`, `livret.ts` — ADR 0024 |

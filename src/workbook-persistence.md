@@ -19,6 +19,8 @@ Sheet names and headers are defined in `packages/core/src/workbook-template.ts`.
 | `Exposition secteur` | No | Sector look-through weights |
 | `Cibles diversification` | No | Diversification target bands |
 | `Objectifs` | No | Financial goals (retirement income / capital) |
+| `Fonds urgence` | No | Emergency-fund target months / € / catch-up horizon |
+| `Foyer fiscal` | No | Indicative household IR config (source, monthly amount, basis, parts) |
 
 Zod shapes live in `packages/core/src/schema.ts`.
 

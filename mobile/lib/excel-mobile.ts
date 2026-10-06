@@ -13,6 +13,7 @@ import type {
 	DiversificationTarget,
 	EmergencyFundConfig,
 	FinancialGoal,
+	FoyerFiscalConfig,
 	GeographicAllocation,
 	LoanInsurancePalier,
 	SectorAllocation,
@@ -22,6 +23,7 @@ import {
 	Asset,
 	BudgetLine,
 	DcaConfig,
+	FoyerFiscalConfigSchema,
 	type ManualPrice,
 	ModeAssurance,
 	Property,
@@ -47,6 +49,7 @@ import {
 	EXPOSITION_GEO_HEADERS,
 	EXPOSITION_SECTEUR_HEADERS,
 	FONDS_URGENCE_HEADERS,
+	FOYER_FISCAL_HEADERS,
 	OBJECTIFS_HEADERS,
 	PRIX_MANUELS_HEADERS,
 	SHEET_ACTIFS,
@@ -58,6 +61,7 @@ import {
 	SHEET_EXPOSITION_GEO,
 	SHEET_EXPOSITION_SECTEUR,
 	SHEET_FONDS_URGENCE,
+	SHEET_FOYER_FISCAL,
 	SHEET_OBJECTIFS,
 	SHEET_PRIX_MANUELS,
 	SHEET_TAXE_FONCIERE,
@@ -90,6 +94,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	const rawDiversificationTargets = readSheet(wb, SHEET_CIBLES_DIVERSIFICATION);
 	const rawFinancialGoals = readSheet(wb, SHEET_OBJECTIFS);
 	const rawEmergencyFundConfig = readSheet(wb, SHEET_FONDS_URGENCE);
+	const rawFoyerFiscalConfig = readSheet(wb, SHEET_FOYER_FISCAL);
 
 	const { transactions, keys: transactionKeys } =
 		parseTransactions(rawTransactions);
@@ -114,6 +119,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 	);
 	const financialGoals = parseFinancialGoals(rawFinancialGoals);
 	const emergencyFundConfig = parseEmergencyFundConfig(rawEmergencyFundConfig);
+	const foyerFiscalConfig = parseFoyerFiscalConfig(rawFoyerFiscalConfig);
 
 	console.log("[Parser v2] Results:", {
 		transactions: transactions.length,
@@ -130,6 +136,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 		diversificationTargets: diversificationTargets.length,
 		financialGoals: financialGoals.length,
 		emergencyFundConfig: emergencyFundConfig ? 1 : 0,
+		foyerFiscalConfig: foyerFiscalConfig ? 1 : 0,
 	});
 
 	return {
@@ -148,6 +155,7 @@ export function parseWorkbook(buffer: ArrayBuffer): ParsedWorkbook {
 			financialGoals,
 			emergencyFundConfig,
 			propertyTaxes,
+			foyerFiscalConfig,
 		},
 		transactionKeys,
 	};
@@ -372,6 +380,22 @@ export function serializeWorkbook(
 							workbookData.emergencyFundConfig.targetAmountOverride ?? null,
 						"Horizon rattrapage (mois)":
 							workbookData.emergencyFundConfig.catchUpHorizonMonths,
+					},
+				]
+			: [],
+	);
+	replaceRows(
+		workbook,
+		SHEET_FOYER_FISCAL,
+		FOYER_FISCAL_HEADERS,
+		workbookData.foyerFiscalConfig
+			? [
+					{
+						"Source revenu": workbookData.foyerFiscalConfig.incomeSource,
+						"Montant mensuel":
+							workbookData.foyerFiscalConfig.manualAmount ?? null,
+						Base: workbookData.foyerFiscalConfig.manualBasis ?? null,
+						Parts: workbookData.foyerFiscalConfig.parts,
 					},
 				]
 			: [],
@@ -858,6 +882,26 @@ function parseEmergencyFundConfig(
 			),
 		),
 	};
+}
+
+function parseFoyerFiscalConfig(
+	rows: Record<string, unknown>[],
+): FoyerFiscalConfig | undefined {
+	const row = rows.find((entry) =>
+		["Source revenu", "Montant mensuel", "Base", "Parts"].some((column) => {
+			const value = entry[column];
+			return value !== null && value !== undefined && String(value).trim() !== "";
+		}),
+	);
+	if (!row) return undefined;
+
+	const parsed = FoyerFiscalConfigSchema.safeParse({
+		incomeSource: emptyToUndefined(row["Source revenu"]),
+		manualAmount: toNumber(row["Montant mensuel"]) ?? undefined,
+		manualBasis: emptyToUndefined(row["Base"]),
+		parts: toNumber(row["Parts"]) ?? undefined,
+	});
+	return parsed.success ? parsed.data : undefined;
 }
 
 function parseOuiNon(value: unknown, defaultValue: boolean): boolean {

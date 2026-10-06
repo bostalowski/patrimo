@@ -82,6 +82,15 @@ target in months (`Cible (mois)`), optional absolute euro target override
 `computeSavingsCapacity`; does not change Emergency fund health status
 thresholds.
 
+## Foyer fiscal
+
+Optional workbook sheet **Foyer fiscal** (columns: `Source revenu`,
+`Montant mensuel`, `Base`, `Parts`) holding an indicative household income
+source (`MANUAL` or `FROM_BUDGET`) and quotient parts. Used by
+`observeTaxBracket` in `@patrimo/core` to produce TMI, progressive IR, and a
+PAS tip. Barème thresholds live in seed ∪ cache, not on this sheet. See
+[ADR 0031](../adr/0031-household-ir-bracket-observation.md).
+
 ## Risk status band
 
 Qualitative judgement attached to a performance risk metric (annualized volatility, Sharpe ratio, or max drawdown) using fixed product thresholds in `@patrimo/core`. Used so Dashboards can show a human label and color without redefining cutoffs in the UI. When the underlying metric is null (insufficient history), no band is produced.

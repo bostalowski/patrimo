@@ -400,6 +400,62 @@ export const EmergencyFundConfig = z.object({
 });
 export type EmergencyFundConfig = z.infer<typeof EmergencyFundConfig>;
 
+export const FoyerIncomeSource = z.enum(["MANUAL", "FROM_BUDGET"]);
+export type FoyerIncomeSource = z.infer<typeof FoyerIncomeSource>;
+
+export const FoyerManualBasis = z.enum(["BRUT", "NET", "NET_IMPOSABLE"]);
+export type FoyerManualBasis = z.infer<typeof FoyerManualBasis>;
+
+/**
+ * Indicative household fiscal config (sheet **Foyer fiscal**).
+ * E2: MANUAL requires manualAmount > 0 + manualBasis.
+ * E3: parts must be a positive multiple of 0.5 (no silent default).
+ */
+export const FoyerFiscalConfigSchema = z
+	.object({
+		incomeSource: FoyerIncomeSource,
+		manualAmount: z.number().optional(),
+		manualBasis: FoyerManualBasis.optional(),
+		parts: z.number(),
+	})
+	.superRefine((val, ctx) => {
+		if (
+			!(
+				typeof val.parts === "number" &&
+				Number.isFinite(val.parts) &&
+				val.parts > 0 &&
+				Math.abs(val.parts * 2 - Math.round(val.parts * 2)) < 1e-9
+			)
+		) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "parts must be a positive multiple of 0.5",
+				path: ["parts"],
+			});
+		}
+		if (val.incomeSource === "MANUAL") {
+			if (
+				typeof val.manualAmount !== "number" ||
+				!Number.isFinite(val.manualAmount) ||
+				val.manualAmount <= 0
+			) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					message: "manualAmount must be > 0 when incomeSource is MANUAL",
+					path: ["manualAmount"],
+				});
+			}
+			if (val.manualBasis === undefined) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					message: "manualBasis is required when incomeSource is MANUAL",
+					path: ["manualBasis"],
+				});
+			}
+		}
+	});
+export type FoyerFiscalConfig = z.infer<typeof FoyerFiscalConfigSchema>;
+
 export type Workbook = {
 	transactions: Transaction[];
 	assets: Asset[];
@@ -416,4 +472,6 @@ export type Workbook = {
 	financialGoals: FinancialGoal[];
 	emergencyFundConfig?: EmergencyFundConfig;
 	propertyTaxes?: PropertyTax[];
+	/** Optional sheet **Foyer fiscal** — indicative household IR observation config. */
+	foyerFiscalConfig?: FoyerFiscalConfig;
 };
