@@ -5,6 +5,7 @@ import { shouldRunSync } from "@/lib/prices/schedule";
 import { getSyncIntervalMinutes } from "@/lib/config";
 import { readSyncMeta, writeSyncMeta } from "@/lib/store";
 import { syncLivretRates } from "@/lib/livret-rates/sync";
+import { syncIrBareme } from "@/lib/ir-bareme/sync";
 
 export const dynamic = "force-dynamic";
 
@@ -45,10 +46,11 @@ export async function POST(request: Request) {
     });
   }
 
-  const [results, benchmarks, livretRates] = await Promise.all([
+  const [results, benchmarks, livretRates, irBareme] = await Promise.all([
     syncPrices(assets),
     syncBenchmarks(),
     syncLivretRates(),
+    syncIrBareme(),
   ]);
   const syncedAt = new Date().toISOString();
   await writeSyncMeta({ lastSync: syncedAt });
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
     results,
     benchmarks,
     livretRates,
+    irBareme,
     lastSync: syncedAt,
   });
 }

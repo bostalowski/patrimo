@@ -8,7 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
-import { getBudget } from "@/lib/excel";
+import { loadWorkbook } from "@/lib/excel";
 import { requireExcelConfigured } from "@/lib/page-guards";
 import { formatEuro, formatPercent, signClass } from "@/lib/utils";
 import type { BudgetKind, BudgetLine } from "@/lib/schema";
@@ -19,13 +19,21 @@ import {
   summarizeBudget,
 } from "@/lib/budget";
 import { BudgetForm } from "./budget-form";
+import { TaxBracketObservationCard } from "@/components/tax-bracket-observation-card";
+import { readIrBaremeCacheSync } from "@/lib/ir-bareme/cache";
+import { observeWorkbookTaxBracket } from "@/lib/observe-workbook-tax-bracket";
 
 export const dynamic = "force-dynamic";
 
 export default async function BudgetPage() {
   requireExcelConfigured();
-  const lines = getBudget();
+  const workbook = loadWorkbook();
+  const lines = workbook.budget;
   const summary = summarizeBudget(lines);
+  const taxObservation = observeWorkbookTaxBracket(
+    workbook,
+    readIrBaremeCacheSync(),
+  );
 
   const revenus = lines
     .filter((l) => l.kind === "REVENU")
@@ -86,6 +94,8 @@ export default async function BudgetPage() {
           </CardHeader>
         </Card>
       </div>
+
+      <TaxBracketObservationCard observation={taxObservation} readOnly />
 
       <Card>
         <CardHeader>

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
 	ASSURANCE_EMPRUNT_HEADERS,
 	ALL_SHEETS,
+	FOYER_FISCAL_HEADERS,
 	IMMOBILIER_HEADERS,
 	SHEET_ASSURANCE_EMPRUNT,
+	SHEET_FOYER_FISCAL,
 	SHEET_TAXE_FONCIERE,
 	TAXE_FONCIERE_HEADERS,
 } from "./workbook-template";
@@ -32,5 +34,19 @@ describe("workbook-template property tax surface", () => {
 		expect([...TAXE_FONCIERE_HEADERS]).toEqual(["Bien", "Année", "Montant"]);
 		const entry = ALL_SHEETS.find((s) => s.name === SHEET_TAXE_FONCIERE);
 		expect(entry?.headers).toEqual([...TAXE_FONCIERE_HEADERS]);
+	});
+});
+
+describe("workbook-template foyer fiscal surface", () => {
+	it("registers Foyer fiscal sheet with Source revenu / Montant mensuel / Base / Parts", () => {
+		expect(SHEET_FOYER_FISCAL).toBe("Foyer fiscal");
+		expect([...FOYER_FISCAL_HEADERS]).toEqual([
+			"Source revenu",
+			"Montant mensuel",
+			"Base",
+			"Parts",
+		]);
+		const entry = ALL_SHEETS.find((s) => s.name === SHEET_FOYER_FISCAL);
+		expect(entry?.headers).toEqual([...FOYER_FISCAL_HEADERS]);
 	});
 });

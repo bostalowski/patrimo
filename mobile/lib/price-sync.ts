@@ -7,6 +7,7 @@ import {
   DEFAULT_SYNC_INTERVAL_MINUTES,
 } from "@patrimo/core/prices/schedule";
 import { syncLivretRates } from "./livret-rates";
+import { syncIrBareme } from "./ir-bareme";
 
 const PRICES_STORAGE_KEY = "patrimo:prices";
 const LAST_SYNC_KEY = "patrimo:last_sync";
@@ -324,13 +325,21 @@ export async function syncPrices(
   await savePrices(store);
   await saveLastSync();
 
-  // Same gesture as web: attempt livret rate cache merge without failing prices (D9).
+  // Same gesture as web: attempt livret + IR barème cache merge without failing prices.
   const livretRates = await syncLivretRates();
   if (livretRates.status === "error") {
     console.log(`[LivretRates] sync skipped: ${livretRates.error}`);
   } else {
     console.log(
       `[LivretRates] cache ${livretRates.steps} paliers (+${livretRates.added})`,
+    );
+  }
+  const irBareme = await syncIrBareme();
+  if (irBareme.status === "error") {
+    console.log(`[IrBareme] sync skipped: ${irBareme.error}`);
+  } else {
+    console.log(
+      `[IrBareme] cache ${irBareme.tables} tables (+${irBareme.added})`,
     );
   }
 

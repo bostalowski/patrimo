@@ -11,6 +11,8 @@
     "./benchmarks": "./src/benchmarks.ts",
     "./livret": "./src/livret.ts",
     "./livret-rates": "./src/livret-rates.ts",
+    "./ir-bareme": "./src/ir-bareme.ts",
+    "./tax-bracket": "./src/tax-bracket.ts",
     "./portfolio": "./src/portfolio.ts",
     "./portfolio-history": "./src/portfolio-history.ts",
     "./performance": "./src/performance.ts",

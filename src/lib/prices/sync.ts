@@ -15,6 +15,10 @@ import {
   syncLivretRates,
   type LivretRateSyncResult,
 } from "@/lib/livret-rates/sync";
+import {
+  syncIrBareme,
+  type IrBaremeSyncResult,
+} from "@/lib/ir-bareme/sync";
 
 export type SyncResult = {
   asset: string;
@@ -84,13 +88,20 @@ export async function syncPrices(assets: Asset[]): Promise<SyncResult[]> {
   return results;
 }
 
-/** Couples livret rate sync to the price-sync gesture (non-blocking). */
+/** Couples livret + IR barème sync to the price-sync gesture (non-blocking). */
 export async function syncPricesWithLivretRates(
   assets: Asset[],
-): Promise<{ prices: SyncResult[]; livretRates: LivretRateSyncResult }> {
+): Promise<{
+  prices: SyncResult[];
+  livretRates: LivretRateSyncResult;
+  irBareme: IrBaremeSyncResult;
+}> {
   const prices = await syncPrices(assets);
-  const livretRates = await syncLivretRates();
-  return { prices, livretRates };
+  const [livretRates, irBareme] = await Promise.all([
+    syncLivretRates(),
+    syncIrBareme(),
+  ]);
+  return { prices, livretRates, irBareme };
 }
 
 export async function syncBenchmarks(): Promise<SyncResult[]> {

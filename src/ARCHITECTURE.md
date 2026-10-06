@@ -9,8 +9,8 @@ Hard rules: [CONSTRAINTS.md](../CONSTRAINTS.md). Core map: [packages/core/ARCHIT
 | Area | Where |
 |---|---|
 | Excel load/save | `src/lib/excel.ts`, `src/lib/config.ts` — [workbook-persistence.md](workbook-persistence.md) |
-| Price sync | `src/lib/prices/*`, `src/app/api/prices/*` — [price-sync.md](price-sync.md) |
-| REST mutations | `src/app/api/**` calling core + excel helpers |
+| REST mutations | `src/app/api/**` calling core + excel helpers (`foyer-fiscal` for household IR config) |
+| Price sync | `src/lib/prices/*`, `src/app/api/prices/*`, `src/lib/livret-rates/*`, `src/lib/ir-bareme/*` — [price-sync.md](price-sync.md) |
 | UI pages | `src/app/**` |
 | Invested display | [asset-invested-display.md](asset-invested-display.md) |
 | Desktop shell | [electron/ARCHITECTURE.md](../electron/ARCHITECTURE.md) |

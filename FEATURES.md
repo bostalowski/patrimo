@@ -27,7 +27,7 @@ Status: `done` | `partial` | `todo` | `absent`
 | Next-euro plan | done | absent | ADR 0015/0020/0021 + 0022; web EF surplus on Emergency fund card; Diversification card absent; Exécution tilt opt-in |
 | CSV import | done | absent | |
 | Real estate | done | partial | Mobile read-only; projection/snapshot KPIs from `@patrimo/core` (ADR 0028); borrower-insurance modes + **Assurance emprunt** paliers (ADR 0029) |
-| Fiscalité | done | partial | Mobile realized only |
+| Fiscalité | done | partial | Web: realized + foncier + foyer / tranche / PAS observation (ADR 0031). Mobile realized only; serializer preserves **Foyer fiscal** |
 | Fees | done | partial | |
 | Projection | done | partial | Web: envelope overflow at plafond → fallback (ADR 0016); locative equity/rents on Projection default-on, session toggle; immobilier KPIs share core (ADR 0028 / 0029); envelope overflow mobile deferred |
 | Retirement profile | done | partial | |
