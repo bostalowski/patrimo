@@ -103,4 +103,30 @@ describe("IR barème series helpers (seed / merge / resolve)", () => {
 		expect(effectiveIrBaremeSeries()).toEqual(IR_BAREME_SEED);
 		expect(effectiveIrBaremeSeries([])).toEqual(IR_BAREME_SEED);
 	});
+
+	it("resolveLatestIrBareme throws on empty series after skipping junk tables", () => {
+		expect(() => resolveLatestIrBareme([])).toThrow(/empty series/);
+		expect(() =>
+			resolveLatestIrBareme([
+				{ effectiveFrom: "", incomeYear: 2025, brackets: BAREME_2025.brackets },
+				{ effectiveFrom: "2026-01-01", incomeYear: 2026, brackets: [] },
+				{
+					effectiveFrom: "2027-01-01",
+					incomeYear: 2027,
+					brackets: null as unknown as IrBaremeTable["brackets"],
+				},
+			]),
+		).toThrow(/empty series/);
+	});
+
+	it("merge skips tables with empty brackets so a later dated empty table cannot win", () => {
+		const emptyNewer: IrBaremeTable = {
+			effectiveFrom: "2099-01-01",
+			incomeYear: 2099,
+			brackets: [],
+		};
+		const merged = mergeIrBaremeSeries([BAREME_2025], [emptyNewer]);
+		expect(resolveLatestIrBareme(merged).effectiveFrom).toBe("2025-01-01");
+		expect(resolveLatestIrBareme(merged).incomeYear).toBe(2025);
+	});
 });

@@ -134,6 +134,12 @@ describe("observeTaxBracket — FROM_BUDGET (N4, E1, E7)", () => {
 	});
 
 	it("E1: no REVENU / zero annualized → incomplete (no invented TMI/IR/PAS)", () => {
+		const missingBudget = observeTaxBracket({
+			config: { incomeSource: "FROM_BUDGET", parts: 1 },
+			baremeSeries: seedSeries(),
+		});
+		expect(missingBudget.status).toBe("incomplete");
+
 		const result = observeTaxBracket({
 			config: { incomeSource: "FROM_BUDGET", parts: 1 },
 			budget: [
@@ -214,6 +220,9 @@ describe("observeTaxBracket — parts / quotient (N7)", () => {
 		expect(two.quotient).toBe(15_000);
 		expect(two.tmi).toBe(0.11);
 		expect(two.irAnnuelIndicatif).toBeLessThan(one.irAnnuelIndicatif);
+		// tax_per_part = 11% × (15_000 − 11_600) = 374; IR = tax_per_part × parts (not ÷ parts)
+		expect(two.irAnnuelIndicatif).toBeCloseTo(374 * 2, 6);
+		expect(two.irAnnuelIndicatif).not.toBeCloseTo(374 / 2, 6);
 		expect(two.tauxPrelevementConseille!).toBeLessThan(one.tauxPrelevementConseille!);
 
 		const half = ok(
@@ -267,6 +276,32 @@ describe("observeTaxBracket — edges E5 E6 E8", () => {
 		expect(r.trancheUpper).toBe(29_579);
 	});
 
+	it("closed last band: quotient above every finite upperBound still uses the last rate", () => {
+		const closedSeries = [
+			{
+				effectiveFrom: "2025-01-01",
+				incomeYear: 2025,
+				brackets: [
+					{ upperBound: 1_000, rate: 0 },
+					{ upperBound: 2_000, rate: 0.11 },
+				],
+			},
+		];
+		const r = ok(
+			observeTaxBracket({
+				config: {
+					incomeSource: "MANUAL",
+					manualBasis: "NET_IMPOSABLE",
+					manualAmount: 3_000,
+					parts: 1,
+				},
+				baremeSeries: closedSeries,
+			}),
+		);
+		expect(r.tmi).toBe(0.11);
+		expect(r.trancheLower).toBe(2_000);
+	});
+
 	it("E6: top 45% band → roomToNextBracket null", () => {
 		const r = ok(
 			observeTaxBracket({
@@ -293,18 +328,64 @@ describe("observeTaxBracket — edges E5 E6 E8", () => {
 
 describe("FoyerFiscalConfigSchema validation (E2, E3)", () => {
 	it("E2: MANUAL with missing or ≤0 manualAmount is rejected", () => {
+		const zero = FoyerFiscalConfigSchema.safeParse({
+			incomeSource: "MANUAL",
+			manualBasis: "NET_IMPOSABLE",
+			manualAmount: 0,
+			parts: 1,
+		});
+		expect(zero.success).toBe(false);
+		if (!zero.success) {
+			expect(zero.error.issues.some((i) => i.path[0] === "manualAmount")).toBe(
+				true,
+			);
+			expect(
+				zero.error.issues.some((i) =>
+					i.message.includes("manualAmount must be > 0"),
+				),
+			).toBe(true);
+		}
 		expect(
 			FoyerFiscalConfigSchema.safeParse({
 				incomeSource: "MANUAL",
 				manualBasis: "NET_IMPOSABLE",
-				manualAmount: 0,
 				parts: 1,
 			}).success,
 		).toBe(false);
+	});
+
+	it("E2: MANUAL without manualBasis is rejected; BRUT/NET/NET_IMPOSABLE accepted", () => {
+		const missingBasis = FoyerFiscalConfigSchema.safeParse({
+			incomeSource: "MANUAL",
+			manualAmount: 2_500,
+			parts: 1,
+		});
+		expect(missingBasis.success).toBe(false);
+		if (!missingBasis.success) {
+			expect(missingBasis.error.issues.some((i) => i.path[0] === "manualBasis")).toBe(
+				true,
+			);
+			expect(
+				missingBasis.error.issues.some((i) =>
+					i.message.includes("manualBasis is required"),
+				),
+			).toBe(true);
+		}
+		for (const basis of ["BRUT", "NET", "NET_IMPOSABLE"] as const) {
+			expect(
+				FoyerFiscalConfigSchema.safeParse({
+					incomeSource: "MANUAL",
+					manualBasis: basis,
+					manualAmount: 2_500,
+					parts: 1,
+				}).success,
+			).toBe(true);
+		}
 		expect(
 			FoyerFiscalConfigSchema.safeParse({
 				incomeSource: "MANUAL",
-				manualBasis: "NET_IMPOSABLE",
+				manualBasis: "",
+				manualAmount: 2_500,
 				parts: 1,
 			}).success,
 		).toBe(false);
@@ -316,6 +397,16 @@ describe("FoyerFiscalConfigSchema validation (E2, E3)", () => {
 			manualBasis: "NET_IMPOSABLE" as const,
 			manualAmount: 2_500,
 		};
+		const partsZero = FoyerFiscalConfigSchema.safeParse({ ...base, parts: 0 });
+		expect(partsZero.success).toBe(false);
+		if (!partsZero.success) {
+			expect(partsZero.error.issues.some((i) => i.path[0] === "parts")).toBe(true);
+			expect(
+				partsZero.error.issues.some((i) =>
+					i.message.includes("positive multiple of 0.5"),
+				),
+			).toBe(true);
+		}
 		expect(FoyerFiscalConfigSchema.safeParse({ ...base, parts: 0 }).success).toBe(
 			false,
 		);

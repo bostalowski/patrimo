@@ -7,8 +7,8 @@ Checker sandbox: `/Users/bastien.ostalowski/Workspace/worktrees/feat-tax-bracket
 
 ## Current focus
 
-- **In progress:** First feature commit on `feat/tax-bracket-observation` to put the CONTRACT diff on HEAD (Checker Fail 2026-10-06 was empty-sandbox). Next: `make gauntlet` on tracked `@patrimo/core` files, recreate checker worktree, re-spawn Checker.
-- **Blocked:** none after commit — previous Checker Fail was HEAD still at `4b82ddb`.
+- **In progress:** Feature on HEAD (`d50a990` + mutant-killing tests). `make gauntlet` green after tests. Next: recreate checker worktree, re-spawn Checker.
+- **Blocked:** none
 
 ## Cadrage lock
 
@@ -36,8 +36,8 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md). Behaviour-gate (Intent + cas
 
 ## Last verify
 
-- Command: Maker claimed `make verify` + targeted tests + `npx playwright test e2e/tax-bracket-observation.spec.ts`
-- Result: **not independently verified by Checker** — see Checker verdict below
+- Command: Maker `make verify` + targeted tests + `npx playwright test e2e/tax-bracket-observation.spec.ts` (pre-commit); `make gauntlet` after mutant-killing tests
+- Result: verify **831** green (Maker, pre-commit); targeted core tests **29/29** after gauntlet tests; e2e foyer spec **1/1**; **gauntlet 91.52%** ≥ break 80 (205 killed / 18 survived / 1 no-cov); test-guard OK vs `origin/main`
 - Date: 2026-10-06
 
 ## Notes
