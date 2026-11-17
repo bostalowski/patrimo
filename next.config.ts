@@ -5,7 +5,11 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@patrimo/core"],
   // Playwright e2e uses a separate distDir so a local `next dev` lock does not block smoke.
   ...(process.env.FINGRAPHS_E2E_DIST_DIR
-    ? { distDir: process.env.FINGRAPHS_E2E_DIST_DIR }
+    ? {
+        distDir: process.env.FINGRAPHS_E2E_DIST_DIR,
+        // Playwright hits 127.0.0.1; without this Next dev blocks client chunks and pages never hydrate.
+        allowedDevOrigins: ["127.0.0.1"],
+      }
     : {}),
   async redirects() {
     return [

@@ -15,11 +15,11 @@ Per [cadrage-lock.md](../../howto/cadrage-lock.md). Tier A: mark teach-back / Ch
 - Framer session / date: agent, 2026-11-17
 - Challenger: n/a (pas d'ADR / feuille / math core)
 - Teach-back: accepted (2026-11-17)
-- `make branch-ready`:
+- `make branch-ready`: Score 15/15
 
 ## Done (this branch)
 
-- [ ]
+- [x] BTC/ETH/SOL dans Devise et Frais devise (N1, N2, E1) — verify 797/797, gauntlet OK
 
 ## RED evidence (when `verify-behavior` applies)
 
@@ -61,3 +61,19 @@ Contract: [CONTRACT.md](./CONTRACT.md)
    Start at  09:01:45
    Duration  290ms (transform 63ms, setup 0ms, collect 94ms, tests 4ms, environment 0ms, prepare 32ms)
 ```
+
+## Checker Pass
+
+Checker (separate agent), commit a9c6ba2, 2026-11-17.
+
+| Dimension | Grade | Evidence |
+|---|---|---|
+| Correctness | A | `make verify`: 112 files / 797 tests passed; `npm test -- src/app/transactions/transaction-form.test.ts`: 3/3 passed (N1, N2, E1). `transaction-form.tsx` L282 and L307: both "Devise" and "Frais devise" selects map over `TX_CURRENCIES` (now FIAT + BTC/ETH/SOL), so N1/N2 are delivered for the TRANSFERT path. |
+| Architecture | A | Single constant change in `src/app/transactions/transaction-form.tsx` (FIAT_CURRENCIES, CRYPTO_CURRENCIES, TX_CURRENCIES); no core math, no schema/workbook change; `excel.ts` untouched. |
+| Scope discipline | B | Only the form + its test. Livret types hide the Devise fields (pre-existing, not changed); "tout type" in the CONTRACT success signal is true for all non-livret types only. |
+| Tests / evidence | B | RED evidence recorded (N1 at SHA 4b82ddb, missing-behavior failure). N2/E1 pass on the old code too (not RED), N2 only exercises `validateTxValue`, not the rendered select options; no render test for the two lists. |
+| Docs handoff | C | Teach-back accepted and cadrage lock recorded. But PROGRESS still has empty "Last verify", "Done", "Current focus" and `make branch-ready` fields; no GREEN run recorded; UI screenshot (CONTRACT) not yet in `ui/`; rework-log row not yet stamped. |
+
+Gaps to close before the PR (not blocking correctness): fill "Last verify" and "Done" in PROGRESS, add the UI screenshot (`pr-check` requires a PNG under `docs/agent/branches/fix-transfer-btc-currency/ui/` for a `.tsx` change), run `make rework-log-stamp`. `make e2e` intentionally not run (human asked first).
+
+- Checker: Pass (2026-11-17) — evidence: `make verify` 797/797 green; targeted test 3/3 green; diff of `transaction-form.tsx` L23-25, L282, L307.
