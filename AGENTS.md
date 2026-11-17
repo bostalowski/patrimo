@@ -11,6 +11,8 @@ Patrimo is a local wealth-tracking app: an Excel workbook is the portfolio sourc
 
 Then read the `ARCHITECTURE.md` for the package you touch (see below).
 
+**Implémentation / bug fix :** boucle `ship` (adaptateur [.agents/ship.md](.agents/ship.md)) — enchaînement autonome, `make e2e` proposé avant lancement.
+
 ## Run and verify
 
 ```bash
