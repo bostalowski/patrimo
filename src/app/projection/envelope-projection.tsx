@@ -2,6 +2,12 @@
 
 import { useCallback, useMemo, useState } from "react";
 import {
+	addRealEstateEquityToPoints,
+	aggregateIncludedRealEstate,
+} from "@patrimo/core/retraite";
+import { currentEquity } from "@patrimo/core/realestate/projection";
+import type { Property } from "@patrimo/core/schema";
+import {
 	ScenarioCurve,
 	type ScenarioPoint,
 	type ScenarioSeries,
@@ -109,6 +115,8 @@ export function EnvelopeProjection({
 	overflowEnvelope,
 	setOverflowEnvelope,
 	goalsAlignment,
+	properties,
+	includeRealEstate,
 }: {
 	envelopes: EnvelopeProjectionInput[];
 	monthlyRestant: number;
@@ -120,6 +128,8 @@ export function EnvelopeProjection({
 	overflowEnvelope: Envelope;
 	setOverflowEnvelope: React.Dispatch<React.SetStateAction<Envelope>>;
 	goalsAlignment?: GoalsAlignmentInput | null;
+	properties: Property[];
+	includeRealEstate: boolean;
 }) {
 	const [years, setYears] = useState("10");
 	const [reste, setReste] = useState(
@@ -232,9 +242,28 @@ export function EnvelopeProjection({
 		[projections, perResult],
 	);
 
+	const realEstate = useMemo(
+		() =>
+			aggregateIncludedRealEstate({
+				properties,
+				horizonYears,
+				inflationRate: inflation.rate,
+				includeRealEstate,
+			}),
+		[properties, horizonYears, inflation.rate, includeRealEstate],
+	);
+
+	const currentRealEstateEquity = useMemo(() => {
+		if (!includeRealEstate) return 0;
+		return properties.reduce((sum, property) => {
+			if (property.regime === "RESIDENCE_PRINCIPALE") return sum;
+			return sum + currentEquity(property);
+		}, 0);
+	}, [properties, includeRealEstate]);
+
 	const chartData = useMemo<ScenarioPoint[]>(() => {
 		const base = allResults[0]?.points ?? [];
-		return base.map((point, index) => ({
+		const financial = base.map((point, index) => ({
 			date: point.date,
 			invested: allResults.reduce(
 				(sum, r) => sum + (r.points[index]?.invested ?? 0),
@@ -249,7 +278,19 @@ export function EnvelopeProjection({
 				0,
 			),
 		}));
-	}, [allResults]);
+		return addRealEstateEquityToPoints(
+			financial.map((point) => ({
+				...point,
+				realValue: point.value_real,
+			})),
+			realEstate.years,
+		).map((point) => ({
+			date: point.date,
+			invested: point.invested,
+			value: point.value,
+			value_real: point.realValue,
+		}));
+	}, [allResults, realEstate.years]);
 
 	const series: ScenarioSeries[] = [
 		{ key: "value", label: "Patrimoine projeté", color: NOMINAL_COLOR },
@@ -261,10 +302,15 @@ export function EnvelopeProjection({
 		},
 	];
 
-	const projectedNominal = allResults.reduce((s, r) => s + r.finalValue, 0);
-	const projectedReal = allResults.reduce((s, r) => s + r.finalRealValue, 0);
+	const projectedNominal =
+		allResults.reduce((s, r) => s + r.finalValue, 0) + realEstate.finalEquity;
+	const projectedReal =
+		allResults.reduce((s, r) => s + r.finalRealValue, 0) +
+		realEstate.finalRealEquity;
 	const currentTotal =
-		envelopes.reduce((s, e) => s + e.currentValue, 0) + perEncoursValue;
+		envelopes.reduce((s, e) => s + e.currentValue, 0) +
+		perEncoursValue +
+		currentRealEstateEquity;
 
 	const projectRealCapacity = useCallback(
 		(years: number) => {
@@ -585,7 +631,11 @@ export function EnvelopeProjection({
 
 					<p className="mt-4 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
 						Investissements engagés ({formatEuro(currentTotal)}{" "}
-						aujourd&apos;hui) projetés au taux estimé propre à chaque enveloppe.
+						aujourd&apos;hui) projetés au taux estimé propre à chaque enveloppe
+						{includeRealEstate
+							? ", plus le patrimoine net des biens locatifs (hors résidence principale)"
+							: ""}
+						.
 						Les versements mensuels sont pré-remplis depuis tes plans DCA mais
 						restent ajustables ici, et les plafonds (Livret A, PEA) sont
 						respectés : le surplus est redirigé vers l&apos;enveloppe choisie
@@ -654,7 +704,11 @@ export function EnvelopeProjection({
 				<CardHeader>
 					<CardTitle>Patrimoine projeté</CardTitle>
 					<p className="text-xs leading-relaxed text-zinc-500">
-						Valeur totale des enveloppes engagées : trait plein = nominal,
+						Valeur totale des enveloppes engagées
+						{includeRealEstate
+							? " et du patrimoine net locatif (hors résidence principale)"
+							: ""}{" "}
+						: trait plein = nominal,
 						pointillé = après inflation ({formatPercent(inflation.rate)}). Total
 						versé en gris.
 					</p>

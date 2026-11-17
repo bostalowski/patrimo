@@ -6,7 +6,10 @@ import {
 	yearsUntilCivilDate,
 	type PensionScenarioType,
 } from "@patrimo/core/retirement-profile";
-import { PENSION_BRUT_TO_NET_APPROX } from "@patrimo/core/retraite";
+import {
+	aggregateIncludedRealEstate,
+	PENSION_BRUT_TO_NET_APPROX,
+} from "@patrimo/core/retraite";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
@@ -16,7 +19,7 @@ import {
 	DEFAULT_OVERFLOW_ENVELOPE,
 	projectEnvelopesWithOverflow,
 } from "@/lib/projection";
-import { RetirementProfile, type Envelope } from "@/lib/schema";
+import { RetirementProfile, type Envelope, type Property } from "@/lib/schema";
 import { cn, formatDate, formatEuro, formatPercent } from "@/lib/utils";
 import {
 	EnvelopeProjection,
@@ -24,6 +27,7 @@ import {
 } from "./envelope-projection";
 import type { GoalsAlignmentInput } from "./goals-alignment-panel";
 import {
+	deserializeProperty,
 	RealEstateProjection,
 	type SerializedProperty,
 } from "./realestate-projection";
@@ -133,6 +137,12 @@ export function ProjectionClient({
 	const [overflowEnvelope, setOverflowEnvelope] = useState<Envelope>(
 		DEFAULT_OVERFLOW_ENVELOPE,
 	);
+	const [includeRealEstate, setIncludeRealEstate] = useState(true);
+
+	const domainProperties = useMemo(
+		() => properties.map(deserializeProperty),
+		[properties],
+	);
 
 	const effectiveRate = Math.max(0, parseNumber(rateInput) / 100);
 	const inflation: InflationView = { rate: effectiveRate };
@@ -158,17 +168,31 @@ export function ProjectionClient({
 					))}
 				</div>
 
-				<label className="flex items-center gap-1.5 text-xs text-zinc-500">
-					Inflation
-					<input
-						type="text"
-						inputMode="decimal"
-						value={rateInput}
-						onChange={(e) => setRateInput(e.target.value)}
-						className="w-16 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-950"
-					/>
-					%
-				</label>
+				<div className="flex flex-wrap items-center gap-4">
+					<label className="flex items-center gap-1.5 text-xs text-zinc-500">
+						<input
+							type="checkbox"
+							checked={includeRealEstate}
+							onChange={(e) => setIncludeRealEstate(e.target.checked)}
+							className="rounded border-zinc-300"
+						/>
+						Inclure l&apos;immobilier
+					</label>
+					<p className="hidden text-xs text-zinc-400 sm:block">
+						Locatif hors résidence principale
+					</p>
+					<label className="flex items-center gap-1.5 text-xs text-zinc-500">
+						Inflation
+						<input
+							type="text"
+							inputMode="decimal"
+							value={rateInput}
+							onChange={(e) => setRateInput(e.target.value)}
+							className="w-16 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+						/>
+						%
+					</label>
+				</div>
 			</div>
 
 			{tab === "envelopes" && (
@@ -184,6 +208,8 @@ export function ProjectionClient({
 						overflowEnvelope={overflowEnvelope}
 						setOverflowEnvelope={setOverflowEnvelope}
 						goalsAlignment={goalsAlignment}
+						properties={domainProperties}
+						includeRealEstate={includeRealEstate}
 					/>
 
 					<RetirementIncomeCard
@@ -193,6 +219,8 @@ export function ProjectionClient({
 						monthly={monthly}
 						rates={rates}
 						overflowEnvelope={overflowEnvelope}
+						properties={domainProperties}
+						includeRealEstate={includeRealEstate}
 					/>
 				</div>
 			)}
@@ -211,6 +239,8 @@ function RetirementIncomeCard({
 	monthly,
 	rates,
 	overflowEnvelope,
+	properties,
+	includeRealEstate,
 }: {
 	retirement: RetirementBlockInput;
 	envelopeInputs: EnvelopeProjectionInput[];
@@ -218,6 +248,8 @@ function RetirementIncomeCard({
 	monthly: Record<string, string>;
 	rates: Record<string, string>;
 	overflowEnvelope: Envelope;
+	properties: Property[];
+	includeRealEstate: boolean;
 }) {
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
@@ -298,22 +330,36 @@ function RetirementIncomeCard({
 		overflowEnvelope,
 	]);
 
-	const projectedCapital = projections.reduce(
+	const financialCapital = projections.reduce(
 		(sum, p) => sum + p.result.finalValue,
 		0,
 	);
 
+	const realEstate = useMemo(
+		() =>
+			aggregateIncludedRealEstate({
+				properties,
+				horizonYears: horizonYears ?? 0,
+				inflationRate: inflation.rate,
+				includeRealEstate,
+			}),
+		[properties, horizonYears, inflation.rate, includeRealEstate],
+	);
+
+	const projectedCapital = financialCapital + realEstate.finalEquity;
+	const monthlyRealEstateNet = realEstate.monthlyNet;
+
 	const weightedRate = useMemo(() => {
-		if (projectedCapital <= 0) return 0;
+		if (financialCapital <= 0) return 0;
 		return (
 			projections.reduce(
 				(sum, p) => sum + p.result.finalValue * rateOf(p.envelope),
 				0,
-			) / projectedCapital
+			) / financialCapital
 		);
-	}, [projections, projectedCapital, rateOf]);
+	}, [projections, financialCapital, rateOf]);
 
-	const annualReturns = projectedCapital * weightedRate;
+	const annualReturns = financialCapital * weightedRate;
 	const monthlyFromCapital = annualReturns / 12;
 
 	const realMonthlyFromCapital =
@@ -321,10 +367,9 @@ function RetirementIncomeCard({
 			? monthlyFromCapital / (1 + inflation.rate) ** horizonYears
 			: 0;
 
-	const totalMonthly =
-		monthlyFromCapital + netMonthly + retirement.monthlyRealEstateNet;
+	const totalMonthly = monthlyFromCapital + netMonthly + monthlyRealEstateNet;
 	const totalReal =
-		realMonthlyFromCapital + netRealMonthly + retirement.monthlyRealEstateNet;
+		realMonthlyFromCapital + netRealMonthly + monthlyRealEstateNet;
 
 	async function persistActiveScenario(type: PensionScenarioType) {
 		const profile = hydrateProfile(retirement.profile);
@@ -502,13 +547,13 @@ function RetirementIncomeCard({
 										</span>
 									</div>
 								)}
-								{retirement.monthlyRealEstateNet > 0 && (
+								{monthlyRealEstateNet !== 0 && (
 									<div className="flex items-center justify-between">
 										<span className="text-zinc-600 dark:text-zinc-300">
 											Loyers nets
 										</span>
 										<span className="font-mono font-medium tabular-nums">
-											{formatEuro(retirement.monthlyRealEstateNet)}
+											{formatEuro(monthlyRealEstateNet)}
 										</span>
 									</div>
 								)}

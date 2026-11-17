@@ -91,6 +91,103 @@ function contributionsByEnvelope(
   return map;
 }
 
+export type RealEstateEquityYear = {
+  year: number;
+  equity: number;
+  realEquity: number;
+};
+
+export type IncludedRealEstateTotals = {
+  finalEquity: number;
+  finalRealEquity: number;
+  monthlyNet: number;
+  years: RealEstateEquityYear[];
+};
+
+export function aggregateIncludedRealEstate(params: {
+  properties: Property[];
+  horizonYears: number;
+  inflationRate: number;
+  now?: Date;
+  includeRealEstate?: boolean;
+}): IncludedRealEstateTotals {
+  const now = params.now ?? new Date();
+  const includeRealEstate = params.includeRealEstate !== false;
+  if (!includeRealEstate) {
+    return {
+      finalEquity: 0,
+      finalRealEquity: 0,
+      monthlyNet: 0,
+      years: [],
+    };
+  }
+
+  const horizonRounded = Math.max(0, Math.round(params.horizonYears));
+  const byYear = new Map<number, { equity: number; realEquity: number }>();
+  let finalEquity = 0;
+  let finalRealEquity = 0;
+  let monthlyNet = 0;
+
+  for (const property of params.properties) {
+    if (property.regime === "RESIDENCE_PRINCIPALE") continue;
+    const proj = projectProperty(property, {
+      horizonYears: params.horizonYears,
+      inflationRate: params.inflationRate,
+      now,
+    });
+    finalEquity += proj.finalEquity;
+    finalRealEquity += proj.finalRealEquity;
+
+    if (horizonRounded === 0 || proj.years.length === 0) {
+      monthlyNet += propertySnapshot(property, now).monthlyCashFlowAfterTax;
+    } else {
+      const lastYear = proj.years[proj.years.length - 1];
+      monthlyNet += (lastYear?.cashFlowAfterTax ?? 0) / 12;
+    }
+
+    for (const row of proj.years) {
+      const calendarYear = now.getUTCFullYear() + row.year - 1;
+      const bucket = byYear.get(calendarYear) ?? { equity: 0, realEquity: 0 };
+      bucket.equity += row.equity;
+      bucket.realEquity += row.realEquity;
+      byYear.set(calendarYear, bucket);
+    }
+  }
+
+  const years = [...byYear.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([year, bucket]) => ({
+      year,
+      equity: bucket.equity,
+      realEquity: bucket.realEquity,
+    }));
+
+  return { finalEquity, finalRealEquity, monthlyNet, years };
+}
+
+export function addRealEstateEquityToPoints<
+  T extends { date: string; value: number; realValue: number },
+>(points: T[], years: RealEstateEquityYear[]): T[] {
+  if (years.length === 0) return points;
+  const sorted = [...years].sort((a, b) => a.year - b.year);
+  return points.map((point) => {
+    const calendarYear = Number(point.date.slice(0, 4));
+    let row: RealEstateEquityYear | undefined;
+    for (let i = sorted.length - 1; i >= 0; i -= 1) {
+      if (sorted[i].year <= calendarYear) {
+        row = sorted[i];
+        break;
+      }
+    }
+    if (!row) return point;
+    return {
+      ...point,
+      value: point.value + row.equity,
+      realValue: point.realValue + row.realEquity,
+    };
+  });
+}
+
 export function buildRetirementSources(params: {
   portfolio: Portfolio;
   dcaConfigs: DcaConfig[];
@@ -98,6 +195,8 @@ export function buildRetirementSources(params: {
   horizonYears: number;
   inflationRate: number;
   now?: Date;
+  /** Default true. When false, equity and locative cash-flow are omitted from totals. */
+  includeRealEstate?: boolean;
 }): RetirementSourcesResult {
   const now = params.now ?? new Date();
   const { horizonYears, inflationRate, properties } = params;
@@ -110,29 +209,16 @@ export function buildRetirementSources(params: {
       (contributions.get(env)?.some((s) => s.amount > 0) ?? false),
   );
 
-  let realEstateEquityNominal = 0;
-  let realEstateEquityReal = 0;
-  let monthlyRealEstateNet = 0;
-
-  const horizonRounded = Math.max(0, Math.round(horizonYears));
-
-  for (const property of properties) {
-    if (property.regime === "RESIDENCE_PRINCIPALE") continue;
-    const proj = projectProperty(property, {
-      horizonYears,
-      inflationRate,
-      now,
-    });
-    realEstateEquityNominal += proj.finalEquity;
-    realEstateEquityReal += proj.finalRealEquity;
-
-    if (horizonRounded === 0 || proj.years.length === 0) {
-      monthlyRealEstateNet += propertySnapshot(property, now).monthlyCashFlowAfterTax;
-    } else {
-      const lastYear = proj.years[proj.years.length - 1];
-      monthlyRealEstateNet += (lastYear?.cashFlowAfterTax ?? 0) / 12;
-    }
-  }
+  const realEstate = aggregateIncludedRealEstate({
+    properties,
+    horizonYears,
+    inflationRate,
+    now,
+    includeRealEstate: params.includeRealEstate,
+  });
+  const realEstateEquityNominal = realEstate.finalEquity;
+  const realEstateEquityReal = realEstate.finalRealEquity;
+  const monthlyRealEstateNet = realEstate.monthlyNet;
 
   const scenarios: RetirementScenarioBlock[] = SCENARIO_PRESETS.map((preset) => {
     const rows: EnvelopeProjectedRow[] = [];
