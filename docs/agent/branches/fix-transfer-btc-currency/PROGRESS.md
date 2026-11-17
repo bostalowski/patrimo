@@ -77,3 +77,10 @@ Checker (separate agent), commit a9c6ba2, 2026-11-17.
 Gaps to close before the PR (not blocking correctness): fill "Last verify" and "Done" in PROGRESS, add the UI screenshot (`pr-check` requires a PNG under `docs/agent/branches/fix-transfer-btc-currency/ui/` for a `.tsx` change), run `make rework-log-stamp`. `make e2e` intentionally not run (human asked first).
 
 - Checker: Pass (2026-11-17) — evidence: `make verify` 797/797 green; targeted test 3/3 green; diff of `transaction-form.tsx` L23-25, L282, L307.
+
+Checker evidence: make verify 797/797 + transaction-form.test.ts 3/3 (checker, a9c6ba2); diff transaction-form.tsx L23-25, L282, L307.
+Verdict: Pass.
+
+## Screenshots
+
+Formulaire « Nouvelle transaction », Devise = BTC: `docs/agent/branches/fix-transfer-btc-currency/ui/formulaire-devise-btc.png` (make e2e: 5/5).
