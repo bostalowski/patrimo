@@ -1,0 +1,6 @@
+---
+description: Implémentation / bug fix → boucle ship avec l'adaptateur Patrimo
+alwaysApply: true
+---
+Toute implémentation ou correction suit la skill `ship`, adaptée par `.agents/ship.md`
+(autonome après cadrage ; seul `make e2e` est proposé avant lancement). Voir AGENTS.md.

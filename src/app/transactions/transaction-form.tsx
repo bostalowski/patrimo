@@ -20,7 +20,9 @@ export const TX_TYPES: TransactionType[] = [
   "RETRAIT",
 ];
 
-export const TX_CURRENCIES = ["EUR", "USD", "GBP", "CHF"];
+export const FIAT_CURRENCIES = ["EUR", "USD", "GBP", "CHF"];
+export const CRYPTO_CURRENCIES = ["BTC", "ETH", "SOL"];
+export const TX_CURRENCIES = [...FIAT_CURRENCIES, ...CRYPTO_CURRENCIES];
 
 export const txInputClasses =
   "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950";

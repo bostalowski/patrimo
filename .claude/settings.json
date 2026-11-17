@@ -1,0 +1,7 @@
+{
+  "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/stop-pr-check.sh\"", "timeout": 600 } ] }
+    ]
+  }
+}
